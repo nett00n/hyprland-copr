@@ -7,6 +7,8 @@
 # build_requires / requires: use pkgconfig() form where possible.
 #
 # ORDER OF PACKAGES IS IMPORTANT BECAUSE OF PACKAGES DEPENDENCIES
+# Prefixes list can be checked in docs/rpm-dir-prefixes.md
+# automated prefix <-> absolute path converter in scripts/rpm-dir-prefixes-convert.py
 
 packages:
   hyprwayland-scanner:
@@ -23,8 +25,8 @@ packages:
     build_system: cmake
     build_requires:
       - cmake
-      - ninja-build
       - gcc-c++
+      - ninja-build
       - pkgconfig(pugixml)
     files:
       - "%license LICENSE"
@@ -48,8 +50,8 @@ packages:
     build_system: cmake
     build_requires:
       - cmake
-      - ninja-build
       - gcc-c++
+      - ninja-build
       - pkgconfig(pixman-1)
     files:
       - "%license LICENSE"
@@ -73,8 +75,8 @@ packages:
     build_system: cmake
     build_requires:
       - cmake
-      - ninja-build
       - gcc-c++
+      - ninja-build
       - pkgconfig(hyprutils)
     files:
       - "%license LICENSE"
@@ -99,17 +101,17 @@ packages:
     build_system: cmake
     build_requires:
       - cmake
-      - ninja-build
+      - file-devel
       - gcc-c++
-      - pkgconfig(cairo)
+      - librsvg2-devel
+      - ninja-build
       - pango-devel
+      - pkgconfig(cairo)
+      - pkgconfig(hyprutils)
       - pkgconfig(libjpeg)
       - pkgconfig(libpng)
       - pkgconfig(libwebp)
       - pkgconfig(pixman-1)
-      - pkgconfig(hyprutils)
-      - file-devel
-      - librsvg2-devel
     files:
       - "%license LICENSE"
       - "%{_libdir}/libhyprgraphics.so.*"
@@ -125,38 +127,40 @@ packages:
     license: BSD-3-Clause
     summary: A very light linux rendering backend library
     description: |
-      FIXME
+      Aquamarine is a very light linux rendering backend library. It provides basic abstractions for an application to render on a Wayland session (in a window) or a native DRM session.
+
+      It is agnostic of the rendering API (Vulkan/OpenGL) and designed to be lightweight, performant, and minimal.
+
+      Aquamarine provides no bindings for other languages. It is C++-only.
     url: https://github.com/hyprwm/aquamarine
     sources:
       - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
     build_system: cmake
     build_requires:
       - cmake
-      - ninja-build
       - gcc-c++
       - hyprwayland-scanner-devel
-      - pkgconfig(libseat)
+      - ninja-build
+      - pkgconfig(gbm)
+      - pkgconfig(gl)
+      - pkgconfig(glesv2)
+      - pkgconfig(hwdata)
+      - pkgconfig(hyprutils)
+      - pkgconfig(libdisplay-info)
+      - pkgconfig(libdrm)
       - pkgconfig(libinput)
+      - pkgconfig(libseat)
+      - pkgconfig(libudev)
+      - pkgconfig(pixman-1)
       - pkgconfig(wayland-client)
       - pkgconfig(wayland-protocols)
-      - pkgconfig(hyprutils)
-      - pkgconfig(pixman-1)
-      - pkgconfig(libdrm)
-      - pkgconfig(gbm)
-      - pkgconfig(libudev)
-      - pkgconfig(libdisplay-info)
-      - pkgconfig(hwdata)
-      - pkgconfig(glesv2)
-      - pkgconfig(gl)
     files:
       - "%license LICENSE"
       - "%{_libdir}/libaquamarine.so*"
-      - "%license LICENSE"
     devel:
       files:
         - "%{_includedir}/aquamarine/"
         - "%{_libdir}/pkgconfig/aquamarine.pc"
-
 
   hyprtoolkit:
     version: "0.5.3"
@@ -171,28 +175,27 @@ packages:
     build_system: cmake
     build_requires:
       - cmake
-      - ninja-build
       - gcc-c++
+      - hyprwayland-scanner-devel
+      - ninja-build
+      - pkgconfig(aquamarine)
+      - pkgconfig(cairo)
+      - pkgconfig(egl)
+      - pkgconfig(gbm)
+      - pkgconfig(hyprgraphics)
+      - pkgconfig(hyprlang)
+      - pkgconfig(hyprutils)
+      - pkgconfig(iniparser)
+      - pkgconfig(libdrm)
+      - pkgconfig(pango)
+      - pkgconfig(pangocairo)
+      - pkgconfig(pixman-1)
       - pkgconfig(wayland-client)
       - pkgconfig(wayland-protocols)
-      - pkgconfig(egl)
-      - pkgconfig(hyprutils)
-      - pkgconfig(hyprlang)
-      - pkgconfig(pixman-1)
-      - pkgconfig(libdrm)
-      - pkgconfig(gbm)
       - pkgconfig(xkbcommon)
-      - pkgconfig(pango)
-      - pkgconfig(cairo)
-      - pkgconfig(pangocairo)
-      - pkgconfig(iniparser)
-      - pkgconfig(hyprgraphics)
-      - pkgconfig(aquamarine)
-      - hyprwayland-scanner-devel
     files:
       - "%license LICENSE"
       - "%{_libdir}/libhyprtoolkit.so*"
-      - "%license LICENSE"
     devel:
       files:
         - "%{_includedir}/hyprtoolkit/"
@@ -211,15 +214,15 @@ packages:
     build_system: cmake
     build_requires:
       - cmake
-      - ninja-build
       - gcc-c++
+      - ninja-build
       - pkgconfig(hyprutils)
       - pkgconfig(libffi)
       - pkgconfig(pugixml)
     files:
-      - "/usr/bin/hyprwire-scanner"
-      - "%{_libdir}/libhyprwire.so*"
       - "%license LICENSE"
+      - "%{_libdir}/libhyprwire.so*"
+      - "/usr/bin/hyprwire-scanner"
     devel:
       files:
         - "%{_includedir}/hyprwire/"
@@ -299,12 +302,11 @@ packages:
       - qt6-rpm-macros
 
     files:
-      - "%license LICENSE"
       - "%doc README.md"
+      - "%license LICENSE"
       - "%{_libdir}/libhyprqt6engine-common.so*"
       - "%{_libdir}/qt6/plugins/platformthemes/libhyprqt6engine.so"
       - "%{_libdir}/qt6/plugins/styles/libhypr-style.so"
-
 
   hyprland-protocols:
     version: "0.7.0"
@@ -327,12 +329,12 @@ packages:
       - meson
     no_debug_package: true
     files:
-      - "%license LICENSE"
       - "%doc README.md"
+      - "%license LICENSE"
     devel:
       files:
-        - "%{_datadir}/pkgconfig/%{name}.pc"
         - "%{_datadir}/%{name}/"
+        - "%{_datadir}/pkgconfig/%{name}.pc"
 
   xdg-desktop-portal-hyprland:
     version: "1.3.11"
@@ -369,8 +371,8 @@ packages:
       - sdbus-cpp
       - systemd-rpm-macros
     files:
-      - "%license LICENSE"
       - "%doc README.md"
+      - "%license LICENSE"
       - "%{_bindir}/hyprland-share-picker"
       - "%{_datadir}/dbus-1/services/org.freedesktop.impl.portal.desktop.hyprland.service"
       - "%{_datadir}/xdg-desktop-portal/portals/hyprland.portal"

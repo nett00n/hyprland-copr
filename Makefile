@@ -20,7 +20,7 @@ PYTHON := .venv/bin/python3
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv pkg-spec update-versions gen-report container-build container-enter container-clean container-all pkg-sources pkg-srpm pkg-mock pkg-copr pkg-full-cycle
+.PHONY: help setup-venv pkg-spec update-versions gen-report readme normalize-paths sort-lists container-build container-enter container-clean container-all pkg-sources pkg-srpm pkg-mock pkg-copr pkg-full-cycle
 
 help: ## Show this help
 	@echo "Usage: make [TARGET] [PACKAGE=<name>] [FEDORA_VERSION=<version>]"
@@ -48,6 +48,15 @@ update-versions: ## Fetch latest semver tags from submodules and update packages
 
 gen-report: ## Render build-report.yaml into a Markdown status table (stdout)
 	$(PYTHON) scripts/gen-report.py
+
+readme: ## Generate README.md from build-report.yaml via gen-report.py
+	$(PYTHON) scripts/gen-report.py > README.md
+
+normalize-paths: ## Normalize paths in packages.yaml abs->macros (ARGS=--reverse or --dry-run)
+	$(PYTHON) scripts/rpm-dir-prefixes-convert.py $(ARGS)
+
+sort-lists: ## Sort build_requires/requires/files lists in packages.yaml (ARGS=--dry-run)
+	$(PYTHON) scripts/sort-yaml-lists.py $(ARGS)
 
 container-build: ## Build image and recreate toolbox container for FEDORA_VERSION
 	podman build \
