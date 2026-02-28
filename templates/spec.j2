@@ -1,0 +1,60 @@
+{% if no_debug_package %}
+%global debug_package %{nil}
+{% endif %}
+Name:           {{ name }}
+Version:        {{ version }}
+Release:        {{ release }}%{?dist}
+Summary:        {{ summary }}
+
+License:        {{ license }}
+URL:            {{ url }}
+{% for source in sources %}
+Source{{ loop.index0 }}:        {{ source.url }}
+{% endfor %}
+
+{% for dep in build_requires %}
+BuildRequires:  {{ dep }}
+{% endfor %}
+{% for dep in requires %}
+Requires:       {{ dep }}
+{% endfor %}
+
+%description
+{{ description }}
+
+%prep
+%autosetup
+{% for cmd in prep_commands %}
+{{ cmd }}
+{% endfor %}
+
+%build
+{{ build_cmd }}
+
+%install
+{{ install_cmd }}
+
+%files
+{% for f in files %}
+{{ f }}
+{% endfor %}
+{% if devel %}
+
+%package devel
+Summary:        Development files for {{ summary }}
+Requires:       %{name} = %{version}-%{release}
+{% for dep in devel.requires %}
+Requires:       {{ dep }}
+{% endfor %}
+
+%description devel
+Development files for {{ name }}.
+
+%files devel
+{% for f in devel.files %}
+{{ f }}
+{% endfor %}
+{% endif %}
+
+%changelog
+{{ changelog }}

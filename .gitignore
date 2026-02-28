@@ -1,0 +1,30 @@
+# Local upstream source clones (not tracked)
+upstream/
+
+# Python
+.venv/
+__pycache__/
+
+# rpmbuild tree
+~/rpmbuild/
+
+# Built artifacts
+*.src.rpm
+*.rpm
+local-repo/
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+*.zip
+
+# Mock build output
+/var/lib/mock/
+
+# Build report and logs
+build-report.yaml
+logs/
+
+
+# Spec files
+# *.spec

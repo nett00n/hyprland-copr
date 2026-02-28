@@ -1,0 +1,9 @@
+# Build Report — Fedora {{ run.fedora_version }} · {{ run.timestamp[:10] }}
+
+> Chroot: `{{ run.mock_chroot }}`
+
+| Package | Version | Spec | SRPM | Mock | Copr |
+|---------|---------|:----:|:----:|:----:|:----:|
+{% for pkg in packages -%}
+| `{{ pkg.name }}` | `{{ pkg.version }}` | {{ pkg.spec_badge }} | {{ pkg.srpm_badge }} | {{ pkg.mock_badge }} | {{ pkg.copr_badge }} |
+{% endfor %}

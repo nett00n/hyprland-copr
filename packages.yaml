@@ -1,0 +1,378 @@
+# Single source of truth for all package metadata.
+# Run `make gen-spec PKG=<name>` (or `make gen-spec` for all) to regenerate spec files.
+#
+# build_system: cmake | meson | autotools | make
+# sources: list of dicts with `url:` key; index (Source0, Source1, ...) is auto-assigned.
+# files: RPM macros like %{_bindir} are passed through verbatim.
+# build_requires / requires: use pkgconfig() form where possible.
+#
+# ORDER OF PACKAGES IS IMPORTANT BECAUSE OF PACKAGES DEPENDENCIES
+
+packages:
+  hyprwayland-scanner:
+    version: "0.4.5"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A Wayland scanner replacement for Hypr projects
+    description: |
+      hyprwayland-scanner is a Wayland protocol scanner / code generator
+      used by the Hypr ecosystem to generate C++ protocol bindings.
+    url: https://github.com/hyprwm/hyprwayland-scanner
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(pugixml)
+    files:
+      - "%license LICENSE"
+      - "%{_bindir}/hyprwayland-scanner"
+    devel:
+      files:
+        - "%{_libdir}/cmake/hyprwayland-scanner/"
+        - "%{_libdir}/pkgconfig/hyprwayland-scanner.pc"
+
+  hyprutils:
+    version: "0.11.0"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: Small C++ library for utilities used across the Hypr ecosystem
+    description: |
+      hyprutils is a small C++ library used across the Hypr* ecosystem for
+      various utilities such as memory management, signals, and more.
+    url: https://github.com/hyprwm/hyprutils
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(pixman-1)
+    files:
+      - "%license LICENSE"
+      - "%{_libdir}/libhyprutils.so"
+      - "%{_libdir}/libhyprutils.so.*"
+    devel:
+      files:
+        - "%{_includedir}/hyprutils/"
+        - "%{_libdir}/pkgconfig/hyprutils.pc"
+
+  hyprlang:
+    version: "0.6.8"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: The hypr configuration language library
+    description: |
+      hyprlang is the official implementation library for the hypr configuration language.
+    url: https://github.com/hyprwm/hyprlang
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(hyprutils)
+    files:
+      - "%license LICENSE"
+      - "%{_libdir}/libhyprlang.so.*"
+    devel:
+      files:
+        - "%{_includedir}/hyprlang.hpp"
+        - "%{_libdir}/libhyprlang.so"
+        - "%{_libdir}/pkgconfig/hyprlang.pc"
+
+  hyprgraphics:
+    version: "0.5.0"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: Small C++ library for graphics utilities across the Hypr ecosystem
+    description: |
+      hyprgraphics is a small C++ library used across the Hypr* ecosystem for
+      graphics-related utilities such as image loading and color management.
+    url: https://github.com/hyprwm/hyprgraphics
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(cairo)
+      - pango-devel
+      - pkgconfig(libjpeg)
+      - pkgconfig(libpng)
+      - pkgconfig(libwebp)
+      - pkgconfig(pixman-1)
+      - pkgconfig(hyprutils)
+      - file-devel
+      - librsvg2-devel
+    files:
+      - "%license LICENSE"
+      - "%{_libdir}/libhyprgraphics.so.*"
+    devel:
+      files:
+        - "%{_includedir}/hyprgraphics/"
+        - "%{_libdir}/libhyprgraphics.so*"
+        - "%{_libdir}/pkgconfig/hyprgraphics.pc"
+
+  aquamarine:
+    version: "0.10.0"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A very light linux rendering backend library
+    description: |
+      FIXME
+    url: https://github.com/hyprwm/aquamarine
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - hyprwayland-scanner-devel
+      - pkgconfig(libseat)
+      - pkgconfig(libinput)
+      - pkgconfig(wayland-client)
+      - pkgconfig(wayland-protocols)
+      - pkgconfig(hyprutils)
+      - pkgconfig(pixman-1)
+      - pkgconfig(libdrm)
+      - pkgconfig(gbm)
+      - pkgconfig(libudev)
+      - pkgconfig(libdisplay-info)
+      - pkgconfig(hwdata)
+      - pkgconfig(glesv2)
+      - pkgconfig(gl)
+    files:
+      - "%license LICENSE"
+      - "%{_libdir}/libaquamarine.so*"
+      - "%license LICENSE"
+    devel:
+      files:
+        - "%{_includedir}/aquamarine/"
+        - "%{_libdir}/pkgconfig/aquamarine.pc"
+
+
+  hyprtoolkit:
+    version: "0.5.3"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A modern C++ Wayland-native GUI toolkit
+    description: |
+      A modern C++ Wayland-native GUI toolkit
+    url: https://github.com/hyprwm/hyprtoolkit
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(wayland-client)
+      - pkgconfig(wayland-protocols)
+      - pkgconfig(egl)
+      - pkgconfig(hyprutils)
+      - pkgconfig(hyprlang)
+      - pkgconfig(pixman-1)
+      - pkgconfig(libdrm)
+      - pkgconfig(gbm)
+      - pkgconfig(xkbcommon)
+      - pkgconfig(pango)
+      - pkgconfig(cairo)
+      - pkgconfig(pangocairo)
+      - pkgconfig(iniparser)
+      - pkgconfig(hyprgraphics)
+      - pkgconfig(aquamarine)
+      - hyprwayland-scanner-devel
+    files:
+      - "%license LICENSE"
+      - "%{_libdir}/libhyprtoolkit.so*"
+      - "%license LICENSE"
+    devel:
+      files:
+        - "%{_includedir}/hyprtoolkit/"
+        - "%{_libdir}/pkgconfig/hyprtoolkit.pc"
+
+  hyprwire:
+    version: "0.3.0"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A fast and consistent wire protocol for IPC
+    description: |
+      A fast and consistent wire protocol for IPC
+    url: https://github.com/hyprwm/hyprwire
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(hyprutils)
+      - pkgconfig(libffi)
+      - pkgconfig(pugixml)
+    files:
+      - "/usr/bin/hyprwire-scanner"
+      - "%{_libdir}/libhyprwire.so*"
+      - "%license LICENSE"
+    devel:
+      files:
+        - "%{_includedir}/hyprwire/"
+        - "%{_libdir}/cmake/hyprwire-scanner/"
+        - "%{_libdir}/pkgconfig/hyprwire-scanner.pc"
+        - "%{_libdir}/pkgconfig/hyprwire.pc"
+
+  hyprpaper:
+    version: "0.8.3"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A blazing fast Wayland wallpaper utility
+    description: |
+      hyprpaper is a blazing fast Wayland wallpaper utility with IPC controls.
+    url: https://github.com/hyprwm/hyprpaper
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - aquamarine-devel
+      - cmake
+      - file-devel
+      - gcc-c++
+      - hyprgraphics-devel
+      - hyprlang-devel
+      - hyprtoolkit-devel
+      - hyprutils-devel
+      - hyprwayland-scanner-devel
+      - hyprwire-devel
+      - ninja-build
+      - pkgconfig(cairo)
+      - pkgconfig(gl)
+      - pkgconfig(glesv2)
+      - pkgconfig(libdrm)
+      - pkgconfig(libjpeg)
+      - pkgconfig(libpng)
+      - pkgconfig(libwebp)
+      - pkgconfig(pango)
+      - pkgconfig(wayland-client)
+      - pkgconfig(wayland-protocols)
+      - systemd-rpm-macros
+    files:
+      - "%license LICENSE"
+      - "%{_bindir}/hyprpaper"
+      - "/usr/lib/systemd/user/hyprpaper.service"
+
+  hyprqt6engine:
+    version: "0.1.0"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: QT6 Theme Provider for Hyprland
+    description: |
+      QT6 Theme Provider for Hyprland. Compatible with KDE, replaces qt6ct.
+    url: https://github.com/hyprwm/hyprqt6engine
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    prep_commands:
+      - "sed -i '/target_link_libraries.*hyprqtplugin/i find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)' hyprqtplugin/CMakeLists.txt"
+    build_requires:
+      - cmake
+      - cmake(KF6ColorScheme)
+      - cmake(KF6Config)
+      - cmake(KF6IconThemes)
+      - cmake(Qt6BuildInternals)
+      - cmake(Qt6Core)
+      - cmake(Qt6Gui)
+      - cmake(Qt6GuiPrivate)
+      - cmake(Qt6Widgets)
+      - gcc-c++
+      - ninja-build
+      - pkgconfig(hyprlang)
+      - pkgconfig(hyprutils)
+      - qt6-qtbase-devel
+      - qt6-qtbase-private-devel
+      - qt6-qtwayland-devel
+      - qt6-rpm-macros
+
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - "%{_libdir}/libhyprqt6engine-common.so*"
+      - "%{_libdir}/qt6/plugins/platformthemes/libhyprqt6engine.so"
+      - "%{_libdir}/qt6/plugins/styles/libhypr-style.so"
+
+
+  hyprland-protocols:
+    version: "0.7.0"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: Wayland protocol extensions for Hyprland
+    description: |
+      Wayland protocol extensions for Hyprland.
+
+      This repository exists in an effort to bridge the gap between Hyprland and KDE/Gnome's functionality, as well as allow apps for some extra neat functionality under Hyprland.
+
+      Since wayland-protocols is slow to change (on top of Hyprland not being allowed to contribute), we have to maintain a set of protocols Hyprland uses to plumb some things / add some useful features.
+
+      Some of the protocols here also do not belong in w-p, as they are specific to Hyprland.
+    url: https://github.com/hyprwm/hyprland-protocols
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: meson
+    build_requires:
+      - meson
+    no_debug_package: true
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+    devel:
+      files:
+        - "%{_datadir}/pkgconfig/%{name}.pc"
+        - "%{_datadir}/%{name}/"
+
+  xdg-desktop-portal-hyprland:
+    version: "1.3.11"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: An XDG-Destop-Portal backend for Hyprland (and wlroots)
+    description: |
+      xdg-desktop-portal backend for Hyprland
+    url: https://github.com/hyprwm/xdg-desktop-portal-hyprland
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - gcc-c++
+      - ninja-build
+      - pkgconfig(gbm)
+      - pkgconfig(hyprland-protocols)
+      - pkgconfig(hyprlang)
+      - pkgconfig(hyprutils)
+      - pkgconfig(hyprwayland-scanner)
+      - pkgconfig(libdrm)
+      - pkgconfig(libpipewire-0.3)
+      - pkgconfig(libspa-0.2)
+      - pkgconfig(libsystemd)
+      - pkgconfig(Qt6Widgets)
+      - pkgconfig(sdbus-c++)
+      - pkgconfig(systemd)
+      - pkgconfig(wayland-client)
+      - pkgconfig(wayland-protocols)
+      - pkgconfig(wayland-scanner)
+      - qt6-qtbase-devel
+      - qt6-qtwayland-devel
+      - sdbus-cpp
+      - systemd-rpm-macros
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - "%{_bindir}/hyprland-share-picker"
+      - "%{_datadir}/dbus-1/services/org.freedesktop.impl.portal.desktop.hyprland.service"
+      - "%{_datadir}/xdg-desktop-portal/portals/hyprland.portal"
+      - "%{_libexecdir}/%{name}"
+      - "%{_userunitdir}/%{name}.service"
