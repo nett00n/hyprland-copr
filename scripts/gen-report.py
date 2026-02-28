@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate a Markdown build-status table from build-report.yaml using a Jinja2 template."""
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from jinja2 import Environment, FileSystemLoader
 
 ROOT = Path(__file__).resolve().parent.parent
 REPORT_YAML = ROOT / "build-report.yaml"
+PACKAGES_YAML = ROOT / "packages.yaml"
 TEMPLATE_DIR = ROOT / "templates"
 TEMPLATE_NAME = "build-report.md.j2"
 
@@ -37,7 +39,7 @@ def clean_version(raw: str) -> str:
     return raw.split("-")[0] if raw else ""
 
 
-def collect_packages(stages: dict) -> list[dict]:
+def collect_packages(stages: dict, pkg_meta: dict) -> list[dict]:
     # Union of all package names across all stages, in first-seen order
     names: list[str] = []
     seen: set[str] = set()
@@ -70,6 +72,7 @@ def collect_packages(stages: dict) -> list[dict]:
             {
                 "name": name,
                 "version": clean_version(raw_version),
+                "summary": (pkg_meta.get(name) or {}).get("summary", ""),
                 "spec_badge": badge("spec", spec.get("state")),
                 "srpm_badge": badge("srpm", srpm.get("state")),
                 "mock_badge": badge("mock", mock.get("state")),
@@ -77,6 +80,27 @@ def collect_packages(stages: dict) -> list[dict]:
             }
         )
     return packages
+
+
+def collect_contributors(repo_root: Path) -> list[dict]:
+    result = subprocess.run(
+        ["git", "log", "--format=%an|%ae"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+    )
+    seen: set[str] = set()
+    contributors = []
+    for line in result.stdout.splitlines():
+        name, _, email = line.partition("|")
+        if name in seen:
+            continue
+        seen.add(name)
+        github_user = None
+        if email.endswith("@users.noreply.github.com"):
+            github_user = email.split("@")[0].split("+")[-1]
+        contributors.append({"name": name, "github_user": github_user})
+    return contributors
 
 
 def main() -> None:
@@ -88,13 +112,18 @@ def main() -> None:
     run = data.get("run", {})
     stages = data.get("stages", {})
 
-    packages = collect_packages(stages)
+    pkg_meta = {}
+    if PACKAGES_YAML.exists():
+        pkg_meta = yaml.safe_load(PACKAGES_YAML.read_text()).get("packages", {})
+
+    packages = collect_packages(stages, pkg_meta)
+    contributors = collect_contributors(ROOT)
 
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)), keep_trailing_newline=True
     )
     template = env.get_template(TEMPLATE_NAME)
-    print(template.render(run=run, packages=packages), end="")
+    print(template.render(run=run, packages=packages, contributors=contributors), end="")
 
 
 if __name__ == "__main__":

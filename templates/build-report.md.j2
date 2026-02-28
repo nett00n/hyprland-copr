@@ -1,9 +1,44 @@
-# Build Report — Fedora {{ run.fedora_version }} · {{ run.timestamp[:10] }}
+# Hyprland Copr repo for Fedora Linux
+
+[📎 Check my hyprland repo on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/)
+
+Officially recommended repo solopasha/hyprland ([📎 Git](https://github.com/solopasha/hyprlandRPM/tree/master), [📎 COPR](https://copr.fedorainfracloud.org/coprs/solopasha/hyprland/)) seems to be abandoned, it has no
+commits in last 4+ month now
+
+This repository is created with reproduced builds and future support in mind
+Feel free to reuse this repository for your own copr-projects.
+
+## Build Report — Fedora {{ run.fedora_version }} · {{ run.timestamp[:10] }}
 
 > Chroot: `{{ run.mock_chroot }}`
 
-| Package | Version | Spec | SRPM | Mock | Copr |
-|---------|---------|:----:|:----:|:----:|:----:|
+| Package | Version | Spec | SRPM | Mock | Copr | Description |
+|---------|---------|:----:|:----:|:----:|:----:|-------------|
 {% for pkg in packages -%}
-| `{{ pkg.name }}` | `{{ pkg.version }}` | {{ pkg.spec_badge }} | {{ pkg.srpm_badge }} | {{ pkg.mock_badge }} | {{ pkg.copr_badge }} |
+| `{{ pkg.name }}` | `{{ pkg.version }}` | {{ pkg.spec_badge }} | {{ pkg.srpm_badge }} | {{ pkg.mock_badge }} | {{ pkg.copr_badge }} | {{ pkg.summary }} |
+{% endfor %}
+---
+[📎 Support me on Ko-fi ☕](https://ko-fi.com/nett00n)
+
+# License
+
+[GPLv3](./LICENSE.md)
+
+**TL;DR** — You are free to use, modify, and distribute this software. If you distribute a modified version, you must release it under GPLv3 as well and make the source available. No warranty is provided.
+
+---
+
+# People
+## Authors
+
+- [nett00n](https://github.com/nett00n)
+
+## Maintainers
+
+- [nett00n](https://github.com/nett00n)
+
+## Contributors
+
+{% for c in contributors -%}
+- {% if c.github_user %}[{{ c.name }}](https://github.com/{{ c.github_user }}){% else %}{{ c.name }}{% endif %}
 {% endfor %}
