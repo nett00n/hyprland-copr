@@ -101,6 +101,43 @@ def build_context(name: str, pkg: dict, packager: str) -> dict:
     release_info = fetch_github_release(pkg.get("url", ""), version)
     changelog = format_changelog(release_info, version, release, packager)
 
+    # Process bundled deps: header-only or FetchContent libs that must be
+    # vendored because the mock chroot has no network during %build.
+    bundled_deps = []
+    extra_prep = []
+    num_main_sources = len(pkg.get("sources", []))
+    for i, dep in enumerate(pkg.get("bundled_deps", [])):
+        dep_name = dep["name"]
+        dep_version = dep["version"]
+        source_index = num_main_sources + i
+        extracted_dir = f"{dep_name}-{dep_version}"
+        target_dir = f"{dep_name}-src"
+        cmake_var = dep.get("cmake_var", dep_name.upper())
+        local_filename = f"{dep_name}-{dep_version}.tar.gz"
+        bundled_deps.append({
+            "name": dep_name,
+            "version": dep_version,
+            "url": f"{dep['url']}#/{local_filename}",
+            "source_index": source_index,
+            "cmake_var": cmake_var,
+        })
+        extra_prep += [
+            f"tar xf %{{SOURCE{source_index}}}",
+            f"mv {extracted_dir} {target_dir}",
+        ]
+
+    # Prepend FetchContent cmake flags when using cmake and there are bundled deps.
+    if bundled_deps and build_system == "cmake" and "build_commands" not in pkg:
+        flags = ["-DFETCHCONTENT_FULLY_DISCONNECTED=ON"] + [
+            f"-DFETCHCONTENT_SOURCE_DIR_{d['cmake_var']}="
+            f"%{{_builddir}}/%{{name}}-%{{version}}/{d['name']}-src"
+            for d in bundled_deps
+        ]
+        flags_str = " \\\n    ".join(flags)
+        build_cmd = f"%cmake \\\n    {flags_str}\n%cmake_build"
+
+    prep_commands = extra_prep + pkg.get("prep_commands", [])
+
     return {
         "name": name,
         "version": version,
@@ -109,10 +146,11 @@ def build_context(name: str, pkg: dict, packager: str) -> dict:
         "license": pkg["license"],
         "url": pkg["url"],
         "sources": pkg["sources"],
+        "bundled_deps": bundled_deps,
         "build_requires": pkg.get("build_requires", []),
         "requires": pkg.get("requires", []),
         "description": pkg["description"].strip(),
-        "prep_commands": pkg.get("prep_commands", []),
+        "prep_commands": prep_commands,
         "build_cmd": build_cmd,
         "install_cmd": install_cmd,
         "files": [

@@ -300,14 +300,14 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
     lines = [
         f"\n  {key}:\n",
         f'    version: "{version}"\n',
-        f'    release: "%autorelease"\n',
+        f'    release: "%autorelease"\n',  # noqa: F541
         f"    license: {license_id}\n",
         f"    summary: {summary}\n",
-        f"    description: |\n",
-        f"      FIXME\n",
+        f"    description: |\n",  # noqa: F541
+        f"      FIXME\n",  # noqa: F541
         f"    url: {url}\n",
-        f"    sources:\n",
-        f'      - url: "%{{url}}/archive/refs/tags/v%{{version}}.tar.gz"\n',
+        f"    sources:\n",  # noqa: F541
+        f'      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"\n',
         f"    build_system: {build_system}\n",
     ]
     if build_requires:

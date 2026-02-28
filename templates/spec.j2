@@ -11,6 +11,10 @@ URL:            {{ url }}
 {% for source in sources %}
 Source{{ loop.index0 }}:        {{ source.url }}
 {% endfor %}
+{% for dep in bundled_deps %}
+%global {{ dep.name }}_version {{ dep.version }}
+Source{{ dep.source_index }}:        {{ dep.url }}
+{% endfor %}
 
 {% for dep in build_requires %}
 BuildRequires:  {{ dep }}

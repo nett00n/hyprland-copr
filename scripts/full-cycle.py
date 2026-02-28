@@ -19,6 +19,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -150,7 +151,7 @@ def main() -> None:
     copr_repo = os.environ.get("COPR_REPO", "")
     package_filter = os.environ.get("PACKAGE", "")
 
-    all_packages: dict = yaml.safe_load(PACKAGES_YAML.read_text())["packages"]
+    all_packages: dict[str, Any] = yaml.safe_load(PACKAGES_YAML.read_text())["packages"]
 
     if package_filter:
         names = [n.strip() for n in package_filter.split(",") if n.strip()]
@@ -164,7 +165,7 @@ def main() -> None:
         for old_log in [*LOG_DIR.glob(f"*-{pkg}.log"), *LOG_DIR.glob(f"*-{pkg}-*.log")]:
             old_log.unlink()
 
-    report = {
+    report: dict[str, Any] = {
         "run": {
             "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "fedora_version": fedora_version
