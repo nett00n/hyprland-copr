@@ -221,8 +221,8 @@ packages:
       - pkgconfig(pugixml)
     files:
       - "%license LICENSE"
+      - "%{_bindir}/hyprwire-scanner"
       - "%{_libdir}/libhyprwire.so*"
-      - "/usr/bin/hyprwire-scanner"
     devel:
       files:
         - "%{_includedir}/hyprwire/"
@@ -267,7 +267,7 @@ packages:
     files:
       - "%license LICENSE"
       - "%{_bindir}/hyprpaper"
-      - "/usr/lib/systemd/user/hyprpaper.service"
+      - "%{_userunitdir}/hyprpaper.service"
 
   hyprqt6engine:
     version: "0.1.0"
@@ -378,3 +378,82 @@ packages:
       - "%{_datadir}/xdg-desktop-portal/portals/hyprland.portal"
       - "%{_libexecdir}/%{name}"
       - "%{_userunitdir}/%{name}.service"
+
+  Hyprland:
+    version: "0.54.0"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A Modern C++ Wayland Compositor
+    description: |
+      Hyprland is a 100% independent, dynamic tiling Wayland compositor that doesn't sacrifice on its looks.
+
+      It provides the latest Wayland features, is highly customizable, has all the eyecandy, the most powerful plugins, easy IPC, much more QoL stuff than other compositors and more...
+    url: https://github.com/hyprwm/Hyprland
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - gcc-c++
+      - hyprutils-devel
+      - hyprwayland-scanner-devel
+      - hyprwire-devel
+      - ninja-build
+      - pkgconfig(aquamarine)
+      - pkgconfig(cairo)
+      - pkgconfig(gbm)
+      - pkgconfig(gio-2.0)
+      - pkgconfig(gl)
+      - pkgconfig(glesv2)
+      - pkgconfig(hyprcursor)
+      - pkgconfig(hyprgraphics)
+      - pkgconfig(hyprland-protocols)
+      - pkgconfig(hyprlang)
+      - pkgconfig(hyprutils)
+      - pkgconfig(libdrm)
+      - pkgconfig(libinput)
+      - pkgconfig(muparser)
+      - pkgconfig(pango)
+      - pkgconfig(pangocairo)
+      - pkgconfig(pixman-1)
+      - pkgconfig(re2)
+      - pkgconfig(tomlplusplus)
+      - pkgconfig(uuid)
+      - pkgconfig(wayland-protocols)
+      - pkgconfig(wayland-server)
+      - pkgconfig(xcb-errors)
+      - pkgconfig(xcb-icccm)
+      - pkgconfig(xcursor)
+      - pkgconfig(xkbcommon)
+      - udis86-devel
+    bundled_deps:
+      - name: glaze
+        version: "7.0.0"
+        url: "https://github.com/stephenberry/glaze/archive/refs/tags/v7.0.0.tar.gz"
+    prep_commands:
+      # start/CMakeLists.txt does not link glaze::glaze and is add_subdirectory'd
+      # before hyprpm (where FetchContent declares glaze), so the target doesn't
+      # exist yet. Patch in an explicit include_dir using a cmake-relative path.
+      - "sed -i 's|^install(TARGETS start-hyprland)|target_include_directories(start-hyprland PRIVATE \"${CMAKE_CURRENT_SOURCE_DIR}/../glaze-src/include\")\\ninstall(TARGETS start-hyprland)|' start/CMakeLists.txt"
+    files:
+      - "%doc README.md"
+      - "%license LICENSE"
+      - "%{_bindir}/hyprctl"
+      - "%{_bindir}/hyprland"
+      - "%{_bindir}/hyprpm"
+      - "%{_bindir}/start-hyprland"
+      - "%{_datadir}/bash-completion/completions/hyprctl"
+      - "%{_datadir}/bash-completion/completions/hyprpm"
+      - "%{_datadir}/fish/vendor_completions.d/hyprctl.fish"
+      - "%{_datadir}/fish/vendor_completions.d/hyprpm.fish"
+      - "%{_datadir}/hypr/"
+      - "%{_datadir}/wayland-sessions/hyprland*.desktop"
+      - "%{_datadir}/xdg-desktop-portal/hyprland-portals.conf"
+      - "%{_datadir}/zsh/site-functions/_hyprctl"
+      - "%{_datadir}/zsh/site-functions/_hyprpm"
+      - "%{_mandir}/man1/hyprctl.1.gz"
+      - "%{_mandir}/man1/Hyprland.1.gz"
+    devel:
+      files:
+        - "%{_includedir}/hyprland/"
+        - "%{_pkgconfigdatadir}/hyprland.pc"
