@@ -2,7 +2,6 @@ Name:           hyprqt6engine
 Version:        0.1.0
 Release:        %autorelease%{?dist}
 Summary:        QT6 Theme Provider for Hyprland
-
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprqt6engine
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
@@ -40,8 +39,8 @@ sed -i '/target_link_libraries.*hyprqtplugin/i find_package(Qt6 REQUIRED COMPONE
 %cmake_install
 
 %files
-%license LICENSE
 %doc README.md
+%license LICENSE
 %{_libdir}/libhyprqt6engine-common.so*
 %{_libdir}/qt6/plugins/platformthemes/libhyprqt6engine.so
 %{_libdir}/qt6/plugins/styles/libhypr-style.so

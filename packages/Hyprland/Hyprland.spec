@@ -2,7 +2,6 @@ Name:           Hyprland
 Version:        0.54.0
 Release:        %autorelease%{?dist}
 Summary:        A Modern C++ Wayland Compositor
-
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
@@ -10,37 +9,37 @@ Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 Source1:        https://github.com/stephenberry/glaze/archive/refs/tags/v7.0.0.tar.gz#/glaze-7.0.0.tar.gz
 
 BuildRequires:  cmake
-BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
+BuildRequires:  hyprutils-devel
+BuildRequires:  hyprwayland-scanner-devel
+BuildRequires:  hyprwire-devel
+BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(aquamarine)
-BuildRequires:  pkgconfig(hyprlang)
-BuildRequires:  pkgconfig(hyprcursor)
-BuildRequires:  pkgconfig(hyprutils)
-BuildRequires:  pkgconfig(hyprgraphics)
-BuildRequires:  pkgconfig(xkbcommon)
-BuildRequires:  pkgconfig(uuid)
-BuildRequires:  pkgconfig(wayland-server)
-BuildRequires:  pkgconfig(wayland-protocols)
 BuildRequires:  pkgconfig(cairo)
+BuildRequires:  pkgconfig(gbm)
+BuildRequires:  pkgconfig(gio-2.0)
+BuildRequires:  pkgconfig(gl)
+BuildRequires:  pkgconfig(glesv2)
+BuildRequires:  pkgconfig(hyprcursor)
+BuildRequires:  pkgconfig(hyprgraphics)
+BuildRequires:  pkgconfig(hyprland-protocols)
+BuildRequires:  pkgconfig(hyprlang)
+BuildRequires:  pkgconfig(hyprutils)
+BuildRequires:  pkgconfig(libdrm)
+BuildRequires:  pkgconfig(libinput)
+BuildRequires:  pkgconfig(muparser)
 BuildRequires:  pkgconfig(pango)
 BuildRequires:  pkgconfig(pangocairo)
 BuildRequires:  pkgconfig(pixman-1)
-BuildRequires:  pkgconfig(xcursor)
-BuildRequires:  pkgconfig(libdrm)
-BuildRequires:  pkgconfig(libinput)
-BuildRequires:  pkgconfig(gbm)
-BuildRequires:  pkgconfig(gio-2.0)
 BuildRequires:  pkgconfig(re2)
-BuildRequires:  pkgconfig(muparser)
-BuildRequires:  pkgconfig(hyprland-protocols)
-BuildRequires:  pkgconfig(glesv2)
-BuildRequires:  pkgconfig(gl)
-BuildRequires:  hyprwayland-scanner-devel
-BuildRequires:  pkgconfig(xcb-icccm)
-BuildRequires:  pkgconfig(xcb-errors)
-BuildRequires:  hyprwire-devel
-BuildRequires:  hyprutils-devel
 BuildRequires:  pkgconfig(tomlplusplus)
+BuildRequires:  pkgconfig(uuid)
+BuildRequires:  pkgconfig(wayland-protocols)
+BuildRequires:  pkgconfig(wayland-server)
+BuildRequires:  pkgconfig(xcb-errors)
+BuildRequires:  pkgconfig(xcb-icccm)
+BuildRequires:  pkgconfig(xcursor)
+BuildRequires:  pkgconfig(xkbcommon)
 BuildRequires:  udis86-devel
 
 %description
@@ -64,24 +63,23 @@ sed -i 's|^install(TARGETS start-hyprland)|target_include_directories(start-hypr
 %cmake_install
 
 %files
-%license LICENSE
 %doc README.md
+%license LICENSE
 %{_bindir}/hyprctl
 %{_bindir}/hyprland
-%{_bindir}/Hyprland
 %{_bindir}/hyprpm
 %{_bindir}/start-hyprland
-/usr/share/bash-completion/completions/hyprctl
-/usr/share/bash-completion/completions/hyprpm
-/usr/share/fish/vendor_completions.d/hyprctl.fish
-/usr/share/fish/vendor_completions.d/hyprpm.fish
-/usr/share/hypr/
-/usr/share/man/man1/hyprctl.1.gz
-/usr/share/man/man1/Hyprland.1.gz
-/usr/share/wayland-sessions/hyprland*.desktop
-/usr/share/xdg-desktop-portal/hyprland-portals.conf
-/usr/share/zsh/site-functions/_hyprctl
-/usr/share/zsh/site-functions/_hyprpm
+%{_datadir}/bash-completion/completions/hyprctl
+%{_datadir}/bash-completion/completions/hyprpm
+%{_datadir}/fish/vendor_completions.d/hyprctl.fish
+%{_datadir}/fish/vendor_completions.d/hyprpm.fish
+%{_datadir}/hypr/
+%{_datadir}/wayland-sessions/hyprland*.desktop
+%{_datadir}/xdg-desktop-portal/hyprland-portals.conf
+%{_datadir}/zsh/site-functions/_hyprctl
+%{_datadir}/zsh/site-functions/_hyprpm
+%{_mandir}/man1/hyprctl.1.gz
+%{_mandir}/man1/Hyprland.1.gz
 
 %package devel
 Summary:        Development files for A Modern C++ Wayland Compositor
@@ -91,8 +89,8 @@ Requires:       %{name} = %{version}-%{release}
 Development files for Hyprland.
 
 %files devel
-/usr/include/hyprland/
-/usr/share/pkgconfig/hyprland.pc
+%{_includedir}/hyprland/
+%{_pkgconfigdatadir}/hyprland.pc
 
 %changelog
 * Fri Feb 27 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.54.0-%autorelease

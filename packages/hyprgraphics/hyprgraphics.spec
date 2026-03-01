@@ -2,23 +2,22 @@ Name:           hyprgraphics
 Version:        0.5.0
 Release:        %autorelease%{?dist}
 Summary:        Small C++ library for graphics utilities across the Hypr ecosystem
-
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprgraphics
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 
 BuildRequires:  cmake
-BuildRequires:  ninja-build
+BuildRequires:  file-devel
 BuildRequires:  gcc-c++
-BuildRequires:  pkgconfig(cairo)
+BuildRequires:  librsvg2-devel
+BuildRequires:  ninja-build
 BuildRequires:  pango-devel
+BuildRequires:  pkgconfig(cairo)
+BuildRequires:  pkgconfig(hyprutils)
 BuildRequires:  pkgconfig(libjpeg)
 BuildRequires:  pkgconfig(libpng)
 BuildRequires:  pkgconfig(libwebp)
 BuildRequires:  pkgconfig(pixman-1)
-BuildRequires:  pkgconfig(hyprutils)
-BuildRequires:  file-devel
-BuildRequires:  librsvg2-devel
 
 %description
 hyprgraphics is a small C++ library used across the Hypr* ecosystem for

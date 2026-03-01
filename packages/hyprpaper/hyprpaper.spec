@@ -2,7 +2,6 @@ Name:           hyprpaper
 Version:        0.8.3
 Release:        %autorelease%{?dist}
 Summary:        A blazing fast Wayland wallpaper utility
-
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpaper
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
@@ -46,7 +45,7 @@ hyprpaper is a blazing fast Wayland wallpaper utility with IPC controls.
 %files
 %license LICENSE
 %{_bindir}/hyprpaper
-/usr/lib/systemd/user/hyprpaper.service
+%{_userunitdir}/hyprpaper.service
 
 %changelog
 * Thu Jan 29 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.8.3-%autorelease

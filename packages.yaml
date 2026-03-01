@@ -583,3 +583,46 @@ packages:
       - "%{_includedir}/hyprcursor.hpp"
       - "%{_includedir}/hyprcursor/"
       - "%{_libdir}/pkgconfig/hyprcursor.pc"
+
+  hyprtavern:
+    version: "0^20260131git946aa84"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A modern, simple and consistent session bus for IPC discovery.
+    description: |
+      Let your apps meet and chat with each other.
+
+      A modern, simple and consistent session bus for IPC discovery.
+
+      Important
+
+      This project is still in early development. I'm working on adding docs and improving the protocol, but it's not set in stone yet.
+
+    url: https://github.com/hyprwm/hyprtavern
+    commit:
+      full: 946aa84275af9c97773935b94c1f9cbd4dc3286b
+      date: "20260131"
+    sources:
+      - url: "%{url}/archive/%{commit}.tar.gz"
+    build_system: cmake
+    bundled_deps:
+      - name: glaze
+        version: "7.0.0"
+        url: "https://github.com/stephenberry/glaze/archive/refs/tags/v7.0.0.tar.gz"
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(hyprutils)
+      - pkgconfig(hyprwire)
+      - pkgconfig(hyprlang)
+      - pkgconfig(uuid)
+      - pkgconfig(openssl)
+      - pkgconfig(hyprtoolkit)
+      - pkgconfig(pixman-1)
+      - pkgconfig(libdrm)
+      - hyprwire-devel
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - # FIXME: add installed files

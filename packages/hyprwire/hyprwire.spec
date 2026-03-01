@@ -2,14 +2,13 @@ Name:           hyprwire
 Version:        0.3.0
 Release:        %autorelease%{?dist}
 Summary:        A fast and consistent wire protocol for IPC
-
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprwire
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 
 BuildRequires:  cmake
-BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
+BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(hyprutils)
 BuildRequires:  pkgconfig(libffi)
 BuildRequires:  pkgconfig(pugixml)
@@ -28,9 +27,9 @@ A fast and consistent wire protocol for IPC
 %cmake_install
 
 %files
-/usr/bin/hyprwire-scanner
-%{_libdir}/libhyprwire.so*
 %license LICENSE
+%{_bindir}/hyprwire-scanner
+%{_libdir}/libhyprwire.so*
 
 %package devel
 Summary:        Development files for A fast and consistent wire protocol for IPC

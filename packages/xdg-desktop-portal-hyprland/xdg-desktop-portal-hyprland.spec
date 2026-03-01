@@ -2,7 +2,6 @@ Name:           xdg-desktop-portal-hyprland
 Version:        1.3.11
 Release:        %autorelease%{?dist}
 Summary:        An XDG-Destop-Portal backend for Hyprland (and wlroots)
-
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/xdg-desktop-portal-hyprland
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
@@ -44,8 +43,8 @@ xdg-desktop-portal backend for Hyprland
 %cmake_install
 
 %files
-%license LICENSE
 %doc README.md
+%license LICENSE
 %{_bindir}/hyprland-share-picker
 %{_datadir}/dbus-1/services/org.freedesktop.impl.portal.desktop.hyprland.service
 %{_datadir}/xdg-desktop-portal/portals/hyprland.portal

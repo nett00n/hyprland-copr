@@ -2,28 +2,27 @@ Name:           aquamarine
 Version:        0.10.0
 Release:        %autorelease%{?dist}
 Summary:        A very light linux rendering backend library
-
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/aquamarine
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 
 BuildRequires:  cmake
-BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 BuildRequires:  hyprwayland-scanner-devel
-BuildRequires:  pkgconfig(libseat)
+BuildRequires:  ninja-build
+BuildRequires:  pkgconfig(gbm)
+BuildRequires:  pkgconfig(gl)
+BuildRequires:  pkgconfig(glesv2)
+BuildRequires:  pkgconfig(hwdata)
+BuildRequires:  pkgconfig(hyprutils)
+BuildRequires:  pkgconfig(libdisplay-info)
+BuildRequires:  pkgconfig(libdrm)
 BuildRequires:  pkgconfig(libinput)
+BuildRequires:  pkgconfig(libseat)
+BuildRequires:  pkgconfig(libudev)
+BuildRequires:  pkgconfig(pixman-1)
 BuildRequires:  pkgconfig(wayland-client)
 BuildRequires:  pkgconfig(wayland-protocols)
-BuildRequires:  pkgconfig(hyprutils)
-BuildRequires:  pkgconfig(pixman-1)
-BuildRequires:  pkgconfig(libdrm)
-BuildRequires:  pkgconfig(gbm)
-BuildRequires:  pkgconfig(libudev)
-BuildRequires:  pkgconfig(libdisplay-info)
-BuildRequires:  pkgconfig(hwdata)
-BuildRequires:  pkgconfig(glesv2)
-BuildRequires:  pkgconfig(gl)
 
 %description
 Aquamarine is a very light linux rendering backend library. It provides basic abstractions for an application to render on a Wayland session (in a window) or a native DRM session.
@@ -45,7 +44,6 @@ Aquamarine provides no bindings for other languages. It is C++-only.
 %files
 %license LICENSE
 %{_libdir}/libaquamarine.so*
-%license LICENSE
 
 %package devel
 Summary:        Development files for A very light linux rendering backend library

@@ -16,7 +16,7 @@ BuildRequires:  pkgconfig(libzip)
 BuildRequires:  pkgconfig(tomlplusplus)
 
 %description
-FIXME
+The hyprland cursor format, library and utilities.
 
 %prep
 %autosetup

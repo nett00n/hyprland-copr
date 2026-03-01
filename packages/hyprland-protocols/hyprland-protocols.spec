@@ -3,7 +3,6 @@ Name:           hyprland-protocols
 Version:        0.7.0
 Release:        %autorelease%{?dist}
 Summary:        Wayland protocol extensions for Hyprland
-
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-protocols
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
@@ -30,8 +29,8 @@ Some of the protocols here also do not belong in w-p, as they are specific to Hy
 %meson_install
 
 %files
-%license LICENSE
 %doc README.md
+%license LICENSE
 
 %package devel
 Summary:        Development files for Wayland protocol extensions for Hyprland
@@ -41,8 +40,8 @@ Requires:       %{name} = %{version}-%{release}
 Development files for hyprland-protocols.
 
 %files devel
-%{_datadir}/pkgconfig/%{name}.pc
 %{_datadir}/%{name}/
+%{_datadir}/pkgconfig/%{name}.pc
 
 %changelog
 * Sat Oct 04 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.7.0-%autorelease

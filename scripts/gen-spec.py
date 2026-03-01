@@ -128,9 +128,10 @@ def build_context(name: str, pkg: dict, packager: str) -> dict:
 
     # Prepend FetchContent cmake flags when using cmake and there are bundled deps.
     if bundled_deps and build_system == "cmake" and "build_commands" not in pkg:
+        src_subdir = "%{name}-%{commit}" if pkg.get("commit") else "%{name}-%{version}"
         flags = ["-DFETCHCONTENT_FULLY_DISCONNECTED=ON"] + [
             f"-DFETCHCONTENT_SOURCE_DIR_{d['cmake_var']}="
-            f"%{{_builddir}}/%{{name}}-%{{version}}/{d['name']}-src"
+            f"%{{_builddir}}/{src_subdir}/{d['name']}-src"
             for d in bundled_deps
         ]
         flags_str = " \\\n    ".join(flags)

@@ -2,14 +2,13 @@ Name:           hyprwayland-scanner
 Version:        0.4.5
 Release:        %autorelease%{?dist}
 Summary:        A Wayland scanner replacement for Hypr projects
-
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprwayland-scanner
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 
 BuildRequires:  cmake
-BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
+BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(pugixml)
 
 %description

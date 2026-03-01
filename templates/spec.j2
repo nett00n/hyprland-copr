@@ -35,6 +35,7 @@ Requires:       {{ dep }}
 
 %prep
 %autosetup{% if commit %} -n %{name}-%{commit}{% endif %}
+
 {% for cmd in prep_commands %}
 {{ cmd }}
 {% endfor %}
