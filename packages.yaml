@@ -486,3 +486,41 @@ packages:
       - "%{_bindir}/hypridle"
       - "%{_datadir}/hypr/hypridle.conf"
       - "%{_userunitdir}/hypridle.service"
+
+  hyprlock:
+    version: "0.9.2"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A gpu-accelerated screen lock for Hyprland
+    description: |
+      FIXME
+    url: https://github.com/hyprwm/hyprlock
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      # - pkgconfig(libpam)
+      - cmake
+      - gcc-c++
+      - hyprwayland-scanner-devel
+      - ninja-build
+      - pkgconfig(cairo)
+      - pkgconfig(egl)
+      - pkgconfig(gbm)
+      - pkgconfig(hyprgraphics)
+      - pkgconfig(hyprlang)
+      - pkgconfig(hyprutils)
+      - pkgconfig(libdrm)
+      - pkgconfig(pam)
+      - pkgconfig(pangocairo)
+      - pkgconfig(sdbus-c++)
+      - pkgconfig(wayland-client)
+      - pkgconfig(wayland-egl)
+      - pkgconfig(wayland-protocols)
+      - pkgconfig(xkbcommon)
+    files:
+      - "%doc README.md"
+      - "%license LICENSE"
+      - "%{_bindir}/hyprlock"
+      - "%{_datadir}/hypr/hyprlock.conf"
+      - "%{_sysconfdir}/pam.d/hyprlock"
