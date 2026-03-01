@@ -15,28 +15,34 @@
 	url = https://github.com/hyprwm/Hyprland
 [submodule "submodules/hyprwm/hyprland-guiutils"]
 	path = submodules/hyprwm/hyprland-guiutils
-	url = https://github.com/hyprwm/hyprland-guiutils #
+	url = https://github.com/hyprwm/hyprland-guiutils
+
 [submodule "submodules/hyprwm/hyprland-plugins"]
 	path = submodules/hyprwm/hyprland-plugins
-	url = https://github.com/hyprwm/hyprland-plugins #
+	url = https://github.com/hyprwm/hyprland-plugins
+
 [submodule "submodules/hyprwm/hyprland-protocols"]
 	path = submodules/hyprwm/hyprland-protocols
 	url = https://github.com/hyprwm/hyprland-protocols
 [submodule "submodules/hyprwm/hyprland-qt-support"]
 	path = submodules/hyprwm/hyprland-qt-support
-	url = https://github.com/hyprwm/hyprland-qt-support #
+	url = https://github.com/hyprwm/hyprland-qt-support
+
 [submodule "submodules/hyprwm/hyprland-qtutils"]
 	path = submodules/hyprwm/hyprland-qtutils
-	url = https://github.com/hyprwm/hyprland-qtutils #
+	url = https://github.com/hyprwm/hyprland-qtutils
+
 [submodule "submodules/hyprwm/hyprland-welcome"]
 	path = submodules/hyprwm/hyprland-welcome
-	url = https://github.com/hyprwm/hyprland-welcome #
+	url = https://github.com/hyprwm/hyprland-welcome
+
 [submodule "submodules/hyprwm/hyprlang"]
 	path = submodules/hyprwm/hyprlang
 	url = https://github.com/hyprwm/hyprlang
 [submodule "submodules/hyprwm/hyprlauncher"]
 	path = submodules/hyprwm/hyprlauncher
-	url = https://github.com/hyprwm/hyprlauncher #
+	url = https://github.com/hyprwm/hyprlauncher
+
 [submodule "submodules/hyprwm/hyprlock"]
 	path = submodules/hyprwm/hyprlock
 	url = https://github.com/hyprwm/hyprlock
@@ -45,28 +51,35 @@
 	url = https://github.com/hyprwm/hyprpaper
 [submodule "submodules/hyprwm/hyprpicker"]
 	path = submodules/hyprwm/hyprpicker
-	url = https://github.com/hyprwm/hyprpicker #
+	url = https://github.com/hyprwm/hyprpicker
+
 [submodule "submodules/hyprwm/hyprpolkitagent"]
 	path = submodules/hyprwm/hyprpolkitagent
-	url = https://github.com/hyprwm/hyprpolkitagent #
+	url = https://github.com/hyprwm/hyprpolkitagent
+
 [submodule "submodules/hyprwm/hyprpwcenter"]
 	path = submodules/hyprwm/hyprpwcenter
-	url = https://github.com/hyprwm/hyprpwcenter #
+	url = https://github.com/hyprwm/hyprpwcenter
+
 [submodule "submodules/hyprwm/hyprqt6engine"]
 	path = submodules/hyprwm/hyprqt6engine
 	url = https://github.com/hyprwm/hyprqt6engine
 [submodule "submodules/hyprwm/hyprshutdown"]
 	path = submodules/hyprwm/hyprshutdown
-	url = https://github.com/hyprwm/hyprshutdown #
+	url = https://github.com/hyprwm/hyprshutdown
+
 [submodule "submodules/hyprwm/hyprsunset"]
 	path = submodules/hyprwm/hyprsunset
-	url = https://github.com/hyprwm/hyprsunset #
+	url = https://github.com/hyprwm/hyprsunset
+
 [submodule "submodules/hyprwm/hyprsysteminfo"]
 	path = submodules/hyprwm/hyprsysteminfo
-	url = https://github.com/hyprwm/hyprsysteminfo #
+	url = https://github.com/hyprwm/hyprsysteminfo
+
 [submodule "submodules/hyprwm/hyprtavern"]
 	path = submodules/hyprwm/hyprtavern
-	url = https://github.com/hyprwm/hyprtavern #
+	url = https://github.com/hyprwm/hyprtavern
+
 [submodule "submodules/hyprwm/hyprtoolkit"]
 	path = submodules/hyprwm/hyprtoolkit
 	url = https://github.com/hyprwm/hyprtoolkit
@@ -79,9 +92,6 @@
 [submodule "submodules/hyprwm/hyprwire"]
 	path = submodules/hyprwm/hyprwire
 	url = https://github.com/hyprwm/hyprwire
-[submodule "submodules/hyprwm/hyprwire-protocols"]
-	path = submodules/hyprwm/hyprwire-protocols
-	url = https://github.com/hyprwm/hyprwire-protocols #
 [submodule "submodules/hyprwm/xdg-desktop-portal-hyprland"]
 	path = submodules/hyprwm/xdg-desktop-portal-hyprland
 	url = https://github.com/hyprwm/xdg-desktop-portal-hyprland

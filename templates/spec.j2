@@ -1,6 +1,11 @@
 {% if no_debug_package %}
 %global debug_package %{nil}
 {% endif %}
+{% if commit %}
+%global commit {{ commit.full }}
+%global shortcommit %(c=%{commit}; echo ${c:0:7})
+%global commitdate {{ commit.date }}
+{% endif %}
 Name:           {{ name }}
 Version:        {{ version }}
 Release:        {{ release }}%{?dist}
@@ -29,7 +34,7 @@ Requires:       {{ dep }}
 {{ description }}
 
 %prep
-%autosetup
+%autosetup{% if commit %} -n %{name}-%{commit}{% endif %}
 {% for cmd in prep_commands %}
 {{ cmd }}
 {% endfor %}

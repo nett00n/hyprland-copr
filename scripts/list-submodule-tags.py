@@ -168,6 +168,24 @@ def extract_version(repo: Path) -> str | None:
     return None
 
 
+def get_submodule_commit(repo: Path) -> tuple[str, str, str] | None:
+    """Return (full_hash, short_hash, date_YYYYMMDD) for HEAD of the submodule."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo), "log", "-1", "--format=%H %cd", "--date=format:%Y%m%d"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        parts = result.stdout.strip().split()
+        if len(parts) < 2:
+            return None
+        full_hash, date_str = parts[0], parts[1]
+        return full_hash, full_hash[:7], date_str
+    except Exception:
+        return None
+
+
 def resolve_module(modules: list[dict], name: str) -> dict | None:
     """Find a module whose path's last component matches name (case-insensitive)."""
     name_lower = name.lower()
@@ -274,7 +292,27 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
         print(f"fetching tags to determine version: {key} ...", file=sys.stderr)
         tags = fetch_tags(url)
         latest = latest_semver(tags)
-        version = latest.lstrip("v") if latest else "FIXME"
+    else:
+        latest = version  # already resolved from VERSION file
+
+    commit_lines: list[str] = []
+    if latest:
+        version = latest.lstrip("v") if isinstance(latest, str) else str(latest)
+        source_url = '"%{url}/archive/refs/tags/v%{version}.tar.gz"'
+    else:
+        commit_info = get_submodule_commit(repo)
+        if commit_info:
+            full_hash, short_hash, date_str = commit_info
+            version = f"0^{date_str}git{short_hash}"
+            commit_lines = [
+                "    commit:\n",
+                f"      full: {full_hash}\n",
+                f'      date: "{date_str}"\n',
+            ]
+            source_url = '"%{url}/archive/%{commit}.tar.gz"'
+        else:
+            version = "FIXME"
+            source_url = '"%{url}/archive/refs/tags/v%{version}.tar.gz"'
 
     build_system = detect_build_system(repo) or "FIXME"
     license_id = detect_license(repo) or "FIXME"
@@ -306,8 +344,9 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
         f"    description: |\n",  # noqa: F541
         f"      FIXME\n",  # noqa: F541
         f"    url: {url}\n",
+        *commit_lines,
         f"    sources:\n",  # noqa: F541
-        f'      - url: "%{{url}}/archive/refs/tags/v%{{version}}.tar.gz"\n',
+        f"      - url: {source_url}\n",
         f"    build_system: {build_system}\n",
     ]
     if build_requires:
