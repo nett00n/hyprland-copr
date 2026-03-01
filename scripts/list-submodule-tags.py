@@ -307,7 +307,7 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
         f"      FIXME\n",  # noqa: F541
         f"    url: {url}\n",
         f"    sources:\n",  # noqa: F541
-        f'      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"\n',
+        f'      - url: "%{{url}}/archive/refs/tags/v%{{version}}.tar.gz"\n',
         f"    build_system: {build_system}\n",
     ]
     if build_requires:

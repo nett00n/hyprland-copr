@@ -552,3 +552,34 @@ packages:
       - "%doc README.md"
       - "%license LICENSE"
       - "%{_bindir}/hyprshot"
+
+  hyprcursor:
+    version: "0.1.13"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A library and toolkit for the Hyprland cursor format
+    description: |
+      The hyprland cursor format, library and utilities.
+    url: https://github.com/hyprwm/hyprcursor
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - gcc-c++
+      - ninja-build
+      - pkgconfig(cairo)
+      - pkgconfig(hyprlang)
+      - pkgconfig(librsvg-2.0)
+      - pkgconfig(libzip)
+      - pkgconfig(tomlplusplus)
+    files:
+      - "%doc README.md"
+      - "%license LICENSE"
+      - "%{_bindir}/hyprcursor-util"
+      - "%{_libdir}/libhyprcursor.so*"
+    devel:
+      files:
+      - "%{_includedir}/hyprcursor.hpp"
+      - "%{_includedir}/hyprcursor/"
+      - "%{_libdir}/pkgconfig/hyprcursor.pc"
