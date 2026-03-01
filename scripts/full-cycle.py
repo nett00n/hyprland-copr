@@ -25,7 +25,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 PACKAGES_YAML = ROOT / "packages.yaml"
-PYTHON = ROOT / ".venv" / "bin" / "python3"
+PYTHON = sys.executable
 LOG_DIR = ROOT / "logs"
 LOCAL_REPO = ROOT / "local-repo"
 

@@ -457,3 +457,32 @@ packages:
       files:
         - "%{_includedir}/hyprland/"
         - "%{_pkgconfigdatadir}/hyprland.pc"
+
+  hypridle:
+    version: "0.1.7"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: An idle management daemon for Hyprland
+    description: |
+      FIXME
+    url: https://github.com/hyprwm/hypridle
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - gcc-c++
+      - hyprwayland-scanner-devel
+      - ninja-build
+      - pkgconfig(hyprland-protocols)
+      - pkgconfig(hyprlang)
+      - pkgconfig(hyprutils)
+      - pkgconfig(sdbus-c++)
+      - pkgconfig(wayland-client)
+      - pkgconfig(wayland-protocols)
+    files:
+      - "%doc README.md"
+      - "%license LICENSE"
+      - "%{_bindir}/hypridle"
+      - "%{_datadir}/hypr/hypridle.conf"
+      - "%{_userunitdir}/hypridle.service"
