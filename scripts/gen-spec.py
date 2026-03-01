@@ -144,6 +144,7 @@ def build_context(name: str, pkg: dict, packager: str) -> dict:
         "release": release,
         "summary": pkg["summary"],
         "license": pkg["license"],
+        "buildarch": pkg.get("buildarch"),
         "url": pkg["url"],
         "sources": pkg["sources"],
         "bundled_deps": bundled_deps,

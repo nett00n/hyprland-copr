@@ -88,3 +88,6 @@
 [submodule "submodules/Jas-SinghFSU/HyprPanel"]
 	path = submodules/Jas-SinghFSU/HyprPanel
 	url = https://github.com/Jas-SinghFSU/HyprPanel.git
+[submodule "submodules/Gustash/Hyprshot"]
+	path = submodules/Gustash/Hyprshot
+	url = https://github.com/Gustash/Hyprshot.git
