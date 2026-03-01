@@ -155,7 +155,10 @@ def main() -> None:
 
     if package_filter:
         names = [n.strip() for n in package_filter.split(",") if n.strip()]
-        packages = {n: all_packages[n] for n in names if n in all_packages}
+        unknown = [n for n in names if n not in all_packages]
+        if unknown:
+            sys.exit(f"error: unknown package(s): {', '.join(unknown)}")
+        packages = {n: all_packages[n] for n in names}
     else:
         packages = all_packages
 
