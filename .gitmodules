@@ -85,3 +85,6 @@
 [submodule "submodules/hyprwm/xdg-desktop-portal-hyprland"]
 	path = submodules/hyprwm/xdg-desktop-portal-hyprland
 	url = https://github.com/hyprwm/xdg-desktop-portal-hyprland
+[submodule "submodules/Jas-SinghFSU/HyprPanel"]
+	path = submodules/Jas-SinghFSU/HyprPanel
+	url = https://github.com/Jas-SinghFSU/HyprPanel.git
