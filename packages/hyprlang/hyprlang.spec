@@ -26,7 +26,7 @@ hyprlang is the official implementation library for the hypr configuration langu
 
 %files
 %license LICENSE
-%{_libdir}/libhyprlang.so.*
+%{_libdir}/libhyprlang.so*
 
 %package devel
 Summary:        Development files for The hypr configuration language library
@@ -37,7 +37,6 @@ Development files for hyprlang.
 
 %files devel
 %{_includedir}/hyprlang.hpp
-%{_libdir}/libhyprlang.so
 %{_libdir}/pkgconfig/hyprlang.pc
 
 %changelog

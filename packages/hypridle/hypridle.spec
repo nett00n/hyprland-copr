@@ -18,7 +18,7 @@ BuildRequires:  pkgconfig(wayland-client)
 BuildRequires:  pkgconfig(wayland-protocols)
 
 %description
-FIXME
+Hyprland's idle daemon
 
 %prep
 %autosetup

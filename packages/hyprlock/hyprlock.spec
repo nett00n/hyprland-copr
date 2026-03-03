@@ -26,7 +26,7 @@ BuildRequires:  pkgconfig(wayland-protocols)
 BuildRequires:  pkgconfig(xkbcommon)
 
 %description
-FIXME
+Hyprland's simple, yet multi-threaded and GPU-accelerated screen locking utility.
 
 %prep
 %autosetup

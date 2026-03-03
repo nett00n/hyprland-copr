@@ -13,10 +13,10 @@ Feel free to reuse automation from this repository for your own copr-projects.
 
 > Chroot: `{{ run.mock_chroot }}`
 
-| Package | Version | Mock | Copr | Description |
-|---------|---------|:----:|:----:|-------------|
+|  | Package | Version | Mock | Copr | Description |
+|---------|---------|---------|:----:|:----:|-------------|
 {% for pkg in packages -%}
-| ![{{ pkg.name }} {{ pkg.version }}](https://img.shields.io/badge/{{ pkg.name | replace('-', '--') }}-{{ pkg.version | replace('-', '--') }}-blue) `{{ pkg.name }}` | `{{ pkg.version }}` | {{ pkg.mock_badge }} | {{ pkg.copr_badge }} | {{ pkg.summary }} |
+| ![{{ pkg.name }} {{ pkg.version }}](https://img.shields.io/badge/{{ pkg.name | replace('-', '--') }}-{{ pkg.version | replace('-', '--') }}-blue) | `{{ pkg.name }}` | `{{ pkg.version }}` | {{ pkg.mock_badge }} | {{ pkg.copr_badge }} | {{ pkg.summary }} |
 {% endfor %}
 ---
 [📎 Support me on Ko-fi ☕](https://ko-fi.com/nett00n)

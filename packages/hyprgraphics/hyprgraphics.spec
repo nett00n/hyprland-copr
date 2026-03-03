@@ -46,7 +46,6 @@ Development files for hyprgraphics.
 
 %files devel
 %{_includedir}/hyprgraphics/
-%{_libdir}/libhyprgraphics.so*
 %{_libdir}/pkgconfig/hyprgraphics.pc
 
 %changelog
