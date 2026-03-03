@@ -1,7 +1,11 @@
 FEDORA_VERSION  ?= 43
 SUPPORTED        := 42 43 44 rawhide
 IMAGE_NAME       := rpm-toolbox
+
+# Accept either PACKAGE or PKG; PACKAGE takes precedence
 PACKAGE      ?=
+PKG          ?=
+PACKAGE      := $(or $(PACKAGE),$(PKG))
 
 ifeq ($(FEDORA_VERSION),rawhide)
   MOCK_CHROOT := fedora-rawhide-x86_64
@@ -15,12 +19,17 @@ TOOLBOX_RUN  := toolbox run -c $(CONTAINER)
 ALL_PACKAGES := $(shell grep -oP '^\s{2}\K[a-z][a-z0-9_-]+(?=:)' packages.yaml)
 _PKGS        := $(if $(PACKAGE),$(PACKAGE),$(ALL_PACKAGES))
 
-PKG    ?=
 PYTHON := .venv/bin/python3
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv pkg-spec update-versions gen-report readme normalize-paths sort-lists container-build container-enter container-clean container-all pkg-sources pkg-srpm pkg-mock pkg-copr pkg-full-cycle
+.PHONY: help setup-venv lint fmt \
+        pkg-spec update-versions list-tags scaffold-package \
+        add-submodule add-package add-new \
+        gen-report readme normalize-paths sort-lists \
+        container-build container-enter container-clean container-all \
+        pkg-sources pkg-srpm pkg-mock pkg-copr pkg-full-cycle \
+        stage-spec stage-srpm stage-mock stage-copr
 
 help: ## Show this help
 	@echo "Usage: make [TARGET] [PACKAGE=<name>] [FEDORA_VERSION=<version>]"
@@ -32,19 +41,50 @@ help: ## Show this help
 	@echo "    make pkg-srpm PACKAGE=hyprland"
 	@echo "    make pkg-mock PACKAGE=hyprland FEDORA_VERSION=42"
 	@echo "    make pkg-copr PACKAGE=hyprland"
+	@echo "    make stage-spec stage-srpm stage-mock PACKAGE=hyprutils"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2}'
 
 setup-venv: ## Create .venv and install Python dependencies
 	python3 -m venv .venv
 	.venv/bin/pip install -q -r requirements.txt
 
-pkg-spec: ## Generate spec file(s) from packages.yaml (PKG=<name> for one package)
-	$(PYTHON) scripts/gen-spec.py $(PKG)
+lint: ## Run ruff check on all scripts
+	.venv/bin/ruff check scripts/
+
+fmt: ## Run ruff format on all scripts
+	.venv/bin/ruff format scripts/
+
+pkg-spec: ## Generate spec file(s) from packages.yaml (PACKAGE=<name> for one package)
+	$(PYTHON) scripts/gen-spec.py $(PACKAGE)
 
 update-versions: ## Fetch latest semver tags from submodules and update packages.yaml
-	$(PYTHON) scripts/list-submodule-tags.py
+	$(PYTHON) scripts/update-versions.py
+
+list-tags: ## List all tags for submodules, highlighting latest semver (PACKAGE=<name> for one)
+	$(PYTHON) scripts/list-tags.py $(PACKAGE)
+
+scaffold-package: ## Scaffold a new packages.yaml entry from a submodule (PACKAGE=<name> required)
+	$(PYTHON) scripts/scaffold-package.py $(PACKAGE)
+
+add-submodule: ## Register git submodule for an existing package (PACKAGE=<name> required)
+	@test -n "$(PACKAGE)" || (echo "Error: PACKAGE is required"; exit 1)
+	@_url=$$($(PYTHON) -c "import yaml; d=yaml.safe_load(open('packages.yaml')); print(d['packages']['$(PACKAGE)']['url'])"); \
+	 _name=$$(basename $$_url); \
+	 _org=$$(basename $$(dirname $$_url)); \
+	 echo "==> adding submodule submodules/$$_org/$$_name"; \
+	 git submodule add $$_url submodules/$$_org/$$_name
+
+add-package: ## Scaffold a packages.yaml entry from an existing submodule (PACKAGE=<name> required)
+	$(PYTHON) scripts/scaffold-package.py $(PACKAGE)
+
+add-new: ## Add submodule from URL and scaffold packages.yaml entry in one step (URL=<repo-url> required)
+	@test -n "$(URL)" || (echo "Error: URL is required (e.g. URL=https://github.com/hyprwm/hyprpicker)"; exit 1)
+	@_name=$$(basename $(URL:.git=)); \
+	 _org=$$(basename $$(dirname $(URL))); \
+	 git submodule add $(URL) submodules/$$_org/$$_name && \
+	 $(PYTHON) scripts/scaffold-package.py $$_name
 
 gen-report: ## Render build-report.yaml into a Markdown status table (stdout)
 	$(PYTHON) scripts/gen-report.py
@@ -120,3 +160,29 @@ pkg-copr: pkg-srpm ## Submit PACKAGE (or all) SRPMs to Copr (requires COPR_REPO 
 		echo "==> copr: $$pkg"; \
 		$(TOOLBOX_RUN) copr-cli build $(COPR_REPO) ~/rpmbuild/SRPMS/$$pkg-*.src.rpm || exit 1; \
 	done
+
+stage-spec: ## Run spec generation stage (PACKAGE=<name>, runs in toolbox)
+	$(TOOLBOX_RUN) env \
+		FEDORA_VERSION=$(FEDORA_VERSION) \
+		PACKAGE=$(PACKAGE) \
+		python3 scripts/stage-spec.py
+
+stage-srpm: ## Run SRPM build stage (PACKAGE=<name>, runs in toolbox)
+	$(TOOLBOX_RUN) env \
+		FEDORA_VERSION=$(FEDORA_VERSION) \
+		PACKAGE=$(PACKAGE) \
+		python3 scripts/stage-srpm.py
+
+stage-mock: ## Run mock build stage (PACKAGE=<name>, FEDORA_VERSION, runs in toolbox)
+	$(TOOLBOX_RUN) env \
+		FEDORA_VERSION=$(FEDORA_VERSION) \
+		MOCK_CHROOT=$(MOCK_CHROOT) \
+		PACKAGE=$(PACKAGE) \
+		python3 scripts/stage-mock.py
+
+stage-copr: ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, runs in toolbox)
+	$(TOOLBOX_RUN) env \
+		FEDORA_VERSION=$(FEDORA_VERSION) \
+		PACKAGE=$(PACKAGE) \
+		COPR_REPO=$(COPR_REPO) \
+		python3 scripts/stage-copr.py

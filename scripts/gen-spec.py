@@ -6,23 +6,16 @@ Usage:
     python3 scripts/gen-spec.py hyprpaper    # generate one package
 """
 
+import argparse
 import json
 import re
 import subprocess
 import sys
 import urllib.request
 from datetime import datetime, timezone
-from pathlib import Path
-
-try:
-    import yaml
-except ImportError:
-    sys.exit("error: PyYAML not installed — run: pip install -r requirements.txt")
-
-try:
-    from jinja2 import Environment, FileSystemLoader, StrictUndefined
-except ImportError:
-    sys.exit("error: Jinja2 not installed — run: pip install -r requirements.txt")
+from lib.jinja_utils import create_jinja_env
+from lib.paths import ROOT
+from lib.yaml_utils import get_packages
 
 
 def get_packager() -> str:
@@ -101,8 +94,6 @@ def build_context(name: str, pkg: dict, packager: str) -> dict:
     release_info = fetch_github_release(pkg.get("url", ""), version)
     changelog = format_changelog(release_info, version, release, packager)
 
-    # Process bundled deps: header-only or FetchContent libs that must be
-    # vendored because the mock chroot has no network during %build.
     bundled_deps = []
     extra_prep = []
     num_main_sources = len(pkg.get("sources", []))
@@ -114,19 +105,20 @@ def build_context(name: str, pkg: dict, packager: str) -> dict:
         target_dir = f"{dep_name}-src"
         cmake_var = dep.get("cmake_var", dep_name.upper())
         local_filename = f"{dep_name}-{dep_version}.tar.gz"
-        bundled_deps.append({
-            "name": dep_name,
-            "version": dep_version,
-            "url": f"{dep['url']}#/{local_filename}",
-            "source_index": source_index,
-            "cmake_var": cmake_var,
-        })
+        bundled_deps.append(
+            {
+                "name": dep_name,
+                "version": dep_version,
+                "url": f"{dep['url']}#/{local_filename}",
+                "source_index": source_index,
+                "cmake_var": cmake_var,
+            }
+        )
         extra_prep += [
             f"tar xf %{{SOURCE{source_index}}}",
             f"mv {extracted_dir} {target_dir}",
         ]
 
-    # Prepend FetchContent cmake flags when using cmake and there are bundled deps.
     if bundled_deps and build_system == "cmake" and "build_commands" not in pkg:
         src_subdir = "%{name}-%{commit}" if pkg.get("commit") else "%{name}-%{version}"
         flags = ["-DFETCHCONTENT_FULLY_DISCONNECTED=ON"] + [
@@ -147,6 +139,7 @@ def build_context(name: str, pkg: dict, packager: str) -> dict:
         "license": pkg["license"],
         "buildarch": pkg.get("buildarch"),
         "commit": pkg.get("commit"),
+        "source_name": pkg.get("source_name"),
         "url": pkg["url"],
         "sources": pkg["sources"],
         "bundled_deps": bundled_deps,
@@ -171,42 +164,34 @@ def build_context(name: str, pkg: dict, packager: str) -> dict:
 
 
 def main() -> None:
-    repo_root = Path(__file__).resolve().parent.parent
-
-    packages_yaml = repo_root / "packages.yaml"
-    if not packages_yaml.exists():
-        sys.exit(f"error: {packages_yaml} not found")
-
-    env = Environment(
-        loader=FileSystemLoader(repo_root / "templates"),
-        trim_blocks=True,
-        lstrip_blocks=True,
-        keep_trailing_newline=True,
-        undefined=StrictUndefined,
+    parser = argparse.ArgumentParser(
+        description="Generate RPM spec files from packages.yaml + templates/spec.j2."
     )
-    template = env.get_template("spec.j2")
+    parser.add_argument(
+        "package",
+        nargs="?",
+        metavar="PACKAGE",
+        help="generate spec for this package only (default: all)",
+    )
+    args = parser.parse_args()
 
-    with open(packages_yaml) as fh:
-        data = yaml.safe_load(fh)
-
-    packages: dict = data.get("packages") or {}
-    if not packages:
-        sys.exit("error: no packages defined in packages.yaml")
-
-    target = sys.argv[1] if len(sys.argv) > 1 else None
+    packages = get_packages()
+    target = args.package
     if target and target not in packages:
         sys.exit(f"error: package '{target}' not found in packages.yaml")
 
+    env = create_jinja_env()
+    template = env.get_template("spec.j2")
     packager = get_packager()
 
     for name, pkg in packages.items():
         if target and name != target:
             continue
-        spec_dir = repo_root / "packages" / name
+        spec_dir = ROOT / "packages" / name
         spec_dir.mkdir(parents=True, exist_ok=True)
         spec_path = spec_dir / f"{name}.spec"
         spec_path.write_text(template.render(build_context(name, pkg, packager)))
-        print(f"  generated  {spec_path.relative_to(repo_root)}")
+        print(f"  generated  {spec_path.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

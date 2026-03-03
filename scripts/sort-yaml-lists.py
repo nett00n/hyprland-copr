@@ -13,20 +13,16 @@ Usage:
     python3 scripts/sort-yaml-lists.py --dry-run  # preview only
 """
 
+import argparse
 import re
 import sys
 from collections import Counter
-from pathlib import Path
 
-try:
-    import yaml
-except ImportError:
-    sys.exit("error: PyYAML not installed — run: pip install -r requirements.txt")
+import yaml
+
+from lib.paths import PACKAGES_YAML, ROOT
 
 SORTABLE_KEYS: frozenset[str] = frozenset({"build_requires", "requires", "files"})
-
-ROOT = Path(__file__).resolve().parent.parent
-PACKAGES_YAML = ROOT / "packages.yaml"
 
 
 def _item_sort_key(line: str) -> str:
@@ -56,7 +52,6 @@ def process_content(content: str) -> tuple[str, list[str]]:
     i = 0
     while i < len(lines):
         line = lines[i]
-        # Match an indented key (at least 1 space) — excludes top-level `packages:`
         m = re.match(r"^( +)([a-z][a-z0-9_]*):\s*\n$", line)
         if m and m.group(2) in SORTABLE_KEYS:
             key = m.group(2)
@@ -84,8 +79,15 @@ def process_content(content: str) -> tuple[str, list[str]]:
 
 
 def main() -> None:
-    args = sys.argv[1:]
-    dry_run = "--dry-run" in args
+    parser = argparse.ArgumentParser(
+        description="Sort build_requires/requires/files lists in packages.yaml."
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="preview changes without writing",
+    )
+    args = parser.parse_args()
 
     if not PACKAGES_YAML.exists():
         sys.exit(f"error: {PACKAGES_YAML} not found")
@@ -97,13 +99,13 @@ def main() -> None:
         print("Nothing to sort — all lists already sorted.")
         return
 
-    prefix = "[dry-run] " if dry_run else ""
+    prefix = "[dry-run] " if args.dry_run else ""
     counts = Counter(sorted_keys)
     print(f"{prefix}Sorted {len(sorted_keys)} list(s):")
     for key, count in sorted(counts.items()):
         print(f"  {key} (×{count})")
 
-    if dry_run:
+    if args.dry_run:
         return
 
     try:

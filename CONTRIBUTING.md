@@ -7,18 +7,19 @@ packages.yaml                # single source of truth — metadata for all packa
 packages/<name>/<name>.spec  # generated spec files (committed, editable)
 templates/spec.j2            # Jinja2 spec template
 scripts/gen-spec.py          # renders specs from packages.yaml + templates/spec.j2
+scripts/lib/                 # shared library modules for all scripts
 requirements.txt             # Python deps (jinja2, pyyaml)
-upstream/<name>/             # gitignored — local upstream clones
+submodules/<org>/<name>/     # upstream sources as git submodules
 ```
 
 ## Adding a New Package
 
-1. add repository as a submodule, saving structure ./submodules/org/name
+1. Add repository as a submodule: `git submodule add <url> submodules/<org>/<name>`
 2. `make container-all` would create toolbox environment for compilation
-3. Create virtualenv if not exist `python3 -m virtualenv .venv`
+3. Create virtualenv if not exist: `make setup-venv`
 4. Execute
-  `. .venv/bin/activate && scripts/list-submodule-tags add hyprwire`
-  with yur package instead of hyprwire
+  `. .venv/bin/activate && python3 scripts/scaffold-package.py <name>`
+  with your package instead of `<name>`
 5. New entry would be added to `packages.yaml`:
     ```yaml
     packages:
@@ -43,15 +44,15 @@ upstream/<name>/             # gitignored — local upstream clones
 6. Update FIXME fields with your ones
 7. Start build cycle:
     ```shell
-    make pkg-full-cycle PKG=<name> FEDORA_VERSION=42 COPR_REPO=nett00n/hyprland
+    make pkg-full-cycle PACKAGE=<name> FEDORA_VERSION=42 COPR_REPO=nett00n/hyprland
     # Default variables values:
     # FEDORA_VERSION=43
-    # PKG= # all packages
+    # PACKAGE= # all packages
     # COPR_REPO= # no push to copr
     ```
 8. This would execute spec generation to `packages/<name>/<name>.spec`,
   srpm creation and local build
-9. Check build logs in .logs/
+9. Check build logs in `logs/`
 10. IF Build was failed, GOTO
     ELSE GOTO 11
 11. IF anything new happen, make a report how to fix in docs.errs, using `_template.md`
@@ -63,25 +64,37 @@ upstream/<name>/             # gitignored — local upstream clones
 
 ## Local Build Workflow
 
-Prerequisites: a toolbox container built with `make build create`, and a Python venv:
+Prerequisites: a toolbox container built with `make container-build`, and a Python venv:
 
 ```shell
-make venv   # one-time: creates .venv and installs jinja2 + pyyaml
+make setup-venv   # one-time: creates .venv and installs jinja2 + pyyaml
 ```
 
 ```shell
 # Regenerate all spec files
-make gen-spec
+make pkg-spec
 
 # Download sources, build SRPM, test with mock
-make mock-build PACKAGE=<name> FEDORA_VERSION=43
+make pkg-mock PACKAGE=<name> FEDORA_VERSION=43
+```
+
+### Running individual pipeline stages
+
+```shell
+# Run stages individually (each reads/writes logs/build-status.yaml)
+make stage-spec PACKAGE=<name>
+make stage-srpm PACKAGE=<name>
+make stage-mock PACKAGE=<name>
+
+# Compose a custom pipeline (e.g. skip copr)
+make stage-spec stage-srpm stage-mock PACKAGE=<name>
 ```
 
 ## Submitting to Copr
 
 ```shell
 export COPR_REPO=nett00n/hyprland-extras
-make copr PACKAGE=<name>
+make pkg-copr PACKAGE=<name>
 ```
 
 Requires `copr-cli` configured with `~/.config/copr`.
@@ -90,7 +103,7 @@ Requires `copr-cli` configured with `~/.config/copr`.
 
 - [ ] `packages.yaml` entry is complete and correct
 - [ ] `rpmlint` passes with no errors
-- [ ] Builds cleanly with `make mock-build`
+- [ ] Builds cleanly with `make pkg-mock PACKAGE=<name>`
 - [ ] `Source0:` points to an upstream release tarball (not a manual archive)
 - [ ] No bundled libraries
 - [ ] Changelog entry added with correct date and your name

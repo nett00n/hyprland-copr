@@ -6,41 +6,19 @@ import sys
 from pathlib import Path
 
 import yaml
-from jinja2 import Environment, FileSystemLoader
 
-ROOT = Path(__file__).resolve().parent.parent
+from lib.jinja_utils import create_jinja_env
+from lib.paths import PACKAGES_YAML, ROOT
+from lib.reporting import badge
+from lib.version import clean_version
+
 REPORT_YAML = ROOT / "build-report.yaml"
-PACKAGES_YAML = ROOT / "packages.yaml"
-TEMPLATE_DIR = ROOT / "templates"
 TEMPLATE_NAME = "build-report.md.j2"
 
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{}/"
-BADGE_URL = "https://img.shields.io/badge/{label}-{message}-{color}"
-
-STATE_COLOR = {
-    "success": "brightgreen",
-    "failed": "red",
-    "skipped": "lightgrey",
-}
-
-
-def badge(label: str, state: str | None, url: str | None = None) -> str:
-    state = state or "unknown"
-    color = STATE_COLOR.get(state, "orange")
-    img_url = BADGE_URL.format(label=label, message=state, color=color)
-    img = f"![{label}]({img_url})"
-    if url:
-        return f"[{img}]({url})"
-    return img
-
-
-def clean_version(raw: str) -> str:
-    """Strip -%autorelease.fcXX or -1.fcXX suffix, keep bare version number."""
-    return raw.split("-")[0] if raw else ""
 
 
 def collect_packages(stages: dict, pkg_meta: dict) -> list[dict]:
-    # Union of all package names across all stages, in first-seen order
     names: list[str] = []
     seen: set[str] = set()
     for stage_data in stages.values():
@@ -59,7 +37,6 @@ def collect_packages(stages: dict, pkg_meta: dict) -> list[dict]:
         copr_build_id = copr.get("build_id")
         copr_url = COPR_BUILD_URL.format(copr_build_id) if copr_build_id else None
 
-        # Pick version from the first stage that has one
         raw_version = (
             spec.get("version")
             or srpm.get("version")
@@ -119,11 +96,11 @@ def main() -> None:
     packages = collect_packages(stages, pkg_meta)
     contributors = collect_contributors(ROOT)
 
-    env = Environment(
-        loader=FileSystemLoader(str(TEMPLATE_DIR)), keep_trailing_newline=True
-    )
+    env = create_jinja_env()
     template = env.get_template(TEMPLATE_NAME)
-    print(template.render(run=run, packages=packages, contributors=contributors), end="")
+    print(
+        template.render(run=run, packages=packages, contributors=contributors), end=""
+    )
 
 
 if __name__ == "__main__":
