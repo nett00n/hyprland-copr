@@ -76,10 +76,6 @@
 	path = submodules/hyprwm/hyprsysteminfo
 	url = https://github.com/hyprwm/hyprsysteminfo
 
-[submodule "submodules/hyprwm/hyprtavern"]
-	path = submodules/hyprwm/hyprtavern
-	url = https://github.com/hyprwm/hyprtavern
-
 [submodule "submodules/hyprwm/hyprtoolkit"]
 	path = submodules/hyprwm/hyprtoolkit
 	url = https://github.com/hyprwm/hyprtoolkit
@@ -101,3 +97,9 @@
 [submodule "submodules/Gustash/Hyprshot"]
 	path = submodules/Gustash/Hyprshot
 	url = https://github.com/Gustash/Hyprshot.git
+[submodule "Aylur/ags"]
+	path = Aylur/ags
+	url = https://github.com/Aylur/ags.git
+[submodule "submodules/wmww/gtk4-layer-shell"]
+	path = submodules/wmww/gtk4-layer-shell
+	url = https://github.com/wmww/gtk4-layer-shell.git
