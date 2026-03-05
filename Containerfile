@@ -5,6 +5,7 @@ RUN sudo dnf install -y \
     copr-cli \
     fedpkg \
     git \
+    golang \
     mock \
     python3-pip \
     python3-pyyaml \
@@ -17,10 +18,5 @@ RUN sudo dnf install -y \
 # Runs on every login shell. On first enter: adds user to mock group and
 # replaces the current shell via exec so the group is active immediately.
 # On subsequent enters: check passes silently.
-RUN tee /etc/profile.d/mock-group.sh > /dev/null << 'EOF'
-#!/bin/bash
-if ! id -nG "${USER}" 2>/dev/null | grep -qw mock; then
-    sudo usermod -aG mock "${USER}" 2>/dev/null
-    exec newgrp mock
-fi
-EOF
+COPY docker/mock-group.sh /etc/profile.d/mock-group.sh
+RUN echo '%wheel ALL=(ALL) NOPASSWD: /usr/sbin/usermod' > /etc/sudoers.d/mock-group-nopasswd

@@ -52,4 +52,4 @@
 
 %{_includedir} -> /usr/include
 %{_pkgconfigdir} -> /usr/lib64/pkgconfig
-%{_pkgconfigdatadir} -> /usr/share/pkgconfig
+%{_libdir}/pkgconfig -> /usr/share/pkgconfig

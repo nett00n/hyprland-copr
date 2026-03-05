@@ -103,3 +103,12 @@
 [submodule "submodules/wmww/gtk4-layer-shell"]
 	path = submodules/wmww/gtk4-layer-shell
 	url = https://github.com/wmww/gtk4-layer-shell.git
+[submodule "submodules/stephenberry/glaze"]
+	path = submodules/stephenberry/glaze
+	url = https://github.com/stephenberry/glaze.git
+[submodule "submodules/Aylur/ags"]
+	path = submodules/Aylur/ags
+	url = https://github.com/Aylur/ags.git
+[submodule "submodules/hyprland-community/pyprland"]
+	path = submodules/hyprland-community/pyprland
+	url = https://github.com/hyprland-community/pyprland.git

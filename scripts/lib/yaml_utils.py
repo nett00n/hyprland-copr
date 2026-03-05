@@ -17,14 +17,17 @@ PKG_URL_LINE_RE = re.compile(r"^    url: \S+")
 SOURCE_TAG_URL_RE = re.compile(r'^      - url: ".*?/archive/refs/tags/.*?"')
 
 BUILD_STATUS_YAML = LOG_DIR / "build-status.yaml"
-STAGES = ["spec", "srpm", "mock", "copr"]
+STAGES = ["spec", "vendor", "srpm", "mock", "copr"]
 
 
 def load_packages_yaml(path: Path = PACKAGES_YAML) -> dict:
     """Load packages.yaml and return the full dict."""
     if not path.exists():
         sys.exit(f"error: {path} not found")
-    return yaml.safe_load(path.read_text()) or {}
+    try:
+        return yaml.safe_load(path.read_text()) or {}
+    except yaml.YAMLError as e:
+        sys.exit(f"error: failed to parse {path}: {e}")
 
 
 def get_packages(path: Path = PACKAGES_YAML) -> dict:
@@ -43,7 +46,10 @@ load_packages = get_packages
 def load_build_status(path: Path = BUILD_STATUS_YAML) -> dict:
     """Load build-status.yaml or return empty structure."""
     if path.exists():
-        return yaml.safe_load(path.read_text()) or {}
+        try:
+            return yaml.safe_load(path.read_text()) or {}
+        except yaml.YAMLError as e:
+            sys.exit(f"error: failed to parse {path}: {e}")
     return {"stages": {s: {} for s in STAGES}}
 
 
@@ -70,7 +76,10 @@ def write_yaml_preserving_comments(
     if url_to_commit_info is None:
         url_to_commit_info = {}
 
-    data = yaml.safe_load(path.read_text())
+    try:
+        data = yaml.safe_load(path.read_text())
+    except yaml.YAMLError as e:
+        sys.exit(f"error: failed to parse {path}: {e}")
     pkg_to_new: dict[str, tuple[str, str]] = {}
     pkg_to_commit: dict[str, tuple[str, str, str, str]] = {}
 

@@ -72,7 +72,7 @@ def main() -> None:
             else int(fedora_version),
             "mock_chroot": mock_chroot,
         },
-        "stages": {"spec": {}, "srpm": {}, "mock": {}, "copr": {}},
+        "stages": {"spec": {}, "vendor": {}, "srpm": {}, "mock": {}, "copr": {}},
     }
     save_build_status(build_status)
 
@@ -84,9 +84,10 @@ def main() -> None:
     }
 
     run_stage(SCRIPTS / "stage-spec.py", stage_env)
+    run_stage(SCRIPTS / "stage-vendor.py", stage_env)
     run_stage(SCRIPTS / "stage-srpm.py", stage_env)
-    mock_ok = run_stage(SCRIPTS / "stage-mock.py", stage_env)
-    if copr_repo and mock_ok:
+    run_stage(SCRIPTS / "stage-mock.py", stage_env)
+    if copr_repo:
         run_stage(SCRIPTS / "stage-copr.py", stage_env)
 
     # Load final status and print summary

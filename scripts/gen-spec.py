@@ -187,10 +187,11 @@ def main() -> None:
     for name, pkg in packages.items():
         if target and name != target:
             continue
-        spec_dir = ROOT / "packages" / name
+        pkg_name = name.lower()
+        spec_dir = ROOT / "packages" / pkg_name
         spec_dir.mkdir(parents=True, exist_ok=True)
-        spec_path = spec_dir / f"{name}.spec"
-        spec_path.write_text(template.render(build_context(name, pkg, packager)))
+        spec_path = spec_dir / f"{pkg_name}.spec"
+        spec_path.write_text(template.render(build_context(pkg_name, pkg, packager)))
         print(f"  generated  {spec_path.relative_to(ROOT)}")
 
 

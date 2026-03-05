@@ -1,0 +1,58 @@
+{% macro pkg_icon(pkg) -%}
+{% if pkg.badge and pkg.badge.logo == 'hyprland' -%}
+![hyprland](https://img.shields.io/badge/--A5F3FC?logo=hyprland&logoColor=black&style={{ badge_style }})
+{%- else -%}
+![other](https://img.shields.io/badge/--white?logo=gitlfs&logoColor=black&style={{ badge_style }})
+{%- endif %}
+{%- endmacro %}
+# {{ repo.name }}
+
+{{ repo.description }}
+## Packages
+
+{% for group in groups %}
+
+### {{ group.label }}
+
+{% if group.badge %}![{{ group.badge.logo | capitalize }}](https://img.shields.io/badge/{{ group.badge.logo | capitalize }}-{{ group.badge.color }}?logo={{ group.badge.logo }}&logoColor={{ group.badge.logo_color }}&style={{ badge_style }})
+
+{% endif %}
+{% for pkg in group.packages -%}
+- `{{ pkg.name | lower }}` — {{ pkg.summary }}
+{% endfor %}
+{% endfor %}
+## Build Report — Fedora {{ run.fedora_version }} · {{ run.timestamp[:10] }}
+
+> Chroot: `{{ run.mock_chroot }}`
+
+{% for pkg in packages -%}
+- {{ pkg_icon(pkg) }}{{ pkg.mock_badge_short }}{{ pkg.copr_badge_short }} `{{ pkg.name | lower }}`&nbsp;`{{ pkg.version }}` - {{ pkg.summary }}
+{% endfor %}
+---
+{{ repo.support_info }}
+
+# License
+
+[{{ repo.license }}](./LICENSE.md)
+
+{{ repo.license_tldr }}
+---
+
+# People
+
+## Authors
+
+{% for person in repo.people.authors -%}
+- [{{ person.name }}]({{ person.url }})
+{% endfor %}
+## Maintainers
+
+{% for person in repo.people.maintainers -%}
+- [{{ person.name }}]({{ person.url }})
+{% endfor %}
+
+## Contributors
+
+{% for c in contributors -%}
+- {% if c.github_user %}[{{ c.name }}](https://github.com/{{ c.github_user }}){% else %}{{ c.name }}{% endif %}
+{% endfor %}

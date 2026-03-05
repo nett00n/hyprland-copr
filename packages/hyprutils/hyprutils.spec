@@ -27,8 +27,7 @@ various utilities such as memory management, signals, and more.
 
 %files
 %license LICENSE
-%{_libdir}/libhyprutils.so
-%{_libdir}/libhyprutils.so.*
+%{_libdir}/libhyprutils.so*
 
 %package devel
 Summary:        Development files for Small C++ library for utilities used across the Hypr ecosystem

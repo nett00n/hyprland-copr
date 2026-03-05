@@ -5,8 +5,7 @@ Summary:        Scaffolding CLI for Astal+Gnim
 License:        GPL-3.0-or-later
 URL:            https://github.com/Aylur/ags
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
-%global github_com_spf13_cobra_version_version 1.10.1
-Source1:        https://github.com/spf13/cobra/archive/refs/tags/v1.10.1.tar.gz#/github_com_spf13_cobra_version-1.10.1.tar.gz
+Source1:        %{name}-%{version}-vendor.tar.gz
 
 BuildRequires:  meson
 BuildRequires:  ninja-build
@@ -20,8 +19,9 @@ Scaffolding CLI tool for Astal+Gnim projects. Astal is a set of libraries writte
 
 %prep
 %autosetup -n ags-%{version}
+pushd cli
 tar xf %{SOURCE1}
-mv github_com_spf13_cobra_version-1.10.1 github_com_spf13_cobra_version-src
+popd
 
 %build
 %meson
@@ -33,6 +33,8 @@ mv github_com_spf13_cobra_version-1.10.1 github_com_spf13_cobra_version-src
 %files
 %license LICENSE
 %doc README.md
+/usr/bin/ags
+/usr/share/ags/
 
 %changelog
 * Sun Dec 14 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 3.1.1-%autorelease

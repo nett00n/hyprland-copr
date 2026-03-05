@@ -58,6 +58,7 @@ def main() -> None:
     LOG_DIR.mkdir(exist_ok=True)
     build_status = load_build_status()
     srpm_stage = build_status.get("stages", {}).get("srpm", {})
+    mock_stage = build_status.get("stages", {}).get("mock", {})
     build_status.setdefault("stages", {})["copr"] = {}
 
     failed = False
@@ -70,8 +71,9 @@ def main() -> None:
 
         srpm_state = srpm_stage.get(pkg, {}).get("state", "")
         srpm_path = srpm_stage.get(pkg, {}).get("path")
+        mock_state = mock_stage.get(pkg, {}).get("state", "")
 
-        if srpm_state in ("failed", "skipped") or not srpm_path:
+        if srpm_state in ("failed", "skipped") or not srpm_path or mock_state in ("failed", "skipped"):
             status("copr", pkg, "skip")
             entry = {"state": "skipped", "version": ver, "build_id": None, "log": None}
             if has_devel:

@@ -6,6 +6,12 @@ STATE_COLOR = {
     "skipped": "lightgrey",
 }
 
+STATUS_EMOJI = {
+    "success": "✔",
+    "failed": "✘",
+    "skipped": "○",
+}
+
 BADGE_URL = "https://img.shields.io/badge/{label}-{message}-{color}"
 
 
@@ -17,7 +23,7 @@ def status(stage: str, pkg: str, result: str) -> None:
 
 def print_summary(packages: dict, report: dict, copr_repo: str) -> None:
     """Print the final build summary table."""
-    stage_keys = ["spec", "srpm", "mock"] + (["copr"] if copr_repo else [])
+    stage_keys = ["spec", "vendor", "srpm", "mock"] + (["copr"] if copr_repo else [])
     col_w = max(len(p) for p in packages) + 2
     header = f"{'package':<{col_w}}" + "".join(f"{s:<10}" for s in stage_keys)
     sep = "-" * len(header)
@@ -34,11 +40,28 @@ def print_summary(packages: dict, report: dict, copr_repo: str) -> None:
     print(sep)
 
 
-def badge(label: str, state: str | None, url: str | None = None) -> str:
+def badge_short(label: str, state: str | None, url: str | None = None, style: str | None = None) -> str:
+    """Generate a shields.io badge with a label, emoji message, and status-colored background."""
+    from urllib.parse import quote
+    state = state or "unknown"
+    color = STATE_COLOR.get(state, "orange")
+    emoji = STATUS_EMOJI.get(state, "?")
+    img_url = f"https://img.shields.io/badge/{label}-{quote(emoji)}-{color}"
+    if style:
+        img_url += f"?style={style}"
+    img = f"![{label}:{state}]({img_url})"
+    if url:
+        return f"[{img}]({url})"
+    return img
+
+
+def badge(label: str, state: str | None, url: str | None = None, style: str | None = None) -> str:
     """Generate a shields.io badge markdown string."""
     state = state or "unknown"
     color = STATE_COLOR.get(state, "orange")
     img_url = BADGE_URL.format(label=label, message=state, color=color)
+    if style:
+        img_url += f"?style={style}"
     img = f"![{label}]({img_url})"
     if url:
         return f"[{img}]({url})"

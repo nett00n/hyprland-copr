@@ -1,0 +1,68 @@
+
+  {{ key }}:
+    version: "{{ version }}"
+    release: "%autorelease"
+    license: {{ license_id }}
+    summary: {{ summary }}
+    description: |
+      FIXME
+    url: {{ url }}
+    # source_name: top-level directory inside the tarball when it differs from the package name
+    source_name: "{{ source_name }}"
+    # go_subdir: subdirectory containing go.mod when the Go module is not at the tarball root
+    # go_subdir: cli
+    # buildarch: set to "noarch" for architecture-independent packages (scripts, headers-only, etc.)
+    buildarch: "{{ buildarch }}"
+    # no_debug_package: suppress the automatic -debuginfo subpackage (useful for header-only or noarch)
+    no_debug_package: {{ 'true' if no_debug_package else 'false' }}
+{% if commit %}
+    # commit: used for git snapshot releases when no version tag is available
+    commit:
+      full: {{ commit.full }}
+      date: "{{ commit.date }}"
+{% endif %}
+    sources:
+      - url: {{ source_url }}
+    # build_system: cmake | meson | autotools | make — selects default %build/%install macros
+    build_system: {{ build_system }}
+{% if build_requires %}
+    build_requires:
+{% for dep in build_requires %}
+      - {{ dep }}
+{% endfor %}
+{% else %}
+    build_requires:
+      []
+{% endif %}
+    requires:
+      []
+    # prep_commands: extra shell commands injected into %prep after %autosetup
+    prep_commands:
+      []
+    # build_commands: override the default build commands derived from build_system
+    build_commands:
+      []
+    # install_commands: override the default install commands derived from build_system
+    install_commands:
+      []
+    # bundled_deps: vendored sources fetched separately and injected via FetchContent
+    # bundled_deps:
+    #   - name: libname
+    #     version: "1.2.3"
+    #     url: "https://github.com/org/repo/archive/refs/tags/v1.2.3.tar.gz"
+    #     cmake_var: LIBNAME  # CMake variable name used in FetchContent_Declare
+    bundled_deps:
+      []
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      # FIXME: add installed files
+    # devel: generates a -devel subpackage for headers, pkgconfig files, cmake modules, etc.
+    devel:
+      files:
+        []
+        # - "%{_includedir}/{{ key }}/"
+        # - "%{_libdir}/pkgconfig/{{ key }}.pc"
+    debuginfo:
+      files:
+        []

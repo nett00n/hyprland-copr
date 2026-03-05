@@ -19,14 +19,16 @@ TOOLBOX_RUN  := toolbox run -c $(CONTAINER)
 ALL_PACKAGES := $(shell grep -oP '^\s{2}\K[a-z][a-z0-9_-]+(?=:)' packages.yaml)
 _PKGS        := $(if $(PACKAGE),$(PACKAGE),$(ALL_PACKAGES))
 
-PYTHON := .venv/bin/python3
+PYTHON           := .venv/bin/python3
+README_COPR      := docs/README.copr.md
+COPR_INSTRUCTIONS := docs/INSTALL.copr.md
 
 
 .DEFAULT_GOAL := help
 .PHONY: help setup-venv lint fmt \
         pkg-spec update-versions list-tags scaffold-package \
         add-submodule add-package add-new \
-        gen-report readme normalize-paths sort-lists \
+        gen-report readme readme-github readme-copr copr-description normalize-paths sort-lists \
         container-build container-enter container-clean container-all \
         pkg-sources pkg-srpm pkg-mock pkg-copr pkg-full-cycle \
         stage-spec stage-srpm stage-mock stage-copr
@@ -86,11 +88,25 @@ add-new: ## Add submodule from URL and scaffold packages.yaml entry in one step 
 	 git submodule add $(URL) submodules/$$_org/$$_name && \
 	 $(PYTHON) scripts/scaffold-package.py $$_name
 
-gen-report: ## Render build-report.yaml into a Markdown status table (stdout)
-	$(PYTHON) scripts/gen-report.py
+gen-report: ## Render build-report.yaml to stdout (--format github|copr)
+	$(PYTHON) scripts/gen-report.py $(if $(FORMAT),--format $(FORMAT),)
 
-readme: ## Generate README.md from build-report.yaml via gen-report.py
-	$(PYTHON) scripts/gen-report.py > README.md
+readme-github: ## Generate README.md (GitHub format: table)
+	$(PYTHON) scripts/gen-report.py --format github > ./README.md
+
+readme-copr: ## Generate README.copr.md (COPR format: list)
+	$(PYTHON) scripts/gen-report.py --format copr > ./docs/README.copr.md
+
+readme: readme-github readme-copr ## Generate both README.md and docs/README.copr.md
+
+# Update the COPR project description and instructions from markdown files.
+# Requires: copr-cli installed + ~/.config/copr token
+copr-description: $(README_COPR) $(COPR_INSTRUCTIONS) ## Push description and install instructions to COPR (COPR_REPO required)
+	@test -n "$(COPR_REPO)" || (echo "Error: COPR_REPO is not set (e.g. export COPR_REPO=nett00n/hyprland)"; exit 1)
+	$(TOOLBOX_RUN) copr-cli modify "$(COPR_REPO)" \
+		--description "$$(cat $(README_COPR))" \
+		--instructions "$$(cat $(COPR_INSTRUCTIONS))"
+	@echo "Description updated → $(COPR_REPO)"
 
 normalize-paths: ## Normalize paths in packages.yaml abs->macros (ARGS=--reverse or --dry-run)
 	$(PYTHON) scripts/rpm-dir-prefixes-convert.py $(ARGS)

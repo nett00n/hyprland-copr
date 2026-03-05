@@ -27,10 +27,12 @@ from lib.yaml_utils import get_packages, load_build_status, save_build_status
 
 
 def failed_local_dep(meta: dict, all_packages: dict, failed: dict) -> str | None:
+    pkg_by_lower = {k.lower(): k for k in all_packages}
     for dep in meta.get("build_requires", []):
-        base = dep.removesuffix("-devel")
-        if base in all_packages and failed.get(base):
-            return base
+        base = dep.removesuffix("-devel").lower()
+        orig = pkg_by_lower.get(base)
+        if orig and failed.get(orig):
+            return orig
     return None
 
 

@@ -67,6 +67,7 @@ sed -i 's|^install(TARGETS start-hyprland)|target_include_directories(start-hypr
 %license LICENSE
 %{_bindir}/hyprctl
 %{_bindir}/hyprland
+%{_prefix}/bin/Hyprland
 %{_bindir}/hyprpm
 %{_bindir}/start-hyprland
 %{_datadir}/bash-completion/completions/hyprctl
@@ -90,7 +91,7 @@ Development files for Hyprland.
 
 %files devel
 %{_includedir}/hyprland/
-%{_pkgconfigdatadir}/hyprland.pc
+%{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
 * Fri Feb 27 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.54.0-%autorelease

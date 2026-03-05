@@ -23,6 +23,7 @@ from lib.gitmodules import (
     parse_gitmodules,
     resolve_module,
 )
+from lib.jinja_utils import create_jinja_env
 from lib.paths import GITMODULES, PACKAGES_YAML, ROOT
 from lib.version import latest_semver
 
@@ -57,7 +58,7 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
     else:
         latest = version
 
-    commit_lines: list[str] = []
+    commit = None
     if latest:
         version = latest.lstrip("v") if isinstance(latest, str) else str(latest)
         source_url = '"%{url}/archive/refs/tags/v%{version}.tar.gz"'
@@ -66,11 +67,7 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
         if commit_info:
             full_hash, short_hash, date_str = commit_info
             version = f"0^{date_str}git{short_hash}"
-            commit_lines = [
-                "    commit:\n",
-                f"      full: {full_hash}\n",
-                f'      date: "{date_str}"\n',
-            ]
+            commit = {"full": full_hash, "date": date_str}
             source_url = '"%{url}/archive/%{commit}.tar.gz"'
         else:
             version = "FIXME"
@@ -95,35 +92,22 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
     for dep in pkg_deps:
         build_requires.append(f"pkgconfig({dep})")
 
-    lines = [
-        f"\n  {key}:\n",
-        f'    version: "{version}"\n',
-        f'    release: "%autorelease"\n',  # noqa: F541
-        f"    license: {license_id}\n",
-        f"    summary: {summary}\n",
-        f"    description: |\n",  # noqa: F541
-        f"      FIXME\n",  # noqa: F541
-        f"    url: {url}\n",
-        *commit_lines,
-        f"    sources:\n",  # noqa: F541
-        f"      - url: {source_url}\n",
-        f"    build_system: {build_system}\n"
-
-    ]
-    if build_requires:
-        lines.append("    build_requires:\n")
-        for dep in build_requires:
-            lines.append(f"      - {dep}\n")
-    else:
-        lines.append("    build_requires: []  # FIXME\n")
-    lines += [
-        "    files:\n",
-        '      - "%license LICENSE"\n',
-        '      - "%doc README.md"\n',
-        "      - # FIXME: add installed files\n",
-    ]
-
-    block = "".join(lines)
+    env = create_jinja_env()
+    template = env.get_template("packages-entry.yaml.j2")
+    block = template.render(
+        key=key,
+        version=version,
+        license_id=license_id,
+        summary=summary,
+        url=url,
+        source_name="",
+        buildarch="",
+        no_debug_package=False,
+        commit=commit,
+        source_url=source_url,
+        build_system=build_system,
+        build_requires=build_requires,
+    )
 
     if PACKAGES_YAML.exists():
         with PACKAGES_YAML.open("a") as f:

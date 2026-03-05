@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Generate a Markdown build-status table from build-report.yaml using a Jinja2 template."""
+"""Generate a Markdown README from build-report.yaml using a Jinja2 template."""
 
+import argparse
 import subprocess
 import sys
 from pathlib import Path
@@ -9,16 +10,19 @@ import yaml
 
 from lib.jinja_utils import create_jinja_env
 from lib.paths import PACKAGES_YAML, ROOT
-from lib.reporting import badge
+from lib.reporting import badge, badge_short
 from lib.version import clean_version
 
 REPORT_YAML = ROOT / "build-report.yaml"
-TEMPLATE_NAME = "build-report.md.j2"
-
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{}/"
 
 
-def collect_packages(stages: dict, pkg_meta: dict) -> list[dict]:
+def collect_packages(
+    stages: dict,
+    pkg_meta: dict,
+    pkg_badge: dict,
+    badge_style: str | None,
+) -> list[dict]:
     names: list[str] = []
     seen: set[str] = set()
     for stage_data in stages.values():
@@ -50,13 +54,32 @@ def collect_packages(stages: dict, pkg_meta: dict) -> list[dict]:
                 "name": name,
                 "version": clean_version(raw_version),
                 "summary": (pkg_meta.get(name) or {}).get("summary", ""),
-                "spec_badge": badge("spec", spec.get("state")),
-                "srpm_badge": badge("srpm", srpm.get("state")),
-                "mock_badge": badge("mock", mock.get("state")),
-                "copr_badge": badge("copr", copr.get("state"), copr_url),
+                "badge": pkg_badge.get(name),
+                "spec_badge": badge("spec", spec.get("state"), style=badge_style),
+                "srpm_badge": badge("srpm", srpm.get("state"), style=badge_style),
+                "mock_badge": badge("mock", mock.get("state"), style=badge_style),
+                "mock_badge_short": badge_short("mock", mock.get("state"), style=badge_style),
+                "copr_badge": badge("copr", copr.get("state"), copr_url, style=badge_style),
+                "copr_badge_short": badge_short("copr", copr.get("state"), copr_url, style=badge_style),
             }
         )
     return packages
+
+
+def collect_groups(groups_cfg: dict, pkg_by_name: dict) -> list[dict]:
+    groups = []
+    for _key, group_data in groups_cfg.items():
+        pkgs = [
+            pkg_by_name[name]
+            for name in (group_data.get("packages") or [])
+            if name in pkg_by_name
+        ]
+        groups.append({
+            "label": group_data.get("label", _key),
+            "badge": group_data.get("badge"),
+            "packages": pkgs,
+        })
+    return groups
 
 
 def collect_contributors(repo_root: Path) -> list[dict]:
@@ -81,6 +104,16 @@ def collect_contributors(repo_root: Path) -> list[dict]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--format",
+        choices=["github", "copr"],
+        default="github",
+        help="Output format: github (table) or copr (list)",
+    )
+    args = parser.parse_args()
+    template_name = f"readme-{args.format}.md.j2"
+
     if not REPORT_YAML.exists():
         print(f"error: {REPORT_YAML} not found", file=sys.stderr)
         sys.exit(1)
@@ -89,17 +122,41 @@ def main() -> None:
     run = data.get("run", {})
     stages = data.get("stages", {})
 
+    repo = {}
     pkg_meta = {}
+    groups_cfg = {}
+    badge_style = None
     if PACKAGES_YAML.exists():
-        pkg_meta = yaml.safe_load(PACKAGES_YAML.read_text()).get("packages", {})
+        yaml_data = yaml.safe_load(PACKAGES_YAML.read_text())
+        repo = yaml_data.get("repo", {})
+        pkg_meta = yaml_data.get("packages", {})
+        groups_cfg = yaml_data.get("groups", {})
+        badge_style = repo.get("documents", {}).get("badge_style")
 
-    packages = collect_packages(stages, pkg_meta)
+    pkg_badge: dict[str, dict] = {}
+    for group_data in groups_cfg.values():
+        if group_cfg_badge := group_data.get("badge"):
+            for name in (group_data.get("packages") or []):
+                if isinstance(name, str):
+                    pkg_badge[name] = group_cfg_badge
+
+    packages = collect_packages(stages, pkg_meta, pkg_badge, badge_style)
+    pkg_by_name = {p["name"]: p for p in packages}
+    groups = collect_groups(groups_cfg, pkg_by_name)
     contributors = collect_contributors(ROOT)
 
     env = create_jinja_env()
-    template = env.get_template(TEMPLATE_NAME)
+    template = env.get_template(template_name)
     print(
-        template.render(run=run, packages=packages, contributors=contributors), end=""
+        template.render(
+            run=run,
+            repo=repo,
+            packages=packages,
+            groups=groups,
+            contributors=contributors,
+            badge_style=badge_style,
+        ),
+        end="",
     )
 
 

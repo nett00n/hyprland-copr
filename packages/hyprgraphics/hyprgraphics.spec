@@ -35,7 +35,7 @@ graphics-related utilities such as image loading and color management.
 
 %files
 %license LICENSE
-%{_libdir}/libhyprgraphics.so.*
+%{_libdir}/libhyprgraphics.so*
 
 %package devel
 Summary:        Development files for Small C++ library for graphics utilities across the Hypr ecosystem

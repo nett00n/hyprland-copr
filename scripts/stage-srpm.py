@@ -25,7 +25,7 @@ from lib.yaml_utils import get_packages, load_build_status, save_build_status
 def find_srpm(pkg: str) -> str | None:
     srpm_dir = Path.home() / "rpmbuild" / "SRPMS"
     matches = sorted(
-        srpm_dir.glob(f"{pkg}-*.src.rpm"), key=lambda p: p.stat().st_mtime, reverse=True
+        srpm_dir.glob(f"{pkg.lower()}-*.src.rpm"), key=lambda p: p.stat().st_mtime, reverse=True
     )
     return str(matches[0]) if matches else None
 
@@ -54,7 +54,7 @@ def main() -> None:
     for pkg, meta in packages.items():
         ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
         has_devel = "devel" in meta
-        spec = ROOT / "packages" / pkg / f"{pkg}.spec"
+        spec = ROOT / "packages" / pkg.lower() / f"{pkg.lower()}.spec"
         log = LOG_DIR / f"{pkg}-10-srpm.log"
         log.unlink(missing_ok=True)
 

@@ -9,6 +9,99 @@
 # ORDER OF PACKAGES IS IMPORTANT BECAUSE OF PACKAGES DEPENDENCIES
 # Prefixes list can be checked in docs/rpm-dir-prefixes.md
 # automated prefix <-> absolute path converter in scripts/rpm-dir-prefixes-convert.py
+#
+# groups: logical groupings for the build report. A package may belong to several groups.
+# documents.badge_style: shields.io style for all badges (e.g. for-the-badge, flat, flat-square).
+
+repo:
+  name: Hyprland Copr automation bundle for Fedora Linux
+  logo:
+    path: ./assets/logo/hyprland-copr-x4.png
+    alt: logo
+  license: GPLv3
+  license_tldr: |
+    **TL;DR** — You are free to use, modify, and distribute this software. If you distribute a modified version, you must release it under GPLv3 as well and make the source available. No warranty is provided.
+  description: |
+    This repo provides automations for managing COPR repo `nett00n/hyprland`.
+    `nett00n/hyprland` COPR repo provides packages of official and non-official but useful packages to running Hyprland on your Fedora system
+
+    [📎 Officially recommended](https://wiki.hypr.land/Getting-Started/Installation/#packages) repo solopasha/hyprland ([📎 Git](https://github.com/solopasha/hyprlandRPM/tree/master), [📎 COPR](https://copr.fedorainfracloud.org/coprs/solopasha/hyprland/)) seems to be abandoned: it has no commits in last 4+ month now
+
+    This repository is created with reproduced builds and future support convenience in mind
+
+    Feel free to reuse automation from this repository for your own copr-projects.
+
+    [📎 Check my hyprland repo on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/)
+    [📎 Check my hyprland repo on GitHub](https://Github.com/nett00n/hyprland-copr/)
+  support_info: |
+    [📎 Support me on Ko-fi ☕](https://ko-fi.com/nett00n)
+  short_description:
+    COPR managment system (example: Hyprland for Fedora)
+  documents:
+    badge_style: for-the-badge
+  people:
+    authors:
+      - name: nett00n
+        url: https://github.com/nett00n
+    maintainers:
+      - name: nett00n
+        url: https://github.com/nett00n
+
+
+groups:
+  hyprland:
+    label: "Hyprland main packages"
+    badge:
+      logo: hyprland
+      color: A5F3FC
+      logo_color: black
+    packages:
+      - Hyprland
+      - hypridle
+      - hyprlock
+      - hyprpaper
+      - hyprqt6engine
+      - xdg-desktop-portal-hyprland
+      - hyprland-plugins
+      - hyprland-qt-support
+      - hyprland-guiutils
+      - hyprlauncher
+      - hyprpicker
+      - hyprpolkitagent
+      - hyprpwcenter
+      - hyprshutdown
+      - hyprsunset
+      - hyprsysteminfo
+      - Hyprshot
+
+  hyprland-deps:
+    label: "Hyprland dependencies"
+    badge:
+      logo: hyprland
+      color: A5F3FC
+      logo_color: black
+    packages:
+      - hyprwayland-scanner
+      - hyprutils
+      - hyprlang
+      - hyprgraphics
+      - aquamarine
+      - hyprtoolkit
+      - hyprwire
+      - hyprcursor
+      - hyprland-protocols
+
+  apps:
+    label: "Useful apps"
+    packages:
+      []
+
+  deps:
+    label: "Other dependencies"
+    packages:
+      - aylurs-gtk-shell
+      - glaze
+      - gtk4-layer-shell
 
 packages:
   hyprwayland-scanner:
@@ -55,8 +148,7 @@ packages:
       - pkgconfig(pixman-1)
     files:
       - "%license LICENSE"
-      - "%{_libdir}/libhyprutils.so"
-      - "%{_libdir}/libhyprutils.so.*"
+      - "%{_libdir}/libhyprutils.so*"
     devel:
       files:
         - "%{_includedir}/hyprutils/"
@@ -113,7 +205,7 @@ packages:
       - pkgconfig(pixman-1)
     files:
       - "%license LICENSE"
-      - "%{_libdir}/libhyprgraphics.so.*"
+      - "%{_libdir}/libhyprgraphics.so*"
     devel:
       files:
         - "%{_includedir}/hyprgraphics/"
@@ -377,8 +469,37 @@ packages:
       - "%{_libexecdir}/%{name}"
       - "%{_userunitdir}/%{name}.service"
 
+  glaze:
+    version: "7.1.0"
+    release: "%autorelease"
+    license: MIT
+    summary: Extremely fast, in memory, JSON and reflection library for modern C++. BEVE, CBOR, CSV, MessagePack, TOML, YAML, EETF
+    description: |
+      One of the fastest JSON libraries in the world. Glaze reads and writes from object memory, simplifying interfaces and offering incredible performance.
+    url: https://github.com/stephenberry/glaze
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    no_debug_package: true
+    build_commands:
+      - "%cmake -DBUILD_TESTING=OFF"
+      - "%cmake_build"
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - libasan
+      - libubsan
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+    devel:
+      files:
+        - "/usr/include/glaze/"
+        - "/usr/share/glaze/*.cmake"
+
   Hyprland:
-    version: "0.54.0"
+    version: "0.54.1"
     release: "%autorelease"
     license: BSD-3-Clause
     summary: A Modern C++ Wayland Compositor
@@ -387,6 +508,7 @@ packages:
 
       It provides the latest Wayland features, is highly customizable, has all the eyecandy, the most powerful plugins, easy IPC, much more QoL stuff than other compositors and more...
     url: https://github.com/hyprwm/Hyprland
+    source_name: Hyprland
     sources:
       - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
     build_system: cmake
@@ -424,10 +546,9 @@ packages:
       - pkgconfig(xcursor)
       - pkgconfig(xkbcommon)
       - udis86-devel
+      - glaze-devel
     bundled_deps:
-      - name: glaze
-        version: "7.0.0"
-        url: "https://github.com/stephenberry/glaze/archive/refs/tags/v7.0.0.tar.gz"
+      []
     prep_commands:
       # start/CMakeLists.txt does not link glaze::glaze and is add_subdirectory'd
       # before hyprpm (where FetchContent declares glaze), so the target doesn't
@@ -438,6 +559,7 @@ packages:
       - "%license LICENSE"
       - "%{_bindir}/hyprctl"
       - "%{_bindir}/hyprland"
+      - "%{_prefix}/bin/Hyprland"
       - "%{_bindir}/hyprpm"
       - "%{_bindir}/start-hyprland"
       - "%{_datadir}/bash-completion/completions/hyprctl"
@@ -454,7 +576,10 @@ packages:
     devel:
       files:
         - "%{_includedir}/hyprland/"
-        - "%{_pkgconfigdatadir}/hyprland.pc"
+        - "%{_prefix}/share/pkgconfig/hyprland.pc"
+    debuginfo:
+      files:
+        - "/usr/lib/debug/usr/bin/Hyprland-*.debug"
 
   hypridle:
     version: "0.1.7"
@@ -533,6 +658,7 @@ packages:
       It allows taking screenshots of windows, regions and monitors which are saved
       to a folder of your choosing and copied to your clipboard.
     url: https://github.com/Gustash/Hyprshot
+    source_name: Hyprshot
     sources:
       - url: "%{url}/archive/refs/tags/%{version}.tar.gz"
     buildarch: noarch
@@ -661,13 +787,15 @@ packages:
       Scaffolding CLI tool for Astal+Gnim projects. Astal is a set of libraries written in Vala/C that makes writing a Desktop Shell easy. Gnim is a library which introduces JSX to GJS. GJS is a JavaScript runtime built on Firefox's SpiderMonkey JavaScript engine and the GNOME platform libraries, the same runtime GNOME Shell runs on.
     url: https://github.com/Aylur/ags
     source_name: ags
+    go_subdir: cli
     sources:
       - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+      - url: "%{name}-%{version}-vendor.tar.gz"
     build_system: meson
-    bundled_deps:
-      - name: github_com_spf13_cobra_version
-        version: "1.10.1"
-        url: "https://github.com/spf13/cobra/archive/refs/tags/v1.10.1.tar.gz"
+    prep_commands:
+      - "pushd cli"
+      - "tar xf %{SOURCE1}"
+      - "popd"
     build_requires:
       - meson
       - ninja-build
@@ -678,27 +806,338 @@ packages:
     files:
       - "%license LICENSE"
       - "%doc README.md"
-      - # FIXME: add installed files
+      - "/usr/bin/ags"
+      - "/usr/share/ags/"
+    debuginfo:
+      files:
+        - "/usr/lib/debug/usr/bin/ags-3.1.1-1.fc43.fc43.x86_64.debug"
 
-  HyprPanel:
-    version: "0^20260106git0e73df1"
+  # HyprPanel:
+  #   version: "0^20260106git0e73df1"
+  #   release: "%autorelease"
+  #   license: MIT
+  #   summary: A Bar/Panel for Hyprland with extensive customizability.
+  #   description: |
+  #     A panel built for Hyprland with Astal
+  #   url: https://github.com/Jas-SinghFSU/HyprPanel
+  #   source_name: HyprPanel
+  #   commit:
+  #     full: 0e73df1dfedf0f6fa21ed0ae5e031b0663c8f400
+  #     date: "20260106"
+  #   sources:
+  #     - url: "%{url}/archive/%{commit}.tar.gz"
+  #   build_system: meson
+  #   build_requires:
+  #     - meson
+  #     - ninja-build
+  #     - gcc-c++
+  #     - aylurs-gtk-shell
+  #     - gjs
+  #   files:
+  #     - "%license LICENSE"
+  #     - "%doc README.md"
+  #     - # FIXME: add installed files
+
+  hyprland-plugins:
+    version: "0.53.0"
     release: "%autorelease"
-    license: MIT
-    summary: A Bar/Panel for Hyprland with extensive customizability.
+    license: BSD-3-Clause
+    summary: Official plugins for Hyprland
     description: |
-      A panel built for Hyprland with Astal
-    url: https://github.com/Jas-SinghFSU/HyprPanel
-    commit:
-      full: 0e73df1dfedf0f6fa21ed0ae5e031b0663c8f400
-      date: "20260106"
+      Official plugins for Hyprland:
+
+      - borders-plus-plus -> adds one or two additional borders to windows
+      - csgo-vulkan-fix -> fixes custom resolutions on CS:GO with -vulkan
+      - hyprbars -> adds title bars to windows
+      - hyprexpo -> adds an expo-like workspace overview
+      - hyprfocus -> flashfocus for hyprland
+      - hyprscrolling -> adds a scrolling layout to hyprland
+      - hyprtrails -> adds smooth trails behind moving windows
+      - hyprwinwrap -> clone of xwinwrap, allows you to put any app as a wallpaper
+      - xtra-dispatchers -> adds some new dispatchers
+
+    url: https://github.com/hyprwm/hyprland-plugins
     sources:
-      - url: "%{url}/archive/%{commit}.tar.gz"
-    build_system: meson
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
     build_requires:
-      - meson
+      - cmake
       - ninja-build
       - gcc-c++
+      - hyprland-devel
+      - pkgconfig(libdrm)
+      - pkgconfig(libinput)
+      - pkgconfig(libudev)
+      - pkgconfig(pangocairo)
+      - pkgconfig(pixman-1)
+      - pkgconfig(wayland-server)
+      - pkgconfig(xkbcommon)
     files:
       - "%license LICENSE"
       - "%doc README.md"
       - # FIXME: add installed files
+
+  hyprland-qt-support:
+    version: "0.1.0"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A qml style provider for hypr* qt apps
+    description: |
+      A qml style provider for hypr* qt apps
+    url: https://github.com/hyprwm/hyprland-qt-support
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(hyprlang)
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - # FIXME: add installed files
+
+  hyprlauncher:
+    version: "0.1.5"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A multipurpose and versatile launcher / picker for Hyprland
+    description: |
+      A multipurpose and versatile launcher / picker for Hyprland
+      Features:
+
+      - Various providers: Desktop, Unicode, Emoji, Math, Font ...
+      - Speedy: Fast, multi-threaded fuzzy searching
+      - Daemon by default: instant opening of the launcher
+      - Entry frequency caching: commonly used entries appear above others
+      - Manual entry providing: make a simple selector from your own list
+
+    url: https://github.com/hyprwm/hyprlauncher
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(hyprtoolkit)
+      - pkgconfig(pixman-1)
+      - pkgconfig(libdrm)
+      - pkgconfig(hyprutils)
+      - pkgconfig(hyprwire)
+      - pkgconfig(icu-uc)
+      - pkgconfig(hyprlang)
+      - pkgconfig(fontconfig)
+      - pkgconfig(libqalculate)
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - # FIXME: add installed files
+
+  hyprpicker:
+    version: "0.4.6"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A wlroots-compatible Wayland color picker that does not suck
+    description: |
+      FIXME
+    url: https://github.com/hyprwm/hyprpicker
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(wayland-client)
+      - pkgconfig(wayland-protocols)
+      - pkgconfig(xkbcommon)
+      - pkgconfig(cairo)
+      - pkgconfig(pango)
+      - pkgconfig(pangocairo)
+      - pkgconfig(libjpeg)
+      - pkgconfig(hyprutils)
+      - pkgconfig(hyprwayland-scanner)
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - # FIXME: add installed files
+
+  hyprpolkitagent:
+    version: "0.1.3"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A polkit authentication agent written in QT/QML
+    description: |
+      A simple polkit authentication agent for Hyprland, written in QT/QML.
+    url: https://github.com/hyprwm/hyprpolkitagent
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(hyprutils)
+      - pkgconfig(polkit-agent-1)
+      - pkgconfig(polkit-qt6-1)
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - # FIXME: add installed files
+
+  hyprpwcenter:
+    version: "0.1.2"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: Volume management center for Hyprland
+    description: |
+      A GUI Pipewire control center built with hyprtoolkit.
+    url: https://github.com/hyprwm/hyprpwcenter
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(libpipewire-0.3)
+      - pkgconfig(hyprtoolkit)
+      - pkgconfig(pixman-1)
+      - pkgconfig(libdrm)
+      - pkgconfig(hyprutils)
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - # FIXME: add installed files
+
+  hyprshutdown:
+    version: "0.1.0"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: A graceful shutdown utility for Hyprland
+    description: |
+      A graceful shutdown/logout utility for Hyprland, which prevents apps from crashing / dying unexpectedly.
+    url: https://github.com/hyprwm/hyprshutdown
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(hyprtoolkit)
+      - pkgconfig(hyprutils)
+      - pkgconfig(pixman-1)
+      - pkgconfig(libdrm)
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - # FIXME: add installed files
+
+  hyprsunset:
+    version: "0.3.3"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: An application to enable a blue-light filter on Hyprland
+    description: |
+      An application to enable a blue-light filter on Hyprland
+    url: https://github.com/hyprwm/hyprsunset
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(wayland-client)
+      - pkgconfig(wayland-protocols)
+      - pkgconfig(hyprutils)
+      - pkgconfig(hyprlang)
+      - pkgconfig(hyprwayland-scanner)
+      - pkgconfig(hyprland-protocols)
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - # FIXME: add installed files
+
+  hyprsysteminfo:
+    version: "0.1.3"
+    release: "%autorelease"
+    license: BSD-3-Clause
+    summary: System info utility for Hyprland
+    description: |
+      A tiny qt6/qml application to display information about the running system
+    url: https://github.com/hyprwm/hyprsysteminfo
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    build_system: cmake
+    build_requires:
+      - cmake
+      - ninja-build
+      - gcc-c++
+      - pkgconfig(hyprtoolkit)
+      - pkgconfig(hyprutils)
+      - pkgconfig(libdrm)
+      - pkgconfig(libpci)
+      - pkgconfig(pixman-1)
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      - # FIXME: add installed files
+
+  pyprland:
+    version: "3.1.1"
+    release: "%autorelease"
+    license: MIT
+    summary: FIXME
+    description: |
+      FIXME
+    url: https://github.com/hyprland-community/pyprland.git
+    # source_name: top-level directory inside the tarball when it differs from the package name
+    source_name: ""
+    # go_subdir: subdirectory containing go.mod when the Go module is not at the tarball root
+    # go_subdir: cli
+    # buildarch: set to "noarch" for architecture-independent packages (scripts, headers-only, etc.)
+    buildarch: ""
+    # no_debug_package: suppress the automatic -debuginfo subpackage (useful for header-only or noarch)
+    no_debug_package: false
+    sources:
+      - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
+    # build_system: cmake | meson | autotools | make — selects default %build/%install macros
+    build_system: FIXME
+    build_requires:
+      []
+    requires:
+      []
+    # prep_commands: extra shell commands injected into %prep after %autosetup
+    prep_commands:
+      []
+    # build_commands: override the default build commands derived from build_system
+    build_commands:
+      []
+    # install_commands: override the default install commands derived from build_system
+    install_commands:
+      []
+    # bundled_deps: vendored sources fetched separately and injected via FetchContent
+    # bundled_deps:
+    #   - name: libname
+    #     version: "1.2.3"
+    #     url: "https://github.com/org/repo/archive/refs/tags/v1.2.3.tar.gz"
+    #     cmake_var: LIBNAME  # CMake variable name used in FetchContent_Declare
+    bundled_deps:
+      []
+    files:
+      - "%license LICENSE"
+      - "%doc README.md"
+      # FIXME: add installed files
+    # devel: generates a -devel subpackage for headers, pkgconfig files, cmake modules, etc.
+    devel:
+      files:
+        []
+        # - "%{_includedir}/pyprland/"
+        # - "%{_libdir}/pkgconfig/pyprland.pc"
+    debuginfo:
+      files:
+        []

@@ -34,7 +34,7 @@ Requires:       {{ dep }}
 {{ description }}
 
 %prep
-%autosetup{% if commit %} -n %{name}-%{commit}{% elif source_name %} -n {{ source_name }}-%{version}{% endif %}
+%autosetup{% if commit %} -n {{ source_name or '%{name}' }}-%{commit}{% elif source_name %} -n {{ source_name }}-%{version}{% endif %}
 
 {% for cmd in prep_commands %}
 {{ cmd }}
