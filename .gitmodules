@@ -97,9 +97,6 @@
 [submodule "submodules/Gustash/Hyprshot"]
 	path = submodules/Gustash/Hyprshot
 	url = https://github.com/Gustash/Hyprshot.git
-[submodule "Aylur/ags"]
-	path = Aylur/ags
-	url = https://github.com/Aylur/ags.git
 [submodule "submodules/wmww/gtk4-layer-shell"]
 	path = submodules/wmww/gtk4-layer-shell
 	url = https://github.com/wmww/gtk4-layer-shell.git
