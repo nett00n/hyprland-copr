@@ -1,6 +1,6 @@
 # Hyprland Copr automation bundle for Fedora Linux
 
-![logo](./assets/logo/hyprland-copr-x4.png)
+![logo](https://cdn.statically.io/gh/nett00n/hyprland-copr@main/assets/logo/hyprland-copr-x4.png)
 
 This repo provides automations for managing COPR repo `nett00n/hyprland`.
 `nett00n/hyprland` COPR repo provides packages of official and non-official but useful packages to running Hyprland on your Fedora system

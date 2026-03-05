@@ -7,6 +7,10 @@
 {%- endmacro %}
 # {{ repo.name }}
 
+{% if repo.logo %}
+![{{ repo.logo.alt }}]({{ repo.logo.path }})
+{% endif %}
+
 {{ repo.description }}
 ## Packages
 

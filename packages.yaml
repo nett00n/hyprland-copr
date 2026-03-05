@@ -16,7 +16,7 @@
 repo:
   name: Hyprland Copr automation bundle for Fedora Linux
   logo:
-    path: ./assets/logo/hyprland-copr-x4.png
+    path: https://cdn.statically.io/gh/nett00n/hyprland-copr@main/assets/logo/hyprland-copr-x4.png
     alt: logo
   license: GPLv3
   license_tldr: |
