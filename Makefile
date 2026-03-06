@@ -37,7 +37,7 @@ endef
         add-submodule add-package add-new \
         gen-report readme readme-github readme-copr copr-description normalize-paths sort-lists \
         container-build container-enter container-clean container-all \
-        pkg-sources pkg-srpm pkg-mock pkg-copr pkg-full-cycle \
+        pkg-sources pkg-srpm pkg-mock pkg-copr pkg-full-cycle pkg-build-pop \
         stage-validate stage-spec stage-srpm stage-mock stage-copr
 
 help: ## Show this help
@@ -201,6 +201,14 @@ pkg-copr: pkg-srpm ## Submit PACKAGE (or all) SRPMs to Copr (requires COPR_REPO 
 		echo $(HIGHLIGHT_PREFIX) "copr: $$pkg"; \
 		$(TOOLBOX_RUN) copr-cli build $(COPR_REPO) ~/rpmbuild/SRPMS/$$pkg-*.src.rpm || exit 1; \
 	done
+
+pkg-build-pop: ## Remove mock/copr build status for PKG=a,b (PKG="" removes all, requires confirmation)
+	@if [ -z "$(PACKAGE)" ]; then \
+		printf "Remove mock/copr status for ALL packages? [y/N] "; \
+		read ans; \
+		[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "Aborted."; exit 1; }; \
+	fi; \
+	PACKAGE="$(PACKAGE)" $(PYTHON) scripts/pkg-build-pop.py
 
 stage-validate: ## Run validation stage (PACKAGE=<name>, runs in toolbox)
 	$(TOOLBOX_RUN) env \

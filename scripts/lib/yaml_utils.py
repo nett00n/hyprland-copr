@@ -92,6 +92,23 @@ def save_build_status(status: dict, path: Path = BUILD_STATUS_YAML) -> None:
     )
 
 
+def pop_build_stages(
+    pkgs: list[str] | set[str],
+    stages: tuple[str, ...] = ("mock", "copr"),
+) -> list[str]:
+    """Remove entries for pkgs from given stages in build-status.yaml.
+
+    Returns sorted list of affected package names.
+    """
+    build_status = load_build_status()
+    status_stages = build_status.get("stages", {})
+    for stage in stages:
+        for pkg in pkgs:
+            status_stages.get(stage, {}).pop(pkg, None)
+    save_build_status(build_status)
+    return sorted(pkgs)
+
+
 def now_epoch() -> int:
     """Return current Unix timestamp as integer."""
     return int(time.time())
