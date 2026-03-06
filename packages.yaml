@@ -255,9 +255,11 @@ packages:
       - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
     build_system: cmake
     depends_on:
+      - aquamarine
       - hyprutils
       - hyprwayland-scanner
     build_requires:
+
       - cmake
       - gcc-c++
       - hyprwayland-scanner-devel
@@ -1010,13 +1012,17 @@ packages:
       - url: "%{url}/archive/refs/tags/v%{version}.tar.gz"
     build_system: cmake
     depends_on:
+      - aquamarine
+      - hyprgraphics
       - hyprlang
       - hyprtoolkit
       - hyprutils
       - hyprwire
     build_requires:
+      - aquamarine-devel
       - cmake
       - gcc-c++
+      - hyprgraphics-devel
       - ninja-build
       - pkgconfig(fontconfig)
       - pkgconfig(hyprlang)
@@ -1027,10 +1033,11 @@ packages:
       - pkgconfig(libdrm)
       - pkgconfig(libqalculate)
       - pkgconfig(pixman-1)
+      - pkgconfig(xkbcommon)
     files:
-      - # FIXME: add installed files
       - "%doc README.md"
       - "%license LICENSE"
+      - "%{_prefix}/bin/hyprlauncher"
 
   hyprpicker:
     version: "0.4.6"

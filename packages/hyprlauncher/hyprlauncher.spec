@@ -6,8 +6,10 @@ License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprlauncher
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 
+BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
+BuildRequires:  hyprgraphics-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(fontconfig)
 BuildRequires:  pkgconfig(hyprlang)
@@ -18,6 +20,7 @@ BuildRequires:  pkgconfig(icu-uc)
 BuildRequires:  pkgconfig(libdrm)
 BuildRequires:  pkgconfig(libqalculate)
 BuildRequires:  pkgconfig(pixman-1)
+BuildRequires:  pkgconfig(xkbcommon)
 
 %description
 A multipurpose and versatile launcher / picker for Hyprland
@@ -42,6 +45,7 @@ Features:
 %files
 %doc README.md
 %license LICENSE
+%{_prefix}/bin/hyprlauncher
 
 %changelog
 * Sun Jan 04 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.1.5-%autorelease
