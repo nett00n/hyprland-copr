@@ -11,6 +11,7 @@ Environment variables:
   PACKAGE         Build only this package (optional, comma-separated)
   FEDORA_VERSION  Fedora version to target (default: 43)
   MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
+  PROCEED_BUILD   Skip packages where mock stage already succeeded
 """
 
 import os
@@ -28,7 +29,9 @@ from lib.yaml_utils import (
     filter_packages,
     get_packages,
     load_build_status,
+    now_epoch,
     save_build_status,
+    stage_was_success,
 )
 
 
@@ -84,7 +87,12 @@ def main() -> None:
     LOG_DIR.mkdir(exist_ok=True)
     build_status = load_build_status()
     srpm_stage = build_status.get("stages", {}).get("srpm", {})
-    build_status.setdefault("stages", {})["mock"] = {}
+
+    proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
+    stages = build_status.setdefault("stages", {})
+    if not proceed:
+        stages["mock"] = {}
+    stages.setdefault("mock", {})
 
     failed: dict[str, bool] = {}
 
@@ -95,6 +103,11 @@ def main() -> None:
         has_devel = "devel" in meta
         log = LOG_DIR / f"{pkg}-20-mock.log"
         log.unlink(missing_ok=True)
+
+        # Skip if mock stage already succeeded
+        if proceed and stage_was_success(build_status, "mock", pkg):
+            status("mock", pkg, "skip")
+            continue  # preserve existing entry (has completed_at from prior run)
 
         blocker = failed_local_dep(pkg, meta, packages, failed)
         srpm_state = srpm_stage.get(pkg, {}).get("state", "")
@@ -129,14 +142,19 @@ def main() -> None:
             update_local_repo(mock_chroot)
         status("mock", pkg, "ok" if ok else "fail")
 
-        entry = {"state": state, "version": ver, "log": str(log.relative_to(ROOT))}
+        entry = {
+            "state": state,
+            "version": ver,
+            "log": str(log.relative_to(ROOT)),
+            **({"completed_at": now_epoch()} if ok else {}),
+        }
         if mock_logs:
             entry["mock_logs"] = mock_logs
         if has_devel:
             entry["subpackages"] = {"devel": {"state": state, "version": ver}}
         build_status["stages"]["mock"][pkg] = entry
+        save_build_status(build_status)
 
-    save_build_status(build_status)
     if failed_overall:
         sys.exit(1)
 

@@ -11,6 +11,7 @@ Environment variables:
   MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   COPR_REPO       Copr repo slug, e.g. nett00n/hyprland (optional)
   PACKAGE         Build only this package (optional, comma-separated)
+  PROCEED_BUILD   If 'true', skip stages already succeeded; preserve build-status.yaml
 """
 
 import os
@@ -25,6 +26,7 @@ from lib.deps import build_dep_graph, topological_sort, transitive_deps
 from lib.paths import LOG_DIR, ROOT
 from lib.reporting import print_summary
 from lib.yaml_utils import (
+    BUILD_STATUS_YAML,
     filter_packages,
     get_packages,
     load_build_status,
@@ -79,24 +81,32 @@ def main() -> None:
         for old_log in [*LOG_DIR.glob(f"*-{pkg}.log"), *LOG_DIR.glob(f"*-{pkg}-*.log")]:
             old_log.unlink()
 
-    # Reset build status
-    build_status: dict = {
-        "run": {
-            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "fedora_version": fedora_version
-            if fedora_version == "rawhide"
-            else int(fedora_version),
-            "mock_chroot": mock_chroot,
-        },
-        "stages": {
-            "validate": {},
-            "spec": {},
-            "vendor": {},
-            "srpm": {},
-            "mock": {},
-            "copr": {},
-        },
-    }
+    # Resume or reset build status based on PROCEED_BUILD
+    proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
+
+    if proceed and BUILD_STATUS_YAML.exists():
+        build_status = load_build_status()
+        build_status.setdefault("run", {})["timestamp"] = datetime.now(
+            timezone.utc
+        ).isoformat(timespec="seconds")
+    else:
+        build_status = {
+            "run": {
+                "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "fedora_version": fedora_version
+                if fedora_version == "rawhide"
+                else int(fedora_version),
+                "mock_chroot": mock_chroot,
+            },
+            "stages": {
+                "validate": {},
+                "spec": {},
+                "vendor": {},
+                "srpm": {},
+                "mock": {},
+                "copr": {},
+            },
+        }
     save_build_status(build_status)
 
     stage_env = {
@@ -104,6 +114,7 @@ def main() -> None:
         "MOCK_CHROOT": mock_chroot,
         "PACKAGE": ",".join(packages.keys()) if package_filter else "",
         "COPR_REPO": copr_repo,
+        "PROCEED_BUILD": "true" if proceed else "",
     }
 
     run_stage(SCRIPTS / "stage-validate.py", stage_env)

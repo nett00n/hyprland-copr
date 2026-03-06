@@ -9,6 +9,7 @@ Must be run inside the rpm toolbox container (invoked via Makefile).
 Environment variables:
   PACKAGE         Build only this package (optional, comma-separated)
   FEDORA_VERSION  Fedora version to target (default: 43)
+  PROCEED_BUILD   Skip packages where mock stage already succeeded
 """
 
 import os
@@ -24,6 +25,7 @@ from lib.yaml_utils import (
     get_packages,
     load_build_status,
     save_build_status,
+    stage_was_success,
 )
 
 
@@ -47,7 +49,12 @@ def main() -> None:
     LOG_DIR.mkdir(exist_ok=True)
     build_status = load_build_status()
     spec_stage = build_status.get("stages", {}).get("spec", {})
-    build_status.setdefault("stages", {})["srpm"] = {}
+
+    proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
+    stages = build_status.setdefault("stages", {})
+    if not proceed:
+        stages["srpm"] = {}
+    stages.setdefault("srpm", {})
 
     failed = False
     print("\n=== srpm ===")
@@ -57,6 +64,11 @@ def main() -> None:
         spec = ROOT / "packages" / pkg.lower() / f"{pkg.lower()}.spec"
         log = LOG_DIR / f"{pkg}-10-srpm.log"
         log.unlink(missing_ok=True)
+
+        # Skip if mock stage already succeeded
+        if proceed and stage_was_success(build_status, "mock", pkg):
+            status("srpm", pkg, "skip")
+            continue  # preserve existing srpm entry untouched
 
         # Skip if spec stage failed
         spec_state = spec_stage.get(pkg, {}).get("state", "")
@@ -109,8 +121,8 @@ def main() -> None:
         if has_devel:
             entry["subpackages"] = {"devel": {"state": "success", "version": ver}}
         build_status["stages"]["srpm"][pkg] = entry
+        save_build_status(build_status)
 
-    save_build_status(build_status)
     if failed:
         sys.exit(1)
 

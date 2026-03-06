@@ -11,6 +11,7 @@ Environment variables:
   PACKAGE         Build only this package (optional, comma-separated)
   FEDORA_VERSION  Fedora version to target (default: 43)
   COPR_REPO       Copr repo slug, e.g. nett00n/hyprland (required)
+  PROCEED_BUILD   Skip packages where copr stage already succeeded
 """
 
 import os
@@ -24,7 +25,9 @@ from lib.yaml_utils import (
     filter_packages,
     get_packages,
     load_build_status,
+    now_epoch,
     save_build_status,
+    stage_was_success,
 )
 
 
@@ -57,7 +60,12 @@ def main() -> None:
     build_status = load_build_status()
     srpm_stage = build_status.get("stages", {}).get("srpm", {})
     mock_stage = build_status.get("stages", {}).get("mock", {})
-    build_status.setdefault("stages", {})["copr"] = {}
+
+    proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
+    stages = build_status.setdefault("stages", {})
+    if not proceed:
+        stages["copr"] = {}
+    stages.setdefault("copr", {})
 
     failed = False
     print("\n=== copr ===")
@@ -66,6 +74,11 @@ def main() -> None:
         has_devel = "devel" in meta
         log = LOG_DIR / f"{pkg}-30-copr.log"
         log.unlink(missing_ok=True)
+
+        # Skip if copr stage already succeeded
+        if proceed and stage_was_success(build_status, "copr", pkg):
+            status("copr", pkg, "skip")
+            continue
 
         srpm_state = srpm_stage.get(pkg, {}).get("state", "")
         srpm_path = srpm_stage.get(pkg, {}).get("path")
@@ -95,12 +108,13 @@ def main() -> None:
             "version": ver,
             "build_id": build_id,
             "log": str(log.relative_to(ROOT)),
+            **({"completed_at": now_epoch()} if ok else {}),
         }
         if has_devel:
             entry["subpackages"] = {"devel": {"state": state, "version": ver}}
         build_status["stages"]["copr"][pkg] = entry
+        save_build_status(build_status)
 
-    save_build_status(build_status)
     if failed:
         sys.exit(1)
 

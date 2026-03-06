@@ -2,6 +2,7 @@
 
 import re
 import sys
+import time
 from pathlib import Path
 
 import yaml
@@ -88,6 +89,19 @@ def save_build_status(status: dict, path: Path = BUILD_STATUS_YAML) -> None:
     path.parent.mkdir(exist_ok=True)
     path.write_text(
         yaml.dump(status, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    )
+
+
+def now_epoch() -> int:
+    """Return current Unix timestamp as integer."""
+    return int(time.time())
+
+
+def stage_was_success(build_status: dict, stage: str, pkg: str) -> bool:
+    """Check if a package succeeded in a given stage."""
+    return (
+        build_status.get("stages", {}).get(stage, {}).get(pkg, {}).get("state")
+        == "success"
     )
 
 

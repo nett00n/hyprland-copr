@@ -160,14 +160,16 @@ pkg-mock: pkg-srpm ## Build and test PACKAGE (or all) with mock for FEDORA_VERSI
 	done
 
 FORCE_MOCK ?=
+PROCEED_BUILD ?=
 
-pkg-full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr (FEDORA_VERSION, PACKAGE, COPR_REPO, FORCE_MOCK)
+pkg-full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr (FEDORA_VERSION, PACKAGE, COPR_REPO, FORCE_MOCK, PROCEED_BUILD)
 	$(TOOLBOX_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
 		COPR_REPO=$(COPR_REPO) \
 		FORCE_MOCK=$(FORCE_MOCK) \
+		PROCEED_BUILD=$(PROCEED_BUILD) \
 		python3 scripts/full-cycle.py
 
 pkg-copr: pkg-srpm ## Submit PACKAGE (or all) SRPMs to Copr (requires COPR_REPO env var, runs in toolbox)
