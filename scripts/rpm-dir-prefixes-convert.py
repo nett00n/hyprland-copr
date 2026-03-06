@@ -49,9 +49,10 @@ def apply_replacements(content: str, replacements: dict[str, str]) -> str:
     for old, new in replacements.items():
         content = content.replace(f'"{old}"', f'"{new}"')
         content = content.replace(f"'{old}'", f"'{new}'")
+        quoted_new = f'"{new}"' if "%{" in new else new
         content = re.sub(
             r"(^\s*-\s+)" + re.escape(old) + r"(\s*)$",
-            r"\g<1>" + new + r"\g<2>",
+            r"\g<1>" + quoted_new + r"\g<2>",
             content,
             flags=re.MULTILINE,
         )
