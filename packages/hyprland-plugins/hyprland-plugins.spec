@@ -47,6 +47,7 @@ Official plugins for Hyprland:
 
 %changelog
 * Mon Dec 29 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.53.0-%autorelease
+- tag: v0.53.0, commit: d7b67e8f4ba8ebeee4ce899348fcee6291512169
 - v0.53.0
 - -----BEGIN SSH SIGNATURE-----
 - U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAg6r0Z7DWuB90jK6uIn817QHwUTW

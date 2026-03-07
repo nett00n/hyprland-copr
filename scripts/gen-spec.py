@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from lib.gitmodules import get_changelog_info, parse_gitmodules
 from lib.jinja_utils import create_jinja_env
 from lib.paths import GITMODULES, ROOT
-from lib.yaml_utils import get_packages
+from lib.yaml_utils import get_packages, load_packages_yaml
 
 
 def get_packager() -> str:
@@ -48,29 +48,52 @@ def fetch_github_release(github_url: str, version: str) -> dict | None:
         return None
 
 
-def format_changelog(
-    release: dict | None, version: str, release_num: int, packager: str
-) -> str:
-    if release and release.get("published_at"):
-        dt = datetime.fromisoformat(release["published_at"].replace("Z", "+00:00"))
+def build_changelog(
+    release_info: dict | None,
+    version: str,
+    release: int | str,
+    packager: str,
+    source_url: str | None = None,
+    copr_url: str | None = None,
+) -> dict:
+    """Return structured changelog data for the Jinja2 template."""
+    if release_info and release_info.get("published_at"):
+        dt = datetime.fromisoformat(
+            release_info["published_at"].replace("Z", "+00:00")
+        )
     else:
         dt = datetime.now(timezone.utc)
-    date_str = dt.strftime("%a %b %d %Y")
-    header = f"* {date_str} {packager} - {version}-{release_num}"
-    if release and release.get("body"):
-        lines = []
-        for line in release["body"].splitlines():
+
+    # Normalise tag/commit across local-git and GitHub-API sources
+    tag = (release_info.get("tag") or release_info.get("tag_name")) if release_info else None
+    commit = release_info.get("commit") if release_info else None
+
+    # Parse body into clean note strings (strip markdown bullets/headings)
+    notes: list[str] = []
+    body = release_info.get("body") if release_info else None
+    if body:
+        for line in body.splitlines():
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
             if line.startswith(("- ", "* ", "• ")):
-                lines.append(f"- {line[2:].strip()}")
+                notes.append(line[2:].strip())
             else:
-                lines.append(f"- {line}")
-        body = "\n".join(lines) if lines else f"- Update to {version}"
-    else:
-        body = f"- Update to {version}"
-    return f"{header}\n{body}"
+                notes.append(line)
+    if not notes:
+        notes.append(f"Update to {version}")
+
+    return {
+        "date": dt.strftime("%a %b %d %Y"),
+        "packager": packager,
+        "version": str(version),
+        "release": release,
+        "tag": tag,
+        "commit": commit,
+        "notes": notes,
+        "source_url": source_url,
+        "copr_url": copr_url,
+    }
 
 
 BUILD_SYSTEMS = {
@@ -82,7 +105,14 @@ BUILD_SYSTEMS = {
 }
 
 
-def build_context(name: str, pkg: dict, packager: str, url_to_submodule: dict) -> dict:
+def build_context(
+    name: str,
+    pkg: dict,
+    packager: str,
+    url_to_submodule: dict,
+    source_url: str | None = None,
+    copr_url: str | None = None,
+) -> dict:
     build_system = pkg.get("build_system", "cmake")
     build_cmd, install_cmd = BUILD_SYSTEMS.get(build_system, BUILD_SYSTEMS["cmake"])
 
@@ -105,7 +135,7 @@ def build_context(name: str, pkg: dict, packager: str, url_to_submodule: dict) -
         release_info = None
     if release_info is None:
         release_info = fetch_github_release(pkg_url, version)
-    changelog = format_changelog(release_info, version, release, packager)
+    changelog = build_changelog(release_info, version, release, packager, source_url, copr_url)
 
     bundled_deps = []
     extra_prep = []
@@ -188,7 +218,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    packages = get_packages()
+    yaml_data = load_packages_yaml()
+    packages = yaml_data.get("packages") or {}
+    if not packages:
+        sys.exit("error: no packages defined in packages.yaml")
+    repo = yaml_data.get("repo") or {}
+    source_url = repo.get("source_url") or None
+    copr_url = repo.get("copr_url") or None
+
     target = args.package
     if target and target not in packages:
         sys.exit(f"error: package '{target}' not found in packages.yaml")
@@ -213,7 +250,7 @@ def main() -> None:
         spec_dir.mkdir(parents=True, exist_ok=True)
         spec_path = spec_dir / f"{pkg_name}.spec"
         spec_path.write_text(
-            template.render(build_context(pkg_name, pkg, packager, url_to_submodule))
+            template.render(build_context(pkg_name, pkg, packager, url_to_submodule, source_url, copr_url))
         )
         print(f"  generated  {spec_path.relative_to(ROOT)}")
 

@@ -34,5 +34,5 @@ install -Dpm0755 hyprshot -t %{buildroot}/%{_bindir}
 %{_bindir}/hyprshot
 
 %changelog
-* Sun Jun 16 2024 Vladimir nett00n Budylnikov <git@nett00n.org> - 1.3.0-%autorelease
-- Add -D,--delay option to allow setting a delay after selecting an area to screenshot. (#56)
+* Sat Mar 07 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 1.3.0-%autorelease
+- Update to 1.3.0

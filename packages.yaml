@@ -18,6 +18,8 @@ repo:
   logo:
     path: https://cdn.statically.io/gh/nett00n/hyprland-copr@main/assets/logo/hyprland-copr-x4.png
     alt: logo
+  source_url: https://github.com/nett00n/hyprland-copr
+  copr_url: https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
   license: GPLv3
   license_tldr: |
     **TL;DR** — You are free to use, modify, and distribute this software
@@ -1186,6 +1188,8 @@ packages:
     depends_on:
       - hyprtoolkit
       - hyprutils
+    prep_commands:
+      - "sed -i '/find_package(Qt6.*WaylandClient)/a find_package(Qt6 REQUIRED COMPONENTS WaylandClientPrivate)' CMakeLists.txt"
     build_requires:
       - cmake
       - gcc-c++
@@ -1196,6 +1200,7 @@ packages:
       - pkgconfig(libdrm)
       - pkgconfig(libpci)
       - pkgconfig(pixman-1)
+      - qt6-qtbase-devel
       - qt6-qtbase-private-devel
       - qt6-qtdeclarative-devel
       - qt6-qtquickcontrols2-devel
@@ -1203,6 +1208,8 @@ packages:
     files:
       - "%doc README.md"
       - "%license LICENSE"
+      - "%{_prefix}/bin/hyprsysteminfo"
+      - "%{_prefix}/share/applications/hyprsysteminfo.desktop"
 
   pyprland:
     version: "3.1.1"

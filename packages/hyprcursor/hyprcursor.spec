@@ -48,4 +48,5 @@ Development files for hyprcursor.
 
 %changelog
 * Thu Jul 31 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.1.13-%autorelease
+- tag: v0.1.13, commit: 44e91d467bdad8dcf8bbd2ac7cf49972540980a5
 - version: bump to 0.1.13

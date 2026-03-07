@@ -60,7 +60,7 @@ def resolve_module(modules: list[dict], name: str) -> dict | None:
 
 
 def get_tag_info(repo: Path, version: str) -> dict | None:
-    """Return {published_at, body} for a version tag in the submodule.
+    """Return {published_at, body, tag, commit} for a version tag in the submodule.
 
     Tries annotated tag message first (git cat-file tag), then falls back to
     the commit log message. Returns None if the tag does not exist.
@@ -75,7 +75,20 @@ def get_tag_info(repo: Path, version: str) -> dict | None:
         text=True,
     )
     if not check.stdout.strip():
-        return None
+        # Tag not found locally — try fetching it from the remote
+        subprocess.run(
+            ["git", "-C", str(repo), "fetch", "origin", "tag", tag],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        check = subprocess.run(
+            ["git", "-C", str(repo), "tag", "-l", tag],
+            capture_output=True,
+            text=True,
+        )
+        if not check.stdout.strip():
+            return None
 
     published_at = None
     body = None
@@ -120,26 +133,37 @@ def get_tag_info(repo: Path, version: str) -> dict | None:
 
     if not published_at:
         return None
-    return {"published_at": published_at, "body": body}
+
+    # Resolve tag to its commit hash (dereferences annotated tags)
+    rev = subprocess.run(
+        ["git", "-C", str(repo), "rev-list", "-n1", tag],
+        capture_output=True,
+        text=True,
+    )
+    commit = rev.stdout.strip() if rev.returncode == 0 else None
+
+    return {"published_at": published_at, "body": body, "tag": tag, "commit": commit}
 
 
 def get_commit_info(repo: Path, ref: str = "HEAD") -> dict | None:
-    """Return {published_at, body} from a commit's log message.
+    """Return {published_at, body, commit} from a commit's log message.
 
-    published_at is the author ISO timestamp; body is the commit message body.
+    published_at is the author ISO timestamp; body is the commit message body;
+    commit is the full SHA-1 hash.
     """
     import datetime
 
     log = subprocess.run(
-        ["git", "-C", str(repo), "log", "-1", "--format=%aI%n%B", ref],
+        ["git", "-C", str(repo), "log", "-1", "--format=%H%n%aI%n%B", ref],
         capture_output=True,
         text=True,
     )
     if log.returncode != 0 or not log.stdout:
         return None
     lines = log.stdout.splitlines()
-    published_at = lines[0].strip() if lines else None
-    body = "\n".join(lines[1:]).strip() or None
+    commit = lines[0].strip() if lines else None
+    published_at = lines[1].strip() if len(lines) > 1 else None
+    body = "\n".join(lines[2:]).strip() or None
     if not published_at:
         return None
     # Validate it looks like a date
@@ -147,22 +171,25 @@ def get_commit_info(repo: Path, ref: str = "HEAD") -> dict | None:
         datetime.datetime.fromisoformat(published_at)
     except ValueError:
         return None
-    return {"published_at": published_at, "body": body}
+    return {"published_at": published_at, "body": body, "commit": commit}
 
 
 def get_changelog_info(
     repo: Path, version: str, commit_hash: str | None = None
 ) -> dict | None:
-    """Return {published_at, body} for changelog generation.
+    """Return {published_at, body, tag, commit} for changelog generation.
 
-    Tries the version tag first (annotated or lightweight).
-    Falls back to the commit log — using commit_hash if given, else HEAD.
+    Tries the version tag first (annotated or lightweight), fetching it from
+    the remote if not found locally.  Falls back to commit_hash log if given
+    (for commit-based packages).  Returns None otherwise so callers can try
+    the GitHub release API instead.
     """
     tag_info = get_tag_info(repo, version)
     if tag_info:
         return tag_info
-    ref = commit_hash or "HEAD"
-    return get_commit_info(repo, ref)
+    if commit_hash:
+        return get_commit_info(repo, commit_hash)
+    return None
 
 
 def get_submodule_commit(repo: Path) -> tuple[str, str, str] | None:

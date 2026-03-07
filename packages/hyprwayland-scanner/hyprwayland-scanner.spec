@@ -42,4 +42,5 @@ Development files for hyprwayland-scanner.
 
 %changelog
 * Mon Jul 07 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.4.5-%autorelease
+- tag: v0.4.5, commit: fcca0c61f988a9d092cbb33e906775014c61579d
 - version: bump to 0.4.5

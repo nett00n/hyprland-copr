@@ -10,7 +10,6 @@ import yaml
 
 from lib.jinja_utils import create_jinja_env
 from lib.paths import PACKAGES_YAML, ROOT
-from lib.reporting import badge, badge_short
 from lib.version import clean_version
 
 REPORT_YAML = ROOT / "build-report.yaml"
@@ -21,7 +20,6 @@ def collect_packages(
     stages: dict,
     pkg_meta: dict,
     pkg_badge: dict,
-    badge_style: str | None,
 ) -> list[dict]:
     names: list[str] = []
     seen: set[str] = set()
@@ -55,18 +53,9 @@ def collect_packages(
                 "version": clean_version(raw_version),
                 "summary": (pkg_meta.get(name) or {}).get("summary", ""),
                 "badge": pkg_badge.get(name),
-                "spec_badge": badge("spec", spec.get("state"), style=badge_style),
-                "srpm_badge": badge("srpm", srpm.get("state"), style=badge_style),
-                "mock_badge": badge("mock", mock.get("state"), style=badge_style),
-                "mock_badge_short": badge_short(
-                    "mock", mock.get("state"), style=badge_style
-                ),
-                "copr_badge": badge(
-                    "copr", copr.get("state"), copr_url, style=badge_style
-                ),
-                "copr_badge_short": badge_short(
-                    "copr", copr.get("state"), copr_url, style=badge_style
-                ),
+                "mock_state": mock.get("state"),
+                "copr_state": copr.get("state"),
+                "copr_url": copr_url,
             }
         )
     return packages
@@ -89,12 +78,9 @@ def collect_groups(groups_cfg: dict, pkg_by_name: dict) -> list[dict]:
                         "summary": global_pkg.get("summary", ""),
                         "version": None,
                         "badge": None,
-                        "spec_badge": None,
-                        "srpm_badge": None,
-                        "mock_badge": None,
-                        "mock_badge_short": None,
-                        "copr_badge": None,
-                        "copr_badge_short": None,
+                        "mock_state": None,
+                        "copr_state": None,
+                        "copr_url": None,
                     }
                 )
         groups.append(
@@ -165,7 +151,7 @@ def main() -> None:
                 if isinstance(name, str):
                     pkg_badge[name] = group_cfg_badge
 
-    packages = collect_packages(stages, pkg_meta, pkg_badge, badge_style)
+    packages = collect_packages(stages, pkg_meta, pkg_badge)
     pkg_by_name = {p["name"]: p for p in packages}
     groups = collect_groups(groups_cfg, pkg_by_name)
     contributors = collect_contributors(ROOT)

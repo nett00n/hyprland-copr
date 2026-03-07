@@ -1,3 +1,11 @@
+{% macro badge(label, state, url=None) -%}
+{%- set state_colors = {'success': 'brightgreen', 'failed': 'red', 'skipped': 'lightgrey'} -%}
+{%- set s = state or 'unknown' -%}
+{%- set color = state_colors.get(s, 'orange') -%}
+{%- set img_url = 'https://img.shields.io/badge/' ~ label ~ '-' ~ s ~ '-' ~ color ~ (('?style=' ~ badge_style) if badge_style else '') -%}
+{%- set img = '![' ~ label ~ '](' ~ img_url ~ ')' -%}
+{%- if url %}[{{ img }}]({{ url }}){% else %}{{ img }}{% endif -%}
+{%- endmacro %}
 {% macro ver_badge(pkg) -%}
 {% if pkg.badge -%}
 ![{{ pkg.version }}](https://img.shields.io/badge/{{ pkg.version | replace('-', '--') }}-{{ pkg.badge.color }}?logo={{ pkg.badge.logo }}&logoColor={{ pkg.badge.logo_color }}&style={{ badge_style }})
@@ -33,7 +41,7 @@
 | Package | Version | Mock | Copr | Description |
 |:--------|:-------:|:----:|:----:|-------------|
 {% for pkg in packages | sort(attribute='name') -%}
-| `{{ pkg.name | lower }}` | {{ ver_badge(pkg) }} | {{ pkg.mock_badge }} | {{ pkg.copr_badge }} | {{ pkg.summary }} |
+| `{{ pkg.name | lower }}` | {{ ver_badge(pkg) }} | {{ badge('mock', pkg.mock_state) }} | {{ badge('copr', pkg.copr_state, pkg.copr_url) }} | {{ pkg.summary }} |
 {% endfor %}
 ---
 {{ repo.support_info }}

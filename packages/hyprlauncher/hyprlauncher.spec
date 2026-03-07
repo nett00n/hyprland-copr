@@ -49,4 +49,5 @@ Features:
 
 %changelog
 * Sun Jan 04 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.1.5-%autorelease
+- tag: v0.1.5, commit: 086cfaa33541a347d040f8448ec4e4aff8f7f9bb
 - version: bump to 0.1.5

@@ -46,4 +46,5 @@ Development files for hyprwire.
 
 %changelog
 * Wed Feb 04 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.3.0-%autorelease
+- tag: v0.3.0, commit: 37bc90eed02b0c8b5a77a0b00867baf3005cfb98
 - version: bump to 0.3.0

@@ -39,4 +39,5 @@ Hyprland's idle daemon
 
 %changelog
 * Wed Aug 27 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.1.7-%autorelease
+- tag: v0.1.7, commit: 5430b73ddf148651bcf35fa39ed4d757c7534028
 - version: bump to 0.1.7

@@ -58,4 +58,5 @@ Development files for aquamarine.
 
 %changelog
 * Sun Nov 23 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.10.0-%autorelease
+- tag: v0.10.0, commit: a20a0e67a33b6848378a91b871b89588d3a12573
 - version: bump to 0.10.0

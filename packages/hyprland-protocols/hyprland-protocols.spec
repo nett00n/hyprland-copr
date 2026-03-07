@@ -45,4 +45,5 @@ Development files for hyprland-protocols.
 
 %changelog
 * Sat Oct 04 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.7.0-%autorelease
+- tag: v0.7.0, commit: bd153e76f751f150a09328dbdeb5e4fab9d23622
 - version: bump to 0.7.0

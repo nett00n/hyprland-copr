@@ -42,4 +42,5 @@ Development files for hyprutils.
 
 %changelog
 * Fri Dec 05 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.11.0-%autorelease
+- tag: v0.11.0, commit: fe686486ac867a1a24f99c753bb40ffed338e4b0
 - version: bump to 0.11.0

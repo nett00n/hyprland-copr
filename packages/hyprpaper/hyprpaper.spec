@@ -49,4 +49,5 @@ hyprpaper is a blazing fast Wayland wallpaper utility with IPC controls
 
 %changelog
 * Thu Jan 29 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.8.3-%autorelease
+- tag: v0.8.3, commit: 64b991cb917e28a51a50987a113ac4bf014ad0b7
 - version: bump to 0.8.3

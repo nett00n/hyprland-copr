@@ -50,4 +50,5 @@ Development files for hyprgraphics.
 
 %changelog
 * Sun Dec 28 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.5.0-%autorelease
+- tag: v0.5.0, commit: 4af02a3925b454deb1c36603843da528b67ded6c
 - version: bump to 0.5.0

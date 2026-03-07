@@ -56,4 +56,5 @@ Development files for hyprtoolkit.
 
 %changelog
 * Thu Jan 22 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.5.3-%autorelease
+- tag: v0.5.3, commit: 71515e83eb7ad0ec921c913e1d5772e5fe55daa9
 - version: bump to 0.5.3

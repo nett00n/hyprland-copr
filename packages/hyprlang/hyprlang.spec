@@ -41,4 +41,5 @@ Development files for hyprlang.
 
 %changelog
 * Mon Jan 05 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.6.8-%autorelease
+- tag: v0.6.8, commit: 3a1c1b25b059dae2c6bbc46991562ba1158d125c
 - version: bump to 0.6.8

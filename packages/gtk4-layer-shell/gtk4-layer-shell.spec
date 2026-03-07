@@ -58,4 +58,5 @@ Development files for gtk4-layer-shell.
 
 %changelog
 * Wed Oct 29 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 1.3.0-%autorelease
+- tag: v1.3.0, commit: 1c963c51514581c41b9bdae08cdf69171265cdda
 - Release 1.3.0

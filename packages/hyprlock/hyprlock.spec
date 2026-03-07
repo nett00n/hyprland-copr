@@ -47,4 +47,5 @@ Hyprland's simple, yet multi-threaded and GPU-accelerated screen locking utility
 
 %changelog
 * Thu Oct 02 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.9.2-%autorelease
+- tag: v0.9.2, commit: c48279d1e0f0a4399b5a2d56c16f2ec677ba18f8
 - version: bump to 0.9.2

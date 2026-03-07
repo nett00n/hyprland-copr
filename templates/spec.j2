@@ -69,4 +69,23 @@ Development files for {{ name }}.
 {% endif %}
 
 %changelog
-{{ changelog }}
+Package is built:
+* {{ changelog.date }} {{ changelog.packager }} - {{ changelog.version }}-{{ changelog.release }}
+{% if changelog.source_url %}
+- source: {{ changelog.source_url }}
+{% endif %}
+{% if changelog.copr_url %}
+- copr: {{ changelog.copr_url }}
+{% endif %}
+Package is build from:
+{% if changelog.tag and changelog.commit %}
+- tag: {{ changelog.tag }}, commit: {{ changelog.commit }}
+{% elif changelog.tag %}
+- tag: {{ changelog.tag }}
+{% elif changelog.commit %}
+- commit: {{ changelog.commit }}
+{% endif %}
+Changelog notes:
+{% for note in changelog.notes %}
+- {{ note }}
+{% endfor %}

@@ -37,4 +37,5 @@ A simple polkit authentication agent for Hyprland, written in QT/QML
 
 %changelog
 * Thu Jul 31 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.1.3-%autorelease
+- tag: v0.1.3, commit: 7e4054410f6d6331b239fea1c659ad6a917fbf6a
 - version: bump to 0.1.3

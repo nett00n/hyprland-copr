@@ -90,4 +90,5 @@ Development files for hyprland.
 
 %changelog
 * Tue Mar 03 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.54.1-%autorelease
+- tag: v0.54.1, commit: 4b07770b9ef1cceb2e6f56d33538aaffb9186b9c
 - [gha] Nix: update inputs

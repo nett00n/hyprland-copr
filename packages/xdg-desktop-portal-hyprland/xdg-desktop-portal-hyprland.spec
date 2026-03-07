@@ -53,4 +53,5 @@ xdg-desktop-portal backend for Hyprland
 
 %changelog
 * Fri Oct 17 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 1.3.11-%autorelease
+- tag: v1.3.11, commit: 753bbbdf6a052994da94062e5b753288cef28dfb
 - version: bump to 1.3.11

@@ -43,4 +43,5 @@ Development files for glaze.
 
 %changelog
 * Sat Feb 28 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 7.1.0-%autorelease
+- tag: v7.1.0, commit: b71542bb16c9d793545062185d7fd9bedbc0b638
 - v7.1.0 bump

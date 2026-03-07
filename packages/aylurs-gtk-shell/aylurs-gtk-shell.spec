@@ -38,4 +38,5 @@ popd
 
 %changelog
 * Fri Nov 28 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 3.1.1-%autorelease
+- tag: v3.1.1, commit: e169694390548dfd38ff40f1ef2163d6c3ffe3ea
 - nix: update hash

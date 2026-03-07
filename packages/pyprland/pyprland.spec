@@ -41,5 +41,5 @@ python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --pref
 %{python3_sitelib}/pyprland-%{version}.dist-info
 
 %changelog
-* Thu Mar 05 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 3.1.1-%autorelease
-- Fix empty animation_type value (#216)
+* Sat Mar 07 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 3.1.1-%autorelease
+- Update to 3.1.1

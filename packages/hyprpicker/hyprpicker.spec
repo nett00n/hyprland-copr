@@ -40,4 +40,5 @@ A wlroots-compatible Wayland color picker that does not suck
 
 %changelog
 * Tue Feb 10 2026 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.4.6-%autorelease
+- tag: v0.4.6, commit: 345eab2d704ee47a6c277cbfb2aeabaa620d9dbc
 - version: bump to 0.4.6

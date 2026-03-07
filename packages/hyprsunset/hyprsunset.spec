@@ -37,4 +37,5 @@ An application to enable a blue-light filter on Hyprland
 
 %changelog
 * Fri Oct 03 2025 Vladimir nett00n Budylnikov <git@nett00n.org> - 0.3.3-%autorelease
+- tag: v0.3.3, commit: 057feb7a724b7fc0f3a406d6db08b59734db006a
 - version: bump to 0.3.3
