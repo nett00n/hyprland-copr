@@ -11,6 +11,7 @@ Usage:
     python3 scripts/gather-requires.py PACKAGE.rpm [PACKAGE2.rpm ...]
 """
 
+import os
 import re
 import subprocess
 import sys
@@ -20,15 +21,17 @@ from pathlib import Path
 _BARE_SONAME = re.compile(r"^(lib\S+\.so\.\d+)\(\)\(64bit\)$")
 
 # Base system packages to exclude — auto-deps handle these
-SKIP_PACKAGES = frozenset(
-    {
-        "glibc",
-        "libgcc",
-        "libstdc++",
-        "libm",
-        "basesystem",
-    }
-)
+_DEFAULT_SKIP = {
+    "glibc",
+    "libgcc",
+    "libstdc++",
+    "libm",
+    "basesystem",
+}
+_EXTRA_SKIP = set(
+    os.environ.get("SKIP_PACKAGES", "").split(",")
+) if os.environ.get("SKIP_PACKAGES") else set()
+SKIP_PACKAGES = frozenset(_DEFAULT_SKIP | _EXTRA_SKIP)
 
 
 def rpm(*args: str) -> list[str]:

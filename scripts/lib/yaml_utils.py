@@ -72,12 +72,27 @@ def load_groups_yaml(path: Path = GROUPS_YAML) -> dict:
         sys.exit(f"error: failed to parse {path}: {e}")
 
 
+def validate_packages(packages: dict) -> None:
+    """Validate packages structure and required fields.
+
+    Exits with error if validation fails.
+    """
+    if not isinstance(packages, dict):
+        sys.exit(f"error: packages.yaml root must be a dict, got {type(packages).__name__}")
+    for pkg_name, pkg_data in packages.items():
+        if not isinstance(pkg_data, dict):
+            sys.exit(f"error: package '{pkg_name}' must be a dict, got {type(pkg_data).__name__}")
+        if "version" not in pkg_data:
+            sys.exit(f"error: package '{pkg_name}' missing required field 'version'")
+
+
 def get_packages(path: Path = PACKAGES_YAML) -> dict:
     """Return the packages dict from packages.yaml (packages at root level)."""
     data = load_packages_yaml(path)
     packages = data or {}
     if not packages:
         sys.exit("error: no packages defined in packages.yaml")
+    validate_packages(packages)
     return packages
 
 

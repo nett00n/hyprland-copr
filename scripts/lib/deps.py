@@ -41,22 +41,15 @@ def topological_sort(graph: dict[str, set[str]]) -> list[str]:
 
     Packages with no deps come first. Raises ValueError on cycles.
     """
-    in_degree: dict[str, int] = {node: 0 for node in graph}
-    for deps in graph.values():
-        for dep in deps:
-            if dep in in_degree:
-                in_degree[dep] += 0  # ensure key exists (already done above)
-    # Count in-degree: how many packages depend on each package
+    # Count in-degree: how many dependencies each package has
     dependents: dict[str, set[str]] = {node: set() for node in graph}
     for node, deps in graph.items():
         for dep in deps:
             if dep in dependents:
                 dependents[dep].add(node)
-    in_degree = {node: 0 for node in graph}
+    in_degree: dict[str, int] = {node: 0 for node in graph}
     for node, deps in graph.items():
-        for dep in deps:
-            if dep in in_degree:
-                in_degree[node] += 1
+        in_degree[node] = len(deps)
 
     queue: deque[str] = deque(node for node, deg in in_degree.items() if deg == 0)
     order: list[str] = []

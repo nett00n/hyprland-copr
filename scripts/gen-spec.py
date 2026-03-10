@@ -28,7 +28,7 @@ def get_packager() -> str:
             ["git", "config", "user.email"], text=True
         ).strip()
         return f"{name} <{email}>"
-    except Exception:
+    except (subprocess.CalledProcessError, FileNotFoundError):
         return "Packager <packager@example.com>"
 
 
@@ -44,7 +44,8 @@ def fetch_github_release(github_url: str, version: str) -> dict | None:
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             return json.loads(resp.read())
-    except Exception:
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError) as e:
+        print(f"warning: failed to fetch {api_url}: {e}", file=sys.stderr)
         return None
 
 

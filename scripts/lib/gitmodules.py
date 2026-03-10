@@ -214,5 +214,5 @@ def get_submodule_commit(repo: Path) -> tuple[str, str, str] | None:
             return None
         full_hash, date_str = parts[0], parts[1]
         return full_hash, full_hash[:7], date_str
-    except Exception:
+    except (subprocess.CalledProcessError, OSError, ValueError):
         return None

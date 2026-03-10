@@ -15,6 +15,7 @@ Environment variables:
 """
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -80,6 +81,8 @@ def main() -> None:
         if fedora_version == "rawhide"
         else f"fedora-{fedora_version}-x86_64",
     )
+    if not re.match(r"^[\w.-]+$", mock_chroot):
+        raise ValueError(f"Invalid MOCK_CHROOT: {mock_chroot}")
     package_filter = os.environ.get("PACKAGE", "")
 
     all_packages = get_packages()
@@ -140,14 +143,11 @@ def main() -> None:
             build_status["stages"]["mock"][pkg] = entry
             continue
 
-        addrepo = (
-            f"--addrepo file://{LOCAL_REPO}"
-            if (LOCAL_REPO / "repodata").exists()
-            else ""
-        )
-        ok, _, _ = run_cmd(
-            f"mock -r {mock_chroot} {addrepo} --rebuild {srpm_path}".strip(), log
-        )
+        cmd = ["mock", "-r", mock_chroot, "--rebuild", srpm_path]
+        if (LOCAL_REPO / "repodata").exists():
+            cmd.insert(3, "--addrepo")
+            cmd.insert(4, f"file://{LOCAL_REPO}")
+        ok, _, _ = run_cmd(cmd, log)
         mock_logs = copy_mock_results(mock_chroot, pkg)
         state = "success" if ok else "failed"
         if not ok:

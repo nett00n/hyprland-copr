@@ -1,6 +1,5 @@
 """Helpers for probing remote tarballs."""
 
-import shlex
 import subprocess
 
 
@@ -16,13 +15,27 @@ def detect_tarball_source_name(
     """
     first = ""
     for tar_url in tar_urls:
-        cmd = f"curl -sLf --max-time 30 {shlex.quote(tar_url)} | tar -tz 2>/dev/null | head -1"
-        result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, timeout=60
-        )
-        first = result.stdout.strip().split("/")[0]
-        if first:
-            break
+        try:
+            curl_proc = subprocess.Popen(
+                ["curl", "-sLf", "--max-time", "30", tar_url],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                timeout=60,
+            )
+            tar_result = subprocess.run(
+                ["tar", "-tz"],
+                stdin=curl_proc.stdout,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            curl_proc.wait(timeout=5)
+            if tar_result.returncode == 0:
+                first = tar_result.stdout.strip().split("\n")[0].split("/")[0]
+            if first:
+                break
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, OSError):
+            continue
     if not first:
         return None
     expected = f"{pkg_name}-{version_or_commit}"

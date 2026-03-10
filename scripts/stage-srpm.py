@@ -115,7 +115,7 @@ def main() -> None:
             build_status["stages"]["srpm"][pkg] = entry
             continue
 
-        ok, _, _ = run_cmd(f"spectool -g -R {spec}", log)
+        ok, _, _ = run_cmd(["spectool", "-g", "-R", str(spec)], log)
         if not ok:
             failed = True
             status("srpm", pkg, "fail")
@@ -131,7 +131,7 @@ def main() -> None:
             continue
 
         copy_local_patches(pkg, meta)
-        ok, _, _ = run_cmd(f"rpmbuild -bs {spec}", log)
+        ok, _, _ = run_cmd(["rpmbuild", "-bs", str(spec)], log)
         if not ok:
             failed = True
             status("srpm", pkg, "fail")

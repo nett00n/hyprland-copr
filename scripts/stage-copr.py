@@ -15,6 +15,7 @@ Environment variables:
 """
 
 import os
+import re
 import sys
 from typing import Any
 
@@ -52,6 +53,9 @@ def main() -> None:
             "error: COPR_REPO is not set (e.g. export COPR_REPO=nett00n/hyprland)",
             file=sys.stderr,
         )
+        sys.exit(2)
+    if not re.match(r"^[\w-]+/[\w.-]+$", copr_repo):
+        print(f"error: Invalid COPR_REPO format: {copr_repo}", file=sys.stderr)
         sys.exit(2)
 
     all_packages = get_packages()
@@ -120,7 +124,7 @@ def main() -> None:
             build_status["stages"]["copr"][pkg] = entry
             continue
 
-        ok, stdout, _ = run_cmd(f"copr-cli build {copr_repo} {srpm_path}", log)
+        ok, stdout, _ = run_cmd(["copr-cli", "build", copr_repo, srpm_path], log)
         state = "success" if ok else "failed"
         if not ok:
             failed = True

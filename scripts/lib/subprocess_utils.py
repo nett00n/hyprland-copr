@@ -1,18 +1,19 @@
 """Subprocess helpers for build scripts."""
 
+import shlex
 import subprocess
 from pathlib import Path
 
 
-def run_cmd(cmd: str, log_path: Path | None = None) -> tuple[bool, str, str]:
-    """Run a shell command, optionally appending output to log_path.
+def run_cmd(cmd: list[str], log_path: Path | None = None) -> tuple[bool, str, str]:
+    """Run a command, optionally appending output to log_path.
 
     Returns (ok, stdout, stderr).
     """
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)
     if log_path:
         with open(log_path, "a") as fh:
-            fh.write(f"$ {cmd}\n")
+            fh.write(f"$ {shlex.join(cmd)}\n")
             if result.stdout:
                 fh.write(result.stdout)
             if result.stderr:
