@@ -45,11 +45,11 @@ news: |
   >   2026-03-10
 people:
   authors:
-  - name: nett00n
-    url: https://github.com/nett00n
+    - name: nett00n
+      url: https://github.com/nett00n
   maintainers:
-  - name: nett00n
-    url: https://github.com/nett00n
+    - name: nett00n
+      url: https://github.com/nett00n
 short_description:
   COPR managment system (example: Hyprland for Fedora)
 source_url: https://github.com/nett00n/hyprland-copr

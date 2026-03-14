@@ -20,8 +20,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
-
 from lib.deps import build_dep_graph, topological_sort, transitive_deps
 from lib.log_analysis import report_mock_failures, report_srpm_failures
 from lib.paths import LOG_DIR, ROOT
@@ -29,6 +27,7 @@ from lib.reporting import print_summary
 from lib.yaml_utils import (
     BUILD_STATUS_YAML,
     STAGES,
+    dump_yaml_pretty,
     filter_packages,
     get_packages,
     load_build_status,
@@ -167,11 +166,7 @@ def main() -> None:
 
     # Write build-report.yaml (compatible with gen-report.py)
     report_path = ROOT / "build-report.yaml"
-    report_path.write_text(
-        yaml.dump(
-            final_status, default_flow_style=False, sort_keys=False, allow_unicode=True
-        )
-    )
+    report_path.write_text(dump_yaml_pretty(final_status))
     print(f"\nReport written to {report_path.relative_to(ROOT)}")
 
     any_failed = any(

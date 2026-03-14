@@ -28,9 +28,11 @@ _DEFAULT_SKIP = {
     "libm",
     "basesystem",
 }
-_EXTRA_SKIP = set(
-    os.environ.get("SKIP_PACKAGES", "").split(",")
-) if os.environ.get("SKIP_PACKAGES") else set()
+_EXTRA_SKIP = (
+    set(os.environ.get("SKIP_PACKAGES", "").split(","))
+    if os.environ.get("SKIP_PACKAGES")
+    else set()
+)
 SKIP_PACKAGES = frozenset(_DEFAULT_SKIP | _EXTRA_SKIP)
 
 

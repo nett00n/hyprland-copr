@@ -76,7 +76,14 @@ def main() -> None:
             latest_str = None
         summary[mod["name"]] = {"url": url, "latest": latest_str}
     print(
-        yaml.dump(summary, default_flow_style=False, sort_keys=True, allow_unicode=True)
+        yaml.dump(
+            summary,
+            default_flow_style=False,
+            sort_keys=True,
+            allow_unicode=True,
+            indent=2,
+            width=1000,
+        )
     )
 
     if not PACKAGES_YAML.exists():

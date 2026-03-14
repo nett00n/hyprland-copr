@@ -66,7 +66,7 @@ lint: ## Run all linters inside toolbox (ruff, mypy, yamllint)
 	@echo $(HIGHLIGHT_PREFIX) "Mypy (Type checker)"
 	$(call run_with_result,$(TOOLBOX_RUN) mypy scripts/ --ignore-missing-imports 2>&1 | grep -v "submodules/",Mypy check passed,Mypy check failed)
 	@echo $(HIGHLIGHT_PREFIX) "Yamllint (YAML validator)"
-	$(call run_with_result,$(TOOLBOX_RUN) yamllint -d relaxed *.yaml docs/*.yaml 2>&1 | grep -v "submodules/",Yamllint check passed,Yamllint check failed)
+	$(call run_with_result,$(TOOLBOX_RUN) yamllint *.yaml 2>&1 | grep -v "submodules/",Yamllint check passed,Yamllint check failed)
 	@echo $(HIGHLIGHT_PREFIX) "✓✓✓ All linting passed: ruff, mypy, yamllint"
 
 ruff-format: ## Run ruff format on all scripts inside toolbox
@@ -145,9 +145,7 @@ container-build: ## Build image and recreate toolbox container for FEDORA_VERSIO
 	toolbox rm --force $(CONTAINER)
 	toolbox create \
 		--image $(IMAGE_NAME):$(FEDORA_VERSION) $(CONTAINER)
-	toolbox run \
-		$(CONTAINER) \
-		whoami
+	$(TOOLBOX_RUN) whoami
 
 container-enter: ## Enter the toolbox shell interactively
 	toolbox enter rpm$(FEDORA_VERSION)

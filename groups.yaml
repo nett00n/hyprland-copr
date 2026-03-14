@@ -2,16 +2,16 @@
 apps:
   label: Useful apps
   packages:
-  - pyprland
-  - Waybar
+    - pyprland
+    - Waybar
 deps:
   label: Other dependencies
   packages:
-  - aylurs-gtk-shell
-  - glaze
-  - gtk4-layer-shell
-  - sndio
-  - cava
+    - aylurs-gtk-shell
+    - glaze
+    - gtk4-layer-shell
+    - sndio
+    - cava
 hyprland:
   badge:
     color: 33CCFF
@@ -19,23 +19,23 @@ hyprland:
     logo_color: black
   label: Hyprland main packages
   packages:
-  - hypridle
-  - Hyprland
-  - hyprland-guiutils
-  - hyprland-plugins
-  - hyprland-qt-support
-  - hyprlauncher
-  - hyprlock
-  - hyprpaper
-  - hyprpicker
-  - hyprpolkitagent
-  - hyprpwcenter
-  - hyprqt6engine
-  - Hyprshot
-  - hyprshutdown
-  - hyprsunset
-  - hyprsysteminfo
-  - xdg-desktop-portal-hyprland
+    - hypridle
+    - Hyprland
+    - hyprland-guiutils
+    - hyprland-plugins
+    - hyprland-qt-support
+    - hyprlauncher
+    - hyprlock
+    - hyprpaper
+    - hyprpicker
+    - hyprpolkitagent
+    - hyprpwcenter
+    - hyprqt6engine
+    - Hyprshot
+    - hyprshutdown
+    - hyprsunset
+    - hyprsysteminfo
+    - xdg-desktop-portal-hyprland
 hyprland-deps:
   badge:
     color: 33CCFF
@@ -43,29 +43,30 @@ hyprland-deps:
     logo_color: black
   label: Hyprland dependencies
   packages:
-  - aquamarine
-  - hyprcursor
-  - hyprgraphics
-  - hyprland-protocols
-  - hyprland-qt-support
-  - hyprlang
-  - hyprtoolkit
-  - hyprutils
-  - hyprwayland-scanner
-  - hyprwire
+    - aquamarine
+    - hyprcursor
+    - hyprgraphics
+    - hyprland-protocols
+    - hyprland-qt-support
+    - hyprlang
+    - hyprtoolkit
+    - hyprutils
+    - hyprwayland-scanner
+    - hyprwire
 starter-pack:
   label: Hyprland new user starter-pack
   packages:
-  - hypridle
-  - Hyprland
-  - hyprland-guiutils
-  - hyprlock
-  - hyprpaper
-  - Hyprshot
-  - Waybar
+    - hypridle
+    - Hyprland
+    - hyprland-guiutils
+    - hyprlock
+    - hyprpaper
+    - Hyprshot
+    - Waybar
   packages_from_global_repo:
-  - name: wofi
-    summary: Wofi is a launcher/menu program for wlroots based wayland compositors
-      such as sway
-  - name: swaync
-    summary: A simple GTK based notification daemon for any Wayland compositor
+    - name: wofi
+      summary:
+        Wofi is a launcher/menu program for wlroots based wayland compositors
+        such as sway
+    - name: swaync
+      summary: A simple GTK based notification daemon for any Wayland compositor

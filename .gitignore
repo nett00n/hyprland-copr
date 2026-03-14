@@ -26,5 +26,6 @@ build-report.yaml
 logs/
 
 
-# Spec files
-# *.spec
+# Environment
+.env*
+!.env.example

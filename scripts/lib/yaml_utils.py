@@ -78,10 +78,14 @@ def validate_packages(packages: dict) -> None:
     Exits with error if validation fails.
     """
     if not isinstance(packages, dict):
-        sys.exit(f"error: packages.yaml root must be a dict, got {type(packages).__name__}")
+        sys.exit(
+            f"error: packages.yaml root must be a dict, got {type(packages).__name__}"
+        )
     for pkg_name, pkg_data in packages.items():
         if not isinstance(pkg_data, dict):
-            sys.exit(f"error: package '{pkg_name}' must be a dict, got {type(pkg_data).__name__}")
+            sys.exit(
+                f"error: package '{pkg_name}' must be a dict, got {type(pkg_data).__name__}"
+            )
         if "version" not in pkg_data:
             sys.exit(f"error: package '{pkg_name}' missing required field 'version'")
 
@@ -174,12 +178,22 @@ def load_build_status(path: Path = BUILD_STATUS_YAML) -> dict:
     return {"stages": {s: {} for s in STAGES}}
 
 
+def dump_yaml_pretty(data: dict) -> str:
+    """Dump YAML data in a pretty, readable format."""
+    return yaml.dump(
+        data,
+        default_flow_style=False,
+        sort_keys=False,
+        allow_unicode=True,
+        indent=2,
+        width=1000,
+    )
+
+
 def save_build_status(status: dict, path: Path = BUILD_STATUS_YAML) -> None:
     """Save build-report.yaml, creating parent dirs if needed."""
     path.parent.mkdir(exist_ok=True)
-    path.write_text(
-        yaml.dump(status, default_flow_style=False, sort_keys=False, allow_unicode=True)
-    )
+    path.write_text(dump_yaml_pretty(status))
 
 
 def pop_build_stages(
@@ -251,9 +265,5 @@ def write_yaml_preserving_comments(
                     changed[pkg_name] = (current_ver, new_commit_ver)
 
     if changed:
-        path.write_text(
-            yaml.dump(
-                data, default_flow_style=False, sort_keys=False, allow_unicode=True
-            )
-        )
+        path.write_text(dump_yaml_pretty(data))
     return changed

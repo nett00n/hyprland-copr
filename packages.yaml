@@ -3,27 +3,27 @@ aquamarine:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - hyprwayland-scanner-devel
-  - ninja-build
-  - pkgconfig(gbm)
-  - pkgconfig(gl)
-  - pkgconfig(glesv2)
-  - pkgconfig(hwdata)
-  - pkgconfig(hyprutils)
-  - pkgconfig(libdisplay-info)
-  - pkgconfig(libdrm)
-  - pkgconfig(libinput)
-  - pkgconfig(libseat)
-  - pkgconfig(libudev)
-  - pkgconfig(pixman-1)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-protocols)
+    - cmake
+    - gcc-c++
+    - hyprwayland-scanner-devel
+    - ninja-build
+    - pkgconfig(gbm)
+    - pkgconfig(gl)
+    - pkgconfig(glesv2)
+    - pkgconfig(hwdata)
+    - hyprutils
+    - pkgconfig(libdisplay-info)
+    - pkgconfig(libdrm)
+    - pkgconfig(libinput)
+    - pkgconfig(libseat)
+    - pkgconfig(libudev)
+    - pkgconfig(pixman-1)
+    - pkgconfig(wayland-client)
+    - pkgconfig(wayland-protocols)
   depends_on:
-  - aquamarine
-  - hyprutils
-  - hyprwayland-scanner
+    - aquamarine
+    - hyprutils
+    - hyprwayland-scanner
   description: |
     Aquamarine is a very light linux rendering backend library. It provides basic abstractions for an application to render on a Wayland session (in a window) or a native DRM session
 
@@ -32,16 +32,16 @@ aquamarine:
     Aquamarine provides no bindings for other languages. It is C++-only
   devel:
     files:
-    - '%{_includedir}/aquamarine/'
-    - '%{_libdir}/pkgconfig/aquamarine.pc'
+      - "%{_includedir}/aquamarine/"
+      - "%{_libdir}/pkgconfig/aquamarine.pc"
   files:
-  - '%license LICENSE'
-  - '%{_libdir}/libaquamarine.so*'
+    - "%license LICENSE"
+    - "%{_libdir}/libaquamarine.so*"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A very light linux rendering backend library
   url: https://github.com/hyprwm/aquamarine
   version: 0.10.0
@@ -49,32 +49,32 @@ aylurs-gtk-shell:
   build:
     go_subdir: cli
     prep:
-    - pushd cli
-    - tar xf %{SOURCE1}
-    - popd
+      - pushd cli
+      - tar xf %{SOURCE1}
+      - popd
     system: meson
   build_requires:
-  - gcc-c++
-  - gjs
-  - golang
-  - gtk4-layer-shell-devel
-  - meson
-  - ninja-build
+    - gcc-c++
+    - gjs
+    - golang
+    - gtk4-layer-shell-devel
+    - meson
+    - ninja-build
   depends_on:
-  - gtk4-layer-shell
+    - gtk4-layer-shell
   description: |
     Scaffolding CLI tool for Astal+Gnim projects. Astal is a set of libraries written in Vala/C that makes writing a Desktop Shell easy. Gnim is a library which introduces JSX to GJS. GJS is a JavaScript runtime built on Firefox's SpiderMonkey JavaScript engine and the GNOME platform libraries, the same runtime GNOME Shell runs on
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_prefix}/bin/ags'
-  - '%{_prefix}/share/ags/'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_prefix}/bin/ags"
+    - "%{_prefix}/share/ags/"
   license: GPL-3.0-or-later
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    - '%{name}-%{version}-vendor.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+      - "%{name}-%{version}-vendor.tar.gz"
     name: ags
   summary: Scaffolding CLI for Astal+Gnim
   url: https://github.com/Aylur/ags
@@ -82,72 +82,73 @@ aylurs-gtk-shell:
 cava:
   build:
     no_lto: true
-    subdir: ''
+    subdir: ""
     system: cmake
   build_requires:
-  - alsa-lib-devel
-  - cmake
-  - fftw-devel
-  - gcc-c++
-  - iniparser-devel
-  - jack-audio-connection-kit-devel
-  - make
-  - ncurses-devel
-  - ninja-build
-  - pipewire-devel
-  - portaudio-devel
-  - pulseaudio-libs-devel
-  - sdl2-compat-devel
-  - sndio-devel
+    - alsa-lib-devel
+    - cmake
+    - fftw-devel
+    - gcc-c++
+    - iniparser-devel
+    - jack-audio-connection-kit-devel
+    - make
+    - ncurses-devel
+    - ninja-build
+    - pipewire-devel
+    - portaudio-devel
+    - pulseaudio-libs-devel
+    - sdl2-compat-devel
+    - sndio-devel
   depends_on:
-  - sndio
+    - sndio
   description: |
     Cross-platform Audio Visualizer E
   devel:
     files: []
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
+    - "%doc README.md"
+    - "%license LICENSE"
   license: MIT
-  release: '%autorelease'
+  release: "%autorelease"
   rpm:
     no_debug_package: false
   source:
     archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    name: ''
+      - "%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+    name: ""
   summary: Cross-platform Audio Visualizer
   url: https://github.com/karlstav/cava
   version: 0.10.7
 glaze:
   build:
     commands:
-    - '%cmake -DBUILD_TESTING=OFF'
-    - '%cmake_build'
+      - "%cmake -DBUILD_TESTING=OFF"
+      - "%cmake_build"
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - libasan
-  - libubsan
-  - ninja-build
+    - cmake
+    - gcc-c++
+    - libasan
+    - libubsan
+    - ninja-build
   description: |
     One of the fastest JSON libraries in the world. Glaze reads and writes from object memory, simplifying interfaces and offering incredible performance
   devel:
     files:
-    - '%{_prefix}/include/glaze/'
-    - '%{_prefix}/share/glaze/*.cmake'
+      - "%{_prefix}/include/glaze/"
+      - "%{_prefix}/share/glaze/*.cmake"
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
+    - "%doc README.md"
+    - "%license LICENSE"
   license: MIT
-  release: '%autorelease'
+  release: "%autorelease"
   rpm:
     no_debug_package: true
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: Extremely fast, in memory, JSON and reflection library for modern C++.
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+  summary:
+    Extremely fast, in memory, JSON and reflection library for modern C++.
     BEVE, CBOR, CSV, MessagePack, TOML, YAML, EETF
   url: https://github.com/stephenberry/glaze
   version: 7.1.0
@@ -155,14 +156,14 @@ gtk4-layer-shell:
   build:
     system: meson
   build_requires:
-  - gcc-c++
-  - glib2-devel
-  - gobject-introspection-devel
-  - gtk4-devel
-  - meson
-  - ninja-build
-  - pkgconfig(wayland-protocols)
-  - vala
+    - gcc-c++
+    - glib2-devel
+    - gobject-introspection-devel
+    - gtk4-devel
+    - meson
+    - ninja-build
+    - pkgconfig(wayland-protocols)
+    - vala
   description: |
     A library for using the Layer Shell and Session Lock Wayland protocols with GTK4. This Library is compatible with C, C++ and any language that supports GObject introspection files (Python, Vala, etc)
 
@@ -171,26 +172,27 @@ gtk4-layer-shell:
     The Session Lock protocol allows building lock screens
   devel:
     files:
-    - '%{_prefix}/include/gtk4-layer-shell/gtk4-layer-shell.h'
-    - '%{_prefix}/include/gtk4-layer-shell/gtk4-session-lock.h'
-    - '%{_prefix}/lib64/pkgconfig/gtk4-layer-shell-0.pc'
-    - '%{_prefix}/share/gir-1.0/Gtk4LayerShell-1.0.gir'
-    - '%{_prefix}/share/gir-1.0/Gtk4SessionLock-1.0.gir'
-    - '%{_prefix}/share/vala/vapi/gtk4-layer-shell-0.deps'
-    - '%{_prefix}/share/vala/vapi/gtk4-layer-shell-0.vapi'
+      - "%{_prefix}/include/gtk4-layer-shell/gtk4-layer-shell.h"
+      - "%{_prefix}/include/gtk4-layer-shell/gtk4-session-lock.h"
+      - "%{_prefix}/lib64/pkgconfig/gtk4-layer-shell-0.pc"
+      - "%{_prefix}/share/gir-1.0/Gtk4LayerShell-1.0.gir"
+      - "%{_prefix}/share/gir-1.0/Gtk4SessionLock-1.0.gir"
+      - "%{_prefix}/share/vala/vapi/gtk4-layer-shell-0.deps"
+      - "%{_prefix}/share/vala/vapi/gtk4-layer-shell-0.vapi"
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_prefix}/lib64/girepository-*/Gtk4LayerShell-*.typelib'
-  - '%{_prefix}/lib64/girepository-*/Gtk4SessionLock-*.typelib'
-  - '%{_prefix}/lib64/libgtk4-layer-shell.so*'
-  - '%{_prefix}/lib64/liblayer-shell-preload.so'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_prefix}/lib64/girepository-*/Gtk4LayerShell-*.typelib"
+    - "%{_prefix}/lib64/girepository-*/Gtk4SessionLock-*.typelib"
+    - "%{_prefix}/lib64/libgtk4-layer-shell.so*"
+    - "%{_prefix}/lib64/liblayer-shell-preload.so"
   license: MIT
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: FA library to create panels and other desktop components for Wayland using
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+  summary:
+    FA library to create panels and other desktop components for Wayland using
     the Layer Shell protocol and GTK4
   url: https://github.com/wmww/gtk4-layer-shell
   version: 1.3.0
@@ -198,33 +200,33 @@ hyprcursor:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(cairo)
-  - pkgconfig(hyprlang)
-  - pkgconfig(librsvg-2.0)
-  - pkgconfig(libzip)
-  - pkgconfig(tomlplusplus)
+    - cmake
+    - gcc-c++
+    - ninja-build
+    - pkgconfig(cairo)
+    - hyprlang
+    - pkgconfig(librsvg-2.0)
+    - pkgconfig(libzip)
+    - pkgconfig(tomlplusplus)
   depends_on:
-  - hyprlang
+    - hyprlang
   description: |
     The hyprland cursor format, library and utilities
   devel:
     files:
-    - '%{_includedir}/hyprcursor.hpp'
-    - '%{_includedir}/hyprcursor/'
-    - '%{_libdir}/pkgconfig/hyprcursor.pc'
+      - "%{_includedir}/hyprcursor.hpp"
+      - "%{_includedir}/hyprcursor/"
+      - "%{_libdir}/pkgconfig/hyprcursor.pc"
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/hyprcursor-util'
-  - '%{_libdir}/libhyprcursor.so*'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_bindir}/hyprcursor-util"
+    - "%{_libdir}/libhyprcursor.so*"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A library and toolkit for the Hyprland cursor format
   url: https://github.com/hyprwm/hyprcursor
   version: 0.1.13
@@ -232,35 +234,35 @@ hyprgraphics:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - file-devel
-  - gcc-c++
-  - librsvg2-devel
-  - ninja-build
-  - pango-devel
-  - pkgconfig(cairo)
-  - pkgconfig(hyprutils)
-  - pkgconfig(libjpeg)
-  - pkgconfig(libpng)
-  - pkgconfig(libwebp)
-  - pkgconfig(pixman-1)
+    - cmake
+    - file-devel
+    - gcc-c++
+    - librsvg2-devel
+    - ninja-build
+    - pango-devel
+    - pkgconfig(cairo)
+    - hyprutils
+    - pkgconfig(libjpeg)
+    - pkgconfig(libpng)
+    - pkgconfig(libwebp)
+    - pkgconfig(pixman-1)
   depends_on:
-  - hyprutils
+    - hyprutils
   description: |
     hyprgraphics is a small C++ library used across the Hypr* ecosystem for
     graphics-related utilities such as image loading and color management
   devel:
     files:
-    - '%{_includedir}/hyprgraphics/'
-    - '%{_libdir}/pkgconfig/hyprgraphics.pc'
+      - "%{_includedir}/hyprgraphics/"
+      - "%{_libdir}/pkgconfig/hyprgraphics.pc"
   files:
-  - '%license LICENSE'
-  - '%{_libdir}/libhyprgraphics.so*'
+    - "%license LICENSE"
+    - "%{_libdir}/libhyprgraphics.so*"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: Small C++ library for graphics utilities across the Hypr ecosystem
   url: https://github.com/hyprwm/hyprgraphics
   version: 0.5.0
@@ -268,121 +270,121 @@ hypridle:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - hyprwayland-scanner-devel
-  - ninja-build
-  - pkgconfig(hyprland-protocols)
-  - pkgconfig(hyprlang)
-  - pkgconfig(hyprutils)
-  - pkgconfig(sdbus-c++)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-protocols)
+    - cmake
+    - gcc-c++
+    - hyprwayland-scanner-devel
+    - ninja-build
+    - hyprland-protocols
+    - hyprlang
+    - hyprutils
+    - pkgconfig(sdbus-c++)
+    - pkgconfig(wayland-client)
+    - pkgconfig(wayland-protocols)
   depends_on:
-  - hyprland-protocols
-  - hyprlang
-  - hyprutils
-  - hyprwayland-scanner
+    - hyprland-protocols
+    - hyprlang
+    - hyprutils
+    - hyprwayland-scanner
   description: |
     Hyprland's idle daemon
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/hypridle'
-  - '%{_datadir}/hypr/hypridle.conf'
-  - '%{_userunitdir}/hypridle.service'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_bindir}/hypridle"
+    - "%{_datadir}/hypr/hypridle.conf"
+    - "%{_userunitdir}/hypridle.service"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: An idle management daemon for Hyprland
   url: https://github.com/hyprwm/hypridle
   version: 0.1.7
 Hyprland:
   build:
     prep:
-    - sed -i 's|^install(TARGETS start-hyprland)|target_include_directories(start-hyprland
-      PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glaze-src/include")\ninstall(TARGETS
-      start-hyprland)|' start/CMakeLists.txt
+      - sed -i 's|^install(TARGETS start-hyprland)|target_include_directories(start-hyprland
+        PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glaze-src/include")\ninstall(TARGETS
+        start-hyprland)|' start/CMakeLists.txt
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - glaze-devel
-  - hyprutils-devel
-  - hyprwayland-scanner-devel
-  - hyprwire-devel
-  - ninja-build
-  - pkgconfig(aquamarine)
-  - pkgconfig(cairo)
-  - pkgconfig(gbm)
-  - pkgconfig(gio-2.0)
-  - pkgconfig(gl)
-  - pkgconfig(glesv2)
-  - pkgconfig(hyprcursor)
-  - pkgconfig(hyprgraphics)
-  - pkgconfig(hyprland-protocols)
-  - pkgconfig(hyprlang)
-  - pkgconfig(hyprutils)
-  - pkgconfig(libdrm)
-  - pkgconfig(libinput)
-  - pkgconfig(muparser)
-  - pkgconfig(pango)
-  - pkgconfig(pangocairo)
-  - pkgconfig(pixman-1)
-  - pkgconfig(re2)
-  - pkgconfig(tomlplusplus)
-  - pkgconfig(uuid)
-  - pkgconfig(wayland-protocols)
-  - pkgconfig(wayland-server)
-  - pkgconfig(xcb-errors)
-  - pkgconfig(xcb-icccm)
-  - pkgconfig(xcursor)
-  - pkgconfig(xkbcommon)
-  - udis86-devel
+    - cmake
+    - gcc-c++
+    - glaze-devel
+    - hyprutils-devel
+    - hyprwayland-scanner-devel
+    - hyprwire-devel
+    - ninja-build
+    - aquamarine
+    - pkgconfig(cairo)
+    - pkgconfig(gbm)
+    - pkgconfig(gio-2.0)
+    - pkgconfig(gl)
+    - pkgconfig(glesv2)
+    - hyprcursor
+    - hyprgraphics
+    - hyprland-protocols
+    - hyprlang
+    - hyprutils
+    - pkgconfig(libdrm)
+    - pkgconfig(libinput)
+    - pkgconfig(muparser)
+    - pkgconfig(pango)
+    - pkgconfig(pangocairo)
+    - pkgconfig(pixman-1)
+    - pkgconfig(re2)
+    - pkgconfig(tomlplusplus)
+    - pkgconfig(uuid)
+    - pkgconfig(wayland-protocols)
+    - pkgconfig(wayland-server)
+    - pkgconfig(xcb-errors)
+    - pkgconfig(xcb-icccm)
+    - pkgconfig(xcursor)
+    - pkgconfig(xkbcommon)
+    - udis86-devel
   depends_on:
-  - aquamarine
-  - glaze
-  - hyprcursor
-  - hyprgraphics
-  - hyprland-protocols
-  - hyprlang
-  - hyprutils
-  - hyprwayland-scanner
-  - hyprwire
+    - aquamarine
+    - glaze
+    - hyprcursor
+    - hyprgraphics
+    - hyprland-protocols
+    - hyprlang
+    - hyprutils
+    - hyprwayland-scanner
+    - hyprwire
   description: |
     Hyprland is a 100% independent, dynamic tiling Wayland compositor that doesn't sacrifice on its looks
 
     It provides the latest Wayland features, is highly customizable, has all the eyecandy, the most powerful plugins, easy IPC, much more QoL stuff than other compositors and more..
   devel:
     files:
-    - '%{_includedir}/hyprland/'
-    - '%{_prefix}/share/pkgconfig/hyprland.pc'
+      - "%{_includedir}/hyprland/"
+      - "%{_prefix}/share/pkgconfig/hyprland.pc"
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/hyprctl'
-  - '%{_bindir}/hyprland'
-  - '%{_bindir}/hyprpm'
-  - '%{_bindir}/start-hyprland'
-  - '%{_datadir}/bash-completion/completions/hyprctl'
-  - '%{_datadir}/bash-completion/completions/hyprpm'
-  - '%{_datadir}/fish/vendor_completions.d/hyprctl.fish'
-  - '%{_datadir}/fish/vendor_completions.d/hyprpm.fish'
-  - '%{_datadir}/hypr/'
-  - '%{_datadir}/wayland-sessions/hyprland*.desktop'
-  - '%{_datadir}/xdg-desktop-portal/hyprland-portals.conf'
-  - '%{_datadir}/zsh/site-functions/_hyprctl'
-  - '%{_datadir}/zsh/site-functions/_hyprpm'
-  - '%{_mandir}/man1/hyprctl.1.gz'
-  - '%{_mandir}/man1/Hyprland.1.gz'
-  - '%{_prefix}/bin/Hyprland'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_bindir}/hyprctl"
+    - "%{_bindir}/hyprland"
+    - "%{_bindir}/hyprpm"
+    - "%{_bindir}/start-hyprland"
+    - "%{_datadir}/bash-completion/completions/hyprctl"
+    - "%{_datadir}/bash-completion/completions/hyprpm"
+    - "%{_datadir}/fish/vendor_completions.d/hyprctl.fish"
+    - "%{_datadir}/fish/vendor_completions.d/hyprpm.fish"
+    - "%{_datadir}/hypr/"
+    - "%{_datadir}/wayland-sessions/hyprland*.desktop"
+    - "%{_datadir}/xdg-desktop-portal/hyprland-portals.conf"
+    - "%{_datadir}/zsh/site-functions/_hyprctl"
+    - "%{_datadir}/zsh/site-functions/_hyprpm"
+    - "%{_mandir}/man1/hyprctl.1.gz"
+    - "%{_mandir}/man1/Hyprland.1.gz"
+    - "%{_prefix}/bin/Hyprland"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
     name: Hyprland
   summary: A Modern C++ Wayland Compositor
   url: https://github.com/hyprwm/Hyprland
@@ -391,35 +393,35 @@ hyprland-guiutils:
   build:
     system: cmake
   build_requires:
-  - aquamarine-devel
-  - cmake
-  - gcc-c++
-  - hyprgraphics-devel
-  - ninja-build
-  - pkgconfig(cairo)
-  - pkgconfig(hyprlang)
-  - pkgconfig(hyprtoolkit)
-  - pkgconfig(hyprutils)
-  - pkgconfig(libdrm)
-  - pkgconfig(pixman-1)
-  - pkgconfig(xkbcommon)
+    - aquamarine-devel
+    - cmake
+    - gcc-c++
+    - hyprgraphics-devel
+    - ninja-build
+    - pkgconfig(cairo)
+    - hyprlang
+    - hyprtoolkit
+    - hyprutils
+    - pkgconfig(libdrm)
+    - pkgconfig(pixman-1)
+    - pkgconfig(xkbcommon)
   depends_on:
-  - aquamarine
-  - hyprgraphics
-  - hyprlang
-  - hyprtoolkit
-  - hyprutils
+    - aquamarine
+    - hyprgraphics
+    - hyprlang
+    - hyprtoolkit
+    - hyprutils
   description: |
     Hyprland GUI utilities (successor to hyprland-qtutils)
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_prefix}/bin/hyprland-*'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_prefix}/bin/hyprland-*"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: Hyprland GUI utilities
   url: https://github.com/hyprwm/hyprland-guiutils
   version: 0.2.1
@@ -427,19 +429,19 @@ hyprland-plugins:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - hyprland-devel
-  - ninja-build
-  - pkgconfig(libdrm)
-  - pkgconfig(libinput)
-  - pkgconfig(libudev)
-  - pkgconfig(pangocairo)
-  - pkgconfig(pixman-1)
-  - pkgconfig(wayland-server)
-  - pkgconfig(xkbcommon)
+    - cmake
+    - gcc-c++
+    - hyprland-devel
+    - ninja-build
+    - pkgconfig(libdrm)
+    - pkgconfig(libinput)
+    - pkgconfig(libudev)
+    - pkgconfig(pangocairo)
+    - pkgconfig(pixman-1)
+    - pkgconfig(wayland-server)
+    - pkgconfig(xkbcommon)
   depends_on:
-  - Hyprland
+    - Hyprland
   description: |
     Official plugins for Hyprland:
 
@@ -453,13 +455,13 @@ hyprland-plugins:
     - hyprwinwrap -> clone of xwinwrap, allows you to put any app as a wallpaper
     - xtra-dispatchers -> adds some new dispatchers
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
+    - "%doc README.md"
+    - "%license LICENSE"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: Official plugins for Hyprland
   url: https://github.com/hyprwm/hyprland-plugins
   version: 0.53.0
@@ -467,7 +469,7 @@ hyprland-protocols:
   build:
     system: meson
   build_requires:
-  - meson
+    - meson
   description: |
     Wayland protocol extensions for Hyprland
 
@@ -478,51 +480,51 @@ hyprland-protocols:
     Some of the protocols here also do not belong in w-p, as they are specific to Hyprland
   devel:
     files:
-    - '%{_datadir}/%{name}/'
-    - '%{_datadir}/pkgconfig/%{name}.pc'
+      - "%{_datadir}/%{name}/"
+      - "%{_datadir}/pkgconfig/%{name}.pc"
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
+    - "%doc README.md"
+    - "%license LICENSE"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   rpm:
     no_debug_package: true
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: Wayland protocol extensions for Hyprland
   url: https://github.com/hyprwm/hyprland-protocols
   version: 0.7.0
 hyprland-qt-support:
   build:
     commands:
-    - '%cmake -DINSTALL_QMLDIR=%{_libdir}/qt6/qml'
-    - '%cmake_build'
+      - "%cmake -DINSTALL_QMLDIR=%{_libdir}/qt6/qml"
+      - "%cmake_build"
     system: cmake
   build_requires:
-  - cmake
-  - cmake(Qt6Qml)
-  - cmake(Qt6Quick)
-  - cmake(Qt6QuickControls2)
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(hyprlang)
-  - qt6-rpm-macros
+    - cmake
+    - cmake(Qt6Qml)
+    - cmake(Qt6Quick)
+    - cmake(Qt6QuickControls2)
+    - gcc-c++
+    - ninja-build
+    - hyprlang
+    - qt6-rpm-macros
   depends_on:
-  - hyprlang
+    - hyprlang
   description: |
     A qml style provider for hypr* qt apps
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_libdir}/qt6/qml/org/hyprland/'
-  - '%{_prefix}/lib/libhyprland-quick-style-impl.so'
-  - '%{_prefix}/lib/libhyprland-quick-style.so'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_libdir}/qt6/qml/org/hyprland/"
+    - "%{_prefix}/lib/libhyprland-quick-style-impl.so"
+    - "%{_prefix}/lib/libhyprland-quick-style.so"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A qml style provider for hypr* qt apps
   url: https://github.com/hyprwm/hyprland-qt-support
   version: 0.1.0
@@ -530,26 +532,26 @@ hyprlang:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(hyprutils)
+    - cmake
+    - gcc-c++
+    - ninja-build
+    - hyprutils
   depends_on:
-  - hyprutils
+    - hyprutils
   description: |
     hyprlang is the official implementation library for the hypr configuration language
   devel:
     files:
-    - '%{_includedir}/hyprlang.hpp'
-    - '%{_libdir}/pkgconfig/hyprlang.pc'
+      - "%{_includedir}/hyprlang.hpp"
+      - "%{_libdir}/pkgconfig/hyprlang.pc"
   files:
-  - '%license LICENSE'
-  - '%{_libdir}/libhyprlang.so*'
+    - "%license LICENSE"
+    - "%{_libdir}/libhyprlang.so*"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: The hypr configuration language library
   url: https://github.com/hyprwm/hyprlang
   version: 0.6.8
@@ -557,28 +559,28 @@ hyprlauncher:
   build:
     system: cmake
   build_requires:
-  - aquamarine-devel
-  - cmake
-  - gcc-c++
-  - hyprgraphics-devel
-  - ninja-build
-  - pkgconfig(fontconfig)
-  - pkgconfig(hyprlang)
-  - pkgconfig(hyprtoolkit)
-  - pkgconfig(hyprutils)
-  - pkgconfig(hyprwire)
-  - pkgconfig(icu-uc)
-  - pkgconfig(libdrm)
-  - pkgconfig(libqalculate)
-  - pkgconfig(pixman-1)
-  - pkgconfig(xkbcommon)
+    - aquamarine-devel
+    - cmake
+    - gcc-c++
+    - hyprgraphics-devel
+    - ninja-build
+    - pkgconfig(fontconfig)
+    - hyprlang
+    - hyprtoolkit
+    - hyprutils
+    - hyprwire
+    - pkgconfig(icu-uc)
+    - pkgconfig(libdrm)
+    - pkgconfig(libqalculate)
+    - pkgconfig(pixman-1)
+    - pkgconfig(xkbcommon)
   depends_on:
-  - aquamarine
-  - hyprgraphics
-  - hyprlang
-  - hyprtoolkit
-  - hyprutils
-  - hyprwire
+    - aquamarine
+    - hyprgraphics
+    - hyprlang
+    - hyprtoolkit
+    - hyprutils
+    - hyprwire
   description: |
     A multipurpose and versatile launcher / picker for Hyprland
     Features:
@@ -592,20 +594,20 @@ hyprlauncher:
     44:
       source:
         patches:
-        - fix-build-with-rawhide-gpp.patch
+          - fix-build-with-rawhide-gpp.patch
     rawhide:
       source:
         patches:
-        - fix-build-with-rawhide-gpp.patch
+          - fix-build-with-rawhide-gpp.patch
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_prefix}/bin/hyprlauncher'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_prefix}/bin/hyprlauncher"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A multipurpose and versatile launcher / picker for Hyprland
   url: https://github.com/hyprwm/hyprlauncher
   version: 0.1.5
@@ -613,42 +615,42 @@ hyprlock:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - hyprwayland-scanner-devel
-  - ninja-build
-  - pkgconfig(cairo)
-  - pkgconfig(egl)
-  - pkgconfig(gbm)
-  - pkgconfig(hyprgraphics)
-  - pkgconfig(hyprlang)
-  - pkgconfig(hyprutils)
-  - pkgconfig(libdrm)
-  - pkgconfig(pam)
-  - pkgconfig(pangocairo)
-  - pkgconfig(sdbus-c++)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-egl)
-  - pkgconfig(wayland-protocols)
-  - pkgconfig(xkbcommon)
+    - cmake
+    - gcc-c++
+    - hyprwayland-scanner-devel
+    - ninja-build
+    - pkgconfig(cairo)
+    - pkgconfig(egl)
+    - pkgconfig(gbm)
+    - hyprgraphics
+    - hyprlang
+    - hyprutils
+    - pkgconfig(libdrm)
+    - pkgconfig(pam)
+    - pkgconfig(pangocairo)
+    - pkgconfig(sdbus-c++)
+    - pkgconfig(wayland-client)
+    - pkgconfig(wayland-egl)
+    - pkgconfig(wayland-protocols)
+    - pkgconfig(xkbcommon)
   depends_on:
-  - hyprgraphics
-  - hyprlang
-  - hyprutils
-  - hyprwayland-scanner
+    - hyprgraphics
+    - hyprlang
+    - hyprutils
+    - hyprwayland-scanner
   description: |
     Hyprland's simple, yet multi-threaded and GPU-accelerated screen locking utility
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/hyprlock'
-  - '%{_datadir}/hypr/hyprlock.conf'
-  - '%{_sysconfdir}/pam.d/hyprlock'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_bindir}/hyprlock"
+    - "%{_datadir}/hypr/hyprlock.conf"
+    - "%{_sysconfdir}/pam.d/hyprlock"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A gpu-accelerated screen lock for Hyprland
   url: https://github.com/hyprwm/hyprlock
   version: 0.9.2
@@ -656,47 +658,47 @@ hyprpaper:
   build:
     system: cmake
   build_requires:
-  - aquamarine-devel
-  - cmake
-  - file-devel
-  - gcc-c++
-  - hyprgraphics-devel
-  - hyprlang-devel
-  - hyprtoolkit-devel
-  - hyprutils-devel
-  - hyprwayland-scanner-devel
-  - hyprwire-devel
-  - ninja-build
-  - pkgconfig(cairo)
-  - pkgconfig(gl)
-  - pkgconfig(glesv2)
-  - pkgconfig(libdrm)
-  - pkgconfig(libjpeg)
-  - pkgconfig(libpng)
-  - pkgconfig(libwebp)
-  - pkgconfig(pango)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-protocols)
-  - systemd-rpm-macros
+    - aquamarine-devel
+    - cmake
+    - file-devel
+    - gcc-c++
+    - hyprgraphics-devel
+    - hyprlang-devel
+    - hyprtoolkit-devel
+    - hyprutils-devel
+    - hyprwayland-scanner-devel
+    - hyprwire-devel
+    - ninja-build
+    - pkgconfig(cairo)
+    - pkgconfig(gl)
+    - pkgconfig(glesv2)
+    - pkgconfig(libdrm)
+    - pkgconfig(libjpeg)
+    - pkgconfig(libpng)
+    - pkgconfig(libwebp)
+    - pkgconfig(pango)
+    - pkgconfig(wayland-client)
+    - pkgconfig(wayland-protocols)
+    - systemd-rpm-macros
   depends_on:
-  - aquamarine
-  - hyprgraphics
-  - hyprlang
-  - hyprtoolkit
-  - hyprutils
-  - hyprwayland-scanner
-  - hyprwire
+    - aquamarine
+    - hyprgraphics
+    - hyprlang
+    - hyprtoolkit
+    - hyprutils
+    - hyprwayland-scanner
+    - hyprwire
   description: |
     hyprpaper is a blazing fast Wayland wallpaper utility with IPC controls
   files:
-  - '%license LICENSE'
-  - '%{_bindir}/hyprpaper'
-  - '%{_userunitdir}/hyprpaper.service'
+    - "%license LICENSE"
+    - "%{_bindir}/hyprpaper"
+    - "%{_userunitdir}/hyprpaper.service"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A blazing fast Wayland wallpaper utility
   url: https://github.com/hyprwm/hyprpaper
   version: 0.8.3
@@ -704,42 +706,42 @@ hyprpicker:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(cairo)
-  - pkgconfig(hyprutils)
-  - pkgconfig(hyprwayland-scanner)
-  - pkgconfig(libjpeg)
-  - pkgconfig(pango)
-  - pkgconfig(pangocairo)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-protocols)
-  - pkgconfig(xkbcommon)
+    - cmake
+    - gcc-c++
+    - ninja-build
+    - pkgconfig(cairo)
+    - hyprutils
+    - hyprwayland-scanner
+    - pkgconfig(libjpeg)
+    - pkgconfig(pango)
+    - pkgconfig(pangocairo)
+    - pkgconfig(wayland-client)
+    - pkgconfig(wayland-protocols)
+    - pkgconfig(xkbcommon)
   depends_on:
-  - hyprutils
-  - hyprwayland-scanner
+    - hyprutils
+    - hyprwayland-scanner
   description: |
     A wlroots-compatible Wayland color picker that does not suck
   fedora:
     44:
       source:
         patches:
-        - fix-build-with-rawhide-gpp.patch
+          - fix-build-with-rawhide-gpp.patch
     rawhide:
       source:
         patches:
-        - fix-build-with-rawhide-gpp.patch
+          - fix-build-with-rawhide-gpp.patch
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_prefix}/bin/hyprpicker'
-  - '%{_prefix}/share/man/man1/hyprpicker.1.gz'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_prefix}/bin/hyprpicker"
+    - "%{_prefix}/share/man/man1/hyprpicker.1.gz"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A wlroots-compatible Wayland color picker that does not suck
   url: https://github.com/hyprwm/hyprpicker
   version: 0.4.6
@@ -747,29 +749,29 @@ hyprpolkitagent:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(hyprutils)
-  - pkgconfig(polkit-agent-1)
-  - pkgconfig(polkit-qt6-1)
-  - qt6-qtdeclarative-devel
-  - qt6-qtquickcontrols2-devel
+    - cmake
+    - gcc-c++
+    - ninja-build
+    - hyprutils
+    - pkgconfig(polkit-agent-1)
+    - pkgconfig(polkit-qt6-1)
+    - qt6-qtdeclarative-devel
+    - qt6-qtquickcontrols2-devel
   depends_on:
-  - hyprutils
+    - hyprutils
   description: |
     A simple polkit authentication agent for Hyprland, written in QT/QML
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_prefix}/lib/systemd/user/hyprpolkitagent.service'
-  - '%{_prefix}/libexec/hyprpolkitagent'
-  - '%{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_prefix}/lib/systemd/user/hyprpolkitagent.service"
+    - "%{_prefix}/libexec/hyprpolkitagent"
+    - "%{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A polkit authentication agent written in QT/QML
   url: https://github.com/hyprwm/hyprpolkitagent
   version: 0.1.3
@@ -777,86 +779,86 @@ hyprpwcenter:
   build:
     system: cmake
   build_requires:
-  - aquamarine-devel
-  - cmake
-  - gcc-c++
-  - hyprgraphics-devel
-  - ninja-build
-  - pkgconfig(cairo)
-  - pkgconfig(hyprtoolkit)
-  - pkgconfig(hyprutils)
-  - pkgconfig(libdrm)
-  - pkgconfig(libpipewire-0.3)
-  - pkgconfig(pixman-1)
+    - aquamarine-devel
+    - cmake
+    - gcc-c++
+    - hyprgraphics-devel
+    - ninja-build
+    - pkgconfig(cairo)
+    - hyprtoolkit
+    - hyprutils
+    - pkgconfig(libdrm)
+    - pkgconfig(libpipewire-0.3)
+    - pkgconfig(pixman-1)
   depends_on:
-  - hyprtoolkit
-  - hyprutils
-  - aquamarine
-  - hyprgraphics
+    - hyprtoolkit
+    - hyprutils
+    - aquamarine
+    - hyprgraphics
   description: |
     A GUI Pipewire control center built with hyprtoolkit
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_prefix}/bin/hyprpwcenter'
-  - '%{_prefix}/share/applications/hyprpwcenter.desktop'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_prefix}/bin/hyprpwcenter"
+    - "%{_prefix}/share/applications/hyprpwcenter.desktop"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: Volume management center for Hyprland
   url: https://github.com/hyprwm/hyprpwcenter
   version: 0.1.2
 hyprqt6engine:
   build:
     prep:
-    - sed -i '/target_link_libraries.*hyprqtplugin/i find_package(Qt6 REQUIRED COMPONENTS
-      GuiPrivate)' hyprqtplugin/CMakeLists.txt
+      - sed -i '/target_link_libraries.*hyprqtplugin/i find_package(Qt6 REQUIRED COMPONENTS
+        GuiPrivate)' hyprqtplugin/CMakeLists.txt
     system: cmake
   build_requires:
-  - cmake
-  - cmake(KF6ColorScheme)
-  - cmake(KF6Config)
-  - cmake(KF6IconThemes)
-  - cmake(Qt6BuildInternals)
-  - cmake(Qt6Core)
-  - cmake(Qt6Gui)
-  - cmake(Qt6GuiPrivate)
-  - cmake(Qt6Widgets)
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(hyprlang)
-  - pkgconfig(hyprutils)
-  - qt6-qtbase-devel
-  - qt6-qtbase-private-devel
-  - qt6-qtwayland-devel
-  - qt6-rpm-macros
+    - cmake
+    - cmake(KF6ColorScheme)
+    - cmake(KF6Config)
+    - cmake(KF6IconThemes)
+    - cmake(Qt6BuildInternals)
+    - cmake(Qt6Core)
+    - cmake(Qt6Gui)
+    - cmake(Qt6GuiPrivate)
+    - cmake(Qt6Widgets)
+    - gcc-c++
+    - ninja-build
+    - hyprlang
+    - hyprutils
+    - qt6-qtbase-devel
+    - qt6-qtbase-private-devel
+    - qt6-qtwayland-devel
+    - qt6-rpm-macros
   depends_on:
-  - hyprlang
-  - hyprutils
+    - hyprlang
+    - hyprutils
   description: |
     QT6 Theme Provider for Hyprland. Compatible with KDE, replaces qt6ct
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_libdir}/libhyprqt6engine-common.so*'
-  - '%{_libdir}/qt6/plugins/platformthemes/libhyprqt6engine.so'
-  - '%{_libdir}/qt6/plugins/styles/libhypr-style.so'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_libdir}/libhyprqt6engine-common.so*"
+    - "%{_libdir}/qt6/plugins/platformthemes/libhyprqt6engine.so"
+    - "%{_libdir}/qt6/plugins/styles/libhypr-style.so"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: QT6 Theme Provider for Hyprland
   url: https://github.com/hyprwm/hyprqt6engine
   version: 0.1.0
 Hyprshot:
   build:
     commands:
-    - '# nothing to compile'
+      - "# nothing to compile"
     install:
-    - install -Dpm0755 hyprshot -t %{buildroot}/%{_bindir}
+      - install -Dpm0755 hyprshot -t %{buildroot}/%{_bindir}
     system: make
   build_requires: []
   description: |
@@ -864,23 +866,23 @@ Hyprshot:
     It allows taking screenshots of windows, regions and monitors which are saved
     to a folder of your choosing and copied to your clipboard
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/hyprshot'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_bindir}/hyprshot"
   license: GPL-3.0-only
-  release: '%autorelease'
+  release: "%autorelease"
   requires:
-  - /usr/bin/notify-send
-  - grim
-  - jq
-  - slurp
-  - wl-clipboard
+    - /usr/bin/notify-send
+    - grim
+    - jq
+    - slurp
+    - wl-clipboard
   rpm:
     buildarch: noarch
     no_debug_package: true
   source:
     archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/%{version}.tar.gz"
     name: Hyprshot
   summary: Utility to easily take screenshots in Hyprland using your mouse
   url: https://github.com/Gustash/Hyprshot
@@ -889,34 +891,34 @@ hyprshutdown:
   build:
     system: cmake
   build_requires:
-  - aquamarine-devel
-  - cmake
-  - gcc-c++
-  - glaze-devel
-  - hyprgraphics-devel
-  - ninja-build
-  - pkgconfig(cairo)
-  - pkgconfig(hyprtoolkit)
-  - pkgconfig(hyprutils)
-  - pkgconfig(libdrm)
-  - pkgconfig(pixman-1)
+    - aquamarine-devel
+    - cmake
+    - gcc-c++
+    - glaze-devel
+    - hyprgraphics-devel
+    - ninja-build
+    - pkgconfig(cairo)
+    - hyprtoolkit
+    - hyprutils
+    - pkgconfig(libdrm)
+    - pkgconfig(pixman-1)
   depends_on:
-  - hyprtoolkit
-  - hyprutils
-  - glaze
-  - aquamarine
-  - hyprgraphics
+    - hyprtoolkit
+    - hyprutils
+    - glaze
+    - aquamarine
+    - hyprgraphics
   description: |
     A graceful shutdown/logout utility for Hyprland, which prevents apps from crashing / dying unexpectedly
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_prefix}/bin/hyprshutdown'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_prefix}/bin/hyprshutdown"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A graceful shutdown utility for Hyprland
   url: https://github.com/hyprwm/hyprshutdown
   version: 0.1.0
@@ -924,71 +926,70 @@ hyprsunset:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(hyprland-protocols)
-  - pkgconfig(hyprlang)
-  - pkgconfig(hyprutils)
-  - pkgconfig(hyprwayland-scanner)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-protocols)
+    - cmake
+    - gcc-c++
+    - ninja-build
+    - hyprland-protocols
+    - hyprlang
+    - hyprutils
+    - hyprwayland-scanner
+    - pkgconfig(wayland-client)
+    - pkgconfig(wayland-protocols)
   depends_on:
-  - hyprland-protocols
-  - hyprlang
-  - hyprutils
-  - hyprwayland-scanner
+    - hyprland-protocols
+    - hyprlang
+    - hyprutils
+    - hyprwayland-scanner
   description: |
     An application to enable a blue-light filter on Hyprland
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_prefix}/bin/hyprsunset'
-  - '%{_prefix}/lib/systemd/user/hyprsunset.service'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_prefix}/bin/hyprsunset"
+    - "%{_prefix}/lib/systemd/user/hyprsunset.service"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: An application to enable a blue-light filter on Hyprland
   url: https://github.com/hyprwm/hyprsunset
   version: 0.3.3
 hyprsysteminfo:
   build:
     prep:
-    - sed -i '/find_package(Qt6.*WaylandClient)/a find_package(Qt6 REQUIRED COMPONENTS
-      WaylandClientPrivate)' CMakeLists.txt
+      - sed -i '/find_package(Qt6.*WaylandClient)/a find_package(Qt6 REQUIRED COMPONENTS
+        WaylandClientPrivate)' CMakeLists.txt
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - hyprutils-devel
-  - ninja-build
-  - pkgconfig(hyprtoolkit)
-  - pkgconfig(hyprutils)
-  - pkgconfig(libdrm)
-  - pkgconfig(libpci)
-  - pkgconfig(pixman-1)
-  - qt6-qtbase-devel
-  - qt6-qtbase-private-devel
-  - qt6-qtdeclarative-devel
-  - qt6-qtquickcontrols2-devel
-  - qt6-qtwayland-devel
+    - cmake
+    - gcc-c++
+    - hyprutils-devel
+    - ninja-build
+    - hyprtoolkit
+    - pkgconfig(libdrm)
+    - pkgconfig(libpci)
+    - pkgconfig(pixman-1)
+    - qt6-qtbase-devel
+    - qt6-qtbase-private-devel
+    - qt6-qtdeclarative-devel
+    - qt6-qtquickcontrols2-devel
+    - qt6-qtwayland-devel
   depends_on:
-  - hyprtoolkit
-  - hyprutils
+    - hyprtoolkit
+    - hyprutils
   description: |
     A tiny qt6/qml application to display information about the running system
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_prefix}/bin/hyprsysteminfo'
-  - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_prefix}/bin/hyprsysteminfo"
+    - "%{_prefix}/share/applications/hyprsysteminfo.desktop"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: System info utility for Hyprland
   url: https://github.com/hyprwm/hyprsysteminfo
   version: 0.1.3
@@ -996,54 +997,54 @@ hyprtoolkit:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - hyprwayland-scanner-devel
-  - ninja-build
-  - pkgconfig(aquamarine)
-  - pkgconfig(cairo)
-  - pkgconfig(egl)
-  - pkgconfig(gbm)
-  - pkgconfig(hyprgraphics)
-  - pkgconfig(hyprlang)
-  - pkgconfig(hyprutils)
-  - pkgconfig(iniparser)
-  - pkgconfig(libdrm)
-  - pkgconfig(pango)
-  - pkgconfig(pangocairo)
-  - pkgconfig(pixman-1)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-protocols)
-  - pkgconfig(xkbcommon)
+    - cmake
+    - gcc-c++
+    - hyprwayland-scanner-devel
+    - ninja-build
+    - aquamarine
+    - pkgconfig(cairo)
+    - pkgconfig(egl)
+    - pkgconfig(gbm)
+    - hyprgraphics
+    - hyprlang
+    - hyprutils
+    - pkgconfig(iniparser)
+    - pkgconfig(libdrm)
+    - pkgconfig(pango)
+    - pkgconfig(pangocairo)
+    - pkgconfig(pixman-1)
+    - pkgconfig(wayland-client)
+    - pkgconfig(wayland-protocols)
+    - pkgconfig(xkbcommon)
   depends_on:
-  - aquamarine
-  - hyprgraphics
-  - hyprlang
-  - hyprutils
-  - hyprwayland-scanner
+    - aquamarine
+    - hyprgraphics
+    - hyprlang
+    - hyprutils
+    - hyprwayland-scanner
   description: |
     A modern C++ Wayland-native GUI toolkit
   devel:
     files:
-    - '%{_includedir}/hyprtoolkit/'
-    - '%{_libdir}/pkgconfig/hyprtoolkit.pc'
+      - "%{_includedir}/hyprtoolkit/"
+      - "%{_libdir}/pkgconfig/hyprtoolkit.pc"
   fedora:
     44:
       source:
         patches:
-        - fix-build-with-rawhide-gpp.patch
+          - fix-build-with-rawhide-gpp.patch
     rawhide:
       source:
         patches:
-        - fix-build-with-rawhide-gpp.patch
+          - fix-build-with-rawhide-gpp.patch
   files:
-  - '%license LICENSE'
-  - '%{_libdir}/libhyprtoolkit.so*'
+    - "%license LICENSE"
+    - "%{_libdir}/libhyprtoolkit.so*"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A modern C++ Wayland-native GUI toolkit
   url: https://github.com/hyprwm/hyprtoolkit
   version: 0.5.3
@@ -1051,25 +1052,25 @@ hyprutils:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(pixman-1)
+    - cmake
+    - gcc-c++
+    - ninja-build
+    - pkgconfig(pixman-1)
   description: |
     hyprutils is a small C++ library used across the Hypr* ecosystem for
     various utilities such as memory management, signals, and more
   devel:
     files:
-    - '%{_includedir}/hyprutils/'
-    - '%{_libdir}/pkgconfig/hyprutils.pc'
+      - "%{_includedir}/hyprutils/"
+      - "%{_libdir}/pkgconfig/hyprutils.pc"
   files:
-  - '%license LICENSE'
-  - '%{_libdir}/libhyprutils.so*'
+    - "%license LICENSE"
+    - "%{_libdir}/libhyprutils.so*"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: Small C++ library for utilities used across the Hypr ecosystem
   url: https://github.com/hyprwm/hyprutils
   version: 0.11.0
@@ -1077,25 +1078,25 @@ hyprwayland-scanner:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(pugixml)
+    - cmake
+    - gcc-c++
+    - ninja-build
+    - pkgconfig(pugixml)
   description: |
     hyprwayland-scanner is a Wayland protocol scanner / code generator
     used by the Hypr ecosystem to generate C++ protocol bindings
   devel:
     files:
-    - '%{_libdir}/cmake/hyprwayland-scanner/'
-    - '%{_libdir}/pkgconfig/hyprwayland-scanner.pc'
+      - "%{_libdir}/cmake/hyprwayland-scanner/"
+      - "%{_libdir}/pkgconfig/hyprwayland-scanner.pc"
   files:
-  - '%license LICENSE'
-  - '%{_bindir}/hyprwayland-scanner'
+    - "%license LICENSE"
+    - "%{_bindir}/hyprwayland-scanner"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A Wayland scanner replacement for Hypr projects
   url: https://github.com/hyprwm/hyprwayland-scanner
   version: 0.4.5
@@ -1103,46 +1104,46 @@ hyprwire:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(hyprutils)
-  - pkgconfig(libffi)
-  - pkgconfig(pugixml)
+    - cmake
+    - gcc-c++
+    - ninja-build
+    - hyprutils
+    - pkgconfig(libffi)
+    - pkgconfig(pugixml)
   depends_on:
-  - hyprutils
+    - hyprutils
   description: |
     A fast and consistent wire protocol for IPC
   devel:
     files:
-    - '%{_includedir}/hyprwire/'
-    - '%{_libdir}/cmake/hyprwire-scanner/'
-    - '%{_libdir}/pkgconfig/hyprwire-scanner.pc'
-    - '%{_libdir}/pkgconfig/hyprwire.pc'
+      - "%{_includedir}/hyprwire/"
+      - "%{_libdir}/cmake/hyprwire-scanner/"
+      - "%{_libdir}/pkgconfig/hyprwire-scanner.pc"
+      - "%{_libdir}/pkgconfig/hyprwire.pc"
   files:
-  - '%license LICENSE'
-  - '%{_bindir}/hyprwire-scanner'
-  - '%{_libdir}/libhyprwire.so*'
+    - "%license LICENSE"
+    - "%{_bindir}/hyprwire-scanner"
+    - "%{_libdir}/libhyprwire.so*"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: A fast and consistent wire protocol for IPC
   url: https://github.com/hyprwm/hyprwire
   version: 0.3.0
 pyprland:
   build:
     commands:
-    - python3 -m hatchling build -t wheel
+      - python3 -m hatchling build -t wheel
     install:
-    - python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --prefix
-      /usr dist/*.whl
+      - python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --prefix
+        /usr dist/*.whl
     system: python
   build_requires:
-  - python3-devel
-  - python3-hatchling
-  - python3-pip
+    - python3-devel
+    - python3-hatchling
+    - python3-pip
   description: |
     Power up your desktop
 
@@ -1150,75 +1151,75 @@ pyprland:
 
     Think of it as a Gnome tweak tool for Hyprland, with options that can run on any desktop. With a fully plugin-based architecture, it's lightweight and easy to customize
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/pypr'
-  - '%{_bindir}/pypr-quickstart'
-  - '%{python3_sitelib}/pyprland'
-  - '%{python3_sitelib}/pyprland-%{version}.dist-info'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_bindir}/pypr"
+    - "%{_bindir}/pypr-quickstart"
+    - "%{python3_sitelib}/pyprland"
+    - "%{python3_sitelib}/pyprland-%{version}.dist-info"
   license: MIT
-  release: '%autorelease'
+  release: "%autorelease"
   requires:
-  - python3-aiofiles
-  - python3-aiohttp
-  - python3-pillow
-  - qt6-qtdeclarative-devel
-  - qt6-qtquickcontrols2-devel
+    - python3-aiofiles
+    - python3-aiohttp
+    - python3-pillow
+    - qt6-qtdeclarative-devel
+    - qt6-qtquickcontrols2-devel
   rpm:
     buildarch: noarch
     no_debug_package: false
   source:
     archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: Scratchpads & many goodies for Hyprland [maintainer=@fdev31]
   url: https://github.com/hyprland-community/pyprland
   version: 3.1.1
 sndio:
   build:
     configure_flags:
-    - --prefix=%{_prefix}
-    - --exec-prefix=%{_exec_prefix}
-    - --bindir=%{_bindir}
-    - --datadir=%{_datadir}
-    - --includedir=%{_includedir}
-    - --libdir=%{_libdir}
-    - --mandir=%{_mandir}
-    - --enable-alsa
+      - --prefix=%{_prefix}
+      - --exec-prefix=%{_exec_prefix}
+      - --bindir=%{_bindir}
+      - --datadir=%{_datadir}
+      - --includedir=%{_includedir}
+      - --libdir=%{_libdir}
+      - --mandir=%{_mandir}
+      - --enable-alsa
     system: configure
   build_requires:
-  - alsa-lib-devel
-  - gcc
-  - make
+    - alsa-lib-devel
+    - gcc
+    - make
   depends_on:
-  - sndio
+    - sndio
   description: |
     Portable version of OpenBSD's lightweight audio & MIDI sub-system
   devel:
     files:
-    - '%{_prefix}/include/sndio.h'
-    - '%{_prefix}/lib64/pkgconfig/sndio.pc'
+      - "%{_prefix}/include/sndio.h"
+      - "%{_prefix}/lib64/pkgconfig/sndio.pc"
   files:
-  - '%license LICENSE'
-  - '%{_prefix}/bin/aucat'
-  - '%{_prefix}/bin/midicat'
-  - '%{_prefix}/bin/sndioctl'
-  - '%{_prefix}/bin/sndiod'
-  - '%{_prefix}/lib64/libsndio.so*'
-  - '%{_prefix}/share/man/*/aucat*.gz'
-  - '%{_prefix}/share/man/*/midicat*.gz'
-  - '%{_prefix}/share/man/*/mio_*.gz'
-  - '%{_prefix}/share/man/*/sio_*.gz'
-  - '%{_prefix}/share/man/*/sioctl_*.gz'
-  - '%{_prefix}/share/man/*/sndio*.gz'
-  - '%{_prefix}/share/man/*/sndioctl*.gz'
-  - '%{_prefix}/share/man/*/sndiod*.gz'
+    - "%license LICENSE"
+    - "%{_prefix}/bin/aucat"
+    - "%{_prefix}/bin/midicat"
+    - "%{_prefix}/bin/sndioctl"
+    - "%{_prefix}/bin/sndiod"
+    - "%{_prefix}/lib64/libsndio.so*"
+    - "%{_prefix}/share/man/*/aucat*.gz"
+    - "%{_prefix}/share/man/*/midicat*.gz"
+    - "%{_prefix}/share/man/*/mio_*.gz"
+    - "%{_prefix}/share/man/*/sio_*.gz"
+    - "%{_prefix}/share/man/*/sioctl_*.gz"
+    - "%{_prefix}/share/man/*/sndio*.gz"
+    - "%{_prefix}/share/man/*/sndioctl*.gz"
+    - "%{_prefix}/share/man/*/sndiod*.gz"
   license: ISC
-  release: '%autorelease'
+  release: "%autorelease"
   rpm:
     no_debug_package: false
   source:
     archives:
-    - https://sndio.org/sndio-%{version}.tar.gz
+      - https://sndio.org/sndio-%{version}.tar.gz
   summary: Portable version of OpenBSD's lightweight audio & MIDI sub-system
   url: https://sndio.org/git/sndio
   version: 1.10.0
@@ -1226,54 +1227,54 @@ Waybar:
   build:
     system: meson
   build_requires:
-  - cava
-  - cava-devel
-  - gcc-c++
-  - gpsd-devel
-  - jack-audio-connection-kit-devel
-  - libdbusmenu-gtk3-devel
-  - libevdev-devel
-  - libinput-devel
-  - libmpdclient-devel
-  - libnl3-devel
-  - meson
-  - ninja-build
-  - pipewire-devel
-  - pkgconfig(fmt)
-  - pkgconfig(gio-unix-2.0)
-  - pkgconfig(gtk-layer-shell-0)
-  - pkgconfig(gtkmm-3.0)
-  - pkgconfig(jsoncpp)
-  - pkgconfig(sigc++-2.0)
-  - pkgconfig(spdlog)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-cursor)
-  - pkgconfig(wayland-protocols)
-  - pkgconfig(xkbregistry)
-  - playerctl-devel
-  - pulseaudio-libs-devel
-  - sndio-devel
-  - systemd
-  - upower-devel
-  - wireplumber-devel
+    - cava
+    - cava-devel
+    - gcc-c++
+    - gpsd-devel
+    - jack-audio-connection-kit-devel
+    - libdbusmenu-gtk3-devel
+    - libevdev-devel
+    - libinput-devel
+    - libmpdclient-devel
+    - libnl3-devel
+    - meson
+    - ninja-build
+    - pipewire-devel
+    - pkgconfig(fmt)
+    - pkgconfig(gio-unix-2.0)
+    - pkgconfig(gtk-layer-shell-0)
+    - pkgconfig(gtkmm-3.0)
+    - pkgconfig(jsoncpp)
+    - pkgconfig(sigc++-2.0)
+    - pkgconfig(spdlog)
+    - pkgconfig(wayland-client)
+    - pkgconfig(wayland-cursor)
+    - pkgconfig(wayland-protocols)
+    - pkgconfig(xkbregistry)
+    - playerctl-devel
+    - pulseaudio-libs-devel
+    - sndio-devel
+    - systemd
+    - upower-devel
+    - wireplumber-devel
   depends_on:
-  - sndio
-  - cava
+    - sndio
+    - cava
   description: |
     Highly customizable Wayland bar for Sway and Wlroots based compositors
   devel:
     files: []
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
+    - "%doc README.md"
+    - "%license LICENSE"
   license: MIT
-  release: '%autorelease'
+  release: "%autorelease"
   rpm:
-    buildarch: ''
+    buildarch: ""
     no_debug_package: false
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
     name: Waybar
   summary: Highly customizable Wayland bar for Sway and Wlroots based compositors
   url: https://github.com/Alexays/Waybar
@@ -1282,48 +1283,48 @@ xdg-desktop-portal-hyprland:
   build:
     system: cmake
   build_requires:
-  - cmake
-  - gcc-c++
-  - ninja-build
-  - pkgconfig(gbm)
-  - pkgconfig(hyprland-protocols)
-  - pkgconfig(hyprlang)
-  - pkgconfig(hyprutils)
-  - pkgconfig(hyprwayland-scanner)
-  - pkgconfig(libdrm)
-  - pkgconfig(libpipewire-0.3)
-  - pkgconfig(libspa-0.2)
-  - pkgconfig(libsystemd)
-  - pkgconfig(Qt6Widgets)
-  - pkgconfig(sdbus-c++)
-  - pkgconfig(systemd)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-protocols)
-  - pkgconfig(wayland-scanner)
-  - qt6-qtbase-devel
-  - qt6-qtwayland-devel
-  - sdbus-cpp
-  - systemd-rpm-macros
+    - cmake
+    - gcc-c++
+    - ninja-build
+    - pkgconfig(gbm)
+    - hyprland-protocols
+    - hyprlang
+    - hyprutils
+    - hyprwayland-scanner
+    - pkgconfig(libdrm)
+    - pkgconfig(libpipewire-0.3)
+    - pkgconfig(libspa-0.2)
+    - pkgconfig(libsystemd)
+    - pkgconfig(Qt6Widgets)
+    - pkgconfig(sdbus-c++)
+    - pkgconfig(systemd)
+    - pkgconfig(wayland-client)
+    - pkgconfig(wayland-protocols)
+    - pkgconfig(wayland-scanner)
+    - qt6-qtbase-devel
+    - qt6-qtwayland-devel
+    - sdbus-cpp
+    - systemd-rpm-macros
   depends_on:
-  - hyprland-protocols
-  - hyprlang
-  - hyprutils
-  - hyprwayland-scanner
+    - hyprland-protocols
+    - hyprlang
+    - hyprutils
+    - hyprwayland-scanner
   description: |
     xdg-desktop-portal backend for Hyprland
   files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/hyprland-share-picker'
-  - '%{_datadir}/dbus-1/services/org.freedesktop.impl.portal.desktop.hyprland.service'
-  - '%{_datadir}/xdg-desktop-portal/portals/hyprland.portal'
-  - '%{_libexecdir}/%{name}'
-  - '%{_userunitdir}/%{name}.service'
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_bindir}/hyprland-share-picker"
+    - "%{_datadir}/dbus-1/services/org.freedesktop.impl.portal.desktop.hyprland.service"
+    - "%{_datadir}/xdg-desktop-portal/portals/hyprland.portal"
+    - "%{_libexecdir}/%{name}"
+    - "%{_userunitdir}/%{name}.service"
   license: BSD-3-Clause
-  release: '%autorelease'
+  release: "%autorelease"
   source:
     archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
   summary: An XDG-Destop-Portal backend for Hyprland (and wlroots)
   url: https://github.com/hyprwm/xdg-desktop-portal-hyprland
   version: 1.3.11
