@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Stage 4: Submit SRPMs to Copr and record build IDs.
 
-Reads packages.yaml and logs/build-status.yaml for srpm stage results.
+Reads packages.yaml and build-report.yaml for srpm stage results.
 Skips packages where srpm stage failed or COPR_REPO is not set.
-Records build IDs in build-status.yaml.
+Records build IDs in build-report.yaml.
 
 Must be run inside the rpm toolbox container (invoked via Makefile).
 

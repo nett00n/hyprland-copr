@@ -224,7 +224,7 @@ make pkg-mock PACKAGE=<name> FEDORA_VERSION=43
 ```
 
 Set `PROCEED_BUILD=true` to resume an interrupted run without rebuilding packages that
-already succeeded in the current `logs/build-status.yaml`:
+already succeeded in the current `build-report.yaml`:
 
 ```shell
 toolbox run -c rpm43 env PROCEED_BUILD=true python3 scripts/full-cycle.py
@@ -233,7 +233,7 @@ toolbox run -c rpm43 env PROCEED_BUILD=true python3 scripts/full-cycle.py
 ### Running individual pipeline stages
 
 ```shell
-# Run stages individually (each reads/writes logs/build-status.yaml)
+# Run stages individually (each reads/writes build-report.yaml)
 make stage-validate PKG=<name>   # validate packages.yaml (required fields, conventions)
 make stage-spec     PKG=<name>
 make stage-vendor   PKG=<name>   # Go packages only: generates vendor tarball

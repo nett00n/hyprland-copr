@@ -2,7 +2,7 @@
 """Stage 1: Generate spec files for each package.
 
 Reads packages.yaml, runs gen-spec.py per package, and records
-success/failure in logs/build-status.yaml.
+success/failure in build-report.yaml.
 
 Must be run inside the rpm toolbox container (invoked via Makefile).
 

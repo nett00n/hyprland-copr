@@ -11,7 +11,7 @@ Environment variables:
   MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   COPR_REPO       Copr repo slug, e.g. nett00n/hyprland (optional)
   PACKAGE         Build only this package (optional, comma-separated)
-  PROCEED_BUILD   If 'true', skip stages already succeeded; preserve build-status.yaml
+  PROCEED_BUILD   If 'true', skip stages already succeeded; preserve build-report.yaml
 """
 
 import os
@@ -43,7 +43,7 @@ def print_proceed_status(packages: dict, build_status: dict, copr_repo: str) -> 
     """Print per-package per-stage status when resuming with PROCEED_BUILD=true."""
     stages = STAGES if copr_repo else [s for s in STAGES if s != "copr"]
     status_label = {"success": "skip", "failed": "retry", None: "run"}
-    print("\nPROCEED_BUILD=true — resuming from existing build-status.yaml")
+    print("\nPROCEED_BUILD=true — resuming from existing build-report.yaml")
     print(f"  {'package':<30} " + "  ".join(f"{s:<8}" for s in stages))
     print("  " + "-" * (30 + 10 * len(stages)))
     for pkg in packages:

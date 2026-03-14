@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Stage 2: Download sources and build SRPMs (spectool + rpmbuild -bs).
 
-Reads packages.yaml and logs/build-status.yaml for spec stage results.
-Skips packages where spec stage failed. Records SRPM paths in build-status.yaml.
+Reads packages.yaml and build-report.yaml for spec stage results.
+Skips packages where spec stage failed. Records SRPM paths in build-report.yaml.
 
 Must be run inside the rpm toolbox container (invoked via Makefile).
 

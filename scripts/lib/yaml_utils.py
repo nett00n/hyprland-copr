@@ -1,4 +1,4 @@
-"""YAML loading/saving utilities for packages.yaml and build-status.yaml."""
+"""YAML loading/saving utilities for packages.yaml and build-report.yaml."""
 
 import sys
 import time
@@ -6,9 +6,9 @@ from pathlib import Path
 
 import yaml
 
-from .paths import GROUPS_YAML, LOG_DIR, PACKAGES_YAML, REPO_YAML
+from .paths import GROUPS_YAML, PACKAGES_YAML, REPO_YAML, ROOT
 
-BUILD_STATUS_YAML = LOG_DIR / "build-status.yaml"
+BUILD_STATUS_YAML = ROOT / "build-report.yaml"
 STAGES = ["validate", "spec", "vendor", "srpm", "mock", "copr"]
 
 
@@ -165,7 +165,7 @@ def get_active_packages(fedora_version: str, path: Path = PACKAGES_YAML) -> dict
 
 
 def load_build_status(path: Path = BUILD_STATUS_YAML) -> dict:
-    """Load build-status.yaml or return empty structure."""
+    """Load build-report.yaml or return empty structure."""
     if path.exists():
         try:
             return yaml.safe_load(path.read_text()) or {}
@@ -175,7 +175,7 @@ def load_build_status(path: Path = BUILD_STATUS_YAML) -> dict:
 
 
 def save_build_status(status: dict, path: Path = BUILD_STATUS_YAML) -> None:
-    """Save build-status.yaml, creating parent dirs if needed."""
+    """Save build-report.yaml, creating parent dirs if needed."""
     path.parent.mkdir(exist_ok=True)
     path.write_text(
         yaml.dump(status, default_flow_style=False, sort_keys=False, allow_unicode=True)
@@ -186,7 +186,7 @@ def pop_build_stages(
     pkgs: list[str] | set[str],
     stages: tuple[str, ...] = ("mock", "copr"),
 ) -> list[str]:
-    """Remove entries for pkgs from given stages in build-status.yaml.
+    """Remove entries for pkgs from given stages in build-report.yaml.
 
     Returns sorted list of package names that were actually removed.
     """

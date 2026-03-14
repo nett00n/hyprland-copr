@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Stage 3: Build packages with mock, manage local-repo for dep resolution.
 
-Reads packages.yaml and logs/build-status.yaml for srpm stage results.
+Reads packages.yaml and build-report.yaml for srpm stage results.
 Skips packages where srpm stage failed or a local build-dep failed.
-Records build results and mock log paths in build-status.yaml.
+Records build results and mock log paths in build-report.yaml.
 
 Must be run inside the rpm toolbox container (invoked via Makefile).
 
