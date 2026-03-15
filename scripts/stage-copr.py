@@ -20,18 +20,15 @@ import re
 import sys
 from typing import Any
 
-from lib.paths import BUILD_LOG_DIR, ROOT, get_package_log_dir
+from lib.paths import ROOT, get_package_log_dir
 from lib.reporting import status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
 from lib.yaml_utils import (
     apply_os_overrides,
-    filter_packages,
-    get_packages,
-    load_build_status,
+    init_stage,
     now_epoch,
     save_build_status,
-    skip_packages,
 )
 
 
@@ -64,8 +61,6 @@ def check_copr_credentials() -> bool:
 def main() -> None:
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
     copr_repo = os.environ.get("COPR_REPO", "")
-    package_filter = os.environ.get("PACKAGE", "")
-    skip_filter = os.environ.get("SKIP_PACKAGES", "")
 
     if not copr_repo:
         print(
@@ -81,20 +76,16 @@ def main() -> None:
     if not check_copr_credentials():
         sys.exit(2)
 
-    all_packages = get_packages()
-    packages = filter_packages(all_packages, package_filter)
-    packages = skip_packages(packages, skip_filter)
-
-    BUILD_LOG_DIR.mkdir(parents=True, exist_ok=True)
-    build_status = load_build_status()
+    packages, build_status = init_stage("copr")
     srpm_stage = build_status.get("stages", {}).get("srpm", {})
     mock_stage = build_status.get("stages", {}).get("mock", {})
 
     proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
-    stages = build_status.setdefault("stages", {})
+    stages = build_status.get("stages", {})
     if not proceed:
         stages["copr"] = {}
-    stages.setdefault("copr", {})
+    else:
+        stages.setdefault("copr", {})
 
     failed = False
     print("\n=== copr ===")

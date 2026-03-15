@@ -19,21 +19,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from lib.paths import BUILD_LOG_DIR, ROOT, get_package_log_dir
+from lib.paths import ROOT, SOURCES_DIR, get_package_log_dir
 from lib.reporting import status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
 from lib.yaml_utils import (
     apply_os_overrides,
-    filter_packages,
-    get_packages,
-    load_build_status,
+    init_stage,
     save_build_status,
-    skip_packages,
 )
-
-
-SOURCES_DIR = Path.home() / "rpmbuild" / "SOURCES"
 
 
 def copy_local_patches(pkg: str, meta: dict) -> None:
@@ -60,22 +54,16 @@ def find_srpm(pkg: str) -> str | None:
 
 def main() -> None:
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
-    package_filter = os.environ.get("PACKAGE", "")
-    skip_filter = os.environ.get("SKIP_PACKAGES", "")
 
-    all_packages = get_packages()
-    packages = filter_packages(all_packages, package_filter)
-    packages = skip_packages(packages, skip_filter)
-
-    BUILD_LOG_DIR.mkdir(parents=True, exist_ok=True)
-    build_status = load_build_status()
+    packages, build_status = init_stage("srpm")
     spec_stage = build_status.get("stages", {}).get("spec", {})
 
     proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
-    stages = build_status.setdefault("stages", {})
+    stages = build_status.get("stages", {})
     if not proceed:
         stages["srpm"] = {}
-    stages.setdefault("srpm", {})
+    else:
+        stages.setdefault("srpm", {})
 
     failed = False
     print("\n=== srpm ===")

@@ -12,18 +12,16 @@ Environment variables:
 """
 
 import os
+import subprocess
 import sys
 
-from lib.paths import BUILD_LOG_DIR, ROOT, get_package_log_dir
+from lib.paths import ROOT, get_package_log_dir
 from lib.reporting import status
 from lib.version import nvr
 from lib.yaml_utils import (
     apply_os_overrides,
-    filter_packages,
-    get_packages,
-    load_build_status,
+    init_stage,
     save_build_status,
-    skip_packages,
 )
 
 PYTHON = sys.executable
@@ -31,16 +29,8 @@ PYTHON = sys.executable
 
 def main() -> None:
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
-    package_filter = os.environ.get("PACKAGE", "")
-    skip_filter = os.environ.get("SKIP_PACKAGES", "")
 
-    all_packages = get_packages()
-    packages = filter_packages(all_packages, package_filter)
-    packages = skip_packages(packages, skip_filter)
-
-    BUILD_LOG_DIR.mkdir(parents=True, exist_ok=True)
-    build_status = load_build_status()
-    build_status.setdefault("stages", {})["spec"] = {}
+    packages, build_status = init_stage("spec")
 
     failed = False
     print("\n=== spec ===")
@@ -55,8 +45,6 @@ def main() -> None:
         pkg_log_dir.mkdir(parents=True, exist_ok=True)
         log = pkg_log_dir / "00-spec.log"
         log.unlink(missing_ok=True)
-
-        import subprocess
 
         result = subprocess.run(
             [PYTHON, str(ROOT / "scripts" / "gen-spec.py"), pkg],

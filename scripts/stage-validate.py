@@ -17,15 +17,13 @@ import sys
 
 from lib.gitmodules import parse_gitmodules
 from lib.paths import GITMODULES, ROOT
+from lib.reporting import status
 from lib.yaml_utils import (
     SUPPORTED_FEDORA_VERSIONS,
     apply_os_overrides,
-    filter_packages,
-    get_packages,
-    load_build_status,
+    init_stage,
     load_groups_yaml,
     save_build_status,
-    skip_packages,
 )
 
 REQUIRED_FIELDS = ["version", "license", "summary", "description", "url"]
@@ -165,15 +163,8 @@ def validate_gitmodules(root_path=ROOT) -> tuple[list[str], list[str]]:
 
 def main() -> None:
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
-    package_filter = os.environ.get("PACKAGE", "")
-    skip_filter = os.environ.get("SKIP_PACKAGES", "")
 
-    all_packages = get_packages()
-    packages = filter_packages(all_packages, package_filter)
-    packages = skip_packages(packages, skip_filter)
-
-    build_status = load_build_status()
-    build_status.setdefault("stages", {})["validate"] = {}
+    all_packages, packages, build_status = init_stage("validate", include_all=True)
 
     total_errors = 0
     total_warnings = 0
@@ -184,7 +175,7 @@ def main() -> None:
     for pkg, meta in packages.items():
         resolved = apply_os_overrides(meta, fedora_version)
         if resolved.get("_skip"):
-            print(f"  [skip] {pkg} (fedora:{fedora_version} skip)")
+            status("validate", pkg, "skip")
             build_status["stages"]["validate"][pkg] = {"state": "skipped"}
             continue
         errors, warnings = validate_package(pkg, resolved, all_packages)
@@ -194,15 +185,15 @@ def main() -> None:
         if errors:
             failed = True
             state = "failed"
-            print(f"  [FAIL] {pkg}")
+            status("validate", pkg, "fail")
             for e in errors:
                 print(f"    error: {e}")
         elif warnings:
             state = "success"
-            print(f"  [ ok ] {pkg} ({len(warnings)} warning(s))")
+            status("validate", pkg, "ok")
         else:
             state = "success"
-            print(f"  [ ok ] {pkg}")
+            status("validate", pkg, "ok")
 
         for w in warnings:
             print(f"    warn: {w}")
@@ -217,11 +208,11 @@ def main() -> None:
     grp_errors, grp_warnings = validate_group_membership(all_packages)
     if grp_errors:
         failed = True
-        print("  [FAIL] groups membership")
+        status("validate", "groups", "fail")
         for e in grp_errors:
             print(f"    error: {e}")
     else:
-        print("  [ ok ] groups membership")
+        status("validate", "groups", "ok")
     total_errors += len(grp_errors)
     total_warnings += len(grp_warnings)
 
@@ -229,13 +220,11 @@ def main() -> None:
     gm_errors, gm_warnings = validate_gitmodules(ROOT)
     if gm_errors:
         failed = True
-        print("  [FAIL] .gitmodules")
+        status("validate", ".gitmodules", "fail")
         for e in gm_errors:
             print(f"    error: {e}")
-    elif gm_warnings:
-        print(f"  [ ok ] .gitmodules ({len(gm_warnings)} warning(s))")
     else:
-        print("  [ ok ] .gitmodules")
+        status("validate", ".gitmodules", "ok")
     for w in gm_warnings:
         print(f"    warn: {w}")
     total_errors += len(gm_errors)

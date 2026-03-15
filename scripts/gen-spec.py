@@ -8,12 +8,15 @@ Usage:
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 import time
 import urllib.request
 from datetime import datetime, timezone
+from pathlib import Path
+
 from lib.gitmodules import get_changelog_info, parse_gitmodules
 from lib.jinja_utils import create_jinja_env
 from lib.paths import GITMODULES, GITHUB_RELEASE_CACHE, ROOT
@@ -21,9 +24,6 @@ from lib.yaml_utils import apply_os_overrides, get_packages, load_repo_yaml
 
 
 def get_packager() -> str:
-    import os
-    from pathlib import Path
-
     # 1. Try environment variables (highest priority)
     packager = os.environ.get("PACKAGER")
     if packager:

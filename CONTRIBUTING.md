@@ -174,6 +174,19 @@ To generate the vendor tarball manually (outside the full pipeline):
 python3 scripts/gen-vendor-tarball.py <name>
 ```
 
+### Shared Libraries (`scripts/lib/`)
+
+- **paths.py** — canonical path constants (`SOURCES_DIR`, `BUILD_STATUS_YAML`, etc.) and helpers (`mock_chroot()`)
+- **yaml_utils.py** — loading/saving packages.yaml, filtering, build status tracking, `init_stage()` boilerplate helper
+- **subprocess_utils.py** — subprocess wrappers (`run_cmd`, `run_git`)
+- **reporting.py** — build status printing and badge generation
+- **rpm_macros.py** — RPM macro path normalization (e.g., `/usr/bin/foo` → `%{_bindir}/foo`)
+- **vendor.py** — Go vendor tarball generation
+- **deps.py** — dependency graph inference from `depends_on` and `build_requires`
+- **gitmodules.py** — `.gitmodules` parsing and changelog extraction
+- **jinja_utils.py** — Jinja2 environment setup
+- **log_analysis.py** — parsing mock/srpm logs for failure reporting
+
 ## Code Quality and Linting
 
 The repository uses multiple linters and formatters to maintain code quality. All checks run inside a container (podman/docker, auto-detected):

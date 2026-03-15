@@ -4,24 +4,24 @@ import re
 
 # Ordered longest-first so more-specific prefixes win when going abs -> macro.
 PREFIXES: list[tuple[str, str]] = [
-    ("/etc", "%{_sysconfdir}"),
-    ("/run", "%{_rundir}"),
-    ("/usr", "%{_prefix}"),
-    ("/usr/bin", "%{_bindir}"),
-    ("/usr/include", "%{_includedir}"),
     ("/usr/lib/systemd/system", "%{_unitdir}"),
     ("/usr/lib/systemd/user", "%{_userunitdir}"),
     ("/usr/lib/sysusers.d", "%{_sysusersdir}"),
     ("/usr/lib/tmpfiles.d", "%{_tmpfilesdir}"),
-    ("/usr/lib64", "%{_libdir}"),
-    ("/usr/libexec", "%{_libexecdir}"),
-    ("/usr/sbin", "%{_sbindir}"),
-    ("/usr/share", "%{_datadir}"),
     ("/usr/share/doc", "%{_docdir}"),
     ("/usr/share/info", "%{_infodir}"),
     ("/usr/share/man", "%{_mandir}"),
-    ("/var", "%{_localstatedir}"),
+    ("/usr/include", "%{_includedir}"),
+    ("/usr/libexec", "%{_libexecdir}"),
+    ("/usr/share", "%{_datadir}"),
+    ("/usr/lib64", "%{_libdir}"),
     ("/var/lib", "%{_sharedstatedir}"),
+    ("/usr/bin", "%{_bindir}"),
+    ("/usr/sbin", "%{_sbindir}"),
+    ("/etc", "%{_sysconfdir}"),
+    ("/usr", "%{_prefix}"),
+    ("/run", "%{_rundir}"),
+    ("/var", "%{_localstatedir}"),
 ]
 
 

@@ -160,27 +160,27 @@ pre-commit: ## Run all checks and formatting (lint + fmt)
 
 ruff: ## Run ruff check on scripts
 	$(setup_volumes)
-	$(CONTAINER_PYTHON) -m ruff check scripts/
+	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff check scripts/,Ruff check passed,Ruff check failed,$(MAKE_LOGS_DIR)/ruff)
 
 ruff-format: ## Run ruff format on scripts
 	$(setup_volumes)
-	$(CONTAINER_PYTHON) -m ruff format scripts/
+	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff format scripts/,Ruff format passed,Ruff format failed,$(MAKE_LOGS_DIR)/ruff-format)
 
 mypy: ## Run mypy type checker on scripts
 	$(setup_volumes)
-	$(CONTAINER_PYTHON) -m mypy scripts/ --ignore-missing-imports --exclude submodules
+	$(call run_with_result,$(CONTAINER_PYTHON) -m mypy scripts/ --ignore-missing-imports --exclude submodules,Mypy check passed,Mypy check failed,$(MAKE_LOGS_DIR)/mypy)
 
 yamlfmt: ## Format YAML files with consistent style
-	$(PYTHON) scripts/format-yaml.py '*.yaml'
+	$(call run_with_result,$(PYTHON) scripts/format-yaml.py '*.yaml',YAML format applied,YAML format failed,$(MAKE_LOGS_DIR)/yamlfmt)
 
 yamllint: ## Run yamllint on YAML files
 	$(setup_volumes)
-	$(CONTAINER_PYTHON) -m yamllint *.yaml
+	$(call run_with_result,$(CONTAINER_PYTHON) -m yamllint *.yaml,Yamllint check passed,Yamllint check failed,$(MAKE_LOGS_DIR)/yamllint)
 
 rpmlint: ## Run rpmlint on all generated spec files
 	$(setup_volumes)
 	$(CONTAINER_PYTHON) -m pip install -q rpmlint
-	$(CONTAINER_RUN) rpmlint packages/*/[a-z]*.spec
+	$(call run_with_result,$(CONTAINER_RUN) rpmlint packages/*/[a-z]*.spec,Rpmlint check passed,Rpmlint check failed,$(MAKE_LOGS_DIR)/rpmlint)
 
 pkg-spec: ## Generate spec file(s) from packages.yaml (PACKAGE=<name> for one package)
 	$(PYTHON) scripts/gen-spec.py $(PACKAGE)
@@ -216,8 +216,20 @@ gen-report: ## Render build-report.yaml to stdout (--format github|copr)
 	$(PYTHON) scripts/gen-report.py $(if $(FORMAT),--format $(FORMAT),)
 
 readme: ## Generate both README.md and docs/README.copr.md
-	$(call run_with_result,$(PYTHON) scripts/gen-report.py --format github > ./README.md,GitHub README generated,GitHub README failed)
-	$(call run_with_result,$(PYTHON) scripts/gen-report.py --format copr > ./docs/README.copr.md,COPR README generated,COPR README failed)
+	@if [ -n "$(QUIET)" ]; then \
+		mkdir -p "$(MAKE_LOGS_DIR)/readme"; \
+		$(PYTHON) scripts/gen-report.py --format github > ./README.md \
+			2>"$(MAKE_LOGS_DIR)/readme/github.log" \
+			&& echo $(HIGHLIGHT_PREFIX) "✓ GitHub README generated" \
+			|| (echo $(HIGHLIGHT_PREFIX) "✗ GitHub README failed"; exit 1); \
+		$(PYTHON) scripts/gen-report.py --format copr > ./docs/README.copr.md \
+			2>"$(MAKE_LOGS_DIR)/readme/copr.log" \
+			&& echo $(HIGHLIGHT_PREFIX) "✓ COPR README generated" \
+			|| (echo $(HIGHLIGHT_PREFIX) "✗ COPR README failed"; exit 1); \
+	else \
+		$(PYTHON) scripts/gen-report.py --format github > ./README.md && echo $(HIGHLIGHT_PREFIX) "✓ GitHub README generated" || (echo $(HIGHLIGHT_PREFIX) "✗ GitHub README failed"; exit 1); \
+		$(PYTHON) scripts/gen-report.py --format copr > ./docs/README.copr.md && echo $(HIGHLIGHT_PREFIX) "✓ COPR README generated" || (echo $(HIGHLIGHT_PREFIX) "✗ COPR README failed"; exit 1); \
+	fi
 
 # Update the COPR project description and instructions from markdown files.
 # Requires: copr-cli installed + ~/.config/copr token
@@ -235,13 +247,12 @@ sort-lists: ## Sort build_requires/requires/files lists in packages.yaml (ARGS=-
 	$(PYTHON) scripts/sort-yaml-lists.py $(ARGS)
 
 container-build: ## Build image for FEDORA_VERSION
-	$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) build \
+	$(call run_with_result,$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) build \
 		--build-arg FEDORA_VERSION=$(FEDORA_VERSION) \
 		--build-arg UID=$(USER_ID) \
 		--build-arg GID=$(GROUP_ID) \
 		-t $(IMAGE_NAME):$(FEDORA_VERSION) \
-		-f Containerfile .
-	@echo $(HIGHLIGHT_PREFIX) "Built $(IMAGE_NAME):$(FEDORA_VERSION)"
+		-f Containerfile .,Built $(IMAGE_NAME):$(FEDORA_VERSION),Container build failed,$(MAKE_LOGS_DIR)/container-build)
 
 container-enter: ## Enter interactive shell in container for FEDORA_VERSION
 	$(setup_volumes)
@@ -279,29 +290,63 @@ container-all: ## Build images for all supported Fedora versions
 pkg-sources: ## Download sources for PACKAGE (or all) using spectool (runs in container)
 	$(setup_volumes)
 	@for pkg in $(_PKGS); do \
-		echo $(HIGHLIGHT_PREFIX) "sources: $$pkg"; \
-		$(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec || exit 1; \
+		if [ -n "$(QUIET)" ]; then \
+			_ld="$(MAKE_LOGS_DIR)/pkg-sources/$$pkg"; mkdir -p "$$_ld"; \
+			if $(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec > "$$_ld/stdout.log" 2> "$$_ld/stderr.log"; then \
+				echo $(HIGHLIGHT_PREFIX) "✓ sources: $$pkg"; \
+			else \
+				echo $(HIGHLIGHT_PREFIX) "✗ sources: $$pkg"; exit 1; \
+			fi; \
+		else \
+			echo $(HIGHLIGHT_PREFIX) "sources: $$pkg"; \
+			$(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec || exit 1; \
+		fi; \
 	done
 
 pkg-srpm: ## Build SRPM for PACKAGE (or all) (runs in container)
 	$(setup_volumes)
 	@for pkg in $(_PKGS); do \
-		echo $(HIGHLIGHT_PREFIX) "srpm: $$pkg"; \
-		$(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec || exit 1; \
-		$(CONTAINER_RUN) rpmbuild -bs packages/$$pkg/$$pkg.spec || exit 1; \
+		if [ -n "$(QUIET)" ]; then \
+			_ld="$(MAKE_LOGS_DIR)/pkg-srpm/$$pkg"; mkdir -p "$$_ld"; \
+			if $(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec >> "$$_ld/stdout.log" 2>> "$$_ld/stderr.log" && \
+			   $(CONTAINER_RUN) rpmbuild -bs packages/$$pkg/$$pkg.spec >> "$$_ld/stdout.log" 2>> "$$_ld/stderr.log"; then \
+				echo $(HIGHLIGHT_PREFIX) "✓ srpm: $$pkg"; \
+			else \
+				echo $(HIGHLIGHT_PREFIX) "✗ srpm: $$pkg"; exit 1; \
+			fi; \
+		else \
+			echo $(HIGHLIGHT_PREFIX) "srpm: $$pkg"; \
+			$(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec || exit 1; \
+			$(CONTAINER_RUN) rpmbuild -bs packages/$$pkg/$$pkg.spec || exit 1; \
+		fi; \
 	done
 
 pkg-mock: ## Build and test PACKAGE (or all) with mock for FEDORA_VERSION (runs in container)
 	$(setup_volumes)
 	@for pkg in $(_PKGS); do \
-		echo $(HIGHLIGHT_PREFIX) "sources: $$pkg"; \
-		$(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec || exit 1; \
-		echo $(HIGHLIGHT_PREFIX) "srpm: $$pkg"; \
-		$(CONTAINER_RUN) rpmbuild -bs packages/$$pkg/$$pkg.spec || exit 1; \
-		echo $(HIGHLIGHT_PREFIX) "mock-build: $$pkg"; \
-		srpm=$$(ls -t ~/rpmbuild/SRPMS/$$pkg-*.src.rpm 2>/dev/null | head -1); \
-		test -n "$$srpm" || { echo "ERROR: no SRPM found for $$pkg"; exit 1; }; \
-		$(CONTAINER_RUN) mock -r $(MOCK_CHROOT) --rebuild $$srpm || exit 1; \
+		if [ -n "$(QUIET)" ]; then \
+			_ld="$(MAKE_LOGS_DIR)/pkg-mock/$$pkg"; mkdir -p "$$_ld"; \
+			if $(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec >> "$$_ld/stdout.log" 2>> "$$_ld/stderr.log" && \
+			   $(CONTAINER_RUN) rpmbuild -bs packages/$$pkg/$$pkg.spec >> "$$_ld/stdout.log" 2>> "$$_ld/stderr.log"; then \
+				srpm=$$(ls -t ~/rpmbuild/SRPMS/$$pkg-*.src.rpm 2>/dev/null | head -1); \
+				if [ -n "$$srpm" ] && $(CONTAINER_RUN) mock -r $(MOCK_CHROOT) --rebuild $$srpm >> "$$_ld/stdout.log" 2>> "$$_ld/stderr.log"; then \
+					echo $(HIGHLIGHT_PREFIX) "✓ mock-build: $$pkg"; \
+				else \
+					echo $(HIGHLIGHT_PREFIX) "✗ mock-build: $$pkg"; exit 1; \
+				fi; \
+			else \
+				echo $(HIGHLIGHT_PREFIX) "✗ srpm: $$pkg"; exit 1; \
+			fi; \
+		else \
+			echo $(HIGHLIGHT_PREFIX) "sources: $$pkg"; \
+			$(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec || exit 1; \
+			echo $(HIGHLIGHT_PREFIX) "srpm: $$pkg"; \
+			$(CONTAINER_RUN) rpmbuild -bs packages/$$pkg/$$pkg.spec || exit 1; \
+			echo $(HIGHLIGHT_PREFIX) "mock-build: $$pkg"; \
+			srpm=$$(ls -t ~/rpmbuild/SRPMS/$$pkg-*.src.rpm 2>/dev/null | head -1); \
+			test -n "$$srpm" || { echo "ERROR: no SRPM found for $$pkg"; exit 1; }; \
+			$(CONTAINER_RUN) mock -r $(MOCK_CHROOT) --rebuild $$srpm || exit 1; \
+		fi; \
 	done
 
 FORCE_MOCK ?=
@@ -309,25 +354,36 @@ PROCEED_BUILD ?=
 
 pkg-full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr (FEDORA_VERSION, PACKAGE, COPR_REPO, FORCE_MOCK, PROCEED_BUILD)
 	$(setup_volumes)
-	$(CONTAINER_RUN) env \
+	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
 		COPR_REPO=$(COPR_REPO) \
 		FORCE_MOCK=$(FORCE_MOCK) \
 		PROCEED_BUILD=$(PROCEED_BUILD) \
-		/work/.venv/bin/python3 scripts/full-cycle.py
+		/work/.venv/bin/python3 scripts/full-cycle.py,Full cycle completed,Full cycle failed,$(MAKE_LOGS_DIR)/pkg-full-cycle)
 
 pkg-copr: ## Submit PACKAGE (or all) SRPMs to Copr (requires COPR_REPO env var, runs in container)
 	@test -n "$(COPR_REPO)" || (echo "Error: COPR_REPO is not set (e.g. export COPR_REPO=nett00n/hyprland)"; exit 1)
 	$(setup_volumes)
 	@for pkg in $(_PKGS); do \
-		echo $(HIGHLIGHT_PREFIX) "sources: $$pkg"; \
-		$(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec || exit 1; \
-		echo $(HIGHLIGHT_PREFIX) "srpm: $$pkg"; \
-		$(CONTAINER_RUN) rpmbuild -bs packages/$$pkg/$$pkg.spec || exit 1; \
-		echo $(HIGHLIGHT_PREFIX) "copr: $$pkg"; \
-		$(CONTAINER_RUN) copr-cli build $(COPR_REPO) ~/rpmbuild/SRPMS/$$pkg-*.src.rpm || exit 1; \
+		if [ -n "$(QUIET)" ]; then \
+			_ld="$(MAKE_LOGS_DIR)/pkg-copr/$$pkg"; mkdir -p "$$_ld"; \
+			if $(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec >> "$$_ld/stdout.log" 2>> "$$_ld/stderr.log" && \
+			   $(CONTAINER_RUN) rpmbuild -bs packages/$$pkg/$$pkg.spec >> "$$_ld/stdout.log" 2>> "$$_ld/stderr.log" && \
+			   $(CONTAINER_RUN) copr-cli build $(COPR_REPO) ~/rpmbuild/SRPMS/$$pkg-*.src.rpm >> "$$_ld/stdout.log" 2>> "$$_ld/stderr.log"; then \
+				echo $(HIGHLIGHT_PREFIX) "✓ copr: $$pkg"; \
+			else \
+				echo $(HIGHLIGHT_PREFIX) "✗ copr: $$pkg"; exit 1; \
+			fi; \
+		else \
+			echo $(HIGHLIGHT_PREFIX) "sources: $$pkg"; \
+			$(CONTAINER_RUN) spectool -g -R packages/$$pkg/$$pkg.spec || exit 1; \
+			echo $(HIGHLIGHT_PREFIX) "srpm: $$pkg"; \
+			$(CONTAINER_RUN) rpmbuild -bs packages/$$pkg/$$pkg.spec || exit 1; \
+			echo $(HIGHLIGHT_PREFIX) "copr: $$pkg"; \
+			$(CONTAINER_RUN) copr-cli build $(COPR_REPO) ~/rpmbuild/SRPMS/$$pkg-*.src.rpm || exit 1; \
+		fi; \
 	done
 
 pkg-build-pop: ## Remove mock/copr build status for PKG=a,b (PKG="" removes all, requires confirmation)
@@ -340,39 +396,39 @@ pkg-build-pop: ## Remove mock/copr build status for PKG=a,b (PKG="" removes all,
 
 stage-validate: ## Run validation stage (PACKAGE=<name>, runs in container)
 	$(setup_volumes)
-	$(CONTAINER_RUN) env \
+	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		PACKAGE=$(PACKAGE) \
-		/work/.venv/bin/python3 scripts/stage-validate.py
+		/work/.venv/bin/python3 scripts/stage-validate.py,Validation stage passed,Validation stage failed,$(MAKE_LOGS_DIR)/stage-validate)
 
 stage-spec: ## Run spec generation stage (PACKAGE=<name>, runs in container)
 	$(setup_volumes)
-	$(CONTAINER_RUN) env \
+	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		PACKAGE=$(PACKAGE) \
-		/work/.venv/bin/python3 scripts/stage-spec.py
+		/work/.venv/bin/python3 scripts/stage-spec.py,Spec generation passed,Spec generation failed,$(MAKE_LOGS_DIR)/stage-spec)
 
 stage-vendor: ## Run vendor tarball generation stage (Go packages only, PACKAGE=<name>, runs in container)
 	$(setup_volumes)
-	$(CONTAINER_RUN) env \
+	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		PACKAGE=$(PACKAGE) \
-		/work/.venv/bin/python3 scripts/stage-vendor.py
+		/work/.venv/bin/python3 scripts/stage-vendor.py,Vendor stage passed,Vendor stage failed,$(MAKE_LOGS_DIR)/stage-vendor)
 
 stage-srpm: ## Run SRPM build stage (PACKAGE=<name>, runs in container)
 	$(setup_volumes)
-	$(CONTAINER_RUN) env \
+	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		PACKAGE=$(PACKAGE) \
-		/work/.venv/bin/python3 scripts/stage-srpm.py
+		/work/.venv/bin/python3 scripts/stage-srpm.py,SRPM stage passed,SRPM stage failed,$(MAKE_LOGS_DIR)/stage-srpm)
 
 stage-mock: ## Run mock build stage (PACKAGE=<name>, FEDORA_VERSION, runs in container)
 	$(setup_volumes)
-	$(CONTAINER_RUN) env \
+	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
-		/work/.venv/bin/python3 scripts/stage-mock.py
+		/work/.venv/bin/python3 scripts/stage-mock.py,Mock build stage passed,Mock build stage failed,$(MAKE_LOGS_DIR)/stage-mock)
 
 stage-copr: ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, runs in container)
 	$(setup_volumes)

@@ -1,14 +1,21 @@
 """YAML loading/saving utilities for packages.yaml and build-report.yaml."""
 
+import os
 import sys
 import time
 from pathlib import Path
+from typing import Literal, overload
 
 import yaml
 
-from .paths import GROUPS_YAML, PACKAGES_YAML, REPO_YAML, ROOT
+from .paths import (
+    BUILD_LOG_DIR,
+    BUILD_STATUS_YAML,
+    GROUPS_YAML,
+    PACKAGES_YAML,
+    REPO_YAML,
+)
 
-BUILD_STATUS_YAML = ROOT / "build-report.yaml"
 STAGES = ["validate", "spec", "vendor", "srpm", "mock", "copr"]
 
 
@@ -168,18 +175,6 @@ def apply_os_overrides(pkg: dict, fedora_version: str) -> dict:
     return result
 
 
-def get_active_packages(fedora_version: str, path: Path = PACKAGES_YAML) -> dict:
-    """Return packages dict with OS overrides applied and skipped packages removed."""
-    packages = get_packages(path)
-    result = {}
-    for name, pkg in packages.items():
-        resolved = apply_os_overrides(pkg, fedora_version)
-        if resolved.get("_skip"):
-            continue
-        result[name] = resolved
-    return result
-
-
 def load_build_status(path: Path = BUILD_STATUS_YAML) -> dict:
     """Load build-report.yaml or return empty structure."""
     if path.exists():
@@ -233,12 +228,40 @@ def now_epoch() -> int:
     return int(time.time())
 
 
-def stage_was_success(build_status: dict, stage: str, pkg: str) -> bool:
-    """Check if a package succeeded in a given stage."""
-    return (
-        build_status.get("stages", {}).get(stage, {}).get(pkg, {}).get("state")
-        == "success"
-    )
+@overload
+def init_stage(
+    stage_name: str, include_all: Literal[False] = False
+) -> tuple[dict, dict]: ...
+
+
+@overload
+def init_stage(
+    stage_name: str, include_all: Literal[True]
+) -> tuple[dict, dict, dict]: ...
+
+
+def init_stage(  # type: ignore
+    stage_name: str, include_all: bool = False
+) -> tuple[dict, dict] | tuple[dict, dict, dict]:
+    """Initialize a stage with standard boilerplate.
+
+    Returns (packages, build_status) after filtering and initialization.
+    If include_all=True, returns (all_packages, packages, build_status).
+    """
+    package_env = os.environ.get("PACKAGE", "")
+    skip_env = os.environ.get("SKIP_PACKAGES", "")
+
+    all_packages = get_packages()
+    packages = filter_packages(all_packages, package_env)
+    packages = skip_packages(packages, skip_env)
+
+    BUILD_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    build_status = load_build_status()
+    build_status.setdefault("stages", {})[stage_name] = {}
+
+    if include_all:
+        return all_packages, packages, build_status
+    return packages, build_status
 
 
 def write_yaml_preserving_comments(

@@ -24,7 +24,7 @@ from pathlib import Path
 
 from lib.deps import build_dep_graph, topological_sort, transitive_deps
 from lib.log_analysis import report_mock_failures, report_srpm_failures
-from lib.paths import BUILD_LOG_DIR, ROOT, get_package_log_dir
+from lib.paths import BUILD_LOG_DIR, ROOT, SOURCES_DIR, get_package_log_dir, mock_chroot
 from lib.reporting import print_summary
 from lib.vendor import is_go_package, vendor_tarball_path
 from lib.yaml_utils import (
@@ -40,7 +40,6 @@ from lib.yaml_utils import (
 
 PYTHON = sys.executable
 SCRIPTS = ROOT / "scripts"
-SOURCES_DIR = Path.home() / "rpmbuild" / "SOURCES"
 
 
 def needs_vendoring(packages: dict, fedora_version: str) -> bool:
@@ -85,12 +84,8 @@ def run_stage(script: Path, env: dict) -> bool:
 
 def main() -> None:
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
-    mock_chroot = os.environ.get(
-        "MOCK_CHROOT",
-        "fedora-rawhide-x86_64"
-        if fedora_version == "rawhide"
-        else f"fedora-{fedora_version}-x86_64",
-    )
+    mock_chroot_override = os.environ.get("MOCK_CHROOT", "")
+    mock_chroot_name = mock_chroot_override or mock_chroot(fedora_version)
     copr_repo = os.environ.get("COPR_REPO", "")
     package_filter = os.environ.get("PACKAGE", "")
     skip_filter = os.environ.get("SKIP_PACKAGES", "")
@@ -150,7 +145,7 @@ def main() -> None:
     build_status["run"]["fedora_version"] = (
         fedora_version if fedora_version == "rawhide" else int(fedora_version)
     )
-    build_status["run"]["mock_chroot"] = mock_chroot
+    build_status["run"]["mock_chroot"] = mock_chroot_name
 
     # Ensure all stage keys exist
     for stage in STAGES:
@@ -160,7 +155,7 @@ def main() -> None:
 
     stage_env = {
         "FEDORA_VERSION": fedora_version,
-        "MOCK_CHROOT": mock_chroot,
+        "MOCK_CHROOT": mock_chroot_name,
         "PACKAGE": ",".join(packages.keys()) if package_filter else "",
         "COPR_REPO": copr_repo,
         "PROCEED_BUILD": "true" if proceed else "",

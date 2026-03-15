@@ -2,18 +2,17 @@
 """Generate a Markdown README from build-report.yaml using a Jinja2 template."""
 
 import argparse
-import subprocess
 import sys
 from pathlib import Path
 
 import yaml
 
 from lib.jinja_utils import create_jinja_env
-from lib.paths import GROUPS_YAML, PACKAGES_YAML, REPO_YAML, ROOT
+from lib.paths import BUILD_STATUS_YAML, GROUPS_YAML, PACKAGES_YAML, REPO_YAML, ROOT
+from lib.subprocess_utils import run_git
 from lib.version import clean_version
 from lib.yaml_utils import get_packages, load_groups_yaml, load_repo_yaml
 
-REPORT_YAML = ROOT / "build-report.yaml"
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{}/"
 
 
@@ -95,14 +94,11 @@ def collect_groups(groups_cfg: dict, pkg_by_name: dict) -> list[dict]:
 
 
 def collect_contributors(repo_root: Path) -> list[dict]:
-    result = subprocess.run(
-        ["git", "log", "--format=%an|%ae"],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-    )
+    result = run_git("log", "--format=%an|%ae", cwd=repo_root)
     seen: set[str] = set()
-    contributors = []
+    contributors: list[dict] = []
+    if result.returncode != 0:
+        return contributors
     for line in result.stdout.splitlines():
         name, _, email = line.partition("|")
         if name in seen:
@@ -139,11 +135,11 @@ def main() -> None:
     args = parser.parse_args()
     template_name = f"readme-{args.format}.md.j2"
 
-    if not REPORT_YAML.exists():
-        print(f"error: {REPORT_YAML} not found", file=sys.stderr)
+    if not BUILD_STATUS_YAML.exists():
+        print(f"error: {BUILD_STATUS_YAML} not found", file=sys.stderr)
         sys.exit(1)
 
-    data = yaml.safe_load(REPORT_YAML.read_text())
+    data = yaml.safe_load(BUILD_STATUS_YAML.read_text())
     run = data.get("run", {})
     stages = data.get("stages", {})
 

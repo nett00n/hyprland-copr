@@ -20,38 +20,24 @@ Environment variables:
 
 import os
 import sys
-from pathlib import Path
 
-from lib.paths import BUILD_LOG_DIR, ROOT, get_package_log_dir
+from lib.paths import ROOT, SOURCES_DIR, get_package_log_dir
 from lib.reporting import status
 from lib.vendor import VendorError, generate, is_go_package, vendor_tarball_path
 from lib.version import nvr
 from lib.yaml_utils import (
     apply_os_overrides,
-    filter_packages,
-    get_packages,
-    load_build_status,
+    init_stage,
     save_build_status,
-    skip_packages,
 )
-
-SOURCES_DIR = Path.home() / "rpmbuild" / "SOURCES"
 
 
 def main() -> None:
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
-    package_filter = os.environ.get("PACKAGE", "")
-    skip_filter = os.environ.get("SKIP_PACKAGES", "")
 
-    all_packages = get_packages()
-    packages = filter_packages(all_packages, package_filter)
-    packages = skip_packages(packages, skip_filter)
-
-    BUILD_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    packages, build_status = init_stage("vendor")
     SOURCES_DIR.mkdir(parents=True, exist_ok=True)
-    build_status = load_build_status()
     spec_stage = build_status.get("stages", {}).get("spec", {})
-    build_status.setdefault("stages", {})["vendor"] = {}
 
     failed = False
     print("\n=== vendor ===")

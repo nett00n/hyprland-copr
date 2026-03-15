@@ -24,18 +24,15 @@ from pathlib import Path
 from typing import Any
 
 from lib.deps import infer_deps
-from lib.paths import BUILD_LOG_DIR, LOCAL_REPO, ROOT, get_package_log_dir
+from lib.paths import LOCAL_REPO, ROOT, get_package_log_dir, mock_chroot
 from lib.reporting import status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
 from lib.yaml_utils import (
     apply_os_overrides,
-    filter_packages,
-    get_packages,
-    load_build_status,
+    init_stage,
     now_epoch,
     save_build_status,
-    skip_packages,
 )
 
 
@@ -79,30 +76,20 @@ def copy_mock_results(mock_chroot: str, pkg: str) -> list[str]:
 
 def main() -> None:
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
-    mock_chroot = os.environ.get(
-        "MOCK_CHROOT",
-        "fedora-rawhide-x86_64"
-        if fedora_version == "rawhide"
-        else f"fedora-{fedora_version}-x86_64",
-    )
-    if not re.match(r"^[\w.-]+$", mock_chroot):
-        raise ValueError(f"Invalid MOCK_CHROOT: {mock_chroot}")
-    package_filter = os.environ.get("PACKAGE", "")
-    skip_filter = os.environ.get("SKIP_PACKAGES", "")
+    mock_chroot_override = os.environ.get("MOCK_CHROOT", "")
+    mock_chroot_name = mock_chroot_override or mock_chroot(fedora_version)
+    if not re.match(r"^[\w.-]+$", mock_chroot_name):
+        raise ValueError(f"Invalid MOCK_CHROOT: {mock_chroot_name}")
 
-    all_packages = get_packages()
-    packages = filter_packages(all_packages, package_filter)
-    packages = skip_packages(packages, skip_filter)
-
-    BUILD_LOG_DIR.mkdir(parents=True, exist_ok=True)
-    build_status = load_build_status()
+    packages, build_status = init_stage("mock")
     srpm_stage = build_status.get("stages", {}).get("srpm", {})
 
     proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
-    stages = build_status.setdefault("stages", {})
+    stages = build_status.get("stages", {})
     if not proceed:
         stages["mock"] = {}
-    stages.setdefault("mock", {})
+    else:
+        stages.setdefault("mock", {})
 
     failed: dict[str, bool] = {}
 
@@ -151,19 +138,19 @@ def main() -> None:
             build_status["stages"]["mock"][pkg] = entry
             continue
 
-        cmd = ["mock", "-r", mock_chroot, "--rebuild", srpm_path]
+        cmd = ["mock", "-r", mock_chroot_name, "--rebuild", srpm_path]
         if (LOCAL_REPO / "repodata").exists():
             cmd.insert(3, "--addrepo")
             cmd.insert(4, f"file://{LOCAL_REPO}")
         ok, _, _ = run_cmd(cmd, log)
-        mock_logs = copy_mock_results(mock_chroot, pkg)
+        mock_logs = copy_mock_results(mock_chroot_name, pkg)
         state = "success" if ok else "failed"
         if not ok:
             failed[pkg] = True
             failed_overall = True
         else:
             failed[pkg] = False
-            update_local_repo(mock_chroot)
+            update_local_repo(mock_chroot_name)
         status("mock", pkg, "ok" if ok else "fail")
 
         entry = {
