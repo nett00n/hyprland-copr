@@ -1,0 +1,7 @@
+[flake8]
+# E203: whitespace before ':' — conflicts with Ruff formatter, trust formatter over linter
+# E501: line too long — handled by Ruff
+# W503: line break before binary operator — conflicts with modern style
+# E704: multiple statements on one line — handled by Ruff
+ignore = E203,E501,W503,E704
+exclude = .git,.venv,submodules,__pycache__,.pytest_cache

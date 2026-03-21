@@ -1,6 +1,7 @@
 -r requirements.txt
+flake8>=7.0.0
 mypy>=1.19.1
-ruff>=0.15.4
 rpmlint>=2.6.0
-yamllint>=1.26.0
+ruff>=0.15.4
 types-PyYAML>=6.0.12.20250915
+yamllint>=1.26.0

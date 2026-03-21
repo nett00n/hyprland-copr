@@ -68,6 +68,11 @@ _MESON_WRAP_FALLBACK_RE = re.compile(
 #     cavacore.c
 _CMAKE_MISSING_SOURCE_RE = re.compile(r"Cannot find source file:")
 
+# /path/to/file.cpp:11:10: fatal error: hyprland/src/managers/HookSystemManager.hpp: No such file or directory
+_COMPILER_MISSING_HEADER_RE = re.compile(
+    r"^([^:]+):(\d+):\d+: fatal error: ([^:]+): No such file or directory"
+)
+
 
 def _dnf_whatprovides(query: str) -> list[str]:
     try:
@@ -278,6 +283,23 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                     line.strip(),
                     f'CMake cannot find source file "{fname}" — likely a missing git submodule in the tarball',
                     "",
+                    "none",
+                )
+            )
+            continue
+        m = _COMPILER_MISSING_HEADER_RE.match(line)
+        if m:
+            header = m.group(3)
+            is_internal = "/src/" in header or "/internal/" in header
+            msg = f'header not found: "{header}"'
+            if is_internal:
+                msg += " — this is a private/internal Hyprland header (plugin may be incompatible with current Hyprland version — check patch file to exclude from build)"
+            issues.append(
+                (
+                    lineno,
+                    line.strip(),
+                    msg,
+                    header,
                     "none",
                 )
             )

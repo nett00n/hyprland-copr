@@ -90,7 +90,7 @@ COPR_INSTRUCTIONS := docs/INSTALL.copr.md
 # Helper: run command with optional logging
 # Usage: $(call run_with_result,command,success_msg,fail_msg,log_dir)
 define run_with_result
-	@if [ -n "$(QUIET)" ] && [ -n "$4" ]; then \
+	@if [ "$(QUIET)" = "1" ] && [ -n "$4" ]; then \
 		mkdir -p "$4"; \
 		rm -f "$4"/*.log; \
 		if $1 > "$4/stdout.log" 2> "$4/stderr.log"; then \
@@ -114,7 +114,7 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv lint fmt pre-commit ruff ruff-format mypy rpmlint yamlfmt yamllint pkg-spec update-versions list-tags scaffold-package add-submodule add-package add-new gen-report readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all pkg-sources pkg-srpm pkg-mock pkg-copr pkg-full-cycle pkg-build-pop stage-validate stage-spec stage-vendor stage-srpm stage-mock stage-copr
+.PHONY: help setup-venv lint fmt pre-commit ruff ruff-format flake mypy rpmlint yamlfmt yamllint pkg-spec update-versions list-tags scaffold-package add-submodule add-package add-new gen-report readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all pkg-sources pkg-srpm pkg-mock pkg-copr pkg-full-cycle pkg-build-pop pkg-log-analysis stage-validate stage-spec stage-vendor stage-srpm stage-mock stage-copr
 
 help: ## Show this help
 	@echo "Usage: make [TARGET] [PACKAGE=<name>] [FEDORA_VERSION=<version>]"
@@ -125,6 +125,7 @@ help: ## Show this help
 	@echo "  Examples:"
 	@echo "    make pkg-srpm PACKAGE=hyprland"
 	@echo "    make pkg-mock PACKAGE=hyprland FEDORA_VERSION=42"
+	@echo "    make pkg-log-analysis PKG=hyprland-plugins"
 	@echo "    make pkg-copr PACKAGE=hyprland"
 	@echo "    make stage-spec stage-srpm stage-mock PACKAGE=hyprutils"
 	@echo ""
@@ -135,11 +136,13 @@ setup-venv: ## Create .venv and install Python dependencies
 	python3 -m venv .venv
 	.venv/bin/pip install -q -r requirements.txt
 
-lint: ## Run all linters inside container (ruff, mypy, rpmlint, yamllint)
+lint: ## Run all linters inside container (ruff, flake8, mypy, rpmlint, yamllint)
 	$(setup_volumes)
 	$(CONTAINER_PYTHON) -m pip install -q -r requirements-dev.txt
 	@if [ -z "$(QUIET)" ]; then echo $(HIGHLIGHT_PREFIX) "Ruff (Python linter)"; fi
 	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff check scripts/,Ruff check passed,Ruff check failed,$(MAKE_LOGS_DIR)/lint/ruff)
+	@if [ -z "$(QUIET)" ]; then echo $(HIGHLIGHT_PREFIX) "Flake8 (Style checker)"; fi
+	$(call run_with_result,$(CONTAINER_PYTHON) -m flake8 scripts/,Flake8 check passed,Flake8 check failed,$(MAKE_LOGS_DIR)/lint/flake)
 	@if [ -z "$(QUIET)" ]; then echo $(HIGHLIGHT_PREFIX) "Mypy (Type checker)"; fi
 	$(call run_with_result,$(CONTAINER_PYTHON) -m mypy scripts/ --ignore-missing-imports --exclude submodules,Mypy check passed,Mypy check failed,$(MAKE_LOGS_DIR)/lint/mypy)
 	@if [ -z "$(QUIET)" ]; then echo $(HIGHLIGHT_PREFIX) "Rpmlint (RPM spec linter)"; fi
@@ -160,6 +163,7 @@ pre-commit: ## Run all checks and formatting (lint + fmt)
 	$(call run_with_result,$(CONTAINER_PYTHON) -m pip install -q -r requirements-dev.txt,Dev deps installed,Dev deps failed,$(MAKE_LOGS_DIR)/pre-commit/pip)
 	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff check scripts/,Ruff check passed,Ruff check failed,$(MAKE_LOGS_DIR)/pre-commit/ruff)
 	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff format scripts/,Ruff format applied,Ruff format failed,$(MAKE_LOGS_DIR)/pre-commit/ruff-format)
+	$(call run_with_result,$(CONTAINER_PYTHON) -m flake8 scripts/,Flake8 check passed,Flake8 check failed,$(MAKE_LOGS_DIR)/pre-commit/flake)
 	$(call run_with_result,$(CONTAINER_PYTHON) -m mypy scripts/ --ignore-missing-imports --exclude submodules,Mypy check passed,Mypy check failed,$(MAKE_LOGS_DIR)/pre-commit/mypy)
 	$(call run_with_result,$(CONTAINER_RUN) rpmlint packages/*/[a-z]*.spec,Rpmlint check passed,Rpmlint check failed,$(MAKE_LOGS_DIR)/pre-commit/rpmlint)
 	$(call run_with_result,$(PYTHON) scripts/format-yaml.py '*.yaml',YAML format applied,YAML format failed,$(MAKE_LOGS_DIR)/pre-commit/yamlfmt)
@@ -174,6 +178,11 @@ ruff: ## Run ruff check on scripts
 ruff-format: ## Run ruff format on scripts
 	$(setup_volumes)
 	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff format scripts/,Ruff format passed,Ruff format failed,$(MAKE_LOGS_DIR)/ruff-format)
+
+flake: ## Run flake8 style checker on scripts
+	$(setup_volumes)
+	$(CONTAINER_PYTHON) -m pip install -q -r requirements-dev.txt
+	$(call run_with_result,$(CONTAINER_PYTHON) -m flake8 scripts/,Flake8 check passed,Flake8 check failed,$(MAKE_LOGS_DIR)/flake)
 
 mypy: ## Run mypy type checker on scripts
 	$(setup_volumes)
@@ -365,8 +374,10 @@ pkg-mock: ## Build and test PACKAGE (or all) with mock for FEDORA_VERSION (runs 
 
 FORCE_MOCK ?=
 PROCEED_BUILD ?=
+SKIP_MOCK ?=
+SKIP_COPR ?=
 
-pkg-full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr (FEDORA_VERSION, PACKAGE, COPR_REPO, FORCE_MOCK, PROCEED_BUILD)
+pkg-full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr (FEDORA_VERSION, PACKAGE, COPR_REPO, FORCE_MOCK, PROCEED_BUILD, SKIP_MOCK, SKIP_COPR)
 	$(setup_volumes)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
@@ -375,6 +386,8 @@ pkg-full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → c
 		COPR_REPO=$(COPR_REPO) \
 		FORCE_MOCK=$(FORCE_MOCK) \
 		PROCEED_BUILD=$(PROCEED_BUILD) \
+		SKIP_MOCK=$(SKIP_MOCK) \
+		SKIP_COPR=$(SKIP_COPR) \
 		/work/.venv/bin/python3 scripts/full-cycle.py,Full cycle completed,Full cycle failed,$(MAKE_LOGS_DIR)/pkg-full-cycle)
 
 pkg-copr: ## Submit PACKAGE (or all) SRPMs to Copr (requires COPR_REPO env var, runs in container)
@@ -451,3 +464,7 @@ stage-copr: ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, ru
 		PACKAGE=$(PACKAGE) \
 		COPR_REPO=$(COPR_REPO) \
 		/work/.venv/bin/python3 scripts/stage-copr.py,Copr submission stage passed,Copr submission stage failed,$(MAKE_LOGS_DIR)/stage-copr)
+
+pkg-log-analysis: ## Analyze build logs for PACKAGE and report actionable errors
+	@test -n "$(PACKAGE)" || (echo "Error: PACKAGE is required (e.g. make pkg-log-analysis PKG=hyprland-plugins)"; exit 1)
+	$(PYTHON) scripts/pkg-log-analysis.py $(PACKAGE)
