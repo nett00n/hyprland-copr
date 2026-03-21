@@ -41,7 +41,7 @@ HOME_DIR     := $(shell echo $$HOME)
 
 # Per-Fedora-version volumes (container user is set in Containerfile)
 RPMBUILD_VOLUME  := rpmbuild-$(FEDORA_VERSION)
-RPMBUILD_MOUNT   := $(RPMBUILD_VOLUME):/home/user/rpmbuild:z
+RPMBUILD_MOUNT   := $(RPMBUILD_VOLUME):/root/rpmbuild:z
 LOCALREPO_VOLUME := local-repo-$(FEDORA_VERSION)
 LOCALREPO_MOUNT  := $(LOCALREPO_VOLUME):/local-repo:z
 WORKDIR_MOUNT    := $(PWD):/work:z
@@ -55,7 +55,7 @@ define setup_volumes
 	@if ! $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(RPMBUILD_VOLUME) &>/dev/null; then \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume create $(RPMBUILD_VOLUME); \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(RPMBUILD_MOUNT) $(IMAGE_NAME):$(FEDORA_VERSION) \
-			chown -R $(USER_ID):$(GROUP_ID) /home/user/rpmbuild; \
+			chown -R $(USER_ID):$(GROUP_ID) /root/rpmbuild; \
 	fi
 	@if ! $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(LOCALREPO_VOLUME) &>/dev/null; then \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume create $(LOCALREPO_VOLUME); \
