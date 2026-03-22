@@ -73,6 +73,16 @@ _COMPILER_MISSING_HEADER_RE = re.compile(
     r"^([^:]+):(\d+):\d+: fatal error: ([^:]+): No such file or directory"
 )
 
+# error: Installed (but unpackaged) file(s) found:
+_UNPACKAGED_FILES_RE = re.compile(
+    r"^error: Installed \(but unpackaged\) file\(s\) found:"
+)
+
+# /var/tmp/rpm-tmp.XXX: line N: cd: dirname: No such file or directory
+_CD_NOT_FOUND_RE = re.compile(
+    r"^/var/tmp/rpm-tmp\.\w+: line \d+: cd: ([^:]+): No such file or directory"
+)
+
 
 def _dnf_whatprovides(query: str) -> list[str]:
     try:
@@ -314,6 +324,31 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                     f'missing dependency "{dep}" — meson tried wrap fallback (disabled in RPM builds)',
                     dep,
                     "pkgconfig",
+                )
+            )
+            continue
+        m = _UNPACKAGED_FILES_RE.match(line)
+        if m:
+            issues.append(
+                (
+                    lineno,
+                    line.strip(),
+                    "installed but unpackaged files found — add missing files to files: in packages.yaml",
+                    "",
+                    "none",
+                )
+            )
+            continue
+        m = _CD_NOT_FOUND_RE.match(line)
+        if m:
+            dirname = m.group(1)
+            issues.append(
+                (
+                    lineno,
+                    line.strip(),
+                    f'extracted tarball directory "{dirname}" not found — package name may not match repo name, add source_name to packages.yaml (e.g., source_name: actual-repo-name)',
+                    "",
+                    "none",
                 )
             )
 

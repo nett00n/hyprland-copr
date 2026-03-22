@@ -105,7 +105,7 @@ Alternatively, step by step:
        description: |
          Longer description.
        url: https://github.com/org/<name>
-       source_name: <name>  # omit if tarball top-level dir matches "<name>-<version>"
+       source_name: <name>  # set if tarball top-level dir differs from package name (e.g., git packages where package is "foo-git" but repo is "foo")
        sources:             # auto-indexed: Source0, Source1, ...
          - url: "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
        build_system: cmake  # cmake | meson | autotools | make

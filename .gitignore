@@ -24,6 +24,7 @@ local-repo/
 
 # Build report and logs
 build-report.yaml
+build-report.*.yaml
 logs/
 
 

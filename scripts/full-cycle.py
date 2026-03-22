@@ -26,6 +26,11 @@ from datetime import datetime, timezone
 
 from lib.cache import compute_input_hashes, hashes_match
 from lib.deps import build_dep_graph, topological_sort, transitive_deps
+from lib.log_analysis import (
+    _analyze_mock_build_log,
+    _analyze_mock_log,
+    _suggest_providers,
+)
 from lib.paths import BUILD_LOG_DIR, ROOT, get_package_log_dir, mock_chroot
 from lib.reporting import print_summary
 from lib.yaml_utils import (
@@ -381,6 +386,51 @@ def run_build_pipeline(
             save_build_status(build_status)
 
 
+def analyze_mock_failures(packages: dict) -> None:
+    """Analyze logs for packages with mock build failures and print actionable errors."""
+    log_dir = ROOT / "logs" / "build"
+    has_failures = False
+
+    for pkg in packages:
+        pkg_log_dir = log_dir / pkg
+        if not pkg_log_dir.exists():
+            continue
+
+        # Check mock builddep failures
+        mock_log = pkg_log_dir / "20-mock.log"
+        if mock_log.exists():
+            issues = _analyze_mock_log(mock_log)
+            if issues:
+                if not has_failures:
+                    print("\n=== Mock Build Issues Analysis ===")
+                    has_failures = True
+                print(f"\n  [{pkg}] builddep:")
+                for lineno, raw_line, msg, dep, method in issues:
+                    print(f"    - {msg}")
+                    print(f"      {mock_log.relative_to(ROOT)}:{lineno}: {raw_line}")
+                    providers = _suggest_providers(dep, method)
+                    if providers:
+                        yaml_list = "\n        ".join(f'- "{p}"' for p in providers)
+                        print(f"      suggested packages:\n        {yaml_list}")
+
+        # Check mock build failures
+        build_log = pkg_log_dir / "21-mock-build.log"
+        if build_log.exists():
+            issues = _analyze_mock_build_log(build_log)
+            if issues:
+                if not has_failures:
+                    print("\n=== Mock Build Issues Analysis ===")
+                    has_failures = True
+                print(f"\n  [{pkg}] build:")
+                for lineno, raw_line, msg, dep, method in issues:
+                    print(f"    - {msg}")
+                    print(f"      {build_log.relative_to(ROOT)}:{lineno}: {raw_line}")
+                    providers = _suggest_providers(dep, method)
+                    if providers:
+                        yaml_list = "\n        ".join(f'- "{p}"' for p in providers)
+                        print(f"      suggested packages:\n        {yaml_list}")
+
+
 def finalize_report(packages: dict, build_status: dict, copr_repo: str) -> None:
     """Load final status, print summary, write report, and exit if any failed."""
     final_status = load_build_status()
@@ -396,6 +446,16 @@ def finalize_report(packages: dict, build_status: dict, copr_repo: str) -> None:
         for stage_data in final_status.get("stages", {}).values()
         for info in (stage_data or {}).values()
     )
+
+    # Analyze mock failures if present
+    mock_failures = [
+        pkg
+        for pkg, info in (final_status.get("stages", {}).get("mock", {}) or {}).items()
+        if info.get("state") == "failed"
+    ]
+    if mock_failures:
+        analyze_mock_failures(packages)
+
     if any_failed:
         sys.exit(1)
 
