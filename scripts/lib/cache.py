@@ -13,9 +13,18 @@ def _sha256(content: bytes) -> str:
 
 
 def _source_commit(pkg: str, meta: dict) -> str | None:
-    """Return full git commit hash of the package's submodule, or None if not found."""
+    """Return full git commit hash of the package's submodule, or None if not found.
+
+    First tries to match by package name. If not found, falls back to the source.name
+    field (used for packages like Hyprland-git that track a different repo).
+    """
     modules = parse_gitmodules(GITMODULES)
     mod = resolve_module(modules, pkg)
+    # Fallback: try source.name (e.g., Hyprland-git with source.name: Hyprland)
+    if mod is None:
+        source_name = meta.get("source", {}).get("name", "")
+        if source_name:
+            mod = resolve_module(modules, source_name)
     if mod is None:
         return None
     result = get_submodule_commit(ROOT / mod["path"])
