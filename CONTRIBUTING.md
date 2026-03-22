@@ -387,6 +387,12 @@ stages:
 - After a stage executes (success or fail), the `force_run` field is automatically removed
   (operator must re-set to force again; one-shot behavior)
 
+### Build Report Backups
+
+At the start of each `pkg-full-cycle` run, the existing `build-report.yaml` is automatically backed up
+with an RFC 3339 timestamp (filesystem-safe): `build-report.2026-03-21T10-30-45+00-00.yaml`.
+This happens before any processing begins, preserving the previous state and allowing rollback if needed.
+
 ### Running individual pipeline stages
 
 ```shell

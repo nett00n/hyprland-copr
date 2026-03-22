@@ -14,6 +14,7 @@ def run_cmd(cmd: list[str], log_path: Path | None = None) -> tuple[bool, str, st
         cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL
     )
     if log_path:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
         with open(log_path, "a") as fh:
             fh.write(f"$ {shlex.join(cmd)}\n")
             if result.stdout:

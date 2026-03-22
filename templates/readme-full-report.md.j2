@@ -33,13 +33,14 @@
 
 #### Build Chain Status
 
-| Stage | Status | Details |
-|:------|:-------|---------|
+| Stage | Status | Date | Duration | Details |
+|:------|:-------|:-----|:--------:|---------|
+| **Spec** | {{ badge_macros.state_badge('spec', pkg.stages.spec.state, badge_style) }} | {{ pkg.stages.spec.date }} | {{ pkg.stages.spec.duration }} | RPM spec file processing |
 {% set vendor_state = 'success' if pkg.name | lower == 'aylurs-gtk-shell' else 'skipped' -%}
-| **Vendor** | {{ badge_macros.state_badge('vendor', vendor_state, badge_style) }} | {% if pkg.name | lower == 'aylurs-gtk-shell' %}Built{% else %}Skipped{% endif %} |
-| **SRPM** | {{ badge_macros.state_badge('srpm', pkg.mock_state, badge_style) }} | Source RPM created |
-| **Mock** | {{ badge_macros.state_badge('mock', pkg.mock_state, badge_style) }} | Local build test |
-| **COPR** | {{ badge_macros.state_badge('copr', pkg.copr_state, badge_style, pkg.copr_url) }} | {% if pkg.copr_url %}[Build #{{ pkg.copr_url.split('/')[-1] }}]({{ pkg.copr_url }}){% else %}Skipped{% endif %} |
+| **Vendor** | {{ badge_macros.state_badge('vendor', vendor_state, badge_style) }} | — | — | {% if pkg.name | lower == 'aylurs-gtk-shell' %}Built{% else %}Skipped{% endif %} |
+| **SRPM** | {{ badge_macros.state_badge('srpm', pkg.stages.srpm.state, badge_style) }} | {{ pkg.stages.srpm.date }} | {{ pkg.stages.srpm.duration }} | Source RPM created |
+| **Mock** | {{ badge_macros.state_badge('mock', pkg.stages.mock.state, badge_style) }} | {{ pkg.stages.mock.date }} | {{ pkg.stages.mock.duration }} | Local build test |
+| **COPR** | {{ badge_macros.state_badge('copr', pkg.stages.copr.state, badge_style, pkg.copr_url) }} | {{ pkg.stages.copr.date }} | {{ pkg.stages.copr.duration }} | {% if pkg.copr_url %}[Build #{{ pkg.copr_url.split('/')[-1] }}]({{ pkg.copr_url }}){% else %}Skipped{% endif %} |
 
 ---
 

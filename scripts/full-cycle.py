@@ -400,6 +400,18 @@ def finalize_report(packages: dict, build_status: dict, copr_repo: str) -> None:
         sys.exit(1)
 
 
+def backup_build_report() -> None:
+    """Backup existing build-report.yaml with RFC 3339 timestamp (filesystem-safe)."""
+    report_path = ROOT / "build-report.yaml"
+    if report_path.exists():
+        timestamp = (
+            datetime.now(timezone.utc).isoformat(timespec="seconds").replace(":", "-")
+        )
+        backup_path = report_path.parent / f"build-report.{timestamp}.yaml"
+        shutil.copy2(report_path, backup_path)
+        print(f"Backup created: {backup_path.relative_to(ROOT)}")
+
+
 def main() -> None:
     (
         fedora_version,
@@ -410,6 +422,10 @@ def main() -> None:
         skip_mock,
         skip_copr,
     ) = load_config()
+
+    # Backup existing report before any processing
+    backup_build_report()
+
     packages = prepare_packages(package_filter, skip_filter)
     if not packages:
         sys.exit("error: no packages to build")
