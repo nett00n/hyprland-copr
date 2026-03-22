@@ -101,11 +101,18 @@ def _is_cached(
 
 
 def _inject_stage_meta(
-    stage: str, pkg: str, build_status: dict, started_at: int, new_hashes: dict
+    stage: str,
+    pkg: str,
+    build_status: dict,
+    started_at: int,
+    new_hashes: dict,
+    update_hashes: bool = True,
 ) -> None:
     """Inject started_at and hashes (on success) into stage entry.
 
     Also removes force_run flag after stage execution (one-shot).
+
+    If update_hashes=False, preserves stored hashes (for proceed-skip cases).
     """
     entry = build_status.get("stages", {}).get(stage, {}).get(pkg)
     if entry is None:
@@ -114,7 +121,7 @@ def _inject_stage_meta(
     entry.pop(
         "force_run", None
     )  # cleared after every run; operator must re-set to force again
-    if entry.get("state") == "success":
+    if update_hashes and entry.get("state") == "success":
         entry["hashes"] = new_hashes
 
 
@@ -287,10 +294,21 @@ def run_build_pipeline(
         else:
             rebuilt_packages.add(pkg)
             started_at = int(time.time())
+            prior_state = (
+                build_status.get("stages", {}).get("spec", {}).get(pkg, {}).get("state")
+            )
+            is_proceed_skip = proceed and prior_state == "success"
             if not _stage["stage-spec"].run_for_package(
                 pkg, meta, build_status, fedora_version
             ):
-                _inject_stage_meta("spec", pkg, build_status, started_at, new_hashes)
+                _inject_stage_meta(
+                    "spec",
+                    pkg,
+                    build_status,
+                    started_at,
+                    new_hashes,
+                    update_hashes=not is_proceed_skip,
+                )
                 save_build_status(build_status)
                 # Skip downstream stages unless any are forced
                 if not any(
@@ -298,7 +316,14 @@ def run_build_pipeline(
                 ):
                     continue
             else:
-                _inject_stage_meta("spec", pkg, build_status, started_at, new_hashes)
+                _inject_stage_meta(
+                    "spec",
+                    pkg,
+                    build_status,
+                    started_at,
+                    new_hashes,
+                    update_hashes=not is_proceed_skip,
+                )
 
         save_build_status(build_status)
 
@@ -308,17 +333,38 @@ def run_build_pipeline(
         else:
             rebuilt_packages.add(pkg)
             started_at = int(time.time())
+            prior_state = (
+                build_status.get("stages", {})
+                .get("vendor", {})
+                .get(pkg, {})
+                .get("state")
+            )
+            is_proceed_skip = proceed and prior_state == "success"
             result = _stage["stage-vendor"].run_for_package(
                 pkg, meta, build_status, fedora_version
             )
             if result is False:
-                _inject_stage_meta("vendor", pkg, build_status, started_at, new_hashes)
+                _inject_stage_meta(
+                    "vendor",
+                    pkg,
+                    build_status,
+                    started_at,
+                    new_hashes,
+                    update_hashes=not is_proceed_skip,
+                )
                 save_build_status(build_status)
                 # Skip downstream stages unless any are forced
                 if not any(s in forced_stages for s in ["srpm", "mock", "copr"]):
                     continue
             else:
-                _inject_stage_meta("vendor", pkg, build_status, started_at, new_hashes)
+                _inject_stage_meta(
+                    "vendor",
+                    pkg,
+                    build_status,
+                    started_at,
+                    new_hashes,
+                    update_hashes=not is_proceed_skip,
+                )
 
         save_build_status(build_status)
 
@@ -328,16 +374,34 @@ def run_build_pipeline(
         else:
             rebuilt_packages.add(pkg)
             started_at = int(time.time())
+            prior_state = (
+                build_status.get("stages", {}).get("srpm", {}).get(pkg, {}).get("state")
+            )
+            is_proceed_skip = proceed and prior_state == "success"
             if not _stage["stage-srpm"].run_for_package(
                 pkg, meta, build_status, fedora_version, proceed
             ):
-                _inject_stage_meta("srpm", pkg, build_status, started_at, new_hashes)
+                _inject_stage_meta(
+                    "srpm",
+                    pkg,
+                    build_status,
+                    started_at,
+                    new_hashes,
+                    update_hashes=not is_proceed_skip,
+                )
                 save_build_status(build_status)
                 # Skip downstream stages unless any are forced
                 if not any(s in forced_stages for s in ["mock", "copr"]):
                     continue
             else:
-                _inject_stage_meta("srpm", pkg, build_status, started_at, new_hashes)
+                _inject_stage_meta(
+                    "srpm",
+                    pkg,
+                    build_status,
+                    started_at,
+                    new_hashes,
+                    update_hashes=not is_proceed_skip,
+                )
 
         save_build_status(build_status)
 
@@ -350,6 +414,13 @@ def run_build_pipeline(
             else:
                 rebuilt_packages.add(pkg)
                 started_at = int(time.time())
+                prior_state = (
+                    build_status.get("stages", {})
+                    .get("mock", {})
+                    .get(pkg, {})
+                    .get("state")
+                )
+                is_proceed_skip = proceed and prior_state == "success"
                 if not _stage["stage-mock"].run_for_package(
                     pkg,
                     meta,
@@ -361,7 +432,12 @@ def run_build_pipeline(
                     packages,
                 ):
                     _inject_stage_meta(
-                        "mock", pkg, build_status, started_at, new_hashes
+                        "mock",
+                        pkg,
+                        build_status,
+                        started_at,
+                        new_hashes,
+                        update_hashes=not is_proceed_skip,
                     )
                     save_build_status(build_status)
                     # Skip copr unless it is forced
@@ -369,7 +445,12 @@ def run_build_pipeline(
                         continue
                 else:
                     _inject_stage_meta(
-                        "mock", pkg, build_status, started_at, new_hashes
+                        "mock",
+                        pkg,
+                        build_status,
+                        started_at,
+                        new_hashes,
+                        update_hashes=not is_proceed_skip,
                     )
 
             save_build_status(build_status)
@@ -383,6 +464,13 @@ def run_build_pipeline(
             else:
                 rebuilt_packages.add(pkg)
                 started_at = int(time.time())
+                prior_state = (
+                    build_status.get("stages", {})
+                    .get("copr", {})
+                    .get(pkg, {})
+                    .get("state")
+                )
+                is_proceed_skip = proceed and prior_state == "success"
                 _stage["stage-copr"].run_for_package(
                     pkg,
                     meta,
@@ -392,7 +480,14 @@ def run_build_pipeline(
                     proceed,
                     synchronous_copr,
                 )
-                _inject_stage_meta("copr", pkg, build_status, started_at, new_hashes)
+                _inject_stage_meta(
+                    "copr",
+                    pkg,
+                    build_status,
+                    started_at,
+                    new_hashes,
+                    update_hashes=not is_proceed_skip,
+                )
 
             save_build_status(build_status)
 
