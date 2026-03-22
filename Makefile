@@ -233,7 +233,7 @@ add-new: ## Add submodule from URL and scaffold packages.yaml entry in one step 
 gen-report: ## Render build-report.yaml to stdout (--format github|copr)
 	$(PYTHON) scripts/gen-report.py $(if $(FORMAT),--format $(FORMAT),)
 
-readme: ## Generate README.md, docs/README.copr.md, and docs/README.full-report.md
+readme: ## Generate README.md, docs/README.copr.md, and docs/full-report.md
 	@if [ -n "$(QUIET)" ]; then \
 		mkdir -p "$(MAKE_LOGS_DIR)/readme"; \
 		$(PYTHON) scripts/gen-report.py --format github > ./README.md \
@@ -244,14 +244,14 @@ readme: ## Generate README.md, docs/README.copr.md, and docs/README.full-report.
 			2>"$(MAKE_LOGS_DIR)/readme/copr.log" \
 			&& echo $(HIGHLIGHT_PREFIX) "✓ COPR README generated" \
 			|| (echo $(HIGHLIGHT_PREFIX) "✗ COPR README failed"; exit 1); \
-		$(PYTHON) scripts/gen-report.py --format full-report > ./docs/README.full-report.md \
+		$(PYTHON) scripts/gen-report.py --format full-report > ./docs/full-report.md \
 			2>"$(MAKE_LOGS_DIR)/readme/full-report.log" \
 			&& echo $(HIGHLIGHT_PREFIX) "✓ Full Report generated" \
 			|| (echo $(HIGHLIGHT_PREFIX) "✗ Full Report failed"; exit 1); \
 	else \
 		$(PYTHON) scripts/gen-report.py --format github > ./README.md && echo $(HIGHLIGHT_PREFIX) "✓ GitHub README generated" || (echo $(HIGHLIGHT_PREFIX) "✗ GitHub README failed"; exit 1); \
 		$(PYTHON) scripts/gen-report.py --format copr > ./docs/README.copr.md && echo $(HIGHLIGHT_PREFIX) "✓ COPR README generated" || (echo $(HIGHLIGHT_PREFIX) "✗ COPR README failed"; exit 1); \
-		$(PYTHON) scripts/gen-report.py --format full-report > ./docs/README.full-report.md && echo $(HIGHLIGHT_PREFIX) "✓ Full Report generated" || (echo $(HIGHLIGHT_PREFIX) "✗ Full Report failed"; exit 1); \
+		$(PYTHON) scripts/gen-report.py --format full-report > ./docs/full-report.md && echo $(HIGHLIGHT_PREFIX) "✓ Full Report generated" || (echo $(HIGHLIGHT_PREFIX) "✗ Full Report failed"; exit 1); \
 	fi
 
 # Update the COPR project description and instructions from markdown files.
@@ -376,8 +376,9 @@ FORCE_MOCK ?=
 PROCEED_BUILD ?=
 SKIP_MOCK ?=
 SKIP_COPR ?=
+SYNCHRONOUS_COPR_BUILD ?=
 
-pkg-full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr (FEDORA_VERSION, PACKAGE, COPR_REPO, FORCE_MOCK, PROCEED_BUILD, SKIP_MOCK, SKIP_COPR)
+pkg-full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr (FEDORA_VERSION, PACKAGE, COPR_REPO, FORCE_MOCK, PROCEED_BUILD, SKIP_MOCK, SKIP_COPR, SYNCHRONOUS_COPR_BUILD)
 	$(setup_volumes)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
@@ -388,6 +389,7 @@ pkg-full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → c
 		PROCEED_BUILD=$(PROCEED_BUILD) \
 		SKIP_MOCK=$(SKIP_MOCK) \
 		SKIP_COPR=$(SKIP_COPR) \
+		SYNCHRONOUS_COPR_BUILD=$(SYNCHRONOUS_COPR_BUILD) \
 		/work/.venv/bin/python3 scripts/full-cycle.py,Full cycle completed,Full cycle failed,$(MAKE_LOGS_DIR)/pkg-full-cycle)
 
 pkg-copr: ## Submit PACKAGE (or all) SRPMs to Copr (requires COPR_REPO env var, runs in container)

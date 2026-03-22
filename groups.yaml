@@ -21,8 +21,10 @@ hyprland:
   packages:
   - hypridle
   - Hyprland
+  - Hyprland-git
   - hyprland-guiutils
   - hyprland-plugins
+  - hyprland-plugins-git
   - hyprland-qt-support
   - hyprlauncher
   - hyprlock

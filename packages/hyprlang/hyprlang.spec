@@ -12,7 +12,8 @@ BuildRequires:  hyprutils-devel
 BuildRequires:  ninja-build
 
 %description
-hyprlang is the official implementation library for the hypr configuration language
+hyprlang is the official implementation library for the hypr configuration
+language
 
 Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr

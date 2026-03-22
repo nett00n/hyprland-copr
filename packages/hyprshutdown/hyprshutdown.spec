@@ -19,7 +19,8 @@ BuildRequires:  pkgconfig(libdrm)
 BuildRequires:  pkgconfig(pixman-1)
 
 %description
-A graceful shutdown/logout utility for Hyprland, which prevents apps from crashing / dying unexpectedly
+A graceful shutdown/logout utility for Hyprland, which prevents apps from
+crashing / dying unexpectedly
 
 Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr

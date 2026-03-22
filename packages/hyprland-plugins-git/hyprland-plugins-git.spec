@@ -1,10 +1,10 @@
 %global commit b85a56b9531013c79f2f3846fd6ee2ff014b8960
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %global commitdate 20260223
-Name:           hyprland-plugins
+Name:           hyprland-plugins-git
 Version:        0.53.0^20260223gitb85a56b
 Release:        %autorelease%{?dist}
-Summary:        Official plugins for Hyprland
+Summary:        Official plugins for Hyprland [Built from latest commit, unstable]
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
 Source0:        %{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz
@@ -23,7 +23,8 @@ BuildRequires:  pkgconfig(wayland-server)
 BuildRequires:  pkgconfig(xkbcommon)
 
 %description
-hyprland-plugins
+hyprland-plugins-git
+This package is build from latest commit and can be broken
 
 This repo houses official plugins for Hyprland.
 Plugin list
@@ -33,6 +34,7 @@ Plugin list
 - hyprbars -> adds title bars to windows
 - hyprexpo -> adds an expo-like workspace overview
 - hyprfocus -> flashfocus for hyprland
+- hyprscrolling -> adds a scrolling layout to hyprland
 - hyprtrails -> adds smooth trails behind moving windows
 - hyprwinwrap -> clone of xwinwrap, allows you to put any app as a wallpaper
 - xtra-dispatchers -> adds some new dispatchers
@@ -46,7 +48,7 @@ Package info:
 Commit:            b85a56b9531013c79f2f3846fd6ee2ff014b8960
 
 %prep
-%autosetup -p1 -n %{name}-%{commit}
+%autosetup -p1 -n hyprland-plugins-%{commit}
 
 %build
 %cmake

@@ -1,3 +1,4 @@
+%global debug_package %{nil}
 %global _lto_cflags %{nil}
 Name:           cava
 Version:        0.10.7
@@ -44,15 +45,6 @@ Package info:
 %doc README.md
 %license LICENSE
 
-%package devel
-Summary:        Development files for Cross-platform Audio Visualizer
-Requires:       %{name} = %{version}-%{release}
-
-%description devel
-Development files for cava.
-
-%files devel
-
 %changelog
-* Sun Mar 15 2026 nett00n <copr@nett00n.org> - 0.10.7-%autorelease
+* Sun Mar 22 2026 nett00n <copr@nett00n.org> - 0.10.7-%autorelease
 - Update to 0.10.7

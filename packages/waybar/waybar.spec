@@ -4,9 +4,9 @@ Release:        %autorelease%{?dist}
 Summary:        Highly customizable Wayland bar for Sway and Wlroots based compositors
 License:        MIT
 URL:            https://github.com/Alexays/Waybar
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        %{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz
 
-BuildRequires:  cava-devel
+BuildRequires:  cava
 BuildRequires:  gcc-c++
 BuildRequires:  gpsd-devel
 BuildRequires:  jack-audio-connection-kit-devel
@@ -68,5 +68,5 @@ Development files for waybar.
 %files devel
 
 %changelog
-* Sun Mar 15 2026 nett00n <copr@nett00n.org> - 0.15.0-%autorelease
+* Sun Mar 22 2026 nett00n <copr@nett00n.org> - 0.15.0-%autorelease
 - Update to 0.15.0

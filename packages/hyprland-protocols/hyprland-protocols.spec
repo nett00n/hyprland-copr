@@ -10,13 +10,20 @@ Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.
 BuildRequires:  meson
 
 %description
-Wayland protocol extensions for Hyprland
+hyprland-protocols
 
-This repository exists in an effort to bridge the gap between Hyprland and KDE/Gnome's functionality, as well as allow apps for some extra neat functionality under Hyprland
+Wayland protocol extensions for Hyprland.
 
-Since wayland-protocols is slow to change (on top of Hyprland not being allowed to contribute), we have to maintain a set of protocols Hyprland uses to plumb some things / add some useful features
+This repository exists in an effort to bridge the gap between Hyprland
+and KDE/Gnome's functionality, as well as allow apps for some extra neat
+functionality under Hyprland.
 
-Some of the protocols here also do not belong in w-p, as they are specific to Hyprland
+Since wayland-protocols is slow to change (on top of Hyprland not being
+allowed to contribute), we have to maintain a set of protocols Hyprland
+uses to plumb some things / add some useful features.
+
+Some of the protocols here also do not belong in w-p, as they are specific
+to Hyprland.
 
 Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr

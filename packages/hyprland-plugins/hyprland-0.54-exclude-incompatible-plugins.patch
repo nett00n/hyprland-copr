@@ -1,0 +1,11 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -13,6 +13,6 @@ add_subdirectory(hyprbars)
+ add_subdirectory(hyprexpo)
+ add_subdirectory(hyprfocus)
+-add_subdirectory(hyprscrolling)
++# add_subdirectory(hyprscrolling) # Temporarily disabled: incompatible with hyprland 0.54
+-add_subdirectory(hyprtrails)
++# add_subdirectory(hyprtrails) # Temporarily disabled: incompatible with hyprland 0.54
+ add_subdirectory(hyprwinwrap)
+ add_subdirectory(xtra-dispatchers)

@@ -26,19 +26,28 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
-### Refactoring of prettiness
+### Alot again
 
+> **Packages info**:
+>
 > I was thinking, hyprland plugins on latest commit is ready to build with
 > 0.54.* hyprland, so an update policy configuration was added.
-> But reality check: it's not :D
+> But reality check: it's not. But it is a cool feature anyways. To make plugins compile hyprscrolling and hyprtrails were excluded
 >
-> But it is a cool feature anyways.
+> **Automations info**:
 >
-> Added separate build report, made small j2 snippets for different pages
+> Nobody cares about my automations, but listen up:
+>
+> - Moved buid report to separate page. It is better to use something like gist, but i didn't want to research this question
+> - New build report is more detailed, and also uses copr's native build badge
+> - Implemented caching of builds' signatures to DRASTICALLY reduce build count
+> - Also i sped up scheduled builds with dettached copr builds.
+> - Even more errors now highlighted automatically
+> - More lints to lints gods
 >
 > Pet your pets, sincerely yours nett00n
 >
-> 2026-03-20
+> 2026-03-21
 
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/tree/main/blog)
@@ -51,7 +60,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ### Useful apps
 
-- `pyprland` — Scratchpads & many goodies for Hyprland [maintainer=@fdev31]
+- `pyprland` — Scratchpads & many goodies for Hyprland
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
 
 ### Other dependencies
@@ -68,8 +77,10 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 - `hypridle` — An idle management daemon for Hyprland
 - `hyprland` — A Modern C++ Wayland Compositor
+- `hyprland-git` — A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 - `hyprland-guiutils` — Hyprland GUI utilities
 - `hyprland-plugins` — Official plugins for Hyprland
+- `hyprland-plugins-git` — Official plugins for Hyprland [Built from latest commit, unstable]
 - `hyprland-qt-support` — A qml style provider for hypr* qt apps
 - `hyprlauncher` — A multipurpose and versatile launcher / picker for Hyprland
 - `hyprlock` — A gpu-accelerated screen lock for Hyprland
@@ -113,7 +124,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/README.full-report.md)** — Fedora 44 · 2026-03-20
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-03-22
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

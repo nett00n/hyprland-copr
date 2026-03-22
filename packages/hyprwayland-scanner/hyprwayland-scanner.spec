@@ -12,8 +12,8 @@ BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(pugixml)
 
 %description
-hyprwayland-scanner is a Wayland protocol scanner / code generator
-used by the Hypr ecosystem to generate C++ protocol bindings
+hyprwayland-scanner is a Wayland protocol scanner / code generatorused
+by the Hypr ecosystem to generate C++ protocol bindings
 
 Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr

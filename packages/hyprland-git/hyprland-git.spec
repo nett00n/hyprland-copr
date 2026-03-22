@@ -1,7 +1,10 @@
-Name:           hyprland
-Version:        0.54.2
+%global commit bf31f642b08a8d8ca796a1b713285f2580805c2f
+%global shortcommit %(c=%{commit}; echo ${c:0:7})
+%global commitdate 20260321
+Name:           hyprland-git
+Version:        0.54.0^20260321gitbf31f64
 Release:        %autorelease%{?dist}
-Summary:        A Modern C++ Wayland Compositor
+Summary:        A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
@@ -41,6 +44,9 @@ BuildRequires:  pkgconfig(xkbcommon)
 BuildRequires:  udis86-devel
 
 %description
+hyprland-git
+This package is build from latest commit and can be broken
+
 Hyprland is a 100% independent, dynamic tiling Wayland compositor that
 doesn't sacrifice on its looksIt provides the latest Wayland features,
 is highly customizable, has all the eyecandy, the most powerful plugins,
@@ -50,11 +56,10 @@ Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
-Tag:               v0.54.2
-Commit:            59f9f2688ac508a0584d1462151195a6c4992f99
+Commit:            bf31f642b08a8d8ca796a1b713285f2580805c2f
 
 %prep
-%autosetup -p1 -n Hyprland-%{version}
+%autosetup -p1 -n Hyprland-%{commit}
 sed -i 's|^install(TARGETS start-hyprland)|target_include_directories(start-hyprland PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glaze-src/include")\ninstall(TARGETS start-hyprland)|' start/CMakeLists.txt
 
 %build
@@ -85,16 +90,16 @@ sed -i 's|^install(TARGETS start-hyprland)|target_include_directories(start-hypr
 %{_prefix}/bin/Hyprland
 
 %package devel
-Summary:        Development files for A Modern C++ Wayland Compositor
+Summary:        Development files for A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 Requires:       %{name} = %{version}-%{release}
 
 %description devel
-Development files for hyprland.
+Development files for hyprland-git.
 
 %files devel
 %{_includedir}/hyprland/
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Tue Mar 10 2026 nett00n <copr@nett00n.org> - 0.54.2-%autorelease
-- version: bump to 0.54.2
+* Sun Mar 22 2026 nett00n <copr@nett00n.org> - 0.54.0^20260321gitbf31f64-%autorelease
+- internal: rewrite deviceNameToInternalString using a single range pipeline (#13806)

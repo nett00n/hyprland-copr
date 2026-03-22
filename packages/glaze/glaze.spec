@@ -2,7 +2,7 @@
 Name:           glaze
 Version:        7.1.0
 Release:        %autorelease%{?dist}
-Summary:        Extremely fast, in memory, JSON and reflection library for modern C++. BEVE, CBOR, CSV, MessagePack, TOML, YAML, EETF
+Summary:        Extremely fast, in memory, JSON and reflection library for modern C++.
 License:        MIT
 URL:            https://github.com/stephenberry/glaze
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
@@ -14,7 +14,9 @@ BuildRequires:  libubsan
 BuildRequires:  ninja-build
 
 %description
-One of the fastest JSON libraries in the world. Glaze reads and writes from object memory, simplifying interfaces and offering incredible performance
+One of the fastest JSON libraries in the world. Glaze reads and
+writes from object memory, simplifying interfaces and offering incredible
+performance
 
 Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr
@@ -38,7 +40,7 @@ Commit:            b71542bb16c9d793545062185d7fd9bedbc0b638
 %license LICENSE
 
 %package devel
-Summary:        Development files for Extremely fast, in memory, JSON and reflection library for modern C++. BEVE, CBOR, CSV, MessagePack, TOML, YAML, EETF
+Summary:        Development files for Extremely fast, in memory, JSON and reflection library for modern C++.
 Requires:       %{name} = %{version}-%{release}
 
 %description devel

@@ -1,7 +1,7 @@
 Name:           pyprland
 Version:        3.1.1
 Release:        %autorelease%{?dist}
-Summary:        Scratchpads & many goodies for Hyprland [maintainer=@fdev31]
+Summary:        Scratchpads & many goodies for Hyprland
 BuildArch:      noarch
 License:        MIT
 URL:            https://github.com/hyprland-community/pyprland
@@ -19,9 +19,12 @@ Requires:       qt6-qtquickcontrols2-devel
 %description
 Power up your desktop
 
-A plugin system that extends your graphical environment with features like scratchpads, dynamic popup nested menus, custom notifications, easy monitor settings and more
-
-Think of it as a Gnome tweak tool for Hyprland, with options that can run on any desktop. With a fully plugin-based architecture, it's lightweight and easy to customize
+A plugin system that extends your graphical
+environment with features like scratchpads, dynamic popup nested menus,
+custom notifications, easy monitor settings and moreThink of it as a Gnome
+tweak tool for Hyprland, with options that can run on any desktop.
+With a fully plugin-based architecture, it's lightweight and easy to
+customize
 
 Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr
@@ -46,5 +49,5 @@ python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --pref
 %{python3_sitelib}/pyprland-%{version}.dist-info
 
 %changelog
-* Sun Mar 15 2026 nett00n <copr@nett00n.org> - 3.1.1-%autorelease
+* Sun Mar 22 2026 nett00n <copr@nett00n.org> - 3.1.1-%autorelease
 - Update to 3.1.1

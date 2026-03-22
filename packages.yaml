@@ -108,15 +108,13 @@ cava:
   depends_on:
   - sndio
   description: Cross-platform Audio Visualizer E
-  devel:
-    files: []
   files:
   - '%doc README.md'
   - '%license LICENSE'
   license: MIT
   release: '%autorelease'
   rpm:
-    no_debug_package: false
+    no_debug_package: true
   source:
     archives:
     - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -154,9 +152,7 @@ glaze:
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: |
-    Extremely fast, in memory, JSON and reflection library for modern C++.
-    BEVE, CBOR, CSV, MessagePack, TOML, YAML, EETF
+  summary: Extremely fast, in memory, JSON and reflection library for modern C++.
   url: https://github.com/stephenberry/glaze
   version: 7.1.0
 gtk4-layer-shell:
@@ -200,9 +196,7 @@ gtk4-layer-shell:
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: |
-    FA library to create panels and other desktop components for
-    Wayland using the Layer Shell protocol and GTK4
+  summary: A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
   url: https://github.com/wmww/gtk4-layer-shell
   version: 1.3.0
 hyprcursor:
@@ -394,6 +388,100 @@ Hyprland:
   summary: A Modern C++ Wayland Compositor
   url: https://github.com/hyprwm/Hyprland
   version: 0.54.2
+Hyprland-git:
+  auto_update:
+    release_type: latest-commit
+  build:
+    prep:
+    - sed -i 's|^install(TARGETS start-hyprland)|target_include_directories(start-hyprland PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glaze-src/include")\ninstall(TARGETS start-hyprland)|' start/CMakeLists.txt
+    system: cmake
+  build_requires:
+  - aquamarine-devel
+  - cmake
+  - gcc-c++
+  - glaze-devel
+  - hyprcursor-devel
+  - hyprgraphics-devel
+  - hyprland-protocols-devel
+  - hyprlang-devel
+  - hyprutils-devel
+  - hyprwayland-scanner-devel
+  - hyprwire-devel
+  - ninja-build
+  - pkgconfig(cairo)
+  - pkgconfig(gbm)
+  - pkgconfig(gio-2.0)
+  - pkgconfig(gl)
+  - pkgconfig(glesv2)
+  - pkgconfig(libdrm)
+  - pkgconfig(libinput)
+  - pkgconfig(muparser)
+  - pkgconfig(pango)
+  - pkgconfig(pangocairo)
+  - pkgconfig(pixman-1)
+  - pkgconfig(re2)
+  - pkgconfig(tomlplusplus)
+  - pkgconfig(uuid)
+  - pkgconfig(wayland-protocols)
+  - pkgconfig(wayland-server)
+  - pkgconfig(xcb-errors)
+  - pkgconfig(xcb-icccm)
+  - pkgconfig(xcursor)
+  - pkgconfig(xkbcommon)
+  - udis86-devel
+  depends_on:
+  - aquamarine
+  - glaze
+  - hyprcursor
+  - hyprgraphics
+  - hyprland-protocols
+  - hyprlang
+  - hyprutils
+  - hyprwayland-scanner
+  - hyprwire
+  description: |
+    hyprland-git
+    This package is build from latest commit and can be broken
+
+    Hyprland is a 100% independent, dynamic tiling Wayland compositor that
+    doesn't sacrifice on its looksIt provides the latest Wayland features,
+    is highly customizable, has all the eyecandy, the most powerful plugins,
+    easy IPC, much more QoL stuff than other compositors and more..
+  devel:
+    files:
+    - '%{_includedir}/hyprland/'
+    - '%{_prefix}/share/pkgconfig/hyprland.pc'
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/hyprctl'
+  - '%{_bindir}/hyprland'
+  - '%{_bindir}/hyprpm'
+  - '%{_bindir}/start-hyprland'
+  - '%{_datadir}/bash-completion/completions/hyprctl'
+  - '%{_datadir}/bash-completion/completions/hyprpm'
+  - '%{_datadir}/fish/vendor_completions.d/hyprctl.fish'
+  - '%{_datadir}/fish/vendor_completions.d/hyprpm.fish'
+  - '%{_datadir}/hypr/'
+  - '%{_datadir}/wayland-sessions/hyprland*.desktop'
+  - '%{_datadir}/xdg-desktop-portal/hyprland-portals.conf'
+  - '%{_datadir}/zsh/site-functions/_hyprctl'
+  - '%{_datadir}/zsh/site-functions/_hyprpm'
+  - '%{_mandir}/man1/hyprctl.1.gz'
+  - '%{_mandir}/man1/Hyprland.1.gz'
+  - '%{_prefix}/bin/Hyprland'
+  license: BSD-3-Clause
+  release: '%autorelease'
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    commit:
+      date: '20260321'
+      full: bf31f642b08a8d8ca796a1b713285f2580805c2f
+    name: Hyprland
+  summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
+  url: https://github.com/hyprwm/Hyprland
+  version: 0.54.0^20260321gitbf31f64
 hyprland-guiutils:
   build:
     system: cmake
@@ -457,13 +545,18 @@ hyprland-plugins:
     - hyprbars -> adds title bars to windows
     - hyprexpo -> adds an expo-like workspace overview
     - hyprfocus -> flashfocus for hyprland
-    - hyprscrolling -> adds a scrolling layout to hyprland
     - hyprtrails -> adds smooth trails behind moving windows
     - hyprwinwrap -> clone of xwinwrap, allows you to put any app as a wallpaper
     - xtra-dispatchers -> adds some new dispatchers
+
+    Note: hyprscrolling and hyprtrails are temporarily excluded (incompatible with hyprland 0.54)
   files:
   - '%doc README.md'
   - '%license LICENSE'
+  - '%{_prefix}/lib/libborders-plus-plus.so'
+  - '%{_prefix}/lib/libcsgo-vulkan-fix.so'
+  - '%{_prefix}/lib/libhypr*.so'
+  - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
   release: '%autorelease'
   source:
@@ -472,6 +565,8 @@ hyprland-plugins:
     commit:
       date: '20260223'
       full: b85a56b9531013c79f2f3846fd6ee2ff014b8960
+    patches:
+    - hyprland-0.54-exclude-incompatible-plugins.patch
   summary: Official plugins for Hyprland
   url: https://github.com/hyprwm/hyprland-plugins
   version: 0.53.0^20260223gitb85a56b
@@ -495,7 +590,8 @@ hyprland-plugins-git:
   depends_on:
   - Hyprland
   description: |
-    hyprland-plugins
+    hyprland-plugins-git
+    This package is build from latest commit and can be broken
 
     This repo houses official plugins for Hyprland.
     Plugin list
@@ -509,9 +605,15 @@ hyprland-plugins-git:
     - hyprtrails -> adds smooth trails behind moving windows
     - hyprwinwrap -> clone of xwinwrap, allows you to put any app as a wallpaper
     - xtra-dispatchers -> adds some new dispatchers
+
+    Note: hyprscrolling and hyprtrails are temporarily excluded (incompatible with hyprland 0.54)
   files:
   - '%doc README.md'
   - '%license LICENSE'
+  - '%{_prefix}/lib/libborders-plus-plus.so'
+  - '%{_prefix}/lib/libcsgo-vulkan-fix.so'
+  - '%{_prefix}/lib/libhypr*.so'
+  - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
   release: '%autorelease'
   source:
@@ -520,7 +622,10 @@ hyprland-plugins-git:
     commit:
       date: '20260223'
       full: b85a56b9531013c79f2f3846fd6ee2ff014b8960
-  summary: Official plugins for Hyprland
+    patches:
+    - hyprland-0.54-exclude-incompatible-plugins.patch
+  source_name: hyprland-plugins
+  summary: Official plugins for Hyprland [Built from latest commit, unstable]
   url: https://github.com/hyprwm/hyprland-plugins
   version: 0.53.0^20260223gitb85a56b
 hyprland-protocols:
@@ -1131,7 +1236,7 @@ hyprutils:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Small C++ library for utilities used across the Hypr ecosystem
   url: https://github.com/hyprwm/hyprutils
-  version: 0.11.0
+  version: 0.11.1
 hyprwayland-scanner:
   build:
     system: cmake
@@ -1201,7 +1306,9 @@ pyprland:
   - python3-hatchling
   - python3-pip
   description: |
-    Power up your desktopA plugin system that extends your graphical
+    Power up your desktop
+
+    A plugin system that extends your graphical
     environment with features like scratchpads, dynamic popup nested menus,
     custom notifications, easy monitor settings and moreThink of it as a Gnome
     tweak tool for Hyprland, with options that can run on any desktop.
@@ -1228,7 +1335,7 @@ pyprland:
   source:
     archives:
     - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: Scratchpads & many goodies for Hyprland [maintainer=@fdev31]
+  summary: Scratchpads & many goodies for Hyprland
   url: https://github.com/hyprland-community/pyprland
   version: 3.1.1
 sndio:
@@ -1283,7 +1390,7 @@ Waybar:
   build:
     system: meson
   build_requires:
-  - cava-devel
+  - cava
   - gcc-c++
   - gpsd-devel
   - jack-audio-connection-kit-devel
@@ -1365,8 +1472,7 @@ xdg-desktop-portal-hyprland:
   - hyprlang
   - hyprutils
   - hyprwayland-scanner
-  description: |
-    xdg-desktop-portal backend for Hyprland
+  description: xdg-desktop-portal backend for Hyprland
   files:
   - '%doc README.md'
   - '%license LICENSE'
