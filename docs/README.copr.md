@@ -26,28 +26,18 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
-### Alot again
+### More packages to packages god
 
-> **Packages info**:
+> **Packages info**
 >
-> I was thinking, hyprland plugins on latest commit is ready to build with
-> 0.54.* hyprland, so an update policy configuration was added.
-> But reality check: it's not. But it is a cool feature anyways. To make plugins compile hyprscrolling and hyprtrails were excluded
+> I am starting to add new packages to the repo. I added those, recommended by Hyprland, cheeck [todo](https://github.com/nett00n/hyprland-copr/blob/84fcc19061532fd64c957b16edad00a6053ddbb2/docs/todo.md)
+> Already added:
+> - Waybar
+> - ashell
 >
-> **Automations info**:
->
-> Nobody cares about my automations, but listen up:
->
-> - Moved buid report to separate page. It is better to use something like gist, but i didn't want to research this question
-> - New build report is more detailed, and also uses copr's native build badge
-> - Implemented caching of builds' signatures to DRASTICALLY reduce build count
-> - Also i sped up scheduled builds with dettached copr builds.
-> - Even more errors now highlighted automatically
-> - More lints to lints gods
->
-> Pet your pets, sincerely yours nett00n
->
-> 2026-03-21
+> **Automation info**
+> A lot of changes again. Refactored main script.
+> cargo
 
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/tree/main/blog)
@@ -111,9 +101,9 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ### Useful apps
 
+- `ashell` — A ready to go Wayland status bar for Hyprland and Niri
 - `bemenu` — Dynamic menu library and client program inspired by dmenu
 - `cliphist` — Wayland clipboard manager with support for multimedia
-- `cliphist-git` — Wayland clipboard manager with support for multimedia [Built from latest commit, unstable]
 - `clipman` — A simple clipboard manager for Wayland
 - `copyq` — CopyQ is an advanced clipboard manager with powerful editing and scripting features.
 - `fuzzel` — App launcher and fuzzy finder for Wayland, inspired by rofi and dmenu
@@ -136,7 +126,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-03-24
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-03-26
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

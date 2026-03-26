@@ -1,8 +1,8 @@
-%global commit 63c56bad6fcc55f99d1437da7cd1b0b68fd9cc88
+%global commit eb141a6cd068f1319cb7caa1d3ad40f4957f65b1
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260323
+%global commitdate 20260326
 Name:           hyprland-git
-Version:        0.54.0^20260323git63c56ba
+Version:        0.54.0^20260326giteb141a6
 Release:        %autorelease%{?dist}
 Summary:        A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 License:        BSD-3-Clause
@@ -56,7 +56,7 @@ Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
-Commit:            63c56bad6fcc55f99d1437da7cd1b0b68fd9cc88
+Commit:            eb141a6cd068f1319cb7caa1d3ad40f4957f65b1
 
 %prep
 %autosetup -p1 -n Hyprland-%{commit}
@@ -101,5 +101,6 @@ Development files for hyprland-git.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Mon Mar 23 2026 nett00n <copr@nett00n.org> - 0.54.0^20260323git63c56ba-%autorelease
-- protocols: reimplement unstable/xdg-foreign-v2 (#13716)
+* Thu Mar 26 2026 nett00n <copr@nett00n.org> - 0.54.0^20260326giteb141a6-%autorelease
+- overridableVar: fix reassignment
+- we don't want to remove already set props with our reassignmemnt

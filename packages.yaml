@@ -476,12 +476,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260323'
-      full: 63c56bad6fcc55f99d1437da7cd1b0b68fd9cc88
+      date: '20260326'
+      full: eb141a6cd068f1319cb7caa1d3ad40f4957f65b1
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.54.0^20260323git63c56ba
+  version: 0.54.0^20260326giteb141a6
 hyprland-guiutils:
   build:
     system: cmake
@@ -1575,7 +1575,6 @@ cliphist:
     - go build -v -ldflags='-s -w' -o %{name} .
     install:
     - install -Dpm755 %{name} %{buildroot}%{_bindir}/%{name}
-    no_lto: false
     prep:
     - tar xf %{SOURCE1}
     system: golang
@@ -1614,64 +1613,13 @@ cliphist:
   summary: Wayland clipboard manager with support for multimedia
   url: https://github.com/sentriz/cliphist
   version: 0.7.0
-cliphist-git:
-  auto_update:
-    release_type: latest-commit
-  build:
-    commands:
-    - go build -v -ldflags='-s -w' -o %{name} .
-    install:
-    - install -Dpm755 %{name} %{buildroot}%{_bindir}/%{name}
-    no_lto: false
-    prep:
-    - tar xf %{SOURCE1}
-    system: golang
-  build_requires:
-  - golang
-  depends_on: []
-  description: |
-    hyprland-git
-
-    This package is build from latest commit and can be broken
-
-    Clipboard history “manager” for Wayland
-    - Write clipboard changes to a history file.
-    - Recall history with dmenu, rofi, wofi (or whatever other picker you like).
-    - Both text and images are supported.
-    - Clipboard is preserved byte-for-byte.
-        - Leading/trailing whitespace, no whitespace, or newlines are preserved.
-        - Won’t break fancy editor selections like Vim wordwise, linewise, or block mode.
-    - No concept of a picker, only pipes.
-
-    Requires Go, wl-clipboard, xdg-utils (for image MIME inference)."
-  devel:
-    files: []
-  files:
-  - '%doc readme.md'
-  - '%license LICENSE'
-  - '%{_bindir}/cliphist'
-  license: GPL-3.0-or-later
-  release: '%autorelease'
-  requires:
-  - wl-clipboard
-  - xdg-utils
-  rpm:
-    no_debug_package: true
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    - '%{name}-%{version}-vendor.tar.gz'
-    bundled_deps: []
-  summary: Wayland clipboard manager with support for multimedia [Built from latest commit, unstable]
-  url: https://github.com/sentriz/cliphist
-  version: 0.7.0
 ashell:
   build:
-    commands: []
-    install: []
-    no_lto: false
-    prep:
-    - tar xf %{SOURCE1}
+    commands:
+    - CARGO_OFFLINE=1 make %{?_smp_mflags}
+    install:
+    - CARGO_OFFLINE=1 make install DESTDIR=%{buildroot}
+    prep: []
     system: make
   build_requires:
   - cargo
@@ -1694,7 +1642,6 @@ ashell:
   source:
     archives:
     - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    - '%{name}-%{version}-vendor.tar.gz'
     bundled_deps: []
   summary: A ready to go Wayland status bar for Hyprland and Niri
   url: https://github.com/MalpenZibo/ashell

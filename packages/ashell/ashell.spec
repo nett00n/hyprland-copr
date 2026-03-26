@@ -5,6 +5,7 @@ Summary:        A ready to go Wayland status bar for Hyprland and Niri
 License:        MIT
 URL:            https://github.com/MalpenZibo/ashell
 Source0:        %{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source1:        %{name}-%{version}-vendor.tar.gz
 
 BuildRequires:  cargo
 BuildRequires:  make
@@ -21,12 +22,14 @@ Package info:
 
 %prep
 %autosetup -p1
+tar xf %{SOURCE1}
+test -f .cargo/config.toml && echo "✓ .cargo/config.toml exists" && cat .cargo/config.toml || echo "✗ .cargo/config.toml NOT FOUND"
 
 %build
-make %{?_smp_mflags}
+CARGO_OFFLINE=1 make %{?_smp_mflags}
 
 %install
-make install DESTDIR=%{buildroot}
+CARGO_OFFLINE=1 make install DESTDIR=%{buildroot}
 
 %files
 %doc README.md
@@ -42,5 +45,5 @@ Development files for ashell.
 %files devel
 
 %changelog
-* Tue Mar 24 2026 nett00n <copr@nett00n.org> - 0.7.0-%autorelease
+* Thu Mar 26 2026 nett00n <copr@nett00n.org> - 0.7.0-%autorelease
 - Update to 0.7.0
