@@ -34,10 +34,12 @@ Feel free to reuse automation from this repository for your own copr-projects
 > Already added:
 > - Waybar
 > - cliphist
+> - uwsm
 >
 > **Automation info**
 > A lot of changes again. Refactored main script.
-> cargo
+> cargo build is a bloody mess
+>
 
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/tree/main/blog)
@@ -48,7 +50,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 ## Build Report — Fedora 44 · 2026-03-27
 
 > **Chroot:** `fedora-44-x86_64`
-> **Timestamp:** `2026-03-27T17:49:22+00:00`
+> **Timestamp:** `2026-03-27T20:02:40+00:00`
 
 ---
 
@@ -641,6 +643,22 @@ Portable version of OpenBSD's lightweight audio & MIDI sub-system
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/sndio/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/sndio/) | — | — | Native COPR build status badge |
 ---
 
+### `uwsm` — 0.26.4
+
+Universal Wayland Session Manager
+
+#### Build Chain Status
+
+| Stage | Status | Date | Duration | Details |
+|:------|:-------|:-----|:--------:|---------|
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-03-27 20:02:46 UTC |  | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-03-27 20:02:46 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-03-27 20:02:47 UTC | 1m 30s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10267672/) | 2026-03-27 20:04:17 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10267672/) |
+| **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/uwsm/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/uwsm/) | — | — | Native COPR build status badge |
+---
+
 ### `waybar` — 0.15.0
 
 Highly customizable Wayland bar for Sway and Wlroots based compositors
@@ -692,8 +710,8 @@ An XDG-Destop-Portal backend for Hyprland (and wlroots)
 
 ## Summary Statistics
 
-- **Total Packages:** `39`
-- **Successful Mock Builds:** `37`
+- **Total Packages:** `40`
+- **Successful Mock Builds:** `38`
 - **Successful COPR Builds:** `9`
 - **Failed Packages:** `2`
 - **Skipped Packages:** `0`
@@ -764,6 +782,7 @@ An XDG-Destop-Portal backend for Hyprland (and wlroots)
 - `ranger` (external) — A VIM-inspired filemanager for the console
 - `swaybg` (external) — Great utility if all you want is one simple static wallpaper
 - `udiskie` (external) — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
+- `uwsm` (0.26.4) — Universal Wayland Session Manager
 - `waybar` (0.15.0) — Highly customizable Wayland bar for Sway and Wlroots based compositors
 - `waybar-git` (0.15.0) — Highly customizable Wayland bar for Sway and Wlroots based compositors [Built from latest commit, unstable]
 ### Other dependencies

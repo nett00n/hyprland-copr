@@ -34,10 +34,12 @@ Feel free to reuse automation from this repository for your own copr-projects
 > Already added:
 > - Waybar
 > - cliphist
+> - uwsm
 >
 > **Automation info**
 > A lot of changes again. Refactored main script.
-> cargo
+> cargo build is a bloody mess
+>
 
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/tree/main/blog)
@@ -113,6 +115,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 - `ranger` — A VIM-inspired filemanager for the console
 - `swaybg` — Great utility if all you want is one simple static wallpaper
 - `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
+- `uwsm` — Universal Wayland Session Manager
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
 - `waybar-git` — Highly customizable Wayland bar for Sway and Wlroots based compositors [Built from latest commit, unstable]
 
@@ -123,7 +126,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 - `glaze` — Extremely fast, in memory, JSON and reflection library for modern C++.
 - `gtk4-layer-shell` — A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
 - `sndio` — Portable version of OpenBSD's lightweight audio & MIDI sub-system
-> *\** - not provided by this repo, exists in fedora's*
+> *\** - not provided by this repo, exists in fedora's
 
 ## Build Status 📊
 

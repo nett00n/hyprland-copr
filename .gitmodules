@@ -112,3 +112,6 @@
 [submodule "submodules/MalpenZibo/ashell"]
 	path = submodules/MalpenZibo/ashell
 	url = https://github.com/MalpenZibo/ashell.git
+[submodule "submodules/Vladimir-csp/uwsm"]
+	path = submodules/Vladimir-csp/uwsm
+	url = https://github.com/Vladimir-csp/uwsm

@@ -1615,3 +1615,66 @@ cliphist:
   summary: Wayland clipboard manager with support for multimedia
   url: https://github.com/sentriz/cliphist
   version: 0.7.0
+uwsm:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    system: meson
+  build_requires:
+  - gcc-c++
+  - meson
+  - ninja-build
+  - python3-dbus
+  - python3-pyxdg
+  - scdoc
+  - systemd-rpm-macros
+  depends_on: []
+  description: |
+    Universal Wayland Session Manager
+
+    Provides a set of Systemd units and helpers to set up the environment and manage standalone Wayland compositor sessions.
+
+    Aside from environment setup/cleanup, it makes Systemd do most of the work and does not require any extra daemons running in background (except for a tiny waitpid process and a simple shell signal handler in the lightest case).
+
+    This setup provides robust session management, overridable compositor- and session-aware environment management, XDG autostart, bi-directional binding with login session, clean shutdown, solutions for a set of small but annoying gotchas of systemd session management.
+
+    For compositors this is an opportunity to offload: Systemd integration, session/XDG autostart management, Systemd/DBus activation environment interaction with its caveats.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/uwsm'
+  - '%{_datadir}/uwsm/modules/uwsm/'
+  - '%{_datadir}/uwsm/plugins'
+  - '%{_docdir}/uwsm/'
+  - '%{_libexecdir}/uwsm/prepare-env.sh'
+  - '%{_libexecdir}/uwsm/signal-handler.sh'
+  - '%{_mandir}/man*/uwsm*.gz'
+  - '%{_userunitdir}/app-graphical.slice'
+  - '%{_userunitdir}/background-graphical.slice'
+  - '%{_userunitdir}/session-graphical.slice'
+  - '%{_userunitdir}/wayland-session-bindpid@.service'
+  - '%{_userunitdir}/wayland-session-envelope@.target'
+  - '%{_userunitdir}/wayland-session-pre@.target'
+  - '%{_userunitdir}/wayland-session-shutdown.target'
+  - '%{_userunitdir}/wayland-session-waitenv.service'
+  - '%{_userunitdir}/wayland-session-xdg-autostart@.target'
+  - '%{_userunitdir}/wayland-session@.target'
+  - '%{_userunitdir}/wayland-wm-app-daemon.service'
+  - '%{_userunitdir}/wayland-wm-env@.service'
+  - '%{_userunitdir}/wayland-wm@.service'
+  license: MIT
+  release: '%autorelease'
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    bundled_deps: []
+  summary: Universal Wayland Session Manager
+  url: https://github.com/Vladimir-csp/uwsm
+  version: 0.26.4
