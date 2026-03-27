@@ -400,6 +400,7 @@ Hyprland-git:
   - cmake
   - gcc-c++
   - glaze-devel
+  - glslang-devel
   - hyprcursor-devel
   - hyprgraphics-devel
   - hyprland-protocols-devel
@@ -413,6 +414,7 @@ Hyprland-git:
   - pkgconfig(gio-2.0)
   - pkgconfig(gl)
   - pkgconfig(glesv2)
+  - pkgconfig(lcms2)
   - pkgconfig(libdrm)
   - pkgconfig(libinput)
   - pkgconfig(muparser)
@@ -476,12 +478,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260326'
-      full: eb141a6cd068f1319cb7caa1d3ad40f4957f65b1
+      date: '20260327'
+      full: 2c4852e31f1cc974164fdd1bf383a67c26cafe44
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.54.0^20260326giteb141a6
+  version: 0.54.0^20260327git2c4852e
 hyprland-guiutils:
   build:
     system: cmake
@@ -1612,37 +1614,4 @@ cliphist:
     bundled_deps: []
   summary: Wayland clipboard manager with support for multimedia
   url: https://github.com/sentriz/cliphist
-  version: 0.7.0
-ashell:
-  build:
-    commands:
-    - CARGO_OFFLINE=1 make %{?_smp_mflags}
-    install:
-    - CARGO_OFFLINE=1 make install DESTDIR=%{buildroot}
-    prep: []
-    system: make
-  build_requires:
-  - cargo
-  - make
-  depends_on: []
-  description: |
-    ashell is a ready to go Wayland status bar for Hyprland and Niri.
-
-    Feel free to fork this project and customize it for your needs or just open an issue to request a particular feature.
-  devel:
-    files: []
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  license: MIT
-  release: '%autorelease'
-  requires: []
-  rpm:
-    no_debug_package: false
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    bundled_deps: []
-  summary: A ready to go Wayland status bar for Hyprland and Niri
-  url: https://github.com/MalpenZibo/ashell
   version: 0.7.0

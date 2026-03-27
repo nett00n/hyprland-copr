@@ -30,10 +30,10 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 > **Packages info**
 >
-> I am starting to add new packages to the repo. I added those, recommended by Hyprland, cheeck [todo](https://github.com/nett00n/hyprland-copr/blob/84fcc19061532fd64c957b16edad00a6053ddbb2/docs/todo.md)
+> I am starting to add new packages to the repo. I added those, recommended by Hyprland, check [todo](https://github.com/nett00n/hyprland-copr/blob/84fcc19061532fd64c957b16edad00a6053ddbb2/docs/todo.md)
 > Already added:
 > - Waybar
-> - ashell
+> - cliphist
 >
 > **Automation info**
 > A lot of changes again. Refactored main script.
@@ -101,7 +101,6 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ### Useful apps
 
-- `ashell` — A ready to go Wayland status bar for Hyprland and Niri
 - `bemenu` — Dynamic menu library and client program inspired by dmenu
 - `cliphist` — Wayland clipboard manager with support for multimedia
 - `clipman` — A simple clipboard manager for Wayland
@@ -113,6 +112,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 - `pyprland` — Scratchpads & many goodies for Hyprland
 - `ranger` — A VIM-inspired filemanager for the console
 - `swaybg` — Great utility if all you want is one simple static wallpaper
+- `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
 - `waybar-git` — Highly customizable Wayland bar for Sway and Wlroots based compositors [Built from latest commit, unstable]
 
@@ -123,10 +123,11 @@ Feel free to reuse automation from this repository for your own copr-projects
 - `glaze` — Extremely fast, in memory, JSON and reflection library for modern C++.
 - `gtk4-layer-shell` — A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
 - `sndio` — Portable version of OpenBSD's lightweight audio & MIDI sub-system
+> *\** - not provided by this repo, exists in fedora's*
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-03-26
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-03-27
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

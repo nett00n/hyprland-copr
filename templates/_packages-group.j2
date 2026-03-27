@@ -7,7 +7,9 @@
 {% if group.badge %}![{{ group.badge.logo | capitalize }}](https://img.shields.io/badge/{{ group.badge.logo | capitalize }}-{{ group.badge.color }}?logo={{ group.badge.logo }}&logoColor={{ group.badge.logo_color }}&style={{ badge_style }})
 
 {% endif %}
+{% set has_global_packages = false %}
 {% for pkg in group.packages | sort(attribute='name') -%}
-- `{{ pkg.name | lower }}` — {{ pkg.summary }}
+- `{{ pkg.name | lower }}`{% if pkg.from_global_repo | default(false) %}*\**{%- set has_global_packages = true %}{% endif %} — {{ pkg.summary }}
 {% endfor %}
 {% endfor %}
+> *\** - not provided by this repo, exists in fedora's*

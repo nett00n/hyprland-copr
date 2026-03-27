@@ -85,11 +85,13 @@ other-apps:
     summary: Tray applet and an advanced network connection editor
   - name: gammastep
     summary: Adjust the color temperature of your screen according to your surroundings. This may help your eyes hurt less if you are working in front of the screen at night.
+  - name: udiskie
+    summary: udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
 other-deps:
   label: Other dependencies
   packages:
   - aylurs-gtk-shell
+  - cava
   - glaze
   - gtk4-layer-shell
   - sndio
-  - cava

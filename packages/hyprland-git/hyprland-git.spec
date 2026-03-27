@@ -1,8 +1,8 @@
-%global commit eb141a6cd068f1319cb7caa1d3ad40f4957f65b1
+%global commit 2c4852e31f1cc974164fdd1bf383a67c26cafe44
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260326
+%global commitdate 20260327
 Name:           hyprland-git
-Version:        0.54.0^20260326giteb141a6
+Version:        0.54.0^20260327git2c4852e
 Release:        %autorelease%{?dist}
 Summary:        A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 License:        BSD-3-Clause
@@ -13,6 +13,7 @@ BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
 BuildRequires:  glaze-devel
+BuildRequires:  glslang-devel
 BuildRequires:  hyprcursor-devel
 BuildRequires:  hyprgraphics-devel
 BuildRequires:  hyprland-protocols-devel
@@ -26,6 +27,7 @@ BuildRequires:  pkgconfig(gbm)
 BuildRequires:  pkgconfig(gio-2.0)
 BuildRequires:  pkgconfig(gl)
 BuildRequires:  pkgconfig(glesv2)
+BuildRequires:  pkgconfig(lcms2)
 BuildRequires:  pkgconfig(libdrm)
 BuildRequires:  pkgconfig(libinput)
 BuildRequires:  pkgconfig(muparser)
@@ -56,7 +58,7 @@ Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
-Commit:            eb141a6cd068f1319cb7caa1d3ad40f4957f65b1
+Commit:            2c4852e31f1cc974164fdd1bf383a67c26cafe44
 
 %prep
 %autosetup -p1 -n Hyprland-%{commit}
@@ -101,6 +103,5 @@ Development files for hyprland-git.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Thu Mar 26 2026 nett00n <copr@nett00n.org> - 0.54.0^20260326giteb141a6-%autorelease
-- overridableVar: fix reassignment
-- we don't want to remove already set props with our reassignmemnt
+* Fri Mar 27 2026 nett00n <copr@nett00n.org> - 0.54.0^20260327git2c4852e-%autorelease
+- renderer/deco: add glow decoration (#13862)

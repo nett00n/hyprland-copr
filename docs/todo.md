@@ -18,6 +18,7 @@ everything, that Hyprland recommended:
   wpaperd is the modern wallpaper daemon for Wayland. It dynamically changes the current wallpaper, either after a certain amount of time or via a command-line interface. It uses OpenGL ES to render the images and have beautiful hardware-accelerated transitions, while being easy on resources.
 
   Notice: wpaperd uses wlr_layer_shell wayland protocol, which is available on all wlroots based compositors (sway, hyprland, ...) and on KDE. Therefore it won't work on GNOME.
+- https://github.com/MalpenZibo/ashell
 - https://github.com/GhostNaN/mpvpaper
 - https://codeberg.org/LGFae/awww
 - https://github.com/anufrievroman/waypaper
