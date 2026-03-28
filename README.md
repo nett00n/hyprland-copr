@@ -112,6 +112,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 - `network-manager-applet` — Tray applet and an advanced network connection editor
 - `nnn` — n³ The unorthodox terminal file manager
 - `pyprland` — Scratchpads & many goodies for Hyprland
+- `quickshell` — Flexible QtQuick based desktop shell toolkit
 - `ranger` — A VIM-inspired filemanager for the console
 - `swaybg` — Great utility if all you want is one simple static wallpaper
 - `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
@@ -130,7 +131,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-03-27
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-03-28
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

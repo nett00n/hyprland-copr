@@ -67,6 +67,7 @@ other-apps:
   - cliphist-git
   - ashell
   - uwsm
+  - quickshell
   packages_from_global_repo:
   - name: swaybg
     summary: Great utility if all you want is one simple static wallpaper

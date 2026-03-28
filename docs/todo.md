@@ -9,7 +9,6 @@
 
 everything, that Hyprland recommended:
 - https://github.com/coffebar/hyprland-per-window-layout/
-- https://github.com/Vladimir-csp/uwsm
 - https://github.com/elkowar/eww `ElKowars wacky widgets`
   Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager.
 - https://git.outfoxxed.me/quickshell/quickshell `Flexible QtQuick based desktop shell toolkit.`

@@ -1678,3 +1678,53 @@ uwsm:
   summary: Universal Wayland Session Manager
   url: https://github.com/Vladimir-csp/uwsm
   version: 0.26.4
+quickshell:
+  build:
+    commands:
+    - '%cmake -DCRASH_REPORTER=OFF'
+    - '%cmake_build'
+    install: []
+    no_lto: false
+    prep: []
+    system: cmake
+  build_requires:
+  - cli11-devel
+  - cmake
+  - gcc-c++
+  - libdrm-devel
+  - mesa-libgbm-devel
+  - ninja-build
+  - pam-devel
+  - pipewire-devel
+  - pkgconfig(jemalloc)
+  - qt6-qtbase-devel
+  - qt6-qtbase-private-devel
+  - qt6-qtdeclarative-devel
+  - qt6-qtdeclarative-private-devel
+  - qt6-qtshadertools-devel
+  - wayland-protocols-devel
+  depends_on: []
+  description: |
+    Quickshell is a toolkit for building status bars, widgets, lockscreens, and other desktop components using QtQuick. It can be used alongside your wayland compositor or window manager to build a complete desktop environment.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/qs'
+  - '%{_bindir}/quickshell'
+  - '%{_datadir}/applications/org.quickshell.desktop'
+  - '%{_datadir}/icons/hicolor/scalable/apps/org.quickshell.svg'
+  license: LGPL-3.0-or-later
+  release: '%autorelease'
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz'
+    bundled_deps: []
+  source_dir: quickshell
+  summary: Flexible QtQuick based desktop shell toolkit
+  url: https://git.outfoxxed.me/quickshell/quickshell
+  version: 0.2.1

@@ -115,3 +115,6 @@
 [submodule "submodules/Vladimir-csp/uwsm"]
 	path = submodules/Vladimir-csp/uwsm
 	url = https://github.com/Vladimir-csp/uwsm
+[submodule "submodules/quickshell/quickshell"]
+	path = submodules/quickshell/quickshell
+	url = https://git.outfoxxed.me/quickshell/quickshell.git
