@@ -53,5 +53,5 @@ sed -i '/target_link_libraries.*hyprqtplugin/i find_package(Qt6 REQUIRED COMPONE
 %{_libdir}/qt6/plugins/styles/libhypr-style.so
 
 %changelog
-* Tue Aug 26 2025 nett00n <copr@nett00n.org> - 0.1.0-%autorelease
+* Tue Aug 26 2025 nett00n <copr@nett00n.org> - 0.1.0-1
 - all: initial commit

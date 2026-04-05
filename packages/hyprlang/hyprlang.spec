@@ -48,5 +48,5 @@ Development files for hyprlang.
 %{_libdir}/pkgconfig/hyprlang.pc
 
 %changelog
-* Mon Jan 05 2026 nett00n <copr@nett00n.org> - 0.6.8-%autorelease
+* Mon Jan 05 2026 nett00n <copr@nett00n.org> - 0.6.8-1
 - version: bump to 0.6.8

@@ -7,6 +7,7 @@ ARG GID=1000
 ARG USERNAME=user
 
 RUN dnf install -y -q \
+    cargo \
     copr-cli \
     fedpkg \
     git \

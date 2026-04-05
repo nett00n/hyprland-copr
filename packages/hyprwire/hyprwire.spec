@@ -52,5 +52,5 @@ Development files for hyprwire.
 %{_libdir}/pkgconfig/hyprwire.pc
 
 %changelog
-* Wed Feb 04 2026 nett00n <copr@nett00n.org> - 0.3.0-%autorelease
+* Wed Feb 04 2026 nett00n <copr@nett00n.org> - 0.3.0-1
 - version: bump to 0.3.0

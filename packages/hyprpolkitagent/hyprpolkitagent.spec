@@ -43,5 +43,5 @@ Commit:            7e4054410f6d6331b239fea1c659ad6a917fbf6a
 %{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service
 
 %changelog
-* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.3-%autorelease
+* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.3-1
 - version: bump to 0.1.3

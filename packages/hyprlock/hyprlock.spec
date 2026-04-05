@@ -53,5 +53,5 @@ Commit:            d7079a124893832f887a8d72ba90ec0ccd874a81
 %{_sysconfdir}/pam.d/hyprlock
 
 %changelog
-* Sun Mar 22 2026 nett00n <copr@nett00n.org> - 0.9.3-%autorelease
+* Sun Mar 22 2026 nett00n <copr@nett00n.org> - 0.9.3-1
 - version: bump to 0.9.3

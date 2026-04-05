@@ -96,5 +96,5 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Tue Mar 10 2026 nett00n <copr@nett00n.org> - 0.54.2-%autorelease
+* Tue Mar 10 2026 nett00n <copr@nett00n.org> - 0.54.2-1
 - version: bump to 0.54.2

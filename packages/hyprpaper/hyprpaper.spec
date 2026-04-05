@@ -55,5 +55,5 @@ Commit:            64b991cb917e28a51a50987a113ac4bf014ad0b7
 %{_userunitdir}/hyprpaper.service
 
 %changelog
-* Thu Jan 29 2026 nett00n <copr@nett00n.org> - 0.8.3-%autorelease
+* Thu Jan 29 2026 nett00n <copr@nett00n.org> - 0.8.3-1
 - version: bump to 0.8.3

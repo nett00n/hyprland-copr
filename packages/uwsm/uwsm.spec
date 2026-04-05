@@ -77,7 +77,7 @@ Development files for uwsm.
 %files devel
 
 %changelog
-* Thu Feb 19 2026 nett00n <copr@nett00n.org> - 0.26.4-%autorelease
+* Thu Feb 19 2026 nett00n <copr@nett00n.org> - 0.26.4-1
 - chore: Release 0.26.4
 - fix(may-start): move up login shell check
 - Some people put startup construct into shell rc instead of profile. While this

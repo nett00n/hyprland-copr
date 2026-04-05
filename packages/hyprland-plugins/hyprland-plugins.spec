@@ -64,5 +64,5 @@ Commit:            b85a56b9531013c79f2f3846fd6ee2ff014b8960
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Mon Feb 23 2026 nett00n <copr@nett00n.org> - 0.53.0^20260223gitb85a56b-%autorelease
+* Mon Feb 23 2026 nett00n <copr@nett00n.org> - 0.53.0^20260223gitb85a56b-1
 - all: chase hyprland

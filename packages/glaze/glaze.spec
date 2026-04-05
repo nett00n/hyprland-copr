@@ -51,5 +51,5 @@ Development files for glaze.
 %{_prefix}/share/glaze/*.cmake
 
 %changelog
-* Sat Feb 28 2026 nett00n <copr@nett00n.org> - 7.1.0-%autorelease
+* Sat Feb 28 2026 nett00n <copr@nett00n.org> - 7.1.0-1
 - v7.1.0 bump

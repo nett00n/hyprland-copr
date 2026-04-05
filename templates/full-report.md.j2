@@ -36,6 +36,7 @@
 
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
+| **Validate** | {{ badge_macros.state_badge('validate', pkg.stages.validate.state, badge_style) }} | — | — | {{ pkg.stages.validate.errors }} error(s), {{ pkg.stages.validate.warnings }} warning(s) |
 | **Spec** | {{ badge_macros.state_badge('spec', pkg.stages.spec.state, badge_style) }} | {{ pkg.stages.spec.date }} | {{ pkg.stages.spec.duration }} | RPM spec file processing |
 {% set vendor_state = 'success' if pkg.name | lower == 'aylurs-gtk-shell' else 'skipped' -%}
 | **Vendor** | {{ badge_macros.state_badge('vendor', vendor_state, badge_style) }} | — | — | {% if pkg.name | lower == 'aylurs-gtk-shell' %}Built{% else %}Skipped{% endif %} |

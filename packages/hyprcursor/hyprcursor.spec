@@ -54,5 +54,5 @@ Development files for hyprcursor.
 %{_libdir}/pkgconfig/hyprcursor.pc
 
 %changelog
-* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.13-%autorelease
+* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.13-1
 - version: bump to 0.1.13

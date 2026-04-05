@@ -48,5 +48,5 @@ Development files for hyprwayland-scanner.
 %{_libdir}/pkgconfig/hyprwayland-scanner.pc
 
 %changelog
-* Mon Jul 07 2025 nett00n <copr@nett00n.org> - 0.4.5-%autorelease
+* Mon Jul 07 2025 nett00n <copr@nett00n.org> - 0.4.5-1
 - version: bump to 0.4.5

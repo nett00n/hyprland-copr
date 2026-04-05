@@ -58,5 +58,5 @@ Development files for hyprland-protocols.
 %{_datadir}/pkgconfig/%{name}.pc
 
 %changelog
-* Sat Oct 04 2025 nett00n <copr@nett00n.org> - 0.7.0-%autorelease
+* Sat Oct 04 2025 nett00n <copr@nett00n.org> - 0.7.0-1
 - version: bump to 0.7.0

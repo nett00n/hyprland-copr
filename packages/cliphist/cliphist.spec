@@ -56,7 +56,7 @@ Development files for cliphist.
 %files devel
 
 %changelog
-* Sat Oct 11 2025 nett00n <copr@nett00n.org> - 0.7.0-%autorelease
+* Sat Oct 11 2025 nett00n <copr@nett00n.org> - 0.7.0-1
 - chore: release 0.7.0 (#127)
 - chore: release 0.7.0
 - update CHANGELOG

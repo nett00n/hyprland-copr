@@ -48,5 +48,5 @@ sed -i '/find_package(Qt6.*WaylandClient)/a find_package(Qt6 REQUIRED COMPONENTS
 %{_prefix}/share/applications/hyprsysteminfo.desktop
 
 %changelog
-* Fri Jan 10 2025 nett00n <copr@nett00n.org> - 0.1.3-%autorelease
+* Fri Jan 10 2025 nett00n <copr@nett00n.org> - 0.1.3-1
 - version: bump to 0.1.3

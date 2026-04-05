@@ -26,8 +26,6 @@ Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
-Tag:               v3.1.1
-Commit:            e169694390548dfd38ff40f1ef2163d6c3ffe3ea
 
 %prep
 %autosetup -p1 -n ags-%{version}
@@ -49,5 +47,5 @@ popd
 %{_prefix}/share/ags/
 
 %changelog
-* Fri Nov 28 2025 nett00n <copr@nett00n.org> - 3.1.1-%autorelease
-- nix: update hash
+* Wed Apr 01 2026 nett00n <copr@nett00n.org> - 3.1.1-1
+- Update to 3.1.1

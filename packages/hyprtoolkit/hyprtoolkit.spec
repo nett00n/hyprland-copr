@@ -63,5 +63,5 @@ Development files for hyprtoolkit.
 %{_libdir}/pkgconfig/hyprtoolkit.pc
 
 %changelog
-* Thu Jan 22 2026 nett00n <copr@nett00n.org> - 0.5.3-%autorelease
+* Thu Jan 22 2026 nett00n <copr@nett00n.org> - 0.5.3-1
 - version: bump to 0.5.3

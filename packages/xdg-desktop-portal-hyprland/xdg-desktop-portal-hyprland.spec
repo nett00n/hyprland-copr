@@ -59,5 +59,5 @@ Commit:            753bbbdf6a052994da94062e5b753288cef28dfb
 %{_userunitdir}/%{name}.service
 
 %changelog
-* Fri Oct 17 2025 nett00n <copr@nett00n.org> - 1.3.11-%autorelease
+* Fri Oct 17 2025 nett00n <copr@nett00n.org> - 1.3.11-1
 - version: bump to 1.3.11

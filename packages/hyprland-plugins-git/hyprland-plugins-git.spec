@@ -47,7 +47,6 @@ Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
-Commit:            b85a56b9531013c79f2f3846fd6ee2ff014b8960
 
 %prep
 %autosetup -p1 -n hyprland-plugins-%{commit}
@@ -68,5 +67,5 @@ Commit:            b85a56b9531013c79f2f3846fd6ee2ff014b8960
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Mon Feb 23 2026 nett00n <copr@nett00n.org> - 0.53.0^20260223gitb85a56b-%autorelease
-- all: chase hyprland
+* Sun Apr 05 2026 nett00n <copr@nett00n.org> - 0.53.0^20260223gitb85a56b-1
+- Update to 0.53.0^20260223gitb85a56b

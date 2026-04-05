@@ -56,5 +56,5 @@ Development files for hyprgraphics.
 %{_libdir}/pkgconfig/hyprgraphics.pc
 
 %changelog
-* Sun Dec 28 2025 nett00n <copr@nett00n.org> - 0.5.0-%autorelease
+* Sun Dec 28 2025 nett00n <copr@nett00n.org> - 0.5.0-1
 - version: bump to 0.5.0

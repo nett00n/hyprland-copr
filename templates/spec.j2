@@ -57,7 +57,7 @@ Commit:            {{ changelog.commit }}
 {% endif %}
 
 %prep
-%autosetup -p1{% if commit %} -n {{ source_name or '%{name}' }}-%{commit}{% elif source_name %} -n {{ source_name }}-%{version}{% endif %}
+%autosetup -p1{% if commit %} -n {{ source_name or '%{name}' }}-%{commit}{% elif source_dir %} -n {{ source_dir }}{% elif source_name %} -n {{ source_name }}-%{version}{% endif %}
 
 {% for cmd in prep_commands %}
 {{ cmd }}
@@ -92,7 +92,8 @@ Development files for {{ name }}.
 {% endif %}
 
 %changelog
-* {{ changelog.date }} {{ changelog.packager }} - {{ changelog.version }}-{{ changelog.release }}
+* {{ changelog.date }} {{ changelog.packager }} - {{ changelog.version }}-{% if '%autorelease' in changelog.release %}1{% else %}{{ changelog.release }}{% endif %}
+
 {% for note in changelog.notes %}
 - {{ note }}
 {% endfor %}

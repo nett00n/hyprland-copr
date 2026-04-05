@@ -30,16 +30,26 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 > **Packages info**
 >
-> I am starting to add new packages to the repo. I added those, recommended by Hyprland, check [todo](https://github.com/nett00n/hyprland-copr/blob/84fcc19061532fd64c957b16edad00a6053ddbb2/docs/todo.md)
+> I am starting to add new packages to the repo. I added those, recommended by Hyprland, check [todo](https://github.com/nett00n/hyprland-copr/blob/main/docs/todo.md)
 > Already added:
 > - Waybar
 > - cliphist
 > - uwsm
+> - quickshell
 >
 > **Automation info**
-> A lot of changes again. Refactored main script.
-> cargo build is a bloody mess
+> A lot of changes again.
 >
+> - Refactored main script.
+> - A lot of new errors for automatic log analyzer
+> - log levels
+> - tests
+>
+> Vendoring dependencies with cargo - it's a bloody mess. I don't want to make it yet. [WIP](https://github.com/nett00n/hyprland-copr/blob/main/scripts/lib/vendor_rust.py)
+>
+> Pet your pets, sincerely yours nett00n
+>
+> 2026-04-05
 
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/tree/main/blog)
@@ -131,7 +141,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-03-28
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-04-05
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

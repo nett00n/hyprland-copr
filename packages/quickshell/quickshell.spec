@@ -60,5 +60,5 @@ Development files for quickshell.
 %files devel
 
 %changelog
-* Sat Oct 11 2025 nett00n <copr@nett00n.org> - 0.2.1-%autorelease
+* Sat Oct 11 2025 nett00n <copr@nett00n.org> - 0.2.1-1
 - version: bump to 0.2.1

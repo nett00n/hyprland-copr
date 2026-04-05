@@ -1,8 +1,8 @@
-%global commit 2c4852e31f1cc974164fdd1bf383a67c26cafe44
+%global commit bf97fac9b9c7830a9374366d8a471efb48dae5fb
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260327
+%global commitdate 20260405
 Name:           hyprland-git
-Version:        0.54.0^20260327git2c4852e
+Version:        0.54.0^20260405gitbf97fac
 Release:        %autorelease%{?dist}
 Summary:        A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 License:        BSD-3-Clause
@@ -58,7 +58,6 @@ Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
-Commit:            2c4852e31f1cc974164fdd1bf383a67c26cafe44
 
 %prep
 %autosetup -p1 -n Hyprland-%{commit}
@@ -103,5 +102,5 @@ Development files for hyprland-git.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Fri Mar 27 2026 nett00n <copr@nett00n.org> - 0.54.0^20260327git2c4852e-%autorelease
-- renderer/deco: add glow decoration (#13862)
+* Sun Apr 05 2026 nett00n <copr@nett00n.org> - 0.54.0^20260405gitbf97fac-1
+- Update to 0.54.0^20260405gitbf97fac

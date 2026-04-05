@@ -45,5 +45,5 @@ Commit:            c2e906261142f5dd1ee0bfc44abba23e2754c660
 %{_prefix}/bin/hyprland-*
 
 %changelog
-* Mon Dec 29 2025 nett00n <copr@nett00n.org> - 0.2.1-%autorelease
+* Mon Dec 29 2025 nett00n <copr@nett00n.org> - 0.2.1-1
 - version: bump to 0.2.1

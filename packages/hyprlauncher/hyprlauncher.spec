@@ -55,5 +55,5 @@ Commit:            086cfaa33541a347d040f8448ec4e4aff8f7f9bb
 %{_prefix}/bin/hyprlauncher
 
 %changelog
-* Sun Jan 04 2026 nett00n <copr@nett00n.org> - 0.1.5-%autorelease
+* Sun Jan 04 2026 nett00n <copr@nett00n.org> - 0.1.5-1
 - version: bump to 0.1.5

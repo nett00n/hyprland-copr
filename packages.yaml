@@ -478,12 +478,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260327'
-      full: 2c4852e31f1cc974164fdd1bf383a67c26cafe44
+      date: '20260405'
+      full: bf97fac9b9c7830a9374366d8a471efb48dae5fb
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.54.0^20260327git2c4852e
+  version: 0.54.0^20260405gitbf97fac
 hyprland-guiutils:
   build:
     system: cmake
@@ -1240,7 +1240,7 @@ hyprutils:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Small C++ library for utilities used across the Hypr ecosystem
   url: https://github.com/hyprwm/hyprutils
-  version: 0.11.1
+  version: 0.12.0
 hyprwayland-scanner:
   build:
     system: cmake
@@ -1372,14 +1372,7 @@ sndio:
   - '%{_prefix}/bin/sndioctl'
   - '%{_prefix}/bin/sndiod'
   - '%{_prefix}/lib64/libsndio.so*'
-  - '%{_prefix}/share/man/*/aucat*.gz'
-  - '%{_prefix}/share/man/*/midicat*.gz'
-  - '%{_prefix}/share/man/*/mio_*.gz'
-  - '%{_prefix}/share/man/*/sio_*.gz'
-  - '%{_prefix}/share/man/*/sioctl_*.gz'
-  - '%{_prefix}/share/man/*/sndio*.gz'
-  - '%{_prefix}/share/man/*/sndioctl*.gz'
-  - '%{_prefix}/share/man/*/sndiod*.gz'
+  - '%{_prefix}/share/man/*/*.gz'
   license: ISC
   release: '%autorelease'
   rpm:

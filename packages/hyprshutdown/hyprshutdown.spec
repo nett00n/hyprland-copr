@@ -45,7 +45,7 @@ Commit:            9f18be9c4e1a484c65b22dd53280815dc79a5a56
 %{_prefix}/bin/hyprshutdown
 
 %changelog
-* Tue Jan 27 2026 nett00n <copr@nett00n.org> - 0.1.0-%autorelease
+* Tue Jan 27 2026 nett00n <copr@nett00n.org> - 0.1.0-1
 - core: close socket FD on error paths and improve validation (#18)
 - fix: close socket FD on error paths and improve validation
 - HyprlandIPC.cpp:

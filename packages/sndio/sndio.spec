@@ -37,14 +37,7 @@ Commit:            366b5c84d57c9ce73387c51ca48755d36e3fe3a7
 %{_prefix}/bin/sndioctl
 %{_prefix}/bin/sndiod
 %{_prefix}/lib64/libsndio.so*
-%{_prefix}/share/man/*/aucat*.gz
-%{_prefix}/share/man/*/midicat*.gz
-%{_prefix}/share/man/*/mio_*.gz
-%{_prefix}/share/man/*/sio_*.gz
-%{_prefix}/share/man/*/sioctl_*.gz
-%{_prefix}/share/man/*/sndio*.gz
-%{_prefix}/share/man/*/sndioctl*.gz
-%{_prefix}/share/man/*/sndiod*.gz
+%{_prefix}/share/man/*/*.gz
 
 %package devel
 Summary:        Development files for Portable version of OpenBSD's lightweight audio & MIDI sub-system
@@ -58,5 +51,5 @@ Development files for sndio.
 %{_prefix}/lib64/pkgconfig/sndio.pc
 
 %changelog
-* Thu Aug 01 2024 nett00n <copr@nett00n.org> - 1.10.0-%autorelease
+* Thu Aug 01 2024 nett00n <copr@nett00n.org> - 1.10.0-1
 - Bump version to 1.10.0

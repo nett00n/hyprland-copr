@@ -1,5 +1,5 @@
 Name:           hyprutils
-Version:        0.11.1
+Version:        0.12.0
 Release:        %autorelease%{?dist}
 Summary:        Small C++ library for utilities used across the Hypr ecosystem
 License:        BSD-3-Clause
@@ -19,8 +19,8 @@ Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
-Tag:               v0.11.1
-Commit:            b85b779e3e3a1adcd9b098e3447cf48f9e780b35
+Tag:               v0.12.0
+Commit:            e6caa3d4d1427eedbdf556cf4ceb70f2d9c0b56d
 
 %prep
 %autosetup -p1
@@ -48,5 +48,5 @@ Development files for hyprutils.
 %{_libdir}/pkgconfig/hyprutils.pc
 
 %changelog
-* Thu Mar 19 2026 nett00n <copr@nett00n.org> - 0.11.1-%autorelease
-- version: bump to 0.11.1
+* Mon Mar 30 2026 nett00n <copr@nett00n.org> - 0.12.0-1
+- version: bump to 0.12.0

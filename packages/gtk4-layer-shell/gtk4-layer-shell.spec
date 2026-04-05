@@ -66,5 +66,5 @@ Development files for gtk4-layer-shell.
 %{_prefix}/share/vala/vapi/gtk4-layer-shell-0.vapi
 
 %changelog
-* Wed Oct 29 2025 nett00n <copr@nett00n.org> - 1.3.0-%autorelease
+* Wed Oct 29 2025 nett00n <copr@nett00n.org> - 1.3.0-1
 - Release 1.3.0

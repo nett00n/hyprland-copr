@@ -47,5 +47,5 @@ Commit:            345eab2d704ee47a6c277cbfb2aeabaa620d9dbc
 %{_prefix}/share/man/man1/hyprpicker.1.gz
 
 %changelog
-* Tue Feb 10 2026 nett00n <copr@nett00n.org> - 0.4.6-%autorelease
+* Tue Feb 10 2026 nett00n <copr@nett00n.org> - 0.4.6-1
 - version: bump to 0.4.6

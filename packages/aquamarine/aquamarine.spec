@@ -65,5 +65,5 @@ Development files for aquamarine.
 %{_libdir}/pkgconfig/aquamarine.pc
 
 %changelog
-* Sun Nov 23 2025 nett00n <copr@nett00n.org> - 0.10.0-%autorelease
+* Sun Nov 23 2025 nett00n <copr@nett00n.org> - 0.10.0-1
 - version: bump to 0.10.0
