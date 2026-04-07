@@ -14,6 +14,8 @@ Environment variables:
 import os
 import sys
 
+from lib.cache import compute_input_hashes
+from lib.pipeline import compute_forced_stages, is_cached
 from lib.yaml_utils import (
     STAGES,
     filter_packages,
@@ -27,6 +29,11 @@ def show_plan(
     package: str = "", skip_packages_arg: str = "", copr_repo: str = ""
 ) -> None:
     """Display build plan as a table.
+
+    Uses same cache detection logic as execution:
+    - Computes input hashes (source commit, template, config, deps, patches)
+    - Checks force_run flags and dependency cascade rules
+    - Labels "cache" only if inputs haven't changed AND no forced stages apply
 
     Args:
         package: If set, show only these package(s). Comma-separated. If empty, show all.
@@ -42,34 +49,46 @@ def show_plan(
         )
         sys.exit(1)
 
-    all_packages = get_packages()
-    all_packages = filter_packages(all_packages, package)
-    all_packages = skip_packages(all_packages, skip_packages_arg)
+    # Load full package set (needed for compute_input_hashes to resolve deps)
+    all_packages_full = get_packages()
+    # Apply filters for display
+    packages_to_show = filter_packages(all_packages_full, package)
+    packages_to_show = skip_packages(packages_to_show, skip_packages_arg)
 
     stages = STAGES if copr_repo else [s for s in STAGES if s != "copr"]
-
-    # Status labels for display
-    status_label = {
-        "success": "cache",
-        "failed": "retry",
-        "skipped": "skip",
-        None: "run",
-    }
 
     print("\n=== Build Plan ===")
     print(f"  {'package':<30} " + "  ".join(f"{s:<8}" for s in stages))
     print("  " + "-" * (30 + 10 * len(stages)))
 
-    for pkg in all_packages:
+    for pkg in packages_to_show:
         if pkg not in build_status.get("stages", {}).get("validate", {}):
             continue
 
+        meta = all_packages_full.get(pkg, {})
+
+        # Compute input hashes once per package (used across all stages)
+        new_hashes = compute_input_hashes(pkg, meta, all_packages_full)
+
+        # Compute forced stages (note: during planning, no packages have been rebuilt yet)
+        forced_stages = compute_forced_stages(pkg, meta, build_status, set())
+
         row = []
         for stage in stages:
-            state = (
+            entry_state = (
                 build_status.get("stages", {}).get(stage, {}).get(pkg, {}).get("state")
             )
-            label = status_label.get(state, state or "run")
+
+            # Determine label based on state and cache logic
+            if entry_state == "skipped":
+                label = "skip"
+            elif entry_state == "failed":
+                label = "retry"
+            elif is_cached(stage, pkg, build_status, new_hashes, forced_stages):
+                label = "cache"
+            else:
+                label = "run"
+
             row.append(f"{label:<8}")
 
         print(f"  {pkg:<30} " + "  ".join(row))
