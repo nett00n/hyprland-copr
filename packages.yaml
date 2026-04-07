@@ -241,6 +241,8 @@ hyprgraphics:
   - gcc-c++
   - hyprutils-devel
   - librsvg2-devel
+  - mesa-libGL-devel
+  - mesa-libGLES-devel
   - ninja-build
   - pango-devel
   - pkgconfig(cairo)
@@ -267,7 +269,7 @@ hyprgraphics:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Small C++ library for graphics utilities across the Hypr ecosystem
   url: https://github.com/hyprwm/hyprgraphics
-  version: 0.5.0
+  version: 0.5.1
 hypridle:
   build:
     system: cmake
@@ -479,11 +481,11 @@ Hyprland-git:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
       date: '20260405'
-      full: bf97fac9b9c7830a9374366d8a471efb48dae5fb
+      full: aaa2fc342f002bf4acd965f1ad2ead3796347e35
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.54.0^20260405gitbf97fac
+  version: 0.54.0^20260405gitaaa2fc3
 hyprland-guiutils:
   build:
     system: cmake

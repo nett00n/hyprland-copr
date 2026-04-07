@@ -1,5 +1,5 @@
 Name:           hyprgraphics
-Version:        0.5.0
+Version:        0.5.1
 Release:        %autorelease%{?dist}
 Summary:        Small C++ library for graphics utilities across the Hypr ecosystem
 License:        BSD-3-Clause
@@ -11,6 +11,8 @@ BuildRequires:  file-devel
 BuildRequires:  gcc-c++
 BuildRequires:  hyprutils-devel
 BuildRequires:  librsvg2-devel
+BuildRequires:  mesa-libGL-devel
+BuildRequires:  mesa-libGLES-devel
 BuildRequires:  ninja-build
 BuildRequires:  pango-devel
 BuildRequires:  pkgconfig(cairo)
@@ -27,8 +29,8 @@ Maintainer info:
 Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
-Tag:               v0.5.0
-Commit:            4af02a3925b454deb1c36603843da528b67ded6c
+Tag:               v0.5.1
+Commit:            482d4b7ec36ffdaf3573086aa586b178fd5404be
 
 %prep
 %autosetup -p1
@@ -56,5 +58,5 @@ Development files for hyprgraphics.
 %{_libdir}/pkgconfig/hyprgraphics.pc
 
 %changelog
-* Sun Dec 28 2025 nett00n <copr@nett00n.org> - 0.5.0-1
-- version: bump to 0.5.0
+* Mon Apr 06 2026 nett00n <copr@nett00n.org> - 0.5.1-1
+- version: bump to 0.5.1
