@@ -16,11 +16,19 @@ hyprwayland-scanner is a Wayland protocol scanner / code generatorused
 by the Hypr ecosystem to generate C++ protocol bindings
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.4.5
 Commit:            fcca0c61f988a9d092cbb33e906775014c61579d
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+ninja-build: 1.13.2
 
 %prep
 %autosetup -p1

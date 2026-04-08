@@ -20,11 +20,23 @@ BuildRequires:  pkgconfig(wayland-protocols)
 An application to enable a blue-light filter on Hyprland
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.3.3
 Commit:            057feb7a724b7fc0f3a406d6db08b59734db006a
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprland-protocols-devel: 0.4.0
+hyprlang-devel: 0.6.4
+hyprutils-devel: 0.7.1
+hyprwayland-scanner-devel: 0.4.2
+ninja-build: 1.13.2
 
 %prep
 %autosetup -p1

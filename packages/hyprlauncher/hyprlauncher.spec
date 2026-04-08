@@ -33,11 +33,22 @@ Daemon by default: instant opening of the launcher
 - Manual entry providing: make a simple selector from your own list
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.1.5
 Commit:            086cfaa33541a347d040f8448ec4e4aff8f7f9bb
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprgraphics-devel: 0.1.5
+hyprlang-devel: 0.6.4
+hyprutils-devel: 0.7.1
+ninja-build: 1.13.2
 
 %prep
 %autosetup -p1

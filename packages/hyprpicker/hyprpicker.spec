@@ -24,11 +24,21 @@ BuildRequires:  pkgconfig(xkbcommon)
 A wlroots-compatible Wayland color picker that does not suck
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.4.6
 Commit:            345eab2d704ee47a6c277cbfb2aeabaa620d9dbc
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprutils-devel: 0.7.1
+hyprwayland-scanner-devel: 0.4.2
+ninja-build: 1.13.2
 
 %prep
 %autosetup -p1

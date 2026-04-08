@@ -21,11 +21,23 @@ BuildRequires:  pkgconfig(wayland-protocols)
 Hyprland's idle daemon
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.1.7
 Commit:            5430b73ddf148651bcf35fa39ed4d757c7534028
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprland-protocols-devel: 0.4.0
+hyprlang-devel: 0.6.4
+hyprutils-devel: 0.7.1
+hyprwayland-scanner-devel: 0.4.2
+ninja-build: 1.13.2
 
 %prep
 %autosetup -p1

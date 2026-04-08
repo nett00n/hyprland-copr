@@ -27,11 +27,23 @@ This setup provides robust session management, overridable compositor- and sessi
 For compositors this is an opportunity to offload: Systemd integration, session/XDG autostart management, Systemd/DBus activation environment interaction with its caveats.
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.26.4
 Commit:            3294dd3163bf9f2334b787b3cde5a14e56491404
+
+Build dependencies:
+gcc-c++: 16.0.1
+meson: 1.10.2
+ninja-build: 1.13.2
+python3-dbus: 1.4.0
+python3-pyxdg: 0.28
+scdoc: 1.11.3
+systemd-rpm-macros: 259.5
 
 %prep
 %autosetup -p1

@@ -26,26 +26,18 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
-### More packages to packages god
+### Are we stable now?
 
 > **Packages info**
 >
-> I am starting to add new packages to the repo. I added those, recommended by Hyprland, check [todo](https://github.com/nett00n/hyprland-copr/blob/main/docs/todo.md)
-> Already added:
-> - Waybar
-> - cliphist
-> - uwsm
-> - quickshell
+> Surely i can say, hyprland builds are pretty stable for now (yeah-yeah-yeah, ARM builds are failing, i know). Most troubles are found, new updates are working automatically without any operator activity. Minor bugs stayed, plan to fix them later, before splitting this repo in two: for automations and repo content itself.
+> I think i can plan a cronjob to really check for updates nightly. I started this froject 2026-02-25 so it tooks me almost two month to reach this point.
+>
+> Cool, i guess
 >
 > **Automation info**
-> A lot of changes again.
 >
-> - Refactored main script.
-> - A lot of new errors for automatic log analyzer
-> - log levels
-> - tests
->
-> Vendoring dependencies with cargo - it's a bloody mess. I don't want to make it yet. [WIP](https://github.com/nett00n/hyprland-copr/blob/main/scripts/lib/vendor_rust.py)
+> Spec file now contains versions of build requirements for better debugging.
 >
 > Pet your pets, sincerely yours nett00n
 >

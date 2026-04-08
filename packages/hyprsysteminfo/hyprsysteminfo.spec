@@ -24,11 +24,24 @@ BuildRequires:  qt6-qtwayland-devel
 A tiny qt6/qml application to display information about the running system
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.1.3
 Commit:            17f041e2d539bd63ec116a77236ea37a17c6b3e6
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprutils-devel: 0.7.1
+ninja-build: 1.13.2
+qt6-qtbase-devel: 6.10.3
+qt6-qtbase-private-devel: 6.10.3
+qt6-qtdeclarative-devel: 6.10.3
+qt6-qtwayland-devel: 6.10.3
 
 %prep
 %autosetup -p1

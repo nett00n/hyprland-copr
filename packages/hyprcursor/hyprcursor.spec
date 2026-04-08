@@ -19,11 +19,20 @@ BuildRequires:  pkgconfig(tomlplusplus)
 The hyprland cursor format, library and utilities
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.1.13
 Commit:            44e91d467bdad8dcf8bbd2ac7cf49972540980a5
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprlang-devel: 0.6.4
+ninja-build: 1.13.2
 
 %prep
 %autosetup -p1

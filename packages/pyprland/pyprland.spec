@@ -27,9 +27,17 @@ With a fully plugin-based architecture, it's lightweight and easy to
 customize
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
+
+Build dependencies:
+python3-devel: 3.14.3
+python3-hatchling: 1.29.0
+python3-pip: 26.0.1
 
 %prep
 %autosetup -p1
@@ -49,5 +57,5 @@ python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --pref
 %{python3_sitelib}/pyprland-%{version}.dist-info
 
 %changelog
-* Tue Apr 07 2026 nett00n <copr@nett00n.org> - 3.1.1-1
+* Wed Apr 08 2026 nett00n <copr@nett00n.org> - 3.1.1-1
 - Update to 3.1.1

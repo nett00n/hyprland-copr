@@ -25,11 +25,17 @@ Clipboard history “manager” for Wayland
 Requires Go, wl-clipboard, xdg-utils (for image MIME inference)."
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.7.0
 Commit:            efb61cb5b5a28d896c05a24ac83b9c39c96575f2
+
+Build dependencies:
+golang: 1.26.1
 
 %prep
 %autosetup -p1

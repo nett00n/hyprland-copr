@@ -14,6 +14,8 @@ Environment variables:
 
 import logging
 import os
+import re
+import subprocess
 import sys
 
 from lib.config import get_packager, setup_logging
@@ -30,6 +32,36 @@ from lib.yaml_utils import (
     load_repo_yaml,
     save_build_status,
 )
+
+
+def resolve_dep_versions(build_requires: list) -> list:
+    """Return list of {name, version} for build deps from enabled repos."""
+    results = []
+    for dep in build_requires:
+        req = re.split(r"\s*[><=!]", dep)[0].strip()
+        if not req or req.startswith("%"):
+            continue
+        try:
+            out = subprocess.run(
+                [
+                    "dnf",
+                    "repoquery",
+                    "--latest-limit",
+                    "1",
+                    "--queryformat",
+                    "%{VERSION}",
+                    req,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            version = out.stdout.strip() if out.returncode == 0 else None
+        except Exception:
+            version = None
+        if version:
+            results.append({"name": req, "version": version})
+    return results
 
 
 def generate_spec(
@@ -146,6 +178,7 @@ def generate_spec(
             "no_lto": build.get("no_lto", False),
             "changelog": changelog,
             "devel": devel,
+            "dep_versions": resolve_dep_versions(pkg_meta.get("build_requires", [])),
         }
 
         template = jinja.get_template("spec.j2")

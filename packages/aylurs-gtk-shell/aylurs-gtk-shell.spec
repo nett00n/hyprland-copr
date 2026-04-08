@@ -23,9 +23,20 @@ engine and the GNOME platform libraries, the same runtime GNOME Shell runs
 on
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
+
+Build dependencies:
+gcc-c++: 16.0.1
+gjs: 1.88.0
+golang: 1.26.1
+gtk4-layer-shell-devel: 1.3.0
+meson: 1.10.2
+ninja-build: 1.13.2
 
 %prep
 %autosetup -p1 -n ags-%{version}
@@ -47,5 +58,5 @@ popd
 %{_prefix}/share/ags/
 
 %changelog
-* Wed Apr 01 2026 nett00n <copr@nett00n.org> - 3.1.1-1
+* Wed Apr 08 2026 nett00n <copr@nett00n.org> - 3.1.1-1
 - Update to 3.1.1

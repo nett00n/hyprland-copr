@@ -28,11 +28,25 @@ BuildRequires:  qt6-rpm-macros
 QT6 Theme Provider for Hyprland. Compatible with KDE, replaces qt6ct
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.1.0
 Commit:            e8a694d5fc7813cf477f426dce731967e4cf670b
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprlang-devel: 0.6.4
+hyprutils-devel: 0.7.1
+ninja-build: 1.13.2
+qt6-qtbase-devel: 6.10.3
+qt6-qtbase-private-devel: 6.10.3
+qt6-qtwayland-devel: 6.10.3
+qt6-rpm-macros: 6.10.3
 
 %prep
 %autosetup -p1

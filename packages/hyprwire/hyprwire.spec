@@ -17,11 +17,20 @@ BuildRequires:  pkgconfig(pugixml)
 A fast and consistent wire protocol for IPC
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.3.0
 Commit:            37bc90eed02b0c8b5a77a0b00867baf3005cfb98
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprutils-devel: 0.7.1
+ninja-build: 1.13.2
 
 %prep
 %autosetup -p1

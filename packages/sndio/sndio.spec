@@ -14,11 +14,19 @@ BuildRequires:  make
 Portable version of OpenBSD's lightweight audio & MIDI sub-system
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v1.10.0
 Commit:            366b5c84d57c9ce73387c51ca48755d36e3fe3a7
+
+Build dependencies:
+alsa-lib-devel: 1.2.15.3
+gcc: 16.0.1
+make: 4.4.1
 
 %prep
 %autosetup -p1

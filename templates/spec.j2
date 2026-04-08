@@ -42,17 +42,27 @@ Requires:       {{ dep }}
 
 Maintainer info:
 {% if changelog.source_url %}
+
 Source repository: {{ changelog.source_url }}
 {% endif %}
 {% if changelog.copr_url %}
+
 COPR repository:   {{ changelog.copr_url }}
 {% endif %}
+
 Package info:
 {% if changelog.tag %}
 Tag:               {{ changelog.tag }}
 {% endif %}
 {% if changelog.commit %}
 Commit:            {{ changelog.commit }}
+{% endif %}
+{% if dep_versions %}
+
+Build dependencies:
+{% for dep in dep_versions %}
+{{ dep.name }}: {{ dep.version }}
+{% endfor %}
 {% endif %}
 {% endif %}
 

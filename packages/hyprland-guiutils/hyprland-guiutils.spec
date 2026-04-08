@@ -23,11 +23,22 @@ BuildRequires:  pkgconfig(xkbcommon)
 Hyprland GUI utilities (successor to hyprland-qtutils)
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.2.1
 Commit:            c2e906261142f5dd1ee0bfc44abba23e2754c660
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprgraphics-devel: 0.1.5
+hyprlang-devel: 0.6.4
+hyprutils-devel: 0.7.1
+ninja-build: 1.13.2
 
 %prep
 %autosetup -p1

@@ -44,9 +44,17 @@ Plugin list
 Note: hyprscrolling and hyprtrails are temporarily excluded (incompatible with hyprland 0.54)
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+ninja-build: 1.13.2
 
 %prep
 %autosetup -p1 -n hyprland-plugins-%{commit}

@@ -33,11 +33,25 @@ BuildRequires:  systemd-rpm-macros
 hyprpaper is a blazing fast Wayland wallpaper utility with IPC controls
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.8.3
 Commit:            64b991cb917e28a51a50987a113ac4bf014ad0b7
+
+Build dependencies:
+cmake: 4.3.0
+file-devel: 5.46
+gcc-c++: 16.0.1
+hyprgraphics-devel: 0.1.5
+hyprlang-devel: 0.6.4
+hyprutils-devel: 0.7.1
+hyprwayland-scanner-devel: 0.4.2
+ninja-build: 1.13.2
+systemd-rpm-macros: 259.5
 
 %prep
 %autosetup -p1

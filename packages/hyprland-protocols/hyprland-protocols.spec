@@ -26,11 +26,17 @@ Some of the protocols here also do not belong in w-p, as they are specific
 to Hyprland.
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.7.0
 Commit:            bd153e76f751f150a09328dbdeb5e4fab9d23622
+
+Build dependencies:
+meson: 1.10.2
 
 %prep
 %autosetup -p1

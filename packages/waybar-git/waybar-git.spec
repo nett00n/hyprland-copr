@@ -46,9 +46,32 @@ Highly customizable Wayland bar for Sway and Wlroots based compositors
 Note: cava integration is disabled temporary. I am stuck with trying to fix it
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
+
+Build dependencies:
+catch-devel: 3.13.0
+gcc-c++: 16.0.1
+gpsd-devel: 3.27.5
+jack-audio-connection-kit-devel: 1.9.22
+libdbusmenu-gtk3-devel: 16.04.0
+libevdev-devel: 1.13.6
+libinput-devel: 1.31.1
+libmpdclient-devel: 2.23
+libnl3-devel: 3.12.0
+meson: 1.10.2
+ninja-build: 1.13.2
+pipewire-devel: 1.6.2
+playerctl-devel: 2.4.1
+pulseaudio-libs-devel: 17.0
+scdoc: 1.11.3
+systemd: 259.5
+upower-devel: 1.91.2
+wireplumber-devel: 0.5.14
 
 %prep
 %autosetup -p1 -n Waybar-%{version}

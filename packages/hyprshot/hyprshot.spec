@@ -20,8 +20,11 @@ mouseIt allows taking screenshots of windows, regions and monitors which
 are savedto a folder of your choosing and copied to your clipboard
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 
 %prep
@@ -39,5 +42,5 @@ install -Dpm0755 hyprshot -t %{buildroot}/%{_bindir}
 %{_bindir}/hyprshot
 
 %changelog
-* Wed Apr 01 2026 nett00n <copr@nett00n.org> - 1.3.0-1
+* Wed Apr 08 2026 nett00n <copr@nett00n.org> - 1.3.0-1
 - Update to 1.3.0

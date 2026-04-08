@@ -25,11 +25,23 @@ to a corner or edge of the output, or stretch them across the
 entire outputThe Session Lock protocol allows building lock screens
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v1.3.0
 Commit:            1c963c51514581c41b9bdae08cdf69171265cdda
+
+Build dependencies:
+gcc-c++: 16.0.1
+glib2-devel: 2.88.0
+gobject-introspection-devel: 1.86.0
+gtk4-devel: 4.22.2
+meson: 1.10.2
+ninja-build: 1.13.2
+vala: 0.56.19
 
 %prep
 %autosetup -p1

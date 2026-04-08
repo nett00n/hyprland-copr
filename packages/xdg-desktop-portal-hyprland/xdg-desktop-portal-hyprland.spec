@@ -33,11 +33,27 @@ BuildRequires:  systemd-rpm-macros
 xdg-desktop-portal backend for Hyprland
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v1.3.11
 Commit:            753bbbdf6a052994da94062e5b753288cef28dfb
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprland-protocols-devel: 0.4.0
+hyprlang-devel: 0.6.4
+hyprutils-devel: 0.7.1
+hyprwayland-scanner-devel: 0.4.2
+ninja-build: 1.13.2
+qt6-qtbase-devel: 6.10.3
+qt6-qtwayland-devel: 6.10.3
+sdbus-cpp: 2.2.1
+systemd-rpm-macros: 259.5
 
 %prep
 %autosetup -p1

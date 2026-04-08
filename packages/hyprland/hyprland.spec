@@ -47,11 +47,26 @@ is highly customizable, has all the eyecandy, the most powerful plugins,
 easy IPC, much more QoL stuff than other compositors and more..
 
 Maintainer info:
+
 Source repository: https://github.com/nett00n/hyprland-copr
+
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
+
 Package info:
 Tag:               v0.54.2
 Commit:            59f9f2688ac508a0584d1462151195a6c4992f99
+
+Build dependencies:
+cmake: 4.3.0
+gcc-c++: 16.0.1
+hyprcursor-devel: 0.1.11
+hyprgraphics-devel: 0.1.5
+hyprland-protocols-devel: 0.4.0
+hyprlang-devel: 0.6.4
+hyprutils-devel: 0.7.1
+hyprwayland-scanner-devel: 0.4.2
+ninja-build: 1.13.2
+udis86-devel: 1.7.2
 
 %prep
 %autosetup -p1 -n Hyprland-%{version}
