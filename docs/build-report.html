@@ -236,6 +236,22 @@
             font-family: 'Monaco', 'Courier New', monospace;
             white-space: nowrap;
         }
+        .stage-cell.new-build {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 4px;
+            padding: 4px;
+        }
+        .new-badge {
+            display: inline-block;
+            background: #2196f3;
+            color: white;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 2px;
+            margin-top: 2px;
+            font-weight: 600;
+        }
 
         .detail-panel {
             display: none;
@@ -411,6 +427,13 @@
                         <input type="checkbox" id="filterUnknown" value="unknown" checked>
                         <label for="filterUnknown"><span class="state-pill state-unknown">Unknown</span></label>
                     </div>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="newThreshold">Mark as "new" if built within (minutes):</label>
+                    <input type="number" id="newThreshold" min="1" max="1440" value="60" style="width: 80px;">
                 </div>
             </div>
         </div>
@@ -676,7 +699,26 @@
                         const pill = info.state === 'skipped' ? '–' : `<span class="state-pill ${stateClass}">${info.state}</span>`;
                         const timestamp = info.started_at ? formatDateTime(info.started_at) : '';
                         const timeDiv = timestamp ? `<div class="stage-time">${timestamp}</div>` : '';
-                        return `<td><div class="stage-cell">${pill}${timeDiv}</div></td>`;
+
+                        /** @type {number} */
+                        const currentTime = Date.now() / 1000;
+
+                        /** @type {number|undefined} */
+                        const startedAt = info.started_at;
+                        /** @type {number} */
+                        const timeDiff = (currentTime - (startedAt || 0)) / 60;
+
+                        /** @type {HTMLInputElement|null} */
+                        const thresholdInput = document.getElementById('newThreshold');
+                        /** @type {number} */
+                        const threshold = parseInt(thresholdInput?.value || '60');
+
+                        /** @type {boolean} */
+                        const isNew = timeDiff >= 0 && timeDiff < threshold && typeof startedAt === 'number' && startedAt > 0;
+
+                        const cellClass = isNew ? 'stage-cell new-build' : 'stage-cell';
+                        const badge = isNew ? '<div class="new-badge">NEW</div>' : '';
+                        return `<td><div class="${cellClass}">${pill}${badge}${timeDiv}</div></td>`;
                     }).join('')}
                 </tr>
                 ${expandedRow === idx ? `<tr class="detail-row"><td colspan="7"><div class="detail-panel show">${renderDetail(row)}</div></td></tr>` : ''}
@@ -822,6 +864,11 @@
                 expandedRow = null;
                 renderTable();
             });
+        });
+
+        document.getElementById('newThreshold').addEventListener('input', () => {
+            expandedRow = null;
+            renderTable();
         });
 
         document.querySelectorAll('th.sortable').forEach(th => {
