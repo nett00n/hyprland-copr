@@ -57,10 +57,10 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 <!-- END: Header -->
 
-## Build Report — Fedora 44 · 2026-04-07
+## Build Report — Fedora 44 · 2026-04-08
 
 > **Chroot:** `fedora-44-x86_64`
-> **Timestamp:** `2026-04-07T07:52:40+00:00`
+> **Timestamp:** `2026-04-08T11:18:49+00:00`
 
 ---
 
@@ -88,11 +88,11 @@ A very light linux rendering backend library
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-05 16:42:04 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 11:18:55 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-05 16:42:05 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-05 16:42:05 UTC | 3m | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296653/) | 2026-04-07 07:52:47 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296653/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 11:18:56 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 11:18:56 UTC | 2m 56s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301044/) | 2026-04-08 11:21:52 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301044/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/aquamarine/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/aquamarine/) | — | — | Native COPR build status badge |
 ---
 
@@ -109,7 +109,7 @@ Scaffolding CLI for Astal+Gnim
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-success-brightgreen?style=for-the-badge) | — | — | Built |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 05:20:02 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 05:20:03 UTC | 6m 6s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296655/) | 2026-04-07 07:52:50 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296655/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301046/) | 2026-04-08 11:21:56 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301046/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/aylurs-gtk-shell/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/aylurs-gtk-shell/) | — | — | Native COPR build status badge |
 ---
 
@@ -126,7 +126,7 @@ Cross-platform Audio Visualizer
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 05:26:14 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 05:26:21 UTC | 42s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296656/) | 2026-04-07 07:52:55 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296656/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301047/) | 2026-04-08 11:22:01 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301047/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/cava/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/cava/) | — | — | Native COPR build status badge |
 ---
 
@@ -143,7 +143,7 @@ Wayland clipboard manager with support for multimedia
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 06:47:01 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 06:47:03 UTC | 29s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296811/) | 2026-04-07 08:51:19 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296811/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301421/) | 2026-04-08 12:22:59 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301421/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/cliphist/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/cliphist/) | — | — | Native COPR build status badge |
 ---
 
@@ -156,11 +156,11 @@ Extremely fast, in memory, JSON and reflection library for modern C++.
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 07:00:53 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 11:22:06 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 07:00:53 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 07:00:54 UTC | 4m | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296657/) | 2026-04-07 07:53:00 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296657/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 11:22:07 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 11:22:07 UTC | 1m 47s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301051/) | 2026-04-08 11:23:54 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301051/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/glaze/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/glaze/) | — | — | Native COPR build status badge |
 ---
 
@@ -177,7 +177,7 @@ A library to create panels and other desktop components for Wayland using the La
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 07:05:01 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 07:05:01 UTC | 1m 42s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296658/) | 2026-04-07 07:53:06 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296658/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301052/) | 2026-04-08 11:23:59 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301052/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/gtk4-layer-shell/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/gtk4-layer-shell/) | — | — | Native COPR build status badge |
 ---
 
@@ -194,7 +194,7 @@ A library and toolkit for the Hyprland cursor format
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-05 14:17:22 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-05 14:17:23 UTC | 59s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296659/) | 2026-04-07 07:53:08 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296659/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301053/) | 2026-04-08 11:24:02 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301053/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprcursor/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprcursor/) | — | — | Native COPR build status badge |
 ---
 
@@ -207,11 +207,11 @@ Small C++ library for graphics utilities across the Hypr ecosystem
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 07:53:10 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 11:24:05 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 07:53:11 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 07:53:11 UTC | 2m 56s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296666/) | 2026-04-07 07:56:08 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296666/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 11:24:05 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 11:24:05 UTC | 1m 10s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301058/) | 2026-04-08 11:25:15 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301058/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprgraphics/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprgraphics/) | — | — | Native COPR build status badge |
 ---
 
@@ -228,7 +228,7 @@ An idle management daemon for Hyprland
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-05 16:47:12 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-05 16:47:13 UTC | 45s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296667/) | 2026-04-07 07:56:11 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296667/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-failed-red?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301059/) | 2026-04-08 11:25:21 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301059/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hypridle/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hypridle/) | — | — | Native COPR build status badge |
 ---
 
@@ -241,15 +241,15 @@ A Modern C++ Wayland Compositor
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 07:56:13 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 11:25:23 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 07:56:13 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 07:56:16 UTC | 13m 19s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296698/) | 2026-04-07 08:09:35 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296698/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 11:25:24 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 11:25:26 UTC | 12m 39s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-failed-red?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301075/) | 2026-04-08 11:38:05 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301075/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Hyprland/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Hyprland/) | — | — | Native COPR build status badge |
 ---
 
-### `hyprland-git` — 0.54.0^20260405gitaaa2fc3
+### `hyprland-git` — 0.54.0^20260408gitfb46d16
 
 A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 
@@ -258,11 +258,11 @@ A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:09:47 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 11:38:17 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:09:47 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:09:50 UTC | 13m 54s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296720/) | 2026-04-07 08:23:44 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296720/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 11:38:17 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 11:41:29 UTC | 14m 56s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-failed-red?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301129/) | 2026-04-08 11:56:25 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301129/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Hyprland-git/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Hyprland-git/) | — | — | Native COPR build status badge |
 ---
 
@@ -275,11 +275,11 @@ Hyprland GUI utilities
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:23:54 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 11:56:43 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:23:55 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:23:55 UTC | 56s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296721/) | 2026-04-07 08:24:51 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296721/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 11:56:43 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 11:56:44 UTC | 53s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-failed-red?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301133/) | 2026-04-08 11:57:37 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301133/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprland-guiutils/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprland-guiutils/) | — | — | Native COPR build status badge |
 ---
 
@@ -292,11 +292,11 @@ Official plugins for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:24:53 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 11:57:39 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:24:53 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:24:54 UTC | 1m 17s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296722/) | 2026-04-07 08:26:11 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296722/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 11:57:40 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 11:57:40 UTC | 1m 17s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301136/) | 2026-04-08 11:58:57 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301136/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprland-plugins/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprland-plugins/) | — | — | Native COPR build status badge |
 ---
 
@@ -309,11 +309,11 @@ Official plugins for Hyprland [Built from latest commit, unstable]
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:26:13 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 11:59:00 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:26:13 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:26:14 UTC | 1m 16s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296726/) | 2026-04-07 08:27:30 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296726/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 11:59:00 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 11:59:00 UTC | 1m 18s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301143/) | 2026-04-08 12:00:18 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301143/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprland-plugins-git/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprland-plugins-git/) | — | — | Native COPR build status badge |
 ---
 
@@ -330,7 +330,7 @@ Wayland protocol extensions for Hyprland
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 06:13:19 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 06:13:20 UTC | 18s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296727/) | 2026-04-07 08:27:33 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296727/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301144/) | 2026-04-08 12:00:21 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301144/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprland-protocols/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprland-protocols/) | — | — | Native COPR build status badge |
 ---
 
@@ -347,7 +347,7 @@ A qml style provider for hypr* qt apps
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 06:13:41 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 06:13:43 UTC | 1m 40s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296728/) | 2026-04-07 08:27:36 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296728/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301145/) | 2026-04-08 12:00:24 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301145/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprland-qt-support/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprland-qt-support/) | — | — | Native COPR build status badge |
 ---
 
@@ -364,7 +364,7 @@ The hypr configuration language library
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-05 14:10:46 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-05 14:10:46 UTC | 2m 37s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296729/) | 2026-04-07 08:27:38 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296729/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301146/) | 2026-04-08 12:00:26 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301146/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprlang/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprlang/) | — | — | Native COPR build status badge |
 ---
 
@@ -377,11 +377,11 @@ A multipurpose and versatile launcher / picker for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:27:40 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:00:29 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:27:40 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:27:41 UTC | 1m 9s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296731/) | 2026-04-07 08:28:50 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296731/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:00:29 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:00:29 UTC | 1m 10s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301149/) | 2026-04-08 12:01:39 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301149/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprlauncher/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprlauncher/) | — | — | Native COPR build status badge |
 ---
 
@@ -394,11 +394,11 @@ A gpu-accelerated screen lock for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:28:52 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:01:41 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:28:53 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:28:53 UTC | 1m 42s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296742/) | 2026-04-07 08:30:35 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296742/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:01:42 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:01:42 UTC | 1m 40s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301151/) | 2026-04-08 12:03:22 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301151/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprlock/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprlock/) | — | — | Native COPR build status badge |
 ---
 
@@ -411,11 +411,11 @@ A blazing fast Wayland wallpaper utility
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:30:37 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:03:25 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:30:38 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:30:38 UTC | 52s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296743/) | 2026-04-07 08:31:30 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296743/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:03:25 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:03:26 UTC | 51s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301154/) | 2026-04-08 12:04:17 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301154/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprpaper/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprpaper/) | — | — | Native COPR build status badge |
 ---
 
@@ -432,7 +432,7 @@ A wlroots-compatible Wayland color picker that does not suck
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-05 14:07:49 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-05 14:07:50 UTC | 2m 1s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296744/) | 2026-04-07 08:31:32 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296744/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301155/) | 2026-04-08 12:04:19 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301155/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprpicker/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprpicker/) | — | — | Native COPR build status badge |
 ---
 
@@ -449,7 +449,7 @@ A polkit authentication agent written in QT/QML
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 06:20:09 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 06:20:10 UTC | 1m 3s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296745/) | 2026-04-07 08:31:35 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296745/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301156/) | 2026-04-08 12:04:22 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301156/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprpolkitagent/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprpolkitagent/) | — | — | Native COPR build status badge |
 ---
 
@@ -462,11 +462,11 @@ Volume management center for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:31:37 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:04:24 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:31:37 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:31:38 UTC | 1m 11s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296747/) | 2026-04-07 08:32:49 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296747/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:04:24 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:04:24 UTC | 1m 9s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301191/) | 2026-04-08 12:05:34 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301191/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprpwcenter/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprpwcenter/) | — | — | Native COPR build status badge |
 ---
 
@@ -479,11 +479,11 @@ QT6 Theme Provider for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:32:52 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:05:36 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:32:52 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:32:53 UTC | 1m 28s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296752/) | 2026-04-07 08:34:21 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296752/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:05:36 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:05:36 UTC | 1m 25s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301194/) | 2026-04-08 12:07:02 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301194/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprqt6engine/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprqt6engine/) | — | — | Native COPR build status badge |
 ---
 
@@ -500,7 +500,7 @@ Utility to easily take screenshots in Hyprland using your mouse
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 06:24:24 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 06:24:26 UTC | 13s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296753/) | 2026-04-07 08:34:24 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296753/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301195/) | 2026-04-08 12:07:04 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301195/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Hyprshot/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Hyprshot/) | — | — | Native COPR build status badge |
 ---
 
@@ -513,11 +513,11 @@ A graceful shutdown utility for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:34:26 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:07:06 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:34:26 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:34:26 UTC | 57s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296754/) | 2026-04-07 08:35:23 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296754/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:07:06 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:07:07 UTC | 57s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301197/) | 2026-04-08 12:08:04 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301197/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprshutdown/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprshutdown/) | — | — | Native COPR build status badge |
 ---
 
@@ -530,11 +530,11 @@ An application to enable a blue-light filter on Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:35:26 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:08:06 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:35:27 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:35:27 UTC | 42s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296757/) | 2026-04-07 08:36:10 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296757/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:08:06 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:08:07 UTC | 39s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301199/) | 2026-04-08 12:08:46 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301199/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprsunset/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprsunset/) | — | — | Native COPR build status badge |
 ---
 
@@ -551,7 +551,7 @@ System info utility for Hyprland
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 06:26:43 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 06:26:46 UTC | 1m 16s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296758/) | 2026-04-07 08:36:12 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296758/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301200/) | 2026-04-08 12:08:48 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301200/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprsysteminfo/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprsysteminfo/) | — | — | Native COPR build status badge |
 ---
 
@@ -564,11 +564,11 @@ A modern C++ Wayland-native GUI toolkit
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:36:14 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:08:51 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:36:14 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:36:15 UTC | 2m | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296760/) | 2026-04-07 08:38:15 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296760/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:08:51 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:08:51 UTC | 1m 59s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301204/) | 2026-04-08 12:10:50 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301204/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprtoolkit/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprtoolkit/) | — | — | Native COPR build status badge |
 ---
 
@@ -585,7 +585,7 @@ Small C++ library for utilities used across the Hypr ecosystem
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 06:28:07 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 06:28:09 UTC | 1m 5s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296761/) | 2026-04-07 08:38:19 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296761/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301205/) | 2026-04-08 12:10:54 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301205/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprutils/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprutils/) | — | — | Native COPR build status badge |
 ---
 
@@ -602,7 +602,7 @@ A Wayland scanner replacement for Hypr projects
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 06:29:16 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 06:29:18 UTC | 48s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296762/) | 2026-04-07 08:38:21 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296762/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301206/) | 2026-04-08 12:10:56 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301206/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprwayland-scanner/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprwayland-scanner/) | — | — | Native COPR build status badge |
 ---
 
@@ -615,11 +615,11 @@ A fast and consistent wire protocol for IPC
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:38:23 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:10:58 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:38:23 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:38:23 UTC | 1m 11s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296764/) | 2026-04-07 08:39:34 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296764/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:10:58 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:10:59 UTC | 1m 9s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301209/) | 2026-04-08 12:12:08 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301209/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprwire/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/hyprwire/) | — | — | Native COPR build status badge |
 ---
 
@@ -636,7 +636,7 @@ Scratchpads & many goodies for Hyprland
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 07:44:45 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:39:37 UTC | 23s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296765/) | 2026-04-07 08:40:00 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296765/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301210/) | 2026-04-08 12:12:10 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301210/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/pyprland/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/pyprland/) | — | — | Native COPR build status badge |
 ---
 
@@ -649,11 +649,11 @@ Flexible QtQuick based desktop shell toolkit
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:51:27 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:23:06 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:51:27 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:51:28 UTC | 8m 39s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296821/) | 2026-04-07 09:00:07 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296821/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:23:06 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:23:07 UTC | 8m 41s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301443/) | 2026-04-08 12:31:48 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301443/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/quickshell/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/quickshell/) | — | — | Native COPR build status badge |
 ---
 
@@ -670,7 +670,7 @@ Portable version of OpenBSD's lightweight audio & MIDI sub-system
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 06:32:09 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 06:32:11 UTC | 29s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296766/) | 2026-04-07 08:40:06 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296766/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301211/) | 2026-04-08 12:12:14 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301211/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/sndio/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/sndio/) | — | — | Native COPR build status badge |
 ---
 
@@ -687,7 +687,7 @@ Universal Wayland Session Manager
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-01 06:47:40 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-01 06:47:41 UTC | 28s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296812/) | 2026-04-07 08:51:25 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296812/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301422/) | 2026-04-08 12:23:04 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301422/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/uwsm/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/uwsm/) | — | — | Native COPR build status badge |
 ---
 
@@ -700,11 +700,11 @@ Highly customizable Wayland bar for Sway and Wlroots based compositors
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:40:08 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:12:17 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:40:09 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:40:10 UTC | 4m 49s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296794/) | 2026-04-07 08:45:00 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296794/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:12:17 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:12:18 UTC | 4m 33s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301404/) | 2026-04-08 12:16:51 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301404/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Waybar/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Waybar/) | — | — | Native COPR build status badge |
 ---
 
@@ -717,11 +717,11 @@ Highly customizable Wayland bar for Sway and Wlroots based compositors [Built fr
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:45:03 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:16:54 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:45:03 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:45:04 UTC | 4m 25s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296805/) | 2026-04-07 08:49:29 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296805/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:16:54 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:16:55 UTC | 4m 28s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301416/) | 2026-04-08 12:21:23 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301416/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Waybar-git/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Waybar-git/) | — | — | Native COPR build status badge |
 ---
 
@@ -734,11 +734,11 @@ An XDG-Destop-Portal backend for Hyprland (and wlroots)
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-07 08:49:32 UTC |  | RPM spec file processing |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-04-08 12:21:26 UTC |  | RPM spec file processing |
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-07 08:49:32 UTC |  | Source RPM created |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-07 08:49:33 UTC | 1m 30s | Local build test |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10296810/) | 2026-04-07 08:51:03 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10296810/) |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-04-08 12:21:26 UTC |  | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-04-08 12:21:27 UTC | 1m 30s | Local build test |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10301420/) | 2026-04-08 12:22:57 UTC |  | [Build #](https://copr.fedorainfracloud.org/coprs/build/10301420/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/xdg-desktop-portal-hyprland/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/xdg-desktop-portal-hyprland/) | — | — | Native COPR build status badge |
 ---
 
@@ -747,7 +747,7 @@ An XDG-Destop-Portal backend for Hyprland (and wlroots)
 
 - **Total Packages:** `39`
 - **Successful Mock Builds:** `39`
-- **Successful COPR Builds:** `4`
+- **Successful COPR Builds:** `9`
 - **Failed Packages:** `0`
 - **Skipped Packages:** `0`
 
@@ -772,7 +772,7 @@ An XDG-Destop-Portal backend for Hyprland (and wlroots)
 
 - `hypridle` (0.1.7) — An idle management daemon for Hyprland
 - `hyprland` (0.54.2) — A Modern C++ Wayland Compositor
-- `hyprland-git` (0.54.0^20260405gitaaa2fc3) — A Modern C++ Wayland Compositor [Built from latest commit, unstable]
+- `hyprland-git` (0.54.0^20260408gitfb46d16) — A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 - `hyprland-guiutils` (0.2.1) — Hyprland GUI utilities
 - `hyprland-plugins` (0.53.0^20260223gitb85a56b) — Official plugins for Hyprland
 - `hyprland-plugins-git` (0.53.0^20260223gitb85a56b) — Official plugins for Hyprland [Built from latest commit, unstable]

@@ -141,7 +141,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-04-07
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-04-08
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->
