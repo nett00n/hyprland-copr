@@ -27,6 +27,7 @@ Tag:               v0.3.0
 Commit:            37bc90eed02b0c8b5a77a0b00867baf3005cfb98
 
 Build dependencies:
+cmake: 4.3.0
 gcc-c++: 16.0.1
 hyprutils-devel: 0.7.1
 ninja-build: 1.13.2

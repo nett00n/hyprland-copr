@@ -480,12 +480,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260408'
-      full: fb46d16fc2bedea96b6b2a4d005ec66d701431aa
+      date: '20260411'
+      full: dbc07064ef27aa4b3f3fc9310bed60454052f013
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.54.0^20260408gitfb46d16
+  version: 0.54.0^20260411gitdbc0706
 hyprland-guiutils:
   build:
     system: cmake
