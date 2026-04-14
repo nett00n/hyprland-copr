@@ -57,5 +57,5 @@ python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --pref
 %{python3_sitelib}/pyprland-%{version}.dist-info
 
 %changelog
-* Mon Apr 13 2026 nett00n <copr@nett00n.org> - 3.1.1-1
+* Tue Apr 14 2026 nett00n <copr@nett00n.org> - 3.1.1-1
 - Update to 3.1.1

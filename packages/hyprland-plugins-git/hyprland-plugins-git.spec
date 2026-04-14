@@ -1,8 +1,8 @@
-%global commit b85a56b9531013c79f2f3846fd6ee2ff014b8960
+%global commit 3e38db916aaecba0a7c7698c6df0c68acb89f312
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260223
+%global commitdate 20260412
 Name:           hyprland-plugins-git
-Version:        0.53.0^20260223gitb85a56b
+Version:        0.53.0^20260412git3e38db9
 Release:        %autorelease%{?dist}
 Summary:        Official plugins for Hyprland [Built from latest commit, unstable]
 License:        BSD-3-Clause
@@ -75,5 +75,5 @@ ninja-build: 1.13.2
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Tue Apr 14 2026 nett00n <copr@nett00n.org> - 0.53.0^20260223gitb85a56b-1
-- Update to 0.53.0^20260223gitb85a56b
+* Tue Apr 14 2026 nett00n <copr@nett00n.org> - 0.53.0^20260412git3e38db9-1
+- Update to 0.53.0^20260412git3e38db9
