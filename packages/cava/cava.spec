@@ -35,6 +35,8 @@ COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
 
 Build dependencies:
+alsa-lib-devel: 1.2.15.3
+cmake: 4.3.0
 fftw-devel: 3.3.10
 gcc-c++: 16.0.1
 iniparser-devel: 4.2.6

@@ -26,6 +26,7 @@ Tag:               v0.6.8
 Commit:            3a1c1b25b059dae2c6bbc46991562ba1158d125c
 
 Build dependencies:
+cmake: 4.3.0
 gcc-c++: 16.0.1
 hyprutils-devel: 0.7.1
 ninja-build: 1.13.2

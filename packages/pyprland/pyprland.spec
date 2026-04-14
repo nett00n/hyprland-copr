@@ -35,7 +35,7 @@ COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
 
 Build dependencies:
-python3-devel: 3.14.3
+python3-devel: 3.14.4
 python3-hatchling: 1.29.0
 python3-pip: 26.0.1
 
@@ -57,5 +57,5 @@ python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --pref
 %{python3_sitelib}/pyprland-%{version}.dist-info
 
 %changelog
-* Wed Apr 08 2026 nett00n <copr@nett00n.org> - 3.1.1-1
+* Mon Apr 13 2026 nett00n <copr@nett00n.org> - 3.1.1-1
 - Update to 3.1.1

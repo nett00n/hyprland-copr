@@ -75,5 +75,5 @@ ninja-build: 1.13.2
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Sun Apr 12 2026 nett00n <copr@nett00n.org> - 0.53.0^20260223gitb85a56b-1
+* Mon Apr 13 2026 nett00n <copr@nett00n.org> - 0.53.0^20260223gitb85a56b-1
 - Update to 0.53.0^20260223gitb85a56b

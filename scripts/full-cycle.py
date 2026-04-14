@@ -290,11 +290,13 @@ def run_build_pipeline(
         save_build_status(build_status)
 
         # Vendor
-        if is_cached("vendor", pkg, build_status, new_hashes, forced_stages):
+        vendor_entry = build_status.get("stages", {}).get("vendor", {}).get(pkg, {})
+        if vendor_entry.get("state") == "skipped" or is_cached(
+            "vendor", pkg, build_status, new_hashes, forced_stages
+        ):
             print("    vendor: cached")
-            entry = build_status["stages"]["vendor"].get(pkg)
-            if entry:
-                entry["reason"] = "cached"
+            if vendor_entry:
+                vendor_entry["reason"] = "cached"
         else:
             rebuilt_packages.add(pkg)
             started_at = int(time.time())

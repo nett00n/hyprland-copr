@@ -48,15 +48,20 @@ def print_summary(packages: dict, report: dict, copr_repo: str) -> None:
         for stage in stage_keys:
             pkg_data = report.get("stages", {}).get(stage, {}).get(pkg, {})
             state = pkg_data.get("state", "-")
-            # Validate uses WARN for failures (warning level), other stages use FAIL
-            if stage == "validate":
-                icon = {"success": "OK", "failed": "WARN", "skipped": "SKIP"}.get(
-                    state, state
-                )
+            reason = pkg_data.get("reason", "")
+            # Show "cached" if stage was cached, otherwise show state
+            if reason == "cached":
+                icon = "cached"
             else:
-                icon = {"success": "OK", "failed": "FAIL", "skipped": "SKIP"}.get(
-                    state, state
-                )
+                # Validate uses WARN for failures (warning level), other stages use FAIL
+                if stage == "validate":
+                    icon = {"success": "OK", "failed": "WARN", "skipped": "SKIP"}.get(
+                        state, state
+                    )
+                else:
+                    icon = {"success": "OK", "failed": "FAIL", "skipped": "SKIP"}.get(
+                        state, state
+                    )
             ts = pkg_data.get("completed_at")
             cell = f"{icon}({ts})" if ts and state == "skipped" else icon
             row += f"{cell:<18}"

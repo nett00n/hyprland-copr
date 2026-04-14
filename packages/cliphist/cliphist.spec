@@ -35,7 +35,7 @@ Tag:               v0.7.0
 Commit:            efb61cb5b5a28d896c05a24ac83b9c39c96575f2
 
 Build dependencies:
-golang: 1.26.1
+golang: 1.26.2
 
 %prep
 %autosetup -p1

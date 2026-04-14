@@ -43,8 +43,6 @@ Tag:               v0.10.0
 Commit:            a20a0e67a33b6848378a91b871b89588d3a12573
 
 Build dependencies:
-cmake: 4.3.0
-gcc-c++: 16.0.1
 hyprutils-devel: 0.7.1
 hyprwayland-scanner-devel: 0.4.2
 ninja-build: 1.13.2
