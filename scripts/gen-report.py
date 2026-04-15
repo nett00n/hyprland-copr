@@ -239,6 +239,17 @@ def main() -> None:
         default="github",
         help="Output format: github (table), copr (list), or full-report (detailed)",
     )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Output file path. If not provided, writes to stdout.",
+    )
+    parser.add_argument(
+        "--skip-copr-poll",
+        action="store_true",
+        help="Skip polling COPR status updates (use cached status from build-report.yaml).",
+    )
     args = parser.parse_args()
     template_name = (
         f"readme-{args.format}.md.j2"
@@ -254,13 +265,14 @@ def main() -> None:
     run = data.get("run", {})
     stages = data.get("stages", {})
 
-    # Poll COPR status for packages with non-terminal states
-    copr_stage = stages.get("copr") or {}
-    packages_list = list(copr_stage.keys())
-    if poll_copr_status(stages, packages_list):
-        # Status was updated, save it back
-        data["stages"] = stages
-        save_build_status(data)
+    # Poll COPR status for packages with non-terminal states (unless skipped)
+    if not args.skip_copr_poll:
+        copr_stage = stages.get("copr") or {}
+        packages_list = list(copr_stage.keys())
+        if poll_copr_status(stages, packages_list):
+            # Status was updated, save it back
+            data["stages"] = stages
+            save_build_status(data)
 
     pkg_meta = get_packages() if PACKAGES_YAML.exists() else {}
     repo = load_repo_yaml() if REPO_YAML.exists() else {}
@@ -282,18 +294,20 @@ def main() -> None:
 
     env = create_jinja_env()
     template = env.get_template(template_name)
-    print(
-        template.render(
-            run=run,
-            repo=repo,
-            packages=packages,
-            groups=groups,
-            contributors=contributors,
-            badge_style=badge_style,
-            latest_blog=latest_blog,
-        ),
-        end="",
+    output = template.render(
+        run=run,
+        repo=repo,
+        packages=packages,
+        groups=groups,
+        contributors=contributors,
+        badge_style=badge_style,
+        latest_blog=latest_blog,
     )
+
+    if args.output:
+        Path(args.output).write_text(output)
+    else:
+        print(output, end="")
 
 
 if __name__ == "__main__":

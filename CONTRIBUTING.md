@@ -13,7 +13,7 @@ templates/_*.j2                    # Jinja2 snippet: simple, no includes
 templates/__*.j2                   # Jinja2 snippet: composite, includes other snippets
 templates/packages-entry.yaml.j2   # Jinja2 template for new packages.yaml entries
 scripts/full-cycle.py              # full build orchestrator: spec → vendor → srpm → mock → copr
-scripts/gen-report.py              # renders the build report from build-report.yaml
+scripts/gen-report.py              # renders build report from build-report.yaml (--format github|copr|full-report, --output FILE)
 scripts/scaffold-package.py        # scaffolds a new packages.yaml entry from a submodule
 scripts/update-versions.py         # fetches latest submodule tags and updates packages.yaml
 scripts/pkg-log-analysis.py        # analyzes build logs for actionable errors
@@ -476,8 +476,36 @@ to complete immediately after submission without blocking for build completion.
 - **Async mode (default):** Submits builds and records the build IDs, pipeline completes immediately
 - **Synchronous mode:** Set `SYNCHRONOUS_COPR_BUILD=true` to wait for builds to complete before exiting
 
-When generating the build report with `make gen-report`, the system automatically polls COPR for the status
-of in-progress builds and updates `build-report.yaml` with the latest state.
+#### Build Report Generation
+
+The `gen-report.py` script generates markdown reports from `build-report.yaml`. It supports multiple output formats and COPR status polling:
+
+```bash
+# Generate GitHub-style README
+.venv/bin/python3 scripts/gen-report.py --format github --output README.md
+
+# Generate COPR README (skips COPR polling for speed)
+.venv/bin/python3 scripts/gen-report.py --format copr --output docs/README.copr.md --skip-copr-poll
+
+# Generate full detailed report (skips COPR polling)
+.venv/bin/python3 scripts/gen-report.py --format full-report --output docs/full-report.md --skip-copr-poll
+
+# Print to stdout (default behavior)
+.venv/bin/python3 scripts/gen-report.py --format github
+```
+
+**Arguments:**
+- `--format github|copr|full-report` — Report format (default: github)
+- `--output FILE` — Write to file instead of stdout
+- `--skip-copr-poll` — Skip polling COPR status (use cached status from build-report.yaml)
+
+By default, `gen-report.py` automatically polls COPR for the status of in-progress builds and updates
+`build-report.yaml` with the latest state. Use `--skip-copr-poll` when running multiple report generations
+to avoid redundant API calls (e.g., `make readme` generates 3 reports but polls COPR only once).
+
+The `make readme` target optimizes this automatically:
+- **First call** (GitHub README): Polls COPR status
+- **Subsequent calls** (COPR README, Full Report): Skip polling (`--skip-copr-poll`)
 
 ### Build Cache and Force Re-run
 

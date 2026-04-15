@@ -4,9 +4,7 @@
 - Add cross-os-version build matrix visualization
 - Separate prod builds and local debug ones (?)
 - add make fmt after scaffolding
-- add reason of stage execution start/skip
 - *-git packages to separate block
-- refactor readme generation
 - #2.0 split management system and hyprland repo content. Make automations repo a submodule of content repo (?)
 
 # Packages

@@ -283,13 +283,13 @@ gen-report: check-image check-venv setup-volumes ## Render build-report.yaml to 
 
 readme: check-image check-venv setup-volumes ## Generate README.md, docs/README.copr.md, and docs/full-report.md
 	@mkdir -p "$(MAKE_LOGS_DIR)/readme"
-	@$(CONTAINER_PYTHON) scripts/gen-report.py --format github > ./README.md \
+	@$(CONTAINER_PYTHON) scripts/gen-report.py --format github --output ./README.md \
 		2>"$(MAKE_LOGS_DIR)/readme/github.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ GitHub README failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ GitHub README generated"
-	@$(CONTAINER_PYTHON) scripts/gen-report.py --format copr > ./docs/README.copr.md \
+	@$(CONTAINER_PYTHON) scripts/gen-report.py --format copr --output ./docs/README.copr.md --skip-copr-poll \
 		2>"$(MAKE_LOGS_DIR)/readme/copr.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ COPR README failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ COPR README generated"
-	@$(CONTAINER_PYTHON) scripts/gen-report.py --format full-report > ./docs/full-report.md \
+	@$(CONTAINER_PYTHON) scripts/gen-report.py --format full-report --output ./docs/full-report.md --skip-copr-poll \
 		2>"$(MAKE_LOGS_DIR)/readme/full-report.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ Full Report failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ Full Report generated"
 
