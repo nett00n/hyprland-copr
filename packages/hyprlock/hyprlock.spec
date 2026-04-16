@@ -1,5 +1,5 @@
 Name:           hyprlock
-Version:        0.9.3
+Version:        0.9.4
 Release:        %autorelease%{?dist}
 Summary:        A gpu-accelerated screen lock for Hyprland
 License:        BSD-3-Clause
@@ -35,8 +35,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.9.3
-Commit:            d7079a124893832f887a8d72ba90ec0ccd874a81
+Tag:               v0.9.4
+Commit:            824c8b4123e94e3148a1f8f01d044bbb43e32620
 
 Build dependencies:
 cmake: 4.3.0
@@ -65,5 +65,5 @@ ninja-build: 1.13.2
 %{_sysconfdir}/pam.d/hyprlock
 
 %changelog
-* Sun Mar 22 2026 nett00n <copr@nett00n.org> - 0.9.3-1
-- version: bump to 0.9.3
+* Wed Apr 15 2026 nett00n <copr@nett00n.org> - 0.9.4-1
+- version: bump to 0.9.4

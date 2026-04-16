@@ -400,7 +400,7 @@ update-daily: ## Update versions, build, generate docs, push to COPR (requires C
 	$(MAKE) readme || exit 1
 	$(MAKE) copr-description || exit 1
 	git add packages.yaml packages/ submodules/ templates/ blog/ README.md docs/README.copr.md docs/full-report.md || exit 1
-	git commit -m "$$(date --rfc-3339=seconds)"
+	git commit -m "Daily update: $$(date --rfc-3339=seconds)"
 
 build-pop: check-image check-venv setup-volumes ## Remove mock/copr build status for PKG=a,b (PKG="" removes all, requires confirmation)
 	@if [ -z "$(PACKAGE)" ]; then \

@@ -479,12 +479,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260414'
-      full: 88f3e7e9d519ae704cab78548c6f6bf02a0b0841
+      date: '20260415'
+      full: e6c5040f417001fc3cf20e21f971f926626a0f6f
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.54.0^20260414git88f3e7e
+  version: 0.54.0^20260415gite6c5040
 hyprland-guiutils:
   build:
     system: cmake
@@ -827,7 +827,7 @@ hyprlock:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A gpu-accelerated screen lock for Hyprland
   url: https://github.com/hyprwm/hyprlock
-  version: 0.9.3
+  version: 0.9.4
 hyprpaper:
   build:
     system: cmake
