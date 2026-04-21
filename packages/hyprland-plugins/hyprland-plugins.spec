@@ -1,9 +1,9 @@
-%global commit 6059aca0cc623d8d896b02842606036c0954ba88
+%global commit 6acc0738f298f5efe40a99db2c12449112d65633
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260417
+%global commitdate 20260420
 
 Name:           hyprland-plugins
-Version:        0.53.0^20260417git6059aca
+Version:        0.53.0^20260420git6acc073
 Release:        %autorelease%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
@@ -48,7 +48,7 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Commit:            6059aca0cc623d8d896b02842606036c0954ba88
+Commit:            6acc0738f298f5efe40a99db2c12449112d65633
 
 Build dependencies:
 cmake: 4.3.0
@@ -74,5 +74,5 @@ ninja-build: 1.13.2
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Fri Apr 17 2026 nett00n <copr@nett00n.org> - 0.53.0^20260417git6059aca-1
-- CI: use org-wide actions
+* Mon Apr 20 2026 nett00n <copr@nett00n.org> - 0.53.0^20260420git6acc073-1
+- bars: Update README.md with new windowrule block syntax (#642)

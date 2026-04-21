@@ -479,12 +479,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260418'
-      full: 889ee4f26d77ff0c36f5c4767ef0629371fd2c18
+      date: '20260420'
+      full: 73f48077965d5b895a731c34ab648f73fdb7b2ce
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.54.0^20260418git889ee4f
+  version: 0.54.0^20260420git73f4807
 hyprland-guiutils:
   build:
     system: cmake
@@ -566,13 +566,13 @@ hyprland-plugins:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
-      date: '20260417'
-      full: 6059aca0cc623d8d896b02842606036c0954ba88
+      date: '20260420'
+      full: 6acc0738f298f5efe40a99db2c12449112d65633
     patches:
     - hyprland-0.54-exclude-incompatible-plugins.patch
   summary: Official plugins for Hyprland
   url: https://github.com/hyprwm/hyprland-plugins
-  version: 0.53.0^20260417git6059aca
+  version: 0.53.0^20260420git6acc073
 hyprland-plugins-git:
   auto_update:
     release_type: latest-commit
@@ -625,14 +625,14 @@ hyprland-plugins-git:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
-      date: '20260417'
-      full: 6059aca0cc623d8d896b02842606036c0954ba88
+      date: '20260420'
+      full: 6acc0738f298f5efe40a99db2c12449112d65633
     patches:
     - hyprland-0.54-exclude-incompatible-plugins.patch
   source_name: hyprland-plugins
   summary: Official plugins for Hyprland [Built from latest commit, unstable]
   url: https://github.com/hyprwm/hyprland-plugins
-  version: 0.53.0^20260417git6059aca
+  version: 0.53.0^20260420git6acc073
 hyprland-protocols:
   build:
     system: meson
