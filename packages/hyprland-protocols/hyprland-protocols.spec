@@ -2,7 +2,7 @@
 
 Name:           hyprland-protocols
 Version:        0.7.0
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        Wayland protocol extensions for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-protocols
@@ -66,5 +66,6 @@ Development files for hyprland-protocols.
 %{_datadir}/pkgconfig/%{name}.pc
 
 %changelog
-* Sat Oct 04 2025 nett00n <copr@nett00n.org> - 0.7.0-1
+* Sat Oct 04 2025 nett00n <copr@nett00n.org> - 0.7.0-2
+
 - version: bump to 0.7.0

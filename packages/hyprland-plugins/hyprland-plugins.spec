@@ -4,7 +4,7 @@
 
 Name:           hyprland-plugins
 Version:        0.53.0^20260420git6acc073
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
@@ -74,5 +74,6 @@ ninja-build: 1.13.2
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Mon Apr 20 2026 nett00n <copr@nett00n.org> - 0.53.0^20260420git6acc073-1
+* Mon Apr 20 2026 nett00n <copr@nett00n.org> - 0.53.0^20260420git6acc073-2
+
 - bars: Update README.md with new windowrule block syntax (#642)

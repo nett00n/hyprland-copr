@@ -1,7 +1,7 @@
 
 Name:           hyprsysteminfo
 Version:        0.1.3
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        System info utility for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprsysteminfo
@@ -63,5 +63,6 @@ sed -i '/find_package(Qt6.*WaylandClient)/a find_package(Qt6 REQUIRED COMPONENTS
 %{_prefix}/share/applications/hyprsysteminfo.desktop
 
 %changelog
-* Fri Jan 10 2025 nett00n <copr@nett00n.org> - 0.1.3-1
+* Fri Jan 10 2025 nett00n <copr@nett00n.org> - 0.1.3-2
+
 - version: bump to 0.1.3

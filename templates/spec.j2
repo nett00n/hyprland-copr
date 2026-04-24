@@ -138,7 +138,7 @@ Development files for {{ name }}.
 
 {# Changelog Entry #}
 %changelog
-* {{ changelog.date }} {{ changelog.packager }} - {{ changelog.version }}-{% if '%autorelease' in changelog.release %}1{% else %}{{ changelog.release }}{% endif %}
+* {{ changelog.date }} {{ changelog.packager }} - {{ changelog.version }}-{{ changelog.release }}
 
 {% for note in changelog.notes %}
 - {{ note }}

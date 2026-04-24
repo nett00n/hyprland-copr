@@ -1,7 +1,7 @@
 
 Name:           hyprutils
 Version:        0.12.0
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        Small C++ library for utilities used across the Hypr ecosystem
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprutils
@@ -58,5 +58,6 @@ Development files for hyprutils.
 %{_libdir}/pkgconfig/hyprutils.pc
 
 %changelog
-* Mon Mar 30 2026 nett00n <copr@nett00n.org> - 0.12.0-1
+* Mon Mar 30 2026 nett00n <copr@nett00n.org> - 0.12.0-2
+
 - version: bump to 0.12.0

@@ -1,7 +1,7 @@
 
 Name:           waybar
 Version:        0.15.0
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        Highly customizable Wayland bar for Sway and Wlroots based compositors
 License:        MIT
 URL:            https://github.com/Alexays/Waybar
@@ -64,7 +64,7 @@ libmpdclient-devel: 2.23
 libnl3-devel: 3.12.0
 meson: 1.10.2
 ninja-build: 1.13.2
-pipewire-devel: 1.6.3
+pipewire-devel: 1.6.4
 playerctl-devel: 2.4.1
 pulseaudio-libs-devel: 17.0
 scdoc: 1.11.3
@@ -100,5 +100,6 @@ Development files for waybar.
 %files devel
 
 %changelog
-* Wed Apr 22 2026 nett00n <copr@nett00n.org> - 0.15.0-1
+* Fri Apr 24 2026 nett00n <copr@nett00n.org> - 0.15.0-2
+
 - Update to 0.15.0

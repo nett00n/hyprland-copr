@@ -1,7 +1,7 @@
 
 Name:           hyprshutdown
 Version:        0.1.0
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        A graceful shutdown utility for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprshutdown
@@ -57,7 +57,8 @@ ninja-build: 1.13.2
 %{_prefix}/bin/hyprshutdown
 
 %changelog
-* Tue Jan 27 2026 nett00n <copr@nett00n.org> - 0.1.0-1
+* Tue Jan 27 2026 nett00n <copr@nett00n.org> - 0.1.0-2
+
 - core: close socket FD on error paths and improve validation (#18)
 - fix: close socket FD on error paths and improve validation
 - HyprlandIPC.cpp:

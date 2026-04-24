@@ -3,7 +3,7 @@
 
 Name:           cava
 Version:        0.10.7
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        Cross-platform Audio Visualizer
 License:        MIT
 URL:            https://github.com/karlstav/cava
@@ -46,7 +46,7 @@ jack-audio-connection-kit-devel: 1.9.22
 make: 4.4.1
 ncurses-devel: 6.6
 ninja-build: 1.13.2
-pipewire-devel: 1.6.3
+pipewire-devel: 1.6.4
 portaudio-devel: 19.7.0
 pulseaudio-libs-devel: 17.0
 sdl2-compat-devel: 2.32.64
@@ -66,5 +66,6 @@ sdl2-compat-devel: 2.32.64
 %license LICENSE
 
 %changelog
-* Wed Apr 22 2026 nett00n <copr@nett00n.org> - 0.10.7-1
+* Fri Apr 24 2026 nett00n <copr@nett00n.org> - 0.10.7-2
+
 - Update to 0.10.7

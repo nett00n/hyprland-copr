@@ -2,7 +2,7 @@
 
 Name:           glaze
 Version:        7.1.0
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        Extremely fast, in memory, JSON and reflection library for modern C++.
 License:        MIT
 URL:            https://github.com/stephenberry/glaze
@@ -31,7 +31,6 @@ Tag:               v7.1.0
 Commit:            b71542bb16c9d793545062185d7fd9bedbc0b638
 
 Build dependencies:
-gcc-c++: 16.0.1
 libasan: 16.0.1
 libubsan: 16.0.1
 ninja-build: 1.13.2
@@ -62,5 +61,6 @@ Development files for glaze.
 %{_prefix}/share/glaze/*.cmake
 
 %changelog
-* Sat Feb 28 2026 nett00n <copr@nett00n.org> - 7.1.0-1
+* Sat Feb 28 2026 nett00n <copr@nett00n.org> - 7.1.0-2
+
 - v7.1.0 bump

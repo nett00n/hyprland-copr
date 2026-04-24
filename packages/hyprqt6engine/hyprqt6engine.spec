@@ -1,7 +1,7 @@
 
 Name:           hyprqt6engine
 Version:        0.1.0
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        QT6 Theme Provider for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprqt6engine
@@ -69,5 +69,6 @@ sed -i '/target_link_libraries.*hyprqtplugin/i find_package(Qt6 REQUIRED COMPONE
 %{_libdir}/qt6/plugins/styles/libhypr-style.so
 
 %changelog
-* Tue Aug 26 2025 nett00n <copr@nett00n.org> - 0.1.0-1
+* Tue Aug 26 2025 nett00n <copr@nett00n.org> - 0.1.0-2
+
 - all: initial commit

@@ -1,7 +1,7 @@
 
 Name:           hypridle
 Version:        0.1.7
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        An idle management daemon for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hypridle
@@ -59,5 +59,6 @@ ninja-build: 1.13.2
 %{_userunitdir}/hypridle.service
 
 %changelog
-* Wed Aug 27 2025 nett00n <copr@nett00n.org> - 0.1.7-1
+* Wed Aug 27 2025 nett00n <copr@nett00n.org> - 0.1.7-2
+
 - version: bump to 0.1.7

@@ -1,7 +1,7 @@
 
 Name:           quickshell
 Version:        0.2.1
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        Flexible QtQuick based desktop shell toolkit
 License:        LGPL-3.0-or-later
 URL:            https://git.outfoxxed.me/quickshell/quickshell
@@ -45,7 +45,7 @@ libdrm-devel: 2.4.131
 mesa-libgbm-devel: 26.0.3
 ninja-build: 1.13.2
 pam-devel: 1.7.2
-pipewire-devel: 1.6.3
+pipewire-devel: 1.6.4
 qt6-qtbase-devel: 6.10.3
 qt6-qtbase-private-devel: 6.10.3
 qt6-qtdeclarative-devel: 6.10.3
@@ -80,5 +80,6 @@ Development files for quickshell.
 %files devel
 
 %changelog
-* Sat Oct 11 2025 nett00n <copr@nett00n.org> - 0.2.1-1
+* Sat Oct 11 2025 nett00n <copr@nett00n.org> - 0.2.1-2
+
 - version: bump to 0.2.1

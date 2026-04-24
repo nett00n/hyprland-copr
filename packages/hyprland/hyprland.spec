@@ -1,7 +1,7 @@
 
 Name:           hyprland
 Version:        0.54.2
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -113,5 +113,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Tue Mar 10 2026 nett00n <copr@nett00n.org> - 0.54.2-1
+* Tue Mar 10 2026 nett00n <copr@nett00n.org> - 0.54.2-2
+
 - version: bump to 0.54.2

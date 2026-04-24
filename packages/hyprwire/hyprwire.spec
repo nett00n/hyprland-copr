@@ -1,7 +1,7 @@
 
 Name:           hyprwire
 Version:        0.3.0
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        A fast and consistent wire protocol for IPC
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprwire
@@ -63,5 +63,6 @@ Development files for hyprwire.
 %{_libdir}/pkgconfig/hyprwire.pc
 
 %changelog
-* Wed Feb 04 2026 nett00n <copr@nett00n.org> - 0.3.0-1
+* Wed Feb 04 2026 nett00n <copr@nett00n.org> - 0.3.0-2
+
 - version: bump to 0.3.0

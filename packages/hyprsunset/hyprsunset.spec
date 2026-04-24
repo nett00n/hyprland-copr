@@ -1,7 +1,7 @@
 
 Name:           hyprsunset
 Version:        0.3.3
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        An application to enable a blue-light filter on Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprsunset
@@ -57,5 +57,6 @@ ninja-build: 1.13.2
 %{_prefix}/lib/systemd/user/hyprsunset.service
 
 %changelog
-* Fri Oct 03 2025 nett00n <copr@nett00n.org> - 0.3.3-1
+* Fri Oct 03 2025 nett00n <copr@nett00n.org> - 0.3.3-2
+
 - version: bump to 0.3.3

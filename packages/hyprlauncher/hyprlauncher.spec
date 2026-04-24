@@ -1,7 +1,7 @@
 
 Name:           hyprlauncher
 Version:        0.1.5
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        A multipurpose and versatile launcher / picker for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprlauncher
@@ -68,5 +68,6 @@ ninja-build: 1.13.2
 %{_prefix}/bin/hyprlauncher
 
 %changelog
-* Sun Jan 04 2026 nett00n <copr@nett00n.org> - 0.1.5-1
+* Sun Jan 04 2026 nett00n <copr@nett00n.org> - 0.1.5-2
+
 - version: bump to 0.1.5

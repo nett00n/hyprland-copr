@@ -1,7 +1,7 @@
 
 Name:           hyprpicker
 Version:        0.4.6
-Release:        %autorelease%{?dist}
+Release:        2%{?dist}
 Summary:        A wlroots-compatible Wayland color picker that does not suck
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpicker
@@ -59,5 +59,6 @@ ninja-build: 1.13.2
 %{_prefix}/share/man/man1/hyprpicker.1.gz
 
 %changelog
-* Tue Feb 10 2026 nett00n <copr@nett00n.org> - 0.4.6-1
+* Tue Feb 10 2026 nett00n <copr@nett00n.org> - 0.4.6-2
+
 - version: bump to 0.4.6
