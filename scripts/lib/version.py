@@ -28,5 +28,5 @@ def nvr(version: str, release: int | str, fedora_version: str) -> str:
 
 
 def clean_version(raw: str) -> str:
-    """Strip -%autorelease.fcXX or -1.fcXX suffix, keep bare version number."""
+    """Strip -<release>.fcXX suffix (e.g., -1.fc43, -5.fc44), keep bare version."""
     return raw.split("-")[0] if raw else ""

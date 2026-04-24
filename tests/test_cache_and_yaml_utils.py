@@ -700,3 +700,77 @@ class TestCacheHelpers:
 
         # Should contain hashes for patches
         assert len(result) > 0
+
+
+class TestWriteYamlPreservingCommentsRelease:
+    """Test release field handling in write_yaml_preserving_comments."""
+
+    def test_version_change_resets_release_to_zero(self, tmp_path):
+        """When version changes, release field is set to 0."""
+        yaml_file = tmp_path / "packages.yaml"
+        yaml_file.write_text("""
+test-pkg:
+  version: "1.0"
+  release: 3
+  url: https://example.com/test
+  license: GPLv3
+  summary: Test
+  description: Test pkg
+""")
+
+        url_to_latest = {"https://example.com/test": "2.0"}
+        write_yaml_preserving_comments(yaml_file, url_to_latest, None)
+
+        content = yaml_file.read_text()
+        assert "version: '2.0'" in content or 'version: "2.0"' in content
+        assert "release: 0" in content
+
+    def test_no_version_change_preserves_release(self, tmp_path):
+        """When version unchanged, release stays the same."""
+        yaml_file = tmp_path / "packages.yaml"
+        yaml_file.write_text("""
+test-pkg:
+  version: "1.0"
+  release: 3
+  url: https://example.com/test
+  license: GPLv3
+  summary: Test
+  description: Test pkg
+""")
+
+        url_to_latest = {"https://example.com/test": "1.0"}
+        write_yaml_preserving_comments(yaml_file, url_to_latest, None)
+
+        content = yaml_file.read_text()
+        assert "release: 3" in content
+
+    def test_commit_version_change_resets_release(self, tmp_path):
+        """When commit version changes, release is set to 0."""
+        yaml_file = tmp_path / "packages.yaml"
+        yaml_file.write_text("""
+test-pkg:
+  version: "0^20260101gitabc123"
+  release: 2
+  url: https://example.com/test
+  license: GPLv3
+  summary: Test
+  description: Test pkg
+  source:
+    commit:
+      full: abcdef0123456789
+      date: "20260101"
+""")
+
+        url_to_commit_info = {
+            "https://example.com/test": (
+                "def4567890123456789",  # new full hash
+                "def4567",  # new short hash
+                "20260102",  # new date
+                "0",  # base version
+            )
+        }
+        write_yaml_preserving_comments(yaml_file, {}, url_to_commit_info)
+
+        content = yaml_file.read_text()
+        assert "0^20260102gitdef4567" in content
+        assert "release: 0" in content

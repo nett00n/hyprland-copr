@@ -12,6 +12,28 @@ def _sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
+def _normalize_keys(obj):
+    """Recursively convert all dict keys to strings for consistent serialization."""
+    if isinstance(obj, dict):
+        return {str(k): _normalize_keys(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_normalize_keys(item) for item in obj]
+    return obj
+
+
+def _content_hash(pkg_dict: dict) -> str:
+    """Compute SHA256 hash of package dict WITHOUT release field.
+
+    Represents "real content" (version, build config, etc.) decoupled from
+    release counter. Excludes 'release' key so that release-only changes
+    don't trigger rebuilds.
+    """
+    # Copy dict, exclude release
+    content = {k: v for k, v in pkg_dict.items() if k != "release"}
+    normalized = _normalize_keys(content)
+    return _sha256(json.dumps(normalized, sort_keys=True, default=str).encode())
+
+
 def _source_commit(pkg: str, meta: dict) -> str | None:
     """Return full git commit hash of the package's submodule, or None if not found.
 
@@ -38,15 +60,6 @@ def _templates_hash() -> str:
 
 def _package_config_hash(entry: dict) -> str:
     """Return SHA256 hash of a package's configuration entry."""
-
-    def _normalize_keys(obj):
-        """Recursively convert all dict keys to strings for consistent serialization."""
-        if isinstance(obj, dict):
-            return {str(k): _normalize_keys(v) for k, v in obj.items()}
-        if isinstance(obj, list):
-            return [_normalize_keys(item) for item in obj]
-        return obj
-
     normalized = _normalize_keys(entry)
     return _sha256(json.dumps(normalized, sort_keys=True, default=str).encode())
 
@@ -70,13 +83,20 @@ def _patches_hashes(pkg: str, meta: dict) -> dict[str, str | None]:
 
 
 def compute_input_hashes(pkg: str, meta: dict, all_packages: dict) -> dict:
-    """Compute all input hashes for a package: source commit, templates, config, deps, patches."""
+    """Compute all input hashes for a package: source commit, templates, config, deps, patches.
+
+    Also computes:
+    - content: hash of package config EXCLUDING release field (stable across release-only changes)
+    - package_version: current version string (for release autoreset detection)
+    """
     return {
         "source_commit": _source_commit(pkg, meta),
         "templates": _templates_hash(),
         "package_config": _package_config_hash(meta),
         "dependencies": _dependencies_hashes(meta, all_packages),
         "patches": _patches_hashes(pkg, meta),
+        "content": _content_hash(meta),
+        "package_version": str(meta.get("version", "")),
     }
 
 

@@ -290,6 +290,7 @@ def write_yaml_preserving_comments(
     """Update version/commit fields in packages.yaml using yaml load/dump.
 
     Comments will not be preserved (accepted trade-off for simpler code).
+    When version changes, also sets release=0 to signal autoreset in next pre-build step.
     Returns {pkg_name: (old_version, new_version)} for changed packages.
 
     url_to_commit_info values are 4-tuples: (full_hash, short_hash, date_YYYYMMDD, base_semver | None)
@@ -307,6 +308,7 @@ def write_yaml_preserving_comments(
         new_ver = url_to_latest.get(pkg_url)
         if new_ver and new_ver != current_ver:
             pkg_data["version"] = new_ver
+            pkg_data["release"] = 0  # Reset release on version change
             changed[pkg_name] = (current_ver, new_ver)
         elif pkg_url in url_to_commit_info:
             full_hash, short_hash, date_str, base_semver = url_to_commit_info[pkg_url]
@@ -324,6 +326,7 @@ def write_yaml_preserving_comments(
                     source["commit"] = {}
                 if new_commit_ver != current_ver:
                     pkg_data["version"] = new_commit_ver
+                    pkg_data["release"] = 0  # Reset release on version change
                     source["commit"]["full"] = full_hash
                     source["commit"]["date"] = date_str
                     changed[pkg_name] = (current_ver, new_commit_ver)
@@ -333,3 +336,100 @@ def write_yaml_preserving_comments(
     if changed:
         path.write_text(dump_yaml_pretty(data))
     return changed
+
+
+def update_package_releases(packages: dict, build_status: dict) -> dict[str, int]:
+    """Auto-increment or reset release values for packages.
+
+    Pre-build step, called in topological order (packages dict preserves order).
+
+    Rules:
+    1. Compute content hash (excludes release field) for current package
+    2. Compare against stored content hash + version from last build
+    3. If content differs OR force_run set OR dep was rebuilt:
+       - Release needs increment (or reset if version changed)
+    4. If version changed (or release == 0):
+       - Reset to 1
+    5. Otherwise:
+       - Increment by 1 (with fallback to 1 if int conversion fails)
+
+    Cascade: dependency rebuild forces all dependents to increment.
+
+    Args:
+        packages: Dict of {pkg_name: pkg_dict}, in topological order
+        build_status: Current build status dict with stored hashes
+
+    Returns:
+        Dict of {pkg_name: new_release} for packages that were updated
+    """
+    from lib.cache import _content_hash
+
+    dep_will_rebuild: set[str] = set()
+    updates: dict[str, int] = {}
+
+    for pkg_name, pkg_dict in packages.items():
+        # Skip auto-management if release_lock is set
+        if pkg_dict.get("release_lock"):
+            continue
+        # Compute content hash (excludes release)
+        content_hash = _content_hash(pkg_dict)
+
+        # Read stored state
+        last_entry = build_status.get("stages", {}).get("spec", {}).get(pkg_name, {})
+        stored_hashes = last_entry.get("hashes", {})
+        last_content_hash = stored_hashes.get("content")
+        last_version = stored_hashes.get("package_version")
+
+        # Check for force_run in any stage
+        force_run = any(
+            build_status.get("stages", {})
+            .get(stage, {})
+            .get(pkg_name, {})
+            .get("force_run", False)
+            for stage in ["validate", "spec", "vendor", "srpm", "mock", "copr"]
+        )
+
+        # Check if any dependency was marked for rebuild
+        dep_cascade = any(
+            dep in dep_will_rebuild for dep in pkg_dict.get("depends_on", [])
+        )
+
+        # Determine if this package needs rebuild
+        needs_rebuild = (
+            last_content_hash is None  # first run or no stored content
+            or content_hash != last_content_hash
+            or force_run
+            or dep_cascade
+        )
+
+        if needs_rebuild:
+            dep_will_rebuild.add(pkg_name)
+
+            # Determine new release value
+            current_release = pkg_dict.get("release", 1)
+            version_changed = (
+                last_version is None or str(pkg_dict.get("version", "")) != last_version
+            )
+
+            if version_changed or current_release == 0:
+                new_release = 1
+            else:
+                # Try to increment; fallback to 1 on error
+                try:
+                    new_release = int(current_release) + 1
+                except (ValueError, TypeError):
+                    new_release = 1
+
+            # Only record update if release value actually changed
+            if new_release != current_release:
+                updates[pkg_name] = new_release
+
+    # Write updates back to packages.yaml if any
+    if updates:
+        data = yaml.safe_load(PACKAGES_YAML.read_text())
+        for pkg_name, new_release in updates.items():
+            if pkg_name in data:
+                data[pkg_name]["release"] = new_release
+        PACKAGES_YAML.write_text(dump_yaml_pretty(data))
+
+    return updates

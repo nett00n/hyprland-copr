@@ -29,7 +29,7 @@
 mylib:
   version: "1.2.3"
   release: "%autorelease"
-  license: MIT                    # SPDX identifier
+  license: GPLv3                    # SPDX identifier
   summary: A short one-line description
   description: |
     Longer description of the package.
@@ -198,7 +198,7 @@ mysimpletool:
 mypytool:
   version: "1.0.0"
   release: "%autorelease"
-  license: MIT
+  license: GPLv3
   summary: A Python CLI tool
   description: |
     mypytool is a Python command-line utility distributed via PyPI conventions.
@@ -229,7 +229,7 @@ mypytool:
 myscript:
   version: "2.1.0"
   release: "%autorelease"
-  license: MIT
+  license: GPLv3
   summary: A shell script installed without a build step
   description: |
     myscript is a POSIX shell utility that requires no compilation.
@@ -266,7 +266,7 @@ myuntaggedproject:
   # version format for snapshots: 0^<date>git<shorthash>
   version: "0^20241015git4a3f9c1"
   release: "%autorelease"
-  license: MIT
+  license: GPLv3
   summary: A project tracked by commit instead of version tag
   description: |
     myuntaggedproject has no stable release tags yet.
@@ -349,7 +349,7 @@ myapp-with-bundled:
 myoverridepkg:
   version: "1.0.0"
   release: "%autorelease"
-  license: MIT
+  license: GPLv3
   summary: A package with Fedora-version-specific build deps
   description: |
     myoverridepkg needs a different dep name on Fedora 44.
@@ -383,7 +383,7 @@ myoverridepkg:
 mypatched:
   version: "5.3.2"
   release: "%autorelease"
-  license: MIT
+  license: GPLv3
   summary: A package that needs source tree adjustments before building
   description: |
     mypatched requires a compatibility symlink and config substitution

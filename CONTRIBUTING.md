@@ -110,8 +110,8 @@ Alternatively, step by step:
    packages:
      <name>:
        version: "1.2.3"
-       release: "%autorelease"
-       license: MIT
+       release: 1
+       license: GPLv3
        summary: One-line description
        description: |
          Longer description.
@@ -584,3 +584,85 @@ Requires `copr-cli` configured with `~/.config/copr`.
 - [ ] `Source0:` points to an upstream release tarball (not a manual archive) and uses `#/%{name}-%{version}.tar.gz` suffix to avoid filename collisions between packages at the same version
 - [ ] No bundled C/C++ libraries (Go vendor tarballs are acceptable)
 - [ ] Changelog entry added with correct date and your name
+
+## Release Field Auto-Increment
+
+Each package's RPM `release` field is automatically managed by the `full-cycle` pre-build step:
+
+### How It Works
+
+1. **Pre-build step** — Before any pipeline stages execute, `update_package_releases()` computes whether each package needs rebuilding by comparing stored input hashes against current content.
+
+2. **Content hash** — Input hash excludes the `release` field, so that release-only changes don't trigger unwanted rebuilds. This prevents infinite rebuild loops.
+
+3. **Increment logic:**
+   - **Version changed:** Reset `release` to `1`
+   - **Content differs (same version):** Increment `release` by 1
+   - **Content unchanged, no force_run, no dep cascade:** No change
+   - **Force-run or dependency rebuild:** Increment `release` by 1
+
+4. **Cascade** — If a package is rebuilt (for any reason), all packages that depend on it have their `release` values incremented automatically.
+
+### Setting release to 0
+
+When `update-versions.py` bumps a package's version (via `url_to_latest` or commit info), it automatically sets `release: 0`. This signals the next `full-cycle` run to reset the release counter to 1.
+
+### Examples
+
+```yaml
+# Scenario 1: First build of a package
+# build-report.yaml has no stored hashes for this package
+# → release: 1 → release increments to: 2 (first rebuild)
+
+# Scenario 2: Package version bumped
+# update-versions.py sets release: 0
+# → release increments to: 1 (reset on version change)
+
+# Scenario 3: Dependency rebuilt
+# pkg A (release: 2) content changed
+# pkg B depends on A, release: 3
+# → pkg A increments to: 3
+# → pkg B cascaded, increments to: 4
+
+# Scenario 4: Content unchanged, no force_run
+# → no change, build is cached, release stays the same
+```
+
+### Manual override
+
+Two ways to manually control release values:
+
+**Method 1: Set and lock release**
+
+Use the `make set-release` target to set a specific release value and optionally lock it to prevent auto-increment.
+
+Single package:
+```bash
+# Set release to 5 (will auto-increment if content changes)
+make set-release PACKAGE=my-package RELEASE=5
+
+# Set release to 5 and lock it (prevents auto-increment)
+make set-release PACKAGE=my-package RELEASE=5 LOCK=1
+```
+
+Multiple packages (comma-separated):
+```bash
+# Set release for multiple packages at once
+make set-release PACKAGE=hyprlang,hyprutils RELEASE=5
+make set-release PACKAGE=pkg1,pkg2,pkg3 RELEASE=10 LOCK=1
+```
+
+When `release_lock: true` is set in `packages.yaml`, the auto-management is skipped — the release value you set is respected until you remove the lock.
+
+**Method 2: Force rebuild (deprecated)**
+
+If you need to force a rebuild and increment the release without using `set-release`, edit `build-report.yaml` and set `force_run: true` on any stage:
+
+```yaml
+stages:
+  spec:
+    my-package:
+      force_run: true  # force re-run and release increment
+```
+
+After the next `full-cycle` run, `force_run` is automatically cleared (one-shot).

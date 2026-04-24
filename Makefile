@@ -106,7 +106,7 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package gather-requires gen-report readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv clean clean-logs clean-localrepo clean-all
+.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv clean clean-logs clean-localrepo clean-all
 
 clean-logs: ## Remove all build logs and reports
 	@rm -rf logs/build logs/make build-report.yaml build-report.*.yaml
@@ -273,6 +273,11 @@ delete-package: check-image check-venv setup-volumes ## Remove package from pack
 	      rm -rf /root/rpmbuild/SOURCES/$(PACKAGE)-* /root/rpmbuild/SRPMS/$(PACKAGE)-* /root/rpmbuild/RPMS/*/$(PACKAGE)-* || exit 1; \
 	done
 	@echo "$(HIGHLIGHT_PREFIX) ✓ Removed $(PACKAGE)"
+
+set-release: check-image check-venv setup-volumes ## Set package release value (PACKAGE=<name|name1,name2,...> RELEASE=<num> required; LOCK=1 to prevent auto-increment)
+	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE is required (e.g. PACKAGE=hyprlang or PACKAGE=hyprlang,hyprutils)"; exit 1)
+	@test -n "$(RELEASE)" || (echo "$(HIGHLIGHT_PREFIX) Error: RELEASE is required (e.g. RELEASE=5)"; exit 1)
+	$(CONTAINER_PYTHON) scripts/set-package-release.py $(PACKAGE) $(RELEASE) $(if $(filter 1,$(LOCK)),--lock,)
 
 gather-requires: check-image check-venv setup-volumes ## Suggest requires entries from built RPMs (PACKAGE=path/to/pkg.rpm required)
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE is required"; exit 1)

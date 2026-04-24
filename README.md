@@ -26,22 +26,21 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
-### Are we stable now?
+### Not great not terrible
 
 > **Packages info**
 >
-> Surely i can say, hyprland builds are pretty stable for now (yeah-yeah-yeah, ARM builds are failing, i know). Most troubles are found, new updates are working automatically without any operator activity. Minor bugs stayed, plan to fix them later, before splitting this repo in two: for automations and repo content itself.
-> I think i can plan a cronjob to really check for updates nightly. I started this froject 2026-02-25 so it tooks me almost two month to reach this point.
->
-> Cool, i guess
+> Nothing important since the last one. I had troubles with ARM-build, details in automation section
 >
 > **Automation info**
 >
-> Spec file now contains versions of build requirements for better debugging.
+> `release` a thing now, and shows real counter of builds for current version of package. The most ofthen cause of rebuild would be the dependency version update.
+> Recently all packages were build as 1.2.3-1, where "1.2.3" - was a version and "1" was a static %autorelease. But this was breaking a depedency find process. I could just replace 1 in packages.yaml, but humans are making mistakes, so full-cycle autoicrement release, while building a package.
 >
 > Pet your pets, sincerely yours nett00n
 >
 > 2026-04-05
+
 
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/tree/main/blog)

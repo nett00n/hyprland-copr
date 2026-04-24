@@ -47,6 +47,7 @@ from lib.yaml_utils import (
     load_build_status,
     save_build_status,
     skip_packages,
+    update_package_releases,
 )
 
 PYTHON = sys.executable
@@ -622,6 +623,13 @@ def main() -> None:
     build_status = setup_build_status(
         packages, fedora_version, mock_chroot_name, copr_repo
     )
+
+    # Pre-build: auto-increment/reset release values
+    release_updates = update_package_releases(packages, build_status)
+    if release_updates:
+        print(f"\nRelease updates: {release_updates}")
+        # Reload packages to pick up updated release values
+        packages = prepare_packages(package_filter, skip_filter)
 
     proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
 
