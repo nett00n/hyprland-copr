@@ -22,19 +22,13 @@ aquamarine:
   depends_on:
   - hyprutils
   - hyprwayland-scanner
-  description: 'Aquamarine is a very light linux rendering backend library.
-
+  description: |
+    Aquamarine is a very light linux rendering backend library.
     It provides basic abstractions for an application to render on a
-
     Wayland session (in a window) or a native DRM sessionIt is agnostic of
-
     the rendering API (Vulkan/OpenGL) and designed to be lightweight,
-
     performant, and minimalAquamarine provides no bindings for other
-
     languages. It is C++-only
-
-    '
   devel:
     files:
     - '%{_includedir}/aquamarine/'
@@ -67,19 +61,13 @@ aylurs-gtk-shell:
   - ninja-build
   depends_on:
   - gtk4-layer-shell
-  description: 'Scaffolding CLI tool for Astal+Gnim projects.
-
+  description: |
+    Scaffolding CLI tool for Astal+Gnim projects.
     Astal is a set of libraries written in Vala/C that makes writing a
-
     Desktop Shell easy. Gnim is a library which introduces JSX to GJS.
-
-    GJS is a JavaScript runtime built on Firefox''s SpiderMonkey JavaScript
-
+    GJS is a JavaScript runtime built on Firefox's SpiderMonkey JavaScript
     engine and the GNOME platform libraries, the same runtime GNOME Shell runs
-
     on
-
-    '
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -144,13 +132,10 @@ glaze:
   - libasan
   - libubsan
   - ninja-build
-  description: 'One of the fastest JSON libraries in the world. Glaze reads and
-
+  description: |
+    One of the fastest JSON libraries in the world. Glaze reads and
     writes from object memory, simplifying interfaces and offering incredible
-
     performance
-
-    '
   devel:
     files:
     - '%{_prefix}/include/glaze/'
@@ -180,21 +165,14 @@ gtk4-layer-shell:
   - ninja-build
   - pkgconfig(wayland-protocols)
   - vala
-  description: 'A library for using the Layer Shell and Session Lock Wayland protocols
-
+  description: |
+    A library for using the Layer Shell and Session Lock Wayland protocols
     with GTK4. This Library is compatible with C, C++ and any language that
-
     supports GObject introspection files (Python, Vala, etc)The Layer Shell
-
     protocol allows building desktop shell components such as panels,
-
     notifications and wallpapers. It can be used to anchor your windows
-
     to a corner or edge of the output, or stretch them across the
-
     entire outputThe Session Lock protocol allows building lock screens
-
-    '
   devel:
     files:
     - '%{_prefix}/include/gtk4-layer-shell/gtk4-layer-shell.h'
@@ -272,11 +250,9 @@ hyprgraphics:
   - pkgconfig(pixman-1)
   depends_on:
   - hyprutils
-  description: 'hyprgraphics is a small C++ library used across the Hypr* ecosystem for
-
+  description: |
+    hyprgraphics is a small C++ library used across the Hypr* ecosystem for
     graphics-related utilities such as image loading and color management
-
-    '
   devel:
     files:
     - '%{_includedir}/hyprgraphics/'
@@ -375,15 +351,11 @@ Hyprland:
   - hyprutils
   - hyprwayland-scanner
   - hyprwire
-  description: 'Hyprland is a 100% independent, dynamic tiling Wayland compositor that
-
-    doesn''t sacrifice on its looksIt provides the latest Wayland features,
-
+  description: |
+    Hyprland is a 100% independent, dynamic tiling Wayland compositor that
+    doesn't sacrifice on its looksIt provides the latest Wayland features,
     is highly customizable, has all the eyecandy, the most powerful plugins,
-
     easy IPC, much more QoL stuff than other compositors and more..
-
-    '
   devel:
     files:
     - '%{_includedir}/hyprland/'
@@ -469,20 +441,14 @@ Hyprland-git:
   - hyprutils
   - hyprwayland-scanner
   - hyprwire
-  description: 'hyprland-git
-
+  description: |
+    hyprland-git
     This package is build from latest commit and can be broken
 
-
     Hyprland is a 100% independent, dynamic tiling Wayland compositor that
-
-    doesn''t sacrifice on its looksIt provides the latest Wayland features,
-
+    doesn't sacrifice on its looksIt provides the latest Wayland features,
     is highly customizable, has all the eyecandy, the most powerful plugins,
-
     easy IPC, much more QoL stuff than other compositors and more..
-
-    '
   devel:
     files:
     - '%{_includedir}/hyprland/'
@@ -570,34 +536,22 @@ hyprland-plugins:
   - pkgconfig(xkbcommon)
   depends_on:
   - Hyprland
-  description: 'hyprland-plugins
-
+  description: |
+    hyprland-plugins
 
     This repo houses official plugins for Hyprland.
-
     Plugin list
 
-
     - borders-plus-plus -> adds one or two additional borders to windows
-
     - csgo-vulkan-fix -> fixes custom resolutions on CS:GO with -vulkan
-
     - hyprbars -> adds title bars to windows
-
     - hyprexpo -> adds an expo-like workspace overview
-
     - hyprfocus -> flashfocus for hyprland
-
     - hyprtrails -> adds smooth trails behind moving windows
-
     - hyprwinwrap -> clone of xwinwrap, allows you to put any app as a wallpaper
-
     - xtra-dispatchers -> adds some new dispatchers
 
-
     Note: hyprscrolling and hyprtrails are temporarily excluded (incompatible with hyprland 0.54)
-
-    '
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -637,40 +591,26 @@ hyprland-plugins-git:
   - pkgconfig(xkbcommon)
   depends_on:
   - Hyprland
-  description: 'hyprland-plugins-git
-
+  description: |
+    hyprland-plugins-git
 
     This package is build from latest commit and can be broken
 
-
     This repo houses official plugins for Hyprland.
-
 
     Plugin list
 
-
     - borders-plus-plus -> adds one or two additional borders to windows
-
     - csgo-vulkan-fix -> fixes custom resolutions on CS:GO with -vulkan
-
     - hyprbars -> adds title bars to windows
-
     - hyprexpo -> adds an expo-like workspace overview
-
     - hyprfocus -> flashfocus for hyprland
-
     - hyprscrolling -> adds a scrolling layout to hyprland
-
     - hyprtrails -> adds smooth trails behind moving windows
-
     - hyprwinwrap -> clone of xwinwrap, allows you to put any app as a wallpaper
-
     - xtra-dispatchers -> adds some new dispatchers
 
-
     Note: hyprscrolling and hyprtrails are temporarily excluded (incompatible with hyprland 0.54)
-
-    '
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -697,31 +637,21 @@ hyprland-protocols:
     system: meson
   build_requires:
   - meson
-  description: 'hyprland-protocols
-
+  description: |
+    hyprland-protocols
 
     Wayland protocol extensions for Hyprland.
 
-
     This repository exists in an effort to bridge the gap between Hyprland
-
-    and KDE/Gnome''s functionality, as well as allow apps for some extra neat
-
+    and KDE/Gnome's functionality, as well as allow apps for some extra neat
     functionality under Hyprland.
 
-
     Since wayland-protocols is slow to change (on top of Hyprland not being
-
     allowed to contribute), we have to maintain a set of protocols Hyprland
-
     uses to plumb some things / add some useful features.
 
-
     Some of the protocols here also do not belong in w-p, as they are specific
-
     to Hyprland.
-
-    '
   devel:
     files:
     - '%{_datadir}/%{name}/'
@@ -756,9 +686,8 @@ hyprland-qt-support:
   - qt6-rpm-macros
   depends_on:
   - hyprlang
-  description: 'A qml style provider for hypr* qt apps
-
-    '
+  description: |
+    A qml style provider for hypr* qt apps
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -783,11 +712,9 @@ hyprlang:
   - ninja-build
   depends_on:
   - hyprutils
-  description: 'hyprlang is the official implementation library for the hypr configuration
-
+  description: |
+    hyprlang is the official implementation library for the hypr configuration
     language
-
-    '
   devel:
     files:
     - '%{_includedir}/hyprlang.hpp'
@@ -829,20 +756,14 @@ hyprlauncher:
   - hyprtoolkit
   - hyprutils
   - hyprwire
-  description: 'A multipurpose and versatile launcher / picker for Hyprland Features:
-
+  description: |
+    A multipurpose and versatile launcher / picker for Hyprland Features:
 
     - Various providers: Desktop, Unicode, Emoji, Math, Font ..
-
     - Speedy: Fast, multi-threaded fuzzy searching-
-
     Daemon by default: instant opening of the launcher
-
     - Entry frequency caching: commonly used entries appear above others
-
     - Manual entry providing: make a simple selector from your own list
-
-    '
   fedora:
     44:
       source:
@@ -940,9 +861,8 @@ hyprpaper:
   - hyprutils
   - hyprwayland-scanner
   - hyprwire
-  description: 'hyprpaper is a blazing fast Wayland wallpaper utility with IPC controls
-
-    '
+  description: |
+    hyprpaper is a blazing fast Wayland wallpaper utility with IPC controls
   files:
   - '%license LICENSE'
   - '%{_bindir}/hyprpaper'
@@ -1011,9 +931,8 @@ hyprpolkitagent:
   - qt6-qtquickcontrols2-devel
   depends_on:
   - hyprutils
-  description: 'A simple polkit authentication agent for Hyprland, written in QT/QML
-
-    '
+  description: |
+    A simple polkit authentication agent for Hyprland, written in QT/QML
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -1111,13 +1030,10 @@ Hyprshot:
     - install -Dpm0755 hyprshot -t %{buildroot}/%{_bindir}
     system: make
   build_requires: []
-  description: 'Hyprshot is an utility to easily take screenshot in Hyprland using your
-
+  description: |
+    Hyprshot is an utility to easily take screenshot in Hyprland using your
     mouseIt allows taking screenshots of windows, regions and monitors which
-
     are savedto a folder of your choosing and copied to your clipboard
-
-    '
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -1161,11 +1077,9 @@ hyprshutdown:
   - glaze
   - aquamarine
   - hyprgraphics
-  description: 'A graceful shutdown/logout utility for Hyprland, which prevents apps from
-
+  description: |
+    A graceful shutdown/logout utility for Hyprland, which prevents apps from
     crashing / dying unexpectedly
-
-    '
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -1232,9 +1146,8 @@ hyprsysteminfo:
   depends_on:
   - hyprtoolkit
   - hyprutils
-  description: 'A tiny qt6/qml application to display information about the running system
-
-    '
+  description: |
+    A tiny qt6/qml application to display information about the running system
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -1310,11 +1223,9 @@ hyprutils:
   - gcc-c++
   - ninja-build
   - pkgconfig(pixman-1)
-  description: 'hyprutils is a small C++ library used across the Hypr* ecosystem
-
+  description: |
+    hyprutils is a small C++ library used across the Hypr* ecosystem
     forvarious utilities such as memory management, signals, and more
-
-    '
   devel:
     files:
     - '%{_includedir}/hyprutils/'
@@ -1338,11 +1249,9 @@ hyprwayland-scanner:
   - gcc-c++
   - ninja-build
   - pkgconfig(pugixml)
-  description: 'hyprwayland-scanner is a Wayland protocol scanner / code generatorused
-
+  description: |
+    hyprwayland-scanner is a Wayland protocol scanner / code generatorused
     by the Hypr ecosystem to generate C++ protocol bindings
-
-    '
   devel:
     files:
     - '%{_libdir}/cmake/hyprwayland-scanner/'
@@ -1400,22 +1309,15 @@ pyprland:
   - python3-devel
   - python3-hatchling
   - python3-pip
-  description: 'Power up your desktop
-
+  description: |
+    Power up your desktop
 
     A plugin system that extends your graphical
-
     environment with features like scratchpads, dynamic popup nested menus,
-
     custom notifications, easy monitor settings and moreThink of it as a Gnome
-
     tweak tool for Hyprland, with options that can run on any desktop.
-
-    With a fully plugin-based architecture, it''s lightweight and easy to
-
+    With a fully plugin-based architecture, it's lightweight and easy to
     customize
-
-    '
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -1518,12 +1420,10 @@ Waybar:
   - wireplumber-devel
   depends_on:
   - sndio
-  description: 'Highly customizable Wayland bar for Sway and Wlroots based compositors
-
+  description: |
+    Highly customizable Wayland bar for Sway and Wlroots based compositors
 
     Note: cava integration is disabled temporary. I am stuck with trying to fix it
-
-    '
   devel:
     files: []
   files:
@@ -1586,17 +1486,13 @@ Waybar-git:
   - wireplumber-devel
   depends_on:
   - sndio
-  description: 'waybar-git
-
+  description: |
+    waybar-git
     This package is build from latest commit and can be broken
-
 
     Highly customizable Wayland bar for Sway and Wlroots based compositors
 
-
     Note: cava integration is disabled temporary. I am stuck with trying to fix it
-
-    '
   devel:
     files: []
   files:
@@ -1678,7 +1574,17 @@ cliphist:
   build_requires:
   - golang
   depends_on: []
-  description: "Clipboard history “manager” for Wayland\n- Write clipboard changes to a history file.\n- Recall history with dmenu, rofi, wofi (or whatever other picker you like).\n- Both text and images are supported.\n- Clipboard is preserved byte-for-byte.\n    - Leading/trailing whitespace, no whitespace, or newlines are preserved.\n    - Won’t break fancy editor selections like Vim wordwise, linewise, or block mode.\n- No concept of a picker, only pipes.\n\nRequires Go, wl-clipboard, xdg-utils (for image MIME inference).\"\n"
+  description: |
+    Clipboard history “manager” for Wayland
+    - Write clipboard changes to a history file.
+    - Recall history with dmenu, rofi, wofi (or whatever other picker you like).
+    - Both text and images are supported.
+    - Clipboard is preserved byte-for-byte.
+        - Leading/trailing whitespace, no whitespace, or newlines are preserved.
+        - Won’t break fancy editor selections like Vim wordwise, linewise, or block mode.
+    - No concept of a picker, only pipes.
+
+    Requires Go, wl-clipboard, xdg-utils (for image MIME inference)."
   devel:
     files: []
   files:
@@ -1716,21 +1622,16 @@ uwsm:
   - scdoc
   - systemd-rpm-macros
   depends_on: []
-  description: 'Universal Wayland Session Manager
-
+  description: |
+    Universal Wayland Session Manager
 
     Provides a set of Systemd units and helpers to set up the environment and manage standalone Wayland compositor sessions.
 
-
     Aside from environment setup/cleanup, it makes Systemd do most of the work and does not require any extra daemons running in background (except for a tiny waitpid process and a simple shell signal handler in the lightest case).
-
 
     This setup provides robust session management, overridable compositor- and session-aware environment management, XDG autostart, bi-directional binding with login session, clean shutdown, solutions for a set of small but annoying gotchas of systemd session management.
 
-
     For compositors this is an opportunity to offload: Systemd integration, session/XDG autostart management, Systemd/DBus activation environment interaction with its caveats.
-
-    '
   devel:
     files: []
   files:
@@ -1794,9 +1695,8 @@ quickshell:
   - qt6-qtshadertools-devel
   - wayland-protocols-devel
   depends_on: []
-  description: 'Quickshell is a toolkit for building status bars, widgets, lockscreens, and other desktop components using QtQuick. It can be used alongside your wayland compositor or window manager to build a complete desktop environment.
-
-    '
+  description: |
+    Quickshell is a toolkit for building status bars, widgets, lockscreens, and other desktop components using QtQuick. It can be used alongside your wayland compositor or window manager to build a complete desktop environment.
   devel:
     files: []
   files:

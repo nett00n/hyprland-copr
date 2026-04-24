@@ -12,24 +12,7 @@ from pathlib import Path
 
 import yaml
 from lib.paths import ROOT
-
-
-# Configure YAML dumper to use | (literal) style for multiline strings
-def _represent_str(dumper, data):
-    """Use literal style (|) for strings with newlines."""
-    if "\n" in data:
-        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
-    return dumper.represent_scalar("tag:yaml.org,2002:str", data)
-
-
-def _make_literal_dumper() -> type[yaml.Dumper]:
-    """Create a PyYAML Dumper subclass with multiline string support."""
-
-    class LiteralDumper(yaml.Dumper):
-        """Dumper that renders multiline strings as block style."""
-
-    LiteralDumper.add_representer(str, _represent_str)
-    return LiteralDumper
+from lib.yaml_config import FORMAT_FILE
 
 
 def load_yamllint_config() -> dict:
@@ -159,17 +142,9 @@ def format_yaml_file(filepath: str, formatting_rules: dict) -> bool:
         indent_spaces = detect_indentation(content)
         explicit_start = formatting_rules.get("explicit_start", False)
 
-        formatted = yaml.dump(
-            data,
-            Dumper=_make_literal_dumper(),
-            default_flow_style=False,  # Block style, not flow
-            sort_keys=False,  # Preserve order
-            allow_unicode=True,  # UTF-8
-            width=float("inf"),  # Don't wrap lines (line-length disabled)
-            explicit_start=explicit_start,  # Document start marker (---)
-            explicit_end=False,  # No document end marker
-            indent=indent_spaces,  # Use detected indentation
-        )
+        # Format using configured YAML serializer
+        config = FORMAT_FILE(indent_spaces, explicit_start)
+        formatted = config.dump(data)
 
         # Ensure trailing newline (new-line-at-end-of-file rule)
         if formatted and not formatted.endswith("\n"):

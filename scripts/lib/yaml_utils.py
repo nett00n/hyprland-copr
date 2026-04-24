@@ -15,6 +15,7 @@ from .paths import (
     PACKAGES_YAML,
     REPO_YAML,
 )
+from .yaml_config import DEFAULT as DEFAULT_YAML_CONFIG
 
 STAGES = ["validate", "spec", "vendor", "srpm", "mock", "copr"]
 
@@ -196,15 +197,8 @@ def load_build_status(path: Path = BUILD_STATUS_YAML) -> dict:
 
 
 def dump_yaml_pretty(data: dict) -> str:
-    """Dump YAML data in a pretty, readable format."""
-    return yaml.dump(
-        data,
-        default_flow_style=False,
-        sort_keys=False,
-        allow_unicode=True,
-        indent=2,
-        width=1000,
-    )
+    """Dump YAML data in pretty format matching yamllint defaults."""
+    return DEFAULT_YAML_CONFIG.dump(data)
 
 
 def save_build_status(status: dict, path: Path = BUILD_STATUS_YAML) -> None:

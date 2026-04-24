@@ -476,32 +476,6 @@ class TestLoadGroupsYaml:
         assert result == {}
 
 
-class TestDumpYamlPretty:
-    """Test dump_yaml_pretty function."""
-
-    def test_dumps_dict_as_yaml(self):
-        """Should dump dict as pretty YAML."""
-        data = {"name": "test", "version": "1.0"}
-        result = dump_yaml_pretty(data)
-        assert "name: test" in result
-        assert "version: '1.0'" in result or "version: 1.0" in result
-
-    def test_preserves_structure(self):
-        """Should preserve nested structure."""
-        data = {"pkg": {"version": "1.0", "requires": ["a", "b"]}}
-        result = dump_yaml_pretty(data)
-        assert "pkg:" in result
-        assert "requires:" in result
-
-    def test_handles_unicode(self):
-        """Should handle unicode characters."""
-        data = {"description": "тест"}
-        result = dump_yaml_pretty(data)
-        assert "тест" in result
-
-
-
-
 class TestPopBuildStages:
     """Test pop_build_stages function."""
 
@@ -774,3 +748,88 @@ test-pkg:
         content = yaml_file.read_text()
         assert "0^20260102gitdef4567" in content
         assert "release: 0" in content
+
+
+class TestDumpYamlPretty:
+    """Test dump_yaml_pretty function behavior."""
+
+    def test_multiline_strings_use_block_scalar(self):
+        """Multiline strings should use literal block scalar (|)."""
+        data = {"description": "Line 1\nLine 2\nLine 3"}
+        output = dump_yaml_pretty(data)
+        # ruamel outputs block scalars for multiline strings
+        assert "|" in output
+        assert "Line 1" in output
+        assert "Line 2" in output
+
+    def test_two_space_indentation(self):
+        """Output should use 2-space indentation."""
+        data = {
+            "root": {
+                "nested": {
+                    "deep": "value"
+                }
+            }
+        }
+        output = dump_yaml_pretty(data)
+        lines = output.split("\n")
+        # Check for consistent 2-space indent
+        for line in lines:
+            if line and line[0] == " ":
+                # Count leading spaces
+                spaces = len(line) - len(line.lstrip(" "))
+                # Should be multiple of 2
+                assert spaces % 2 == 0, f"Non-2-space indent in: {repr(line)}"
+
+    def test_no_key_sorting(self):
+        """Keys should maintain insertion order, not be sorted."""
+        data = {"zebra": 1, "apple": 2, "mango": 3}
+        output = dump_yaml_pretty(data)
+        # Find positions of keys in output
+        z_pos = output.find("zebra")
+        a_pos = output.find("apple")
+        m_pos = output.find("mango")
+        # Original order: zebra, apple, mango
+        assert z_pos < a_pos < m_pos, "Keys should maintain insertion order"
+
+    def test_unicode_preserved(self):
+        """Unicode characters should not be escaped."""
+        data = {"name": "hyprland", "emoji": "🎨"}
+        output = dump_yaml_pretty(data)
+        # ruamel preserves unicode by default
+        assert "🎨" in output, "Unicode should not be escaped"
+
+    def test_trailing_newline(self):
+        """Output should end with newline."""
+        data = {"key": "value"}
+        output = dump_yaml_pretty(data)
+        assert output.endswith("\n")
+
+    def test_no_trailing_spaces(self):
+        """No line should have trailing whitespace."""
+        data = {"key": "value", "multi": "line1\nline2"}
+        output = dump_yaml_pretty(data)
+        for line in output.split("\n"):
+            if line:  # skip empty lines
+                assert line == line.rstrip(), f"Trailing space in: {repr(line)}"
+
+    def test_indent_sequences_false(self):
+        """List items should be at parent key indentation (indent_sequences: false)."""
+        data = {"items": [{"name": "a"}, {"name": "b"}]}
+        output = dump_yaml_pretty(data)
+        # List dashes should be at same level as 'items' key
+        lines = output.split("\n")
+        for i, line in enumerate(lines):
+            if "items:" in line:
+                # Next line should have dash at parent indent, not deeper
+                items_indent = len(lines[i]) - len(lines[i].lstrip(" "))
+                if i + 1 < len(lines) and lines[i + 1].strip().startswith("-"):
+                    dash_indent = len(lines[i + 1]) - len(lines[i + 1].lstrip(" "))
+                    assert dash_indent == items_indent, "Dash should not be indented further"
+
+    def test_single_line_value_inline(self):
+        """Single-line values should stay inline, not use block scalar."""
+        data = {"name": "test", "version": "1.0"}
+        result = dump_yaml_pretty(data)
+        assert "name: test" in result
+        assert "version: '1.0'" in result or "version: 1.0" in result

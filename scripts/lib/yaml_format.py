@@ -1,7 +1,7 @@
 """YAML formatting utilities.
 
 Provides shared helpers for formatting YAML files, including:
-- Custom PyYAML representers for literal block style (|)
+- ruamel.yaml support for literal block style (|)
 - Yamllint configuration parsing
 - Indentation detection
 """
@@ -11,47 +11,7 @@ import sys
 import yaml
 
 from lib.paths import ROOT
-
-
-class _LiteralStr(str):
-    """Marker for block scalar (|) style in PyYAML."""
-
-
-def _literal_representer(dumper: yaml.Dumper, data: _LiteralStr) -> yaml.ScalarNode:
-    """Represent a _LiteralStr as block style (|) in YAML."""
-    return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
-
-
-def make_literal_dumper() -> type[yaml.Dumper]:
-    """Create a PyYAML Dumper with _LiteralStr support.
-
-    Returns:
-        A yaml.Dumper subclass that renders _LiteralStr as block style (|)
-    """
-
-    class LiteralDumper(yaml.Dumper):
-        """Dumper that renders _LiteralStr as block style."""
-
-    LiteralDumper.add_representer(_LiteralStr, _literal_representer)
-    return LiteralDumper
-
-
-def _wrap_literals(obj):
-    """Recursively convert multi-line strings to _LiteralStr for block style.
-
-    Args:
-        obj: Data structure (dict, list, str, or scalar)
-
-    Returns:
-        Same structure with multi-line strings wrapped as _LiteralStr
-    """
-    if isinstance(obj, str) and "\n" in obj:
-        return _LiteralStr(obj)
-    if isinstance(obj, dict):
-        return {k: _wrap_literals(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_wrap_literals(v) for v in obj]
-    return obj
+from lib.yaml_config import FORMAT_FILE
 
 
 def dump_yaml_literal(data: dict, indent: int = 2, explicit_start: bool = False) -> str:
@@ -65,18 +25,8 @@ def dump_yaml_literal(data: dict, indent: int = 2, explicit_start: bool = False)
     Returns:
         YAML string with literal blocks for multi-line values
     """
-    prepared = _wrap_literals(data)
-    return yaml.dump(
-        prepared,
-        Dumper=make_literal_dumper(),
-        default_flow_style=False,
-        sort_keys=False,
-        allow_unicode=True,
-        width=float("inf"),
-        indent=indent,
-        explicit_start=explicit_start,
-        explicit_end=False,
-    )
+    config = FORMAT_FILE(indent, explicit_start)
+    return config.dump(data)
 
 
 def load_yamllint_config() -> dict:

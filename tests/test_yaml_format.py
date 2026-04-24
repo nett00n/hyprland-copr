@@ -9,50 +9,12 @@ import pytest
 import yaml
 
 from lib.yaml_format import (
-    _LiteralStr,
     detect_indentation,
     dump_yaml_literal,
     get_formatting_rules,
     get_ignored_files,
     load_yamllint_config,
-    make_literal_dumper,
 )
-
-
-class TestMakeLiteralDumper:
-    """Test make_literal_dumper creates proper subclass."""
-
-    def test_returns_dumper_subclass(self):
-        """make_literal_dumper should return a Dumper subclass, not the global Dumper."""
-        dumper = make_literal_dumper()
-        assert issubclass(dumper, yaml.Dumper)
-        assert dumper is not yaml.Dumper
-
-    def test_multiple_calls_dont_pollute_global(self):
-        """Calling make_literal_dumper twice should not pollute the global yaml.Dumper."""
-        dumper1 = make_literal_dumper()
-        dumper2 = make_literal_dumper()
-
-        # They should be different classes
-        assert dumper1 is not dumper2
-
-        # Both should be able to use the _LiteralStr representer
-        lit_str = _LiteralStr("test\nvalue")
-
-        output1 = yaml.dump({"key": lit_str}, Dumper=dumper1, default_flow_style=False)
-        output2 = yaml.dump({"key": lit_str}, Dumper=dumper2, default_flow_style=False)
-
-        # Both should render as block style
-        assert "|-" in output1 or "|" in output1
-        assert "|-" in output2 or "|" in output2
-
-    def test_literal_representer_works(self):
-        """Dumper should properly render _LiteralStr as block style."""
-        dumper = make_literal_dumper()
-        data = {"description": _LiteralStr("This is\na multiline\nstring")}
-        output = yaml.dump(data, Dumper=dumper, default_flow_style=False)
-        # Block scalar marker should be present
-        assert "|" in output
 
 
 class TestDumpYamlLiteral:
@@ -65,6 +27,7 @@ class TestDumpYamlLiteral:
         assert "description:" in output
         assert "Line 1" in output
         assert "Line 2" in output
+        assert "|" in output  # Block scalar marker required
 
     def test_single_line_strings_stay_inline(self):
         """Single-line strings should stay inline."""
@@ -84,6 +47,19 @@ class TestDumpYamlLiteral:
         loaded = yaml.safe_load(output)
         assert loaded["name"] == original["name"]
         assert loaded["description"] == original["description"]
+
+    def test_trailing_newline(self):
+        """Output should end with newline."""
+        data = {"key": "value"}
+        output = dump_yaml_literal(data)
+        assert output.endswith("\n")
+
+    def test_no_trailing_spaces(self):
+        """No line should have trailing whitespace."""
+        data = {"key": "value", "multi": "line\nvalue"}
+        output = dump_yaml_literal(data)
+        for line in output.split("\n"):
+            assert line == line.rstrip(), f"Line has trailing space: {repr(line)}"
 
 
 class TestDetectIndentation:

@@ -1,3 +1,4 @@
 Jinja2>=3.1.6
-PyYAML>=6.0.3
 pytest>=7.4.0
+PyYAML>=6.0.3
+ruamel.yaml>=0.18.0

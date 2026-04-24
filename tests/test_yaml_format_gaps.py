@@ -10,83 +10,59 @@ import pytest
 import yaml
 
 from lib.yaml_format import (
-    make_literal_dumper,
     dump_yaml_literal,
     load_yamllint_config,
-    _wrap_literals,
-    _LiteralStr,
 )
-
-
-class TestLiteralStr:
-    """Test _LiteralStr marker class."""
-
-    def test_creates_literal_str(self):
-        """Should create _LiteralStr instance."""
-        lit = _LiteralStr("test\nvalue")
-        assert isinstance(lit, str)
-        assert "\n" in lit
-
-
-class TestMakeLiteralDumper:
-    """Test make_literal_dumper function."""
-
-    def test_creates_dumper_class(self):
-        """Should create a Dumper subclass."""
-        dumper = make_literal_dumper()
-        assert issubclass(dumper, yaml.Dumper)
-
-    def test_dumper_supports_literal_str(self):
-        """Should dump _LiteralStr with block style."""
-        dumper = make_literal_dumper()
-        data = {"key": _LiteralStr("line1\nline2")}
-        result = yaml.dump(data, Dumper=dumper)
-        assert "key:" in result
+from lib.yaml_config import YamlConfig
+from ruamel.yaml.scalarstring import LiteralScalarString
 
 
 class TestWrapLiterals:
-    """Test _wrap_literals function."""
+    """Test YamlConfig._wrap_literals static method."""
 
     def test_wraps_multiline_string(self):
-        """Should wrap multiline strings as _LiteralStr."""
+        """Should wrap multiline strings as LiteralScalarString."""
         text = "line1\nline2\nline3"
-        result = _wrap_literals(text)
-        assert isinstance(result, _LiteralStr)
+        result = YamlConfig._wrap_literals(text)
+        assert isinstance(result, LiteralScalarString)
 
     def test_preserves_single_line_string(self):
         """Should keep single-line strings as regular strings."""
         text = "single line"
-        result = _wrap_literals(text)
-        # Depending on implementation, might be wrapped or not
-        assert isinstance(result, str)
+        result = YamlConfig._wrap_literals(text)
+        assert result == "single line"
+        assert not isinstance(result, LiteralScalarString)
 
     def test_wraps_dict_values(self):
         """Should recursively wrap dict values."""
         data = {"key": "line1\nline2"}
-        result = _wrap_literals(data)
+        result = YamlConfig._wrap_literals(data)
         assert isinstance(result, dict)
-        assert "key" in result
+        assert isinstance(result["key"], LiteralScalarString)
 
     def test_wraps_list_items(self):
         """Should recursively wrap list items."""
         data = ["line1\nline2", "single"]
-        result = _wrap_literals(data)
+        result = YamlConfig._wrap_literals(data)
         assert isinstance(result, list)
         assert len(result) == 2
+        assert isinstance(result[0], LiteralScalarString)
+        assert result[1] == "single"
 
     def test_handles_nested_structures(self):
         """Should handle deeply nested structures."""
         data = {"outer": {"inner": "text\nwith\nnewlines"}}
-        result = _wrap_literals(data)
+        result = YamlConfig._wrap_literals(data)
         assert isinstance(result, dict)
+        assert isinstance(result["outer"]["inner"], LiteralScalarString)
 
     def test_preserves_scalars(self):
         """Should preserve non-string scalars."""
-        result = _wrap_literals(42)
+        result = YamlConfig._wrap_literals(42)
         assert result == 42
-        result = _wrap_literals(3.14)
+        result = YamlConfig._wrap_literals(3.14)
         assert result == 3.14
-        result = _wrap_literals(None)
+        result = YamlConfig._wrap_literals(None)
         assert result is None
 
 
