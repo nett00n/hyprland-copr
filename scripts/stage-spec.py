@@ -35,7 +35,11 @@ from lib.yaml_utils import (
 
 
 def resolve_dep_versions(build_requires: list) -> list:
-    """Return list of {name, version} for build deps from enabled repos."""
+    """Return list of {name, version} for build deps from deterministic repos.
+
+    Uses standard Fedora repos only (fedora, fedora-updates) to ensure
+    consistent results across builds. Skips packages not found in these repos.
+    """
     results = []
     for dep in build_requires:
         req = re.split(r"\s*[><=!]", dep)[0].strip()
@@ -46,6 +50,8 @@ def resolve_dep_versions(build_requires: list) -> list:
                 [
                     "dnf",
                     "repoquery",
+                    "--repo=fedora",
+                    "--repo=fedora-updates",
                     "--latest-limit",
                     "1",
                     "--queryformat",
