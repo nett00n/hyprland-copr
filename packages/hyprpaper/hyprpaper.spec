@@ -1,6 +1,6 @@
 
 Name:           hyprpaper
-Version:        0.8.3
+Version:        0.8.4
 Release:        2%{?dist}
 Summary:        A blazing fast Wayland wallpaper utility
 License:        BSD-3-Clause
@@ -11,11 +11,11 @@ BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
 BuildRequires:  file-devel
 BuildRequires:  gcc-c++
-BuildRequires:  hyprgraphics-devel >= 0.1.5
-BuildRequires:  hyprlang-devel >= 0.6.4
+BuildRequires:  hyprgraphics-devel
+BuildRequires:  hyprlang-devel
 BuildRequires:  hyprtoolkit-devel
-BuildRequires:  hyprutils-devel >= 0.7.1
-BuildRequires:  hyprwayland-scanner-devel >= 0.4.2
+BuildRequires:  hyprutils-devel
+BuildRequires:  hyprwayland-scanner-devel
 BuildRequires:  hyprwire-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(cairo)
@@ -41,19 +41,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.8.3
-Commit:            64b991cb917e28a51a50987a113ac4bf014ad0b7
-
-Build dependencies:
-cmake: 4.3.0
-file-devel: 5.46
-gcc-c++: 16.0.1
-hyprgraphics-devel: 0.1.5
-hyprlang-devel: 0.6.4
-hyprutils-devel: 0.7.1
-hyprwayland-scanner-devel: 0.4.2
-ninja-build: 1.13.2
-systemd-rpm-macros: 259.5
+Tag:               v0.8.4
+Commit:            20fc0fa6c2056c388a4cd69cb394a9f989dd27c0
 
 %prep
 %autosetup -p1
@@ -71,6 +60,6 @@ systemd-rpm-macros: 259.5
 %{_userunitdir}/hyprpaper.service
 
 %changelog
-* Thu Jan 29 2026 nett00n <copr@nett00n.org> - 0.8.3-2
+* Wed Apr 29 2026 nett00n <copr@nett00n.org> - 0.8.4-2
 
-- version: bump to 0.8.3
+- version: bump to 0.8.4

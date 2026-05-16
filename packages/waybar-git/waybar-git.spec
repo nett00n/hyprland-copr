@@ -57,7 +57,7 @@ Package info:
 
 Build dependencies:
 catch-devel: 3.13.0
-gcc-c++: 16.0.1
+gcc-c++: 16.0.116.1.1
 gpsd-devel: 3.27.5
 jack-audio-connection-kit-devel: 1.9.22
 libdbusmenu-gtk3-devel: 16.04.0
@@ -65,7 +65,7 @@ libevdev-devel: 1.13.6
 libinput-devel: 1.31.1
 libmpdclient-devel: 2.23
 libnl3-devel: 3.12.0
-meson: 1.10.2
+meson: 1.11.1
 ninja-build: 1.13.2
 pipewire-devel: 1.6.4
 playerctl-devel: 2.4.1
@@ -103,6 +103,6 @@ Development files for waybar-git.
 %files devel
 
 %changelog
-* Fri Apr 24 2026 nett00n <copr@nett00n.org> - 0.15.0-2
+* Sun May 10 2026 nett00n <copr@nett00n.org> - 0.15.0-2
 
 - Update to 0.15.0

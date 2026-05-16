@@ -1,7 +1,7 @@
 
 Name:           aquamarine
-Version:        0.10.0
-Release:        2%{?dist}
+Version:        0.11.0
+Release:        3%{?dist}
 Summary:        A very light linux rendering backend library
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/aquamarine
@@ -9,8 +9,8 @@ Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
-BuildRequires:  hyprutils-devel >= 0.7.1
-BuildRequires:  hyprwayland-scanner-devel >= 0.4.2
+BuildRequires:  hyprutils-devel
+BuildRequires:  hyprwayland-scanner-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(gbm)
 BuildRequires:  pkgconfig(gl)
@@ -41,15 +41,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.10.0
-Commit:            a20a0e67a33b6848378a91b871b89588d3a12573
-
-Build dependencies:
-cmake: 4.3.0
-gcc-c++: 16.0.1
-hyprutils-devel: 0.7.1
-hyprwayland-scanner-devel: 0.4.2
-ninja-build: 1.13.2
+Tag:               v0.11.0
+Commit:            cd8321eba285e3cce50c50f19d5174a0b2567297
 
 %prep
 %autosetup -p1
@@ -77,6 +70,6 @@ Development files for aquamarine.
 %{_libdir}/pkgconfig/aquamarine.pc
 
 %changelog
-* Sun Nov 23 2025 nett00n <copr@nett00n.org> - 0.10.0-2
+* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.11.0-3
 
-- version: bump to 0.10.0
+- version: bump to 0.11.0

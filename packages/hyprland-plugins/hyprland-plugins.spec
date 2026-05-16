@@ -1,10 +1,10 @@
-%global commit 6acc0738f298f5efe40a99db2c12449112d65633
+%global commit 90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260420
+%global commitdate 20260513
 
 Name:           hyprland-plugins
-Version:        0.53.0^20260420git6acc073
-Release:        2%{?dist}
+Version:        0.55.0^20260513git90e66ba
+Release:        1%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
@@ -48,12 +48,7 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Commit:            6acc0738f298f5efe40a99db2c12449112d65633
-
-Build dependencies:
-cmake: 4.3.0
-gcc-c++: 16.0.1
-ninja-build: 1.13.2
+Commit:            90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
 
 %prep
 %autosetup -p1 -n %{name}-%{commit}
@@ -74,6 +69,6 @@ ninja-build: 1.13.2
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Mon Apr 20 2026 nett00n <copr@nett00n.org> - 0.53.0^20260420git6acc073-2
+* Wed May 13 2026 nett00n <copr@nett00n.org> - 0.55.0^20260513git90e66ba-1
 
-- bars: Update README.md with new windowrule block syntax (#642)
+- hyprpm: add pins for 0.55.0

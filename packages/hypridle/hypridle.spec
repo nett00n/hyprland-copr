@@ -1,7 +1,7 @@
 
 Name:           hypridle
 Version:        0.1.7
-Release:        2%{?dist}
+Release:        5%{?dist}
 Summary:        An idle management daemon for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hypridle
@@ -9,10 +9,10 @@ Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
-BuildRequires:  hyprland-protocols-devel >= 0.4.0
-BuildRequires:  hyprlang-devel >= 0.6.4
-BuildRequires:  hyprutils-devel >= 0.7.1
-BuildRequires:  hyprwayland-scanner-devel >= 0.4.2
+BuildRequires:  hyprland-protocols-devel
+BuildRequires:  hyprlang-devel
+BuildRequires:  hyprutils-devel
+BuildRequires:  hyprwayland-scanner-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(sdbus-c++)
 BuildRequires:  pkgconfig(wayland-client)
@@ -32,15 +32,6 @@ Package info:
 Tag:               v0.1.7
 Commit:            5430b73ddf148651bcf35fa39ed4d757c7534028
 
-Build dependencies:
-cmake: 4.3.0
-gcc-c++: 16.0.1
-hyprland-protocols-devel: 0.4.0
-hyprlang-devel: 0.6.4
-hyprutils-devel: 0.7.1
-hyprwayland-scanner-devel: 0.4.2
-ninja-build: 1.13.2
-
 %prep
 %autosetup -p1
 
@@ -59,6 +50,6 @@ ninja-build: 1.13.2
 %{_userunitdir}/hypridle.service
 
 %changelog
-* Wed Aug 27 2025 nett00n <copr@nett00n.org> - 0.1.7-2
+* Wed Aug 27 2025 nett00n <copr@nett00n.org> - 0.1.7-5
 
 - version: bump to 0.1.7

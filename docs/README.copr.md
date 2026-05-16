@@ -37,10 +37,11 @@ Feel free to reuse automation from this repository for your own copr-projects
 > `release` a thing now, and shows real counter of builds for current version of package. The most ofthen cause of rebuild would be the dependency version update.
 > Recently all packages were build as 1.2.3-1, where "1.2.3" - was a version and "1" was a static %autorelease. But this was breaking a depedency find process. I could just replace 1 in packages.yaml, but humans are making mistakes, so full-cycle autoicrement release, while building a package.
 >
+> Replaced all YAML writes with ruamel lib for simplifying code and unifying
+>
 > Pet your pets, sincerely yours nett00n
 >
-> 2026-04-05
-
+> 2026-04-24
 
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/tree/main/blog)
@@ -132,7 +133,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-04-24
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-05-14
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

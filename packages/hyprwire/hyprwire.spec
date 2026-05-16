@@ -1,7 +1,7 @@
 
 Name:           hyprwire
-Version:        0.3.0
-Release:        2%{?dist}
+Version:        0.3.1
+Release:        3%{?dist}
 Summary:        A fast and consistent wire protocol for IPC
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprwire
@@ -9,7 +9,7 @@ Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
-BuildRequires:  hyprutils-devel >= 0.7.1
+BuildRequires:  hyprutils-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(libffi)
 BuildRequires:  pkgconfig(pugixml)
@@ -25,14 +25,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.3.0
-Commit:            37bc90eed02b0c8b5a77a0b00867baf3005cfb98
-
-Build dependencies:
-cmake: 4.3.0
-gcc-c++: 16.0.1
-hyprutils-devel: 0.7.1
-ninja-build: 1.13.2
+Tag:               v0.3.1
+Commit:            3e6865ce5fd9237b58f5b2ce5de18814df3baff5
 
 %prep
 %autosetup -p1
@@ -63,6 +57,6 @@ Development files for hyprwire.
 %{_libdir}/pkgconfig/hyprwire.pc
 
 %changelog
-* Wed Feb 04 2026 nett00n <copr@nett00n.org> - 0.3.0-2
+* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.3.1-3
 
-- version: bump to 0.3.0
+- version: bump to 0.3.1

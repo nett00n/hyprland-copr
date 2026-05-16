@@ -1,9 +1,9 @@
-%global commit b65714e3b8e123fb2febd507905d25fa6abd0400
+%global commit 9099ac311812ccf1befe9f8435ba1f52b30a4bd0
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260423
+%global commitdate 20260513
 
 Name:           hyprland-git
-Version:        0.54.0^20260423gitb65714e
+Version:        0.55.0^20260513git9099ac3
 Release:        1%{?dist}
 Summary:        A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 License:        BSD-3-Clause
@@ -15,13 +15,14 @@ BuildRequires:  cmake
 BuildRequires:  gcc-c++
 BuildRequires:  glaze-devel
 BuildRequires:  glslang-devel
-BuildRequires:  hyprcursor-devel >= 0.1.11
-BuildRequires:  hyprgraphics-devel >= 0.1.5
-BuildRequires:  hyprland-protocols-devel >= 0.4.0
-BuildRequires:  hyprlang-devel >= 0.6.4
-BuildRequires:  hyprutils-devel >= 0.7.1
-BuildRequires:  hyprwayland-scanner-devel >= 0.4.2
+BuildRequires:  hyprcursor-devel
+BuildRequires:  hyprgraphics-devel
+BuildRequires:  hyprland-protocols-devel
+BuildRequires:  hyprlang-devel
+BuildRequires:  hyprutils-devel
+BuildRequires:  hyprwayland-scanner-devel
 BuildRequires:  hyprwire-devel
+BuildRequires:  lua-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(cairo)
 BuildRequires:  pkgconfig(gbm)
@@ -63,19 +64,6 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-
-Build dependencies:
-cmake: 4.3.0
-gcc-c++: 16.0.1
-glslang-devel: 16.2.0
-hyprcursor-devel: 0.1.11
-hyprgraphics-devel: 0.1.5
-hyprland-protocols-devel: 0.4.0
-hyprlang-devel: 0.6.4
-hyprutils-devel: 0.7.1
-hyprwayland-scanner-devel: 0.4.2
-ninja-build: 1.13.2
-udis86-devel: 1.7.2
 
 %prep
 %autosetup -p1 -n Hyprland-%{commit}
@@ -120,6 +108,6 @@ Development files for hyprland-git.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Fri Apr 24 2026 nett00n <copr@nett00n.org> - 0.54.0^20260423gitb65714e-1
+* Thu May 14 2026 nett00n <copr@nett00n.org> - 0.55.0^20260513git9099ac3-1
 
-- Update to 0.54.0^20260423gitb65714e
+- Update to 0.55.0^20260513git9099ac3

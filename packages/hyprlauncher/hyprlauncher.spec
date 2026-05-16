@@ -1,20 +1,19 @@
 
 Name:           hyprlauncher
-Version:        0.1.5
-Release:        2%{?dist}
+Version:        0.1.6
+Release:        4%{?dist}
 Summary:        A multipurpose and versatile launcher / picker for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprlauncher
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
-Patch0:         fix-build-with-rawhide-gpp.patch
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
-BuildRequires:  hyprgraphics-devel >= 0.1.5
-BuildRequires:  hyprlang-devel >= 0.6.4
+BuildRequires:  hyprgraphics-devel
+BuildRequires:  hyprlang-devel
 BuildRequires:  hyprtoolkit-devel
-BuildRequires:  hyprutils-devel >= 0.7.1
+BuildRequires:  hyprutils-devel
 BuildRequires:  hyprwire-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(fontconfig)
@@ -41,16 +40,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.1.5
-Commit:            086cfaa33541a347d040f8448ec4e4aff8f7f9bb
-
-Build dependencies:
-cmake: 4.3.0
-gcc-c++: 16.0.1
-hyprgraphics-devel: 0.1.5
-hyprlang-devel: 0.6.4
-hyprutils-devel: 0.7.1
-ninja-build: 1.13.2
+Tag:               v0.1.6
+Commit:            c682906a0836447c27c8d974f35493d3baa79d64
 
 %prep
 %autosetup -p1
@@ -68,6 +59,6 @@ ninja-build: 1.13.2
 %{_prefix}/bin/hyprlauncher
 
 %changelog
-* Sun Jan 04 2026 nett00n <copr@nett00n.org> - 0.1.5-2
+* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.1.6-4
 
-- version: bump to 0.1.5
+- version: bump to 0.1.6

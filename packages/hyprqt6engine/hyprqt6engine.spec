@@ -1,7 +1,7 @@
 
 Name:           hyprqt6engine
 Version:        0.1.0
-Release:        2%{?dist}
+Release:        4%{?dist}
 Summary:        QT6 Theme Provider for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprqt6engine
@@ -17,8 +17,8 @@ BuildRequires:  cmake(Qt6Gui)
 BuildRequires:  cmake(Qt6GuiPrivate)
 BuildRequires:  cmake(Qt6Widgets)
 BuildRequires:  gcc-c++
-BuildRequires:  hyprlang-devel >= 0.6.4
-BuildRequires:  hyprutils-devel >= 0.7.1
+BuildRequires:  hyprlang-devel
+BuildRequires:  hyprutils-devel
 BuildRequires:  ninja-build
 BuildRequires:  qt6-qtbase-devel
 BuildRequires:  qt6-qtbase-private-devel
@@ -39,17 +39,6 @@ Package info:
 Tag:               v0.1.0
 Commit:            e8a694d5fc7813cf477f426dce731967e4cf670b
 
-Build dependencies:
-cmake: 4.3.0
-gcc-c++: 16.0.1
-hyprlang-devel: 0.6.4
-hyprutils-devel: 0.7.1
-ninja-build: 1.13.2
-qt6-qtbase-devel: 6.10.3
-qt6-qtbase-private-devel: 6.10.3
-qt6-qtwayland-devel: 6.10.3
-qt6-rpm-macros: 6.10.3
-
 %prep
 %autosetup -p1
 sed -i '/target_link_libraries.*hyprqtplugin/i find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)' hyprqtplugin/CMakeLists.txt
@@ -69,6 +58,6 @@ sed -i '/target_link_libraries.*hyprqtplugin/i find_package(Qt6 REQUIRED COMPONE
 %{_libdir}/qt6/plugins/styles/libhypr-style.so
 
 %changelog
-* Tue Aug 26 2025 nett00n <copr@nett00n.org> - 0.1.0-2
+* Tue Aug 26 2025 nett00n <copr@nett00n.org> - 0.1.0-4
 
 - all: initial commit

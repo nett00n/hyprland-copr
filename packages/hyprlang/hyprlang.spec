@@ -1,7 +1,7 @@
 
 Name:           hyprlang
 Version:        0.6.8
-Release:        2%{?dist}
+Release:        4%{?dist}
 Summary:        The hypr configuration language library
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprlang
@@ -9,7 +9,7 @@ Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
-BuildRequires:  hyprutils-devel >= 0.7.1
+BuildRequires:  hyprutils-devel
 BuildRequires:  ninja-build
 
 
@@ -26,12 +26,6 @@ COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
 Tag:               v0.6.8
 Commit:            3a1c1b25b059dae2c6bbc46991562ba1158d125c
-
-Build dependencies:
-cmake: 4.3.0
-gcc-c++: 16.0.1
-hyprutils-devel: 0.7.1
-ninja-build: 1.13.2
 
 %prep
 %autosetup -p1
@@ -59,6 +53,6 @@ Development files for hyprlang.
 %{_libdir}/pkgconfig/hyprlang.pc
 
 %changelog
-* Mon Jan 05 2026 nett00n <copr@nett00n.org> - 0.6.8-2
+* Mon Jan 05 2026 nett00n <copr@nett00n.org> - 0.6.8-4
 
 - version: bump to 0.6.8

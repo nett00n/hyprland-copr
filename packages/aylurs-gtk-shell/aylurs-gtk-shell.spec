@@ -37,7 +37,7 @@ gcc-c++: 16.0.1
 gjs: 1.88.0
 golang: 1.26.2
 gtk4-layer-shell-devel: 1.3.0
-meson: 1.10.2
+meson: 1.11.1
 ninja-build: 1.13.2
 
 %prep
@@ -60,6 +60,6 @@ popd
 %{_prefix}/share/ags/
 
 %changelog
-* Fri Apr 24 2026 nett00n <copr@nett00n.org> - 3.1.1-2
+* Mon Apr 27 2026 nett00n <copr@nett00n.org> - 3.1.1-2
 
 - Update to 3.1.1

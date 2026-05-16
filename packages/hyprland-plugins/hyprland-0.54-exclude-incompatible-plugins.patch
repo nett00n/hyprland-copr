@@ -1,11 +1,13 @@
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -13,6 +13,6 @@ add_subdirectory(hyprbars)
- add_subdirectory(hyprexpo)
+@@ -7,7 +7,7 @@ project(hyprland-plugins
+ set(CMAKE_CXX_STANDARD 23)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+-add_subdirectory(borders-plus-plus)
+-add_subdirectory(csgo-vulkan-fix)
+-add_subdirectory(hyprbars)
++# add_subdirectory(borders-plus-plus)
++# add_subdirectory(csgo-vulkan-fix)
++# add_subdirectory(hyprbars)
  add_subdirectory(hyprfocus)
--add_subdirectory(hyprscrolling)
-+# add_subdirectory(hyprscrolling) # Temporarily disabled: incompatible with hyprland 0.54
--add_subdirectory(hyprtrails)
-+# add_subdirectory(hyprtrails) # Temporarily disabled: incompatible with hyprland 0.54
- add_subdirectory(hyprwinwrap)
- add_subdirectory(xtra-dispatchers)

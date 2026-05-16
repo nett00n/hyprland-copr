@@ -37,13 +37,13 @@ aquamarine:
   - '%license LICENSE'
   - '%{_libdir}/libaquamarine.so*'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A very light linux rendering backend library
   url: https://github.com/hyprwm/aquamarine
-  version: 0.10.0
+  version: 0.11.0
 aylurs-gtk-shell:
   build:
     go_subdir: cli
@@ -223,7 +223,7 @@ hyprcursor:
   - '%{_bindir}/hyprcursor-util'
   - '%{_libdir}/libhyprcursor.so*'
   license: BSD-3-Clause
-  release: 2
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -261,7 +261,7 @@ hyprgraphics:
   - '%license LICENSE'
   - '%{_libdir}/libhyprgraphics.so*'
   license: BSD-3-Clause
-  release: 2
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -295,7 +295,7 @@ hypridle:
   - '%{_datadir}/hypr/hypridle.conf'
   - '%{_userunitdir}/hypridle.service'
   license: BSD-3-Clause
-  release: 2
+  release: 5
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -380,7 +380,7 @@ Hyprland:
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
-  release: 2
+  release: 5
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -408,6 +408,7 @@ Hyprland-git:
   - hyprutils-devel
   - hyprwayland-scanner-devel
   - hyprwire-devel
+  - lua-devel
   - ninja-build
   - pkgconfig(cairo)
   - pkgconfig(gbm)
@@ -478,12 +479,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260423'
-      full: b65714e3b8e123fb2febd507905d25fa6abd0400
+      date: '20260513'
+      full: 9099ac311812ccf1befe9f8435ba1f52b30a4bd0
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.54.0^20260423gitb65714e
+  version: 0.55.0^20260513git9099ac3
 hyprland-guiutils:
   build:
     system: cmake
@@ -512,7 +513,7 @@ hyprland-guiutils:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprland-*'
   license: BSD-3-Clause
-  release: 2
+  release: 5
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -560,18 +561,18 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhypr*.so'
   - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
-  release: 2
+  release: 1
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
-      date: '20260420'
-      full: 6acc0738f298f5efe40a99db2c12449112d65633
+      date: '20260513'
+      full: 90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
     patches:
     - hyprland-0.54-exclude-incompatible-plugins.patch
   summary: Official plugins for Hyprland
   url: https://github.com/hyprwm/hyprland-plugins
-  version: 0.53.0^20260420git6acc073
+  version: 0.55.0^20260513git90e66ba
 hyprland-plugins-git:
   auto_update:
     release_type: latest-commit
@@ -619,19 +620,19 @@ hyprland-plugins-git:
   - '%{_prefix}/lib/libhypr*.so'
   - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
-      date: '20260420'
-      full: 6acc0738f298f5efe40a99db2c12449112d65633
+      date: '20260513'
+      full: 90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
     patches:
     - hyprland-0.54-exclude-incompatible-plugins.patch
   source_name: hyprland-plugins
   summary: Official plugins for Hyprland [Built from latest commit, unstable]
   url: https://github.com/hyprwm/hyprland-plugins
-  version: 0.53.0^20260420git6acc073
+  version: 0.55.0^20260513git90e66ba
 hyprland-protocols:
   build:
     system: meson
@@ -695,7 +696,7 @@ hyprland-qt-support:
   - '%{_prefix}/lib/libhyprland-quick-style-impl.so'
   - '%{_prefix}/lib/libhyprland-quick-style.so'
   license: BSD-3-Clause
-  release: 2
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -723,7 +724,7 @@ hyprlang:
   - '%license LICENSE'
   - '%{_libdir}/libhyprlang.so*'
   license: BSD-3-Clause
-  release: 2
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -764,27 +765,18 @@ hyprlauncher:
     Daemon by default: instant opening of the launcher
     - Entry frequency caching: commonly used entries appear above others
     - Manual entry providing: make a simple selector from your own list
-  fedora:
-    44:
-      source:
-        patches:
-        - fix-build-with-rawhide-gpp.patch
-    rawhide:
-      source:
-        patches:
-        - fix-build-with-rawhide-gpp.patch
   files:
   - '%doc README.md'
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprlauncher'
   license: BSD-3-Clause
-  release: 2
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A multipurpose and versatile launcher / picker for Hyprland
   url: https://github.com/hyprwm/hyprlauncher
-  version: 0.1.5
+  version: 0.1.6
 hyprlock:
   build:
     system: cmake
@@ -820,7 +812,7 @@ hyprlock:
   - '%{_datadir}/hypr/hyprlock.conf'
   - '%{_sysconfdir}/pam.d/hyprlock'
   license: BSD-3-Clause
-  release: 2
+  release: 5
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -874,7 +866,7 @@ hyprpaper:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A blazing fast Wayland wallpaper utility
   url: https://github.com/hyprwm/hyprpaper
-  version: 0.8.3
+  version: 0.8.4
 hyprpicker:
   build:
     system: cmake
@@ -895,15 +887,6 @@ hyprpicker:
   - hyprutils
   - hyprwayland-scanner
   description: A wlroots-compatible Wayland color picker that does not suck
-  fedora:
-    44:
-      source:
-        patches:
-        - fix-build-with-rawhide-gpp.patch
-    rawhide:
-      source:
-        patches:
-        - fix-build-with-rawhide-gpp.patch
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -916,7 +899,7 @@ hyprpicker:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A wlroots-compatible Wayland color picker that does not suck
   url: https://github.com/hyprwm/hyprpicker
-  version: 0.4.6
+  version: 0.4.7
 hyprpolkitagent:
   build:
     system: cmake
@@ -940,7 +923,7 @@ hyprpolkitagent:
   - '%{_prefix}/libexec/hyprpolkitagent'
   - '%{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service'
   license: BSD-3-Clause
-  release: 2
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -974,7 +957,7 @@ hyprpwcenter:
   - '%{_prefix}/bin/hyprpwcenter'
   - '%{_prefix}/share/applications/hyprpwcenter.desktop'
   license: BSD-3-Clause
-  release: 2
+  release: 5
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1015,7 +998,7 @@ hyprqt6engine:
   - '%{_libdir}/qt6/plugins/platformthemes/libhyprqt6engine.so'
   - '%{_libdir}/qt6/plugins/styles/libhypr-style.so'
   license: BSD-3-Clause
-  release: 2
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1085,13 +1068,13 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 2
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A graceful shutdown utility for Hyprland
   url: https://github.com/hyprwm/hyprshutdown
-  version: 0.1.0
+  version: 0.1.1
 hyprsunset:
   build:
     system: cmake
@@ -1117,7 +1100,7 @@ hyprsunset:
   - '%{_prefix}/bin/hyprsunset'
   - '%{_prefix}/lib/systemd/user/hyprsunset.service'
   license: BSD-3-Clause
-  release: 2
+  release: 5
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1130,8 +1113,14 @@ hyprsysteminfo:
     - sed -i '/find_package(Qt6.*WaylandClient)/a find_package(Qt6 REQUIRED COMPONENTS WaylandClientPrivate)' CMakeLists.txt
     system: cmake
   build_requires:
+  - aquamarine
+  - aquamarine-devel
+  - cairo-devel
   - cmake
   - gcc-c++
+  - glaze
+  - glaze-devel
+  - hyprgraphics-devel
   - hyprtoolkit-devel
   - hyprutils-devel
   - ninja-build
@@ -1154,13 +1143,13 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 2
+  release: 16
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: System info utility for Hyprland
   url: https://github.com/hyprwm/hyprsysteminfo
-  version: 0.1.3
+  version: 0.2.0
 hyprtoolkit:
   build:
     system: cmake
@@ -1195,26 +1184,17 @@ hyprtoolkit:
     files:
     - '%{_includedir}/hyprtoolkit/'
     - '%{_libdir}/pkgconfig/hyprtoolkit.pc'
-  fedora:
-    44:
-      source:
-        patches:
-        - fix-build-with-rawhide-gpp.patch
-    rawhide:
-      source:
-        patches:
-        - fix-build-with-rawhide-gpp.patch
   files:
   - '%license LICENSE'
   - '%{_libdir}/libhyprtoolkit.so*'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A modern C++ Wayland-native GUI toolkit
   url: https://github.com/hyprwm/hyprtoolkit
-  version: 0.5.3
+  version: 0.5.4
 hyprutils:
   build:
     system: cmake
@@ -1234,13 +1214,13 @@ hyprutils:
   - '%license LICENSE'
   - '%{_libdir}/libhyprutils.so*'
   license: BSD-3-Clause
-  release: 2
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Small C++ library for utilities used across the Hypr ecosystem
   url: https://github.com/hyprwm/hyprutils
-  version: 0.12.0
+  version: 0.13.1
 hyprwayland-scanner:
   build:
     system: cmake
@@ -1260,13 +1240,13 @@ hyprwayland-scanner:
   - '%license LICENSE'
   - '%{_bindir}/hyprwayland-scanner'
   license: BSD-3-Clause
-  release: 2
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A Wayland scanner replacement for Hypr projects
   url: https://github.com/hyprwm/hyprwayland-scanner
-  version: 0.4.5
+  version: 0.4.6
 hyprwire:
   build:
     system: cmake
@@ -1291,13 +1271,13 @@ hyprwire:
   - '%{_bindir}/hyprwire-scanner'
   - '%{_libdir}/libhyprwire.so*'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A fast and consistent wire protocol for IPC
   url: https://github.com/hyprwm/hyprwire
-  version: 0.3.0
+  version: 0.3.1
 pyprland:
   build:
     commands:
@@ -1555,13 +1535,13 @@ xdg-desktop-portal-hyprland:
   - '%{_libexecdir}/%{name}'
   - '%{_userunitdir}/%{name}.service'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: An XDG-Destop-Portal backend for Hyprland (and wlroots)
   url: https://github.com/hyprwm/xdg-desktop-portal-hyprland
-  version: 1.3.11
+  version: 1.3.12
 cliphist:
   build:
     commands:

@@ -66,6 +66,6 @@ sdl2-compat-devel: 2.32.64
 %license LICENSE
 
 %changelog
-* Fri Apr 24 2026 nett00n <copr@nett00n.org> - 0.10.7-2
+* Mon Apr 27 2026 nett00n <copr@nett00n.org> - 0.10.7-2
 
 - Update to 0.10.7
