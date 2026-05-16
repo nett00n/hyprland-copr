@@ -625,6 +625,142 @@ class TestAnalyzeMockBuildLog:
         assert len(issues) == 1
         assert "failed during test" in issues[0][2]
 
+    def test_bad_exit_status_with_cmake_error_context(self, tmp_path):
+        """Bad exit status includes error context extracted from previous lines."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "-- glaze dependency not found, retrieving v6.1.0\n"
+            "CMake Error at /usr/share/cmake/Modules/ExternalProject/shared_internal_commands.cmake:928 (message):\n"
+            "  error: could not find git for clone of glaze-populate\n"
+            "-- Configuring incomplete, errors occurred!\n"
+            "error: Bad exit status from /var/tmp/rpm-tmp.vmv3Hu (%build)\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        assert len(issues) >= 1
+        # Find the bad exit status issue
+        bad_exit = [i for i in issues if "failed during" in i[2]]
+        assert len(bad_exit) > 0
+        # Should extract the actual error from previous lines
+        assert "could not find git" in bad_exit[0][2]
+
+    def test_bad_exit_status_with_generic_error_context(self, tmp_path):
+        """Bad exit status includes generic error context."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "Processing some files...\n"
+            "error: File not found: /some/path/file.so\n"
+            "error: Bad exit status from /var/tmp/rpm-tmp.ABC123 (%install)\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        assert len(issues) >= 1
+        bad_exit = [i for i in issues if "failed during" in i[2]]
+        assert len(bad_exit) > 0
+        assert "File not found" in bad_exit[0][2]
+
+    def test_bad_exit_status_with_missing_tool_context(self, tmp_path):
+        """Bad exit status includes missing tool context."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "Building project...\n"
+            "/var/tmp/rpm-tmp.XYZ789: line 42: git: command not found\n"
+            "+ exit 1\n"
+            "error: Bad exit status from /var/tmp/rpm-tmp.XYZ789 (%build)\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        assert len(issues) >= 1
+        bad_exit = [i for i in issues if "failed during" in i[2]]
+        assert len(bad_exit) > 0
+        # Should capture the "not found" error
+        assert "not found" in bad_exit[0][2].lower() or "command" in bad_exit[0][2].lower()
+
+    def test_patch_hunk_failed_single_file(self, tmp_path):
+        """Detect patch hunk failure for single file."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "+ /usr/lib/rpm/rpmuncompress /builddir/build/SOURCES/fix-build.patch\n"
+            "+ /usr/bin/patch -p1 -s --fuzz=0 --no-backup-if-mismatch -f\n"
+            "1 out of 1 hunk FAILED -- saving rejects to file src/config/ConfigManager.cpp.rej\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        assert len(issues) == 1
+        assert "patch" in issues[0][2].lower()
+        assert "fix-build.patch" in issues[0][2]
+        assert "ConfigManager.cpp" in issues[0][2]
+
+    def test_patch_hunk_failed_multiple_files(self, tmp_path):
+        """Detect patch hunk failures for multiple files."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "+ /usr/lib/rpm/rpmuncompress /builddir/build/SOURCES/rawhide-fix.patch\n"
+            "+ /usr/bin/patch -p1 -s --fuzz=0 --no-backup-if-mismatch -f\n"
+            "1 out of 1 hunk FAILED -- saving rejects to file src/config/ConfigManager.cpp.rej\n"
+            "1 out of 1 hunk FAILED -- saving rejects to file src/finders/desktop/DesktopFinder.cpp.rej\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        # Should detect both failures
+        assert len(issues) >= 2
+        assert any("ConfigManager.cpp" in i[2] for i in issues)
+        assert any("DesktopFinder.cpp" in i[2] for i in issues)
+
+    def test_patch_hunk_multiple_hunks_failed(self, tmp_path):
+        """Detect patch with multiple hunks failed."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "+ /usr/lib/rpm/rpmuncompress /builddir/build/SOURCES/update.patch\n"
+            "+ /usr/bin/patch -p1\n"
+            "2 out of 3 hunks FAILED -- saving rejects to file file.c.rej\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        assert len(issues) >= 1
+        assert "file.c" in issues[0][2]
+
+    def test_patch_hunk_failed_no_patch_name(self, tmp_path):
+        """Detect patch failure even without finding patch filename."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "1 out of 1 hunk FAILED -- saving rejects to file some/path/file.cpp.rej\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        assert len(issues) == 1
+        assert "file.cpp" in issues[0][2]
+        assert "incompatible" in issues[0][2]
+
+    def test_bad_exit_status_prep_with_patch_failure(self, tmp_path):
+        """Bad exit status in prep phase includes patch failure context."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "+ /usr/lib/rpm/rpmuncompress /builddir/build/SOURCES/exclude-plugins.patch\n"
+            "+ /usr/bin/patch -p1 -s --fuzz=0 --no-backup-if-mismatch -f\n"
+            "1 out of 1 hunk FAILED -- saving rejects to file CMakeLists.txt.rej\n"
+            "error: Bad exit status from /var/tmp/rpm-tmp.QRjhnW (%prep)\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        # Should have both the patch failure and the bad exit status issues
+        assert len(issues) >= 2
+        patch_issues = [i for i in issues if "patch failed to apply" in i[2]]
+        assert len(patch_issues) > 0
+        # Bad exit should reference the patch failure
+        bad_exit = [i for i in issues if "failed during source preparation" in i[2]]
+        assert len(bad_exit) > 0
+        assert "patch failed" in bad_exit[0][2]
+
+    def test_bad_exit_status_prep_with_no_file_to_patch(self, tmp_path):
+        """Bad exit status in prep phase for 'No file to patch' error."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "+ /usr/lib/rpm/rpmuncompress /builddir/build/SOURCES/fix-build.patch\n"
+            "+ /usr/bin/patch -p1 -s --fuzz=0 --no-backup-if-mismatch -f\n"
+            "----- Patch 1 -----\n"
+            "No file to patch.  Skipping patch.\n"
+            "1 out of 1 hunk ignored\n"
+            "error: Bad exit status from /var/tmp/rpm-tmp.FONkHT (%prep)\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        # Should detect the "No file to patch" context
+        bad_exit = [i for i in issues if "failed during source preparation" in i[2]]
+        assert len(bad_exit) > 0
+        assert "No file to patch" in bad_exit[0][2]
+
 
 class TestSuggestProviders:
     """Test the _suggest_providers function."""

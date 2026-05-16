@@ -168,6 +168,11 @@ _BAD_EXIT_STATUS_RE = re.compile(
 # dd: failed to open 'file': No space left on device
 _NO_SPACE_LEFT_RE = re.compile(r"No space left on device")
 
+# 1 out of 1 hunk FAILED -- saving rejects to file src/config/ConfigManager.cpp.rej
+_PATCH_HUNK_FAILED_RE = re.compile(
+    r"^(\d+) out of \d+ hunk(?:s)? FAILED -- saving rejects to file (.+)\.rej$"
+)
+
 
 def _dnf_whatprovides(query: str) -> list[str]:
     try:
@@ -681,12 +686,77 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                 "package": "packaging (%package)",
                 "check": "test (%check)",
             }.get(phase, f"RPM phase ({phase})")
+            # Look back for the actual error that caused the failure
+            error_context = ""
+            for prev_idx in range(lineno - 1, max(lineno - 50, 0), -1):
+                prev_line = raw_lines[prev_idx - 1].strip()
+                # Check for hunk FAILED first (most specific for prep phase)
+                if "hunk FAILED" in prev_line and ".rej" in prev_line:
+                    error_context = f"patch failed to apply — {prev_line}"
+                    break
+                if "No file to patch" in prev_line:
+                    error_context = f"patch file mismatch — {prev_line}"
+                    break
+                if prev_line.startswith("CMake Error"):
+                    error_context = prev_line
+                    break
+                if prev_line.startswith("error:") and not prev_line.startswith(
+                    "error: Bad exit"
+                ):
+                    error_context = prev_line
+                    break
+                if any(
+                    x in prev_line
+                    for x in [
+                        "fatal error:",
+                        "FAILED",
+                        "not found",
+                        "No such file",
+                        "undefined reference",
+                    ]
+                ):
+                    if not prev_line.startswith(("+ ", "Executing")):
+                        error_context = prev_line
+                        break
+            msg = f"failed during {phase_friendly}"
+            if error_context:
+                msg += f" — {error_context}"
+            else:
+                msg += " — check previous lines for the actual error"
             issues.append(
                 (
                     lineno,
                     line.strip(),
-                    f"failed during {phase_friendly} — check previous lines for the actual error",
+                    msg,
                     phase,
+                    "none",
+                )
+            )
+            continue
+        m = _PATCH_HUNK_FAILED_RE.match(line)
+        if m:
+            rej_file = m.group(2)
+            # Look backwards to find which patch file was being applied
+            patch_file = ""
+            for prev_idx in range(lineno - 1, max(lineno - 20, 0), -1):
+                prev_line = raw_lines[prev_idx - 1]
+                if "/usr/lib/rpm/rpmuncompress" in prev_line:
+                    # Extract patch filename from rpmuncompress command
+                    patch_match = re.search(r"/([^/]+\.patch)(?:\s|$)", prev_line)
+                    if patch_match:
+                        patch_file = patch_match.group(1)
+                    break
+            msg = f'patch "{patch_file}" failed to apply to "{rej_file}"'
+            if patch_file:
+                msg += " — patch incompatible with current source; check .rej files and update patch"
+            else:
+                msg += " — check patch file in SOURCES directory; may be incompatible with current source"
+            issues.append(
+                (
+                    lineno,
+                    line.strip(),
+                    msg,
+                    patch_file or rej_file,
                     "none",
                 )
             )
