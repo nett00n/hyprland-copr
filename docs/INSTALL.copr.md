@@ -9,8 +9,13 @@ dnf copr enable nett00n/hyprland
 **Fedora Atomic**:
 
 ```shell
-FEDORA_VERSION_ID=$( grep ^VERSION_ID /etc/os-release | awk -F '=' '{print$2}')
-https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/repo/fedora-${FEDORA_VERSION_ID}/nett00n-hyprland-fedora-${FEDORA_VERSION_ID}.repo | sudo tee /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:nett00n:hyprland.repo
+DISTRO_NAME=fedora
+DISTRO_VERSION_ID=$(source /etc/os-release && echo $VERSION_ID)
+COPR_USER_NAME=nett00n
+COPR_REPO_NAME=hyprland
+
+curl -sL "https://copr.fedorainfracloud.org/coprs/${COPR_USER_NAME}/${COPR_REPO_NAME}/repo/${DISTRO_NAME}-${DISTRO_VERSION_ID}/${COPR_USER_NAME}-${COPR_REPO_NAME}-${DISTRO_NAME}-${DISTRO_VERSION_ID}.repo" \
+  | sudo tee /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:${COPR_USER_NAME}:${COPR_REPO_NAME}.repo
 ```
 
 ## Install packages
@@ -26,13 +31,13 @@ Replace `hyprland` with any package from this repository. For example:
 **Regular Fedora**:
 
 ```shell
-dnf install hyprland hyprland-plugins hypridle hyprlock hyprpaper
+dnf install hypridle hyprland hyprland-guiutils hyprlock hyprpaper hyprpwcenter hyprshutdown
 ```
 
 **Fedora Atomic**:
 
 ```shell
-rpm-ostree install hyprland hyprland-plugins hypridle hyprlock hyprpaper
+rpm-ostree install hypridle hyprland hyprland-guiutils hyprlock hyprpaper hyprpwcenter hyprshutdown
 ```
 
 ## Source

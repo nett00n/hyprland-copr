@@ -254,7 +254,7 @@ A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-05-17 08:57:26 UTC |  | forced (dep rebuilt: glaze) |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-05-17 08:57:35 UTC | 17m 30s | forced (dep rebuilt: glaze) |
-| **COPR** | [![copr](https://img.shields.io/badge/copr-unknown-orange?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10472464/) | 2026-05-17 09:15:05 UTC |  | [Build #10472464](https://copr.fedorainfracloud.org/coprs/build/10472464/) |
+| **COPR** | [![copr](https://img.shields.io/badge/copr-success-brightgreen?style=for-the-badge)](https://copr.fedorainfracloud.org/coprs/build/10472464/) | 2026-05-17 09:15:05 UTC |  | [Build #10472464](https://copr.fedorainfracloud.org/coprs/build/10472464/) |
 | **COPR Package** | [![Copr build status](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Hyprland-git/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/package/Hyprland-git/) | — | — | Native COPR build status badge |
 ---
 
@@ -737,7 +737,7 @@ An XDG-Destop-Portal backend for Hyprland (and wlroots)
 
 - **Total Packages:** `39`
 - **Successful Mock Builds:** `37`
-- **Successful COPR Builds:** `35`
+- **Successful COPR Builds:** `36`
 - **Failed Packages:** `2`
 - **Skipped Packages:** `0`
 
