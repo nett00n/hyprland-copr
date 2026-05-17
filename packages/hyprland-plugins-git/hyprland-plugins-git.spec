@@ -1,10 +1,10 @@
-%global commit 90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
+%global commit f1569efa6a939fd68cee605d2a34d0db3af5d879
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260513
+%global commitdate 20260516
 
 Name:           hyprland-plugins-git
-Version:        0.55.0^20260513git90e66ba
-Release:        3%{?dist}
+Version:        0.55.0^20260516gitf1569ef
+Release:        1%{?dist}
 Summary:        Official plugins for Hyprland [Built from latest commit, unstable]
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
@@ -72,6 +72,6 @@ Package info:
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Thu May 14 2026 nett00n <copr@nett00n.org> - 0.55.0^20260513git90e66ba-3
+* Sat May 16 2026 nett00n <copr@nett00n.org> - 0.55.0^20260516gitf1569ef-1
 
-- Update to 0.55.0^20260513git90e66ba
+- Update to 0.55.0^20260516gitf1569ef

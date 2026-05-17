@@ -479,12 +479,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260513'
-      full: 9099ac311812ccf1befe9f8435ba1f52b30a4bd0
+      date: '20260516'
+      full: d56a9444c3a22dcf4981fd8f54508a098bac3971
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.55.0^20260513git9099ac3
+  version: 0.55.0^20260516gitd56a944
 hyprland-guiutils:
   build:
     system: cmake
@@ -566,13 +566,13 @@ hyprland-plugins:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
-      date: '20260513'
-      full: 90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
+      date: '20260516'
+      full: f1569efa6a939fd68cee605d2a34d0db3af5d879
     patches:
     - hyprland-0.54-exclude-incompatible-plugins.patch
   summary: Official plugins for Hyprland
   url: https://github.com/hyprwm/hyprland-plugins
-  version: 0.55.0^20260513git90e66ba
+  version: 0.55.0^20260516gitf1569ef
 hyprland-plugins-git:
   auto_update:
     release_type: latest-commit
@@ -620,19 +620,19 @@ hyprland-plugins-git:
   - '%{_prefix}/lib/libhypr*.so'
   - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
-  release: 3
+  release: 1
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
-      date: '20260513'
-      full: 90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
+      date: '20260516'
+      full: f1569efa6a939fd68cee605d2a34d0db3af5d879
     patches:
     - hyprland-0.54-exclude-incompatible-plugins.patch
   source_name: hyprland-plugins
   summary: Official plugins for Hyprland [Built from latest commit, unstable]
   url: https://github.com/hyprwm/hyprland-plugins
-  version: 0.55.0^20260513git90e66ba
+  version: 0.55.0^20260516gitf1569ef
 hyprland-protocols:
   build:
     system: meson

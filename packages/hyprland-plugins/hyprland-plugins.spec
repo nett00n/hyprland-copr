@@ -1,9 +1,9 @@
-%global commit 90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
+%global commit f1569efa6a939fd68cee605d2a34d0db3af5d879
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260513
+%global commitdate 20260516
 
 Name:           hyprland-plugins
-Version:        0.55.0^20260513git90e66ba
+Version:        0.55.0^20260516gitf1569ef
 Release:        1%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
@@ -48,7 +48,7 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Commit:            90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
+Commit:            f1569efa6a939fd68cee605d2a34d0db3af5d879
 
 %prep
 %autosetup -p1 -n %{name}-%{commit}
@@ -69,6 +69,6 @@ Commit:            90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Wed May 13 2026 nett00n <copr@nett00n.org> - 0.55.0^20260513git90e66ba-1
+* Sat May 16 2026 nett00n <copr@nett00n.org> - 0.55.0^20260516gitf1569ef-1
 
-- hyprpm: add pins for 0.55.0
+- borderspp: avoid adding multiple borders when reopening windows (#667)
