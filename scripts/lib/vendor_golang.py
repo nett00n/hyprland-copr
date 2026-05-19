@@ -4,23 +4,8 @@ import shutil
 import subprocess
 import tarfile
 from pathlib import Path
-from typing import Callable
 
-
-class VendorError(Exception):
-    pass
-
-
-def _log_fn(log_path: Path | None) -> Callable[[str], None]:
-    """Return a logging function that writes to stdout and optionally to a file."""
-
-    def _log(msg: str) -> None:
-        print(f"  {msg}", flush=True)
-        if log_path:
-            with open(log_path, "a") as fh:
-                fh.write(msg + "\n")
-
-    return _log
+from lib.vendor import VendorError, _log_fn
 
 
 def generate(

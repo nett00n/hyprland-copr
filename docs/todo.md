@@ -10,7 +10,6 @@
 # Packages
 
 everything, that Hyprland recommended:
-- https://github.com/coffebar/hyprland-per-window-layout/ #Rust
 - https://github.com/elkowar/eww #Rust
 - https://github.com/danyspin97/wpaperd #Rust
 - https://github.com/MalpenZibo/ashell #Rust
