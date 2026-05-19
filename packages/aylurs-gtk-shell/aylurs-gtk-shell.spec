@@ -1,17 +1,17 @@
 
 Name:           aylurs-gtk-shell
-Version:        3.1.1
-Release:        2%{?dist}
+Version:        3.1.2
+Release:        1%{?dist}
 Summary:        Scaffolding CLI for Astal+Gnim
 License:        GPL-3.0-or-later
-URL:            https://github.com/Aylur/ags
+URL:            https://github.com/Aylur/ags.git
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 Source1:        %{name}-%{version}-vendor.tar.gz
 
 BuildRequires:  gcc-c++
 BuildRequires:  gjs
 BuildRequires:  golang
-BuildRequires:  gtk4-layer-shell-devel >= 1.3.0
+BuildRequires:  gtk4-layer-shell-devel
 BuildRequires:  meson
 BuildRequires:  ninja-build
 
@@ -31,14 +31,6 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-
-Build dependencies:
-gcc-c++: 16.0.1
-gjs: 1.88.0
-golang: 1.26.2
-gtk4-layer-shell-devel: 1.3.0
-meson: 1.11.1
-ninja-build: 1.13.2
 
 %prep
 %autosetup -p1 -n ags-%{version}
@@ -60,6 +52,6 @@ popd
 %{_prefix}/share/ags/
 
 %changelog
-* Mon Apr 27 2026 nett00n <copr@nett00n.org> - 3.1.1-2
+* Tue May 19 2026 nett00n <copr@nett00n.org> - 3.1.2-1
 
-- Update to 3.1.1
+- Update to 3.1.2

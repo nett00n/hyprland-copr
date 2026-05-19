@@ -1,10 +1,10 @@
 
 Name:           gtk4-layer-shell
 Version:        1.3.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
 License:        MIT
-URL:            https://github.com/wmww/gtk4-layer-shell
+URL:            https://github.com/wmww/gtk4-layer-shell.git
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 
 BuildRequires:  gcc-c++
@@ -35,15 +35,6 @@ COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
 Tag:               v1.3.0
 Commit:            1c963c51514581c41b9bdae08cdf69171265cdda
-
-Build dependencies:
-gcc-c++: 16.0.1
-glib2-devel: 2.88.0
-gobject-introspection-devel: 1.86.0
-gtk4-devel: 4.22.3
-meson: 1.10.2
-ninja-build: 1.13.2
-vala: 0.56.19
 
 %prep
 %autosetup -p1
@@ -80,6 +71,6 @@ Development files for gtk4-layer-shell.
 %{_prefix}/share/vala/vapi/gtk4-layer-shell-0.vapi
 
 %changelog
-* Wed Oct 29 2025 nett00n <copr@nett00n.org> - 1.3.0-2
+* Wed Oct 29 2025 nett00n <copr@nett00n.org> - 1.3.0-3
 
 - Release 1.3.0

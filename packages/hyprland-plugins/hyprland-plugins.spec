@@ -3,8 +3,8 @@
 %global commitdate 20260517
 
 Name:           hyprland-plugins
-Version:        0.55.0^20260517gitb324783
-Release:        0%{?dist}
+Version:        0.55.0
+Release:        1%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
@@ -48,7 +48,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Commit:            b3247839c94ceb76506730841f0b3735feccf37c
+Tag:               v0.55.0
+Commit:            90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
 
 %prep
 %autosetup -p1 -n %{name}-%{commit}
@@ -69,6 +70,12 @@ Commit:            b3247839c94ceb76506730841f0b3735feccf37c
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Mon May 18 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-0
+* Wed May 13 2026 nett00n <copr@nett00n.org> - 0.55.0-1
 
-- bars: fix fg_color not working with lua (#666)
+- v0.55.0
+- -----BEGIN SSH SIGNATURE-----
+- U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAg6r0Z7DWuB90jK6uIn817QHwUTW
+- zw79TZqMStVAtQO70AAAADZ2l0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5
+- AAAAQEtuVyIHobR7pqUJHyjAEjzWyifwbkKyZg7nlTtxXv+lb7TgbZ1250yRS3727YmcDA
+- JNbNLoy+ocEygSEDUJegc=
+- -----END SSH SIGNATURE-----
