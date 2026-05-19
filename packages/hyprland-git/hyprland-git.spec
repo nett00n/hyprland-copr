@@ -1,9 +1,9 @@
-%global commit 24c5c13c2cef2b4324478f2fb8c2ecc386dd42d3
+%global commit 203a121537d0868bd4d8258b58861ca970483157
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260516
+%global commitdate 20260519
 
 Name:           hyprland-git
-Version:        0.55.0^20260516git24c5c13
+Version:        0.55.0^20260519git203a121
 Release:        1%{?dist}
 Summary:        A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 License:        BSD-3-Clause
@@ -108,6 +108,6 @@ Development files for hyprland-git.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Sun May 17 2026 nett00n <copr@nett00n.org> - 0.55.0^20260516git24c5c13-1
+* Tue May 19 2026 nett00n <copr@nett00n.org> - 0.55.0^20260519git203a121-1
 
-- Update to 0.55.0^20260516git24c5c13
+- Update to 0.55.0^20260519git203a121

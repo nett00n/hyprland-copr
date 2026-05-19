@@ -111,6 +111,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 - `copyq` — CopyQ is an advanced clipboard manager with powerful editing and scripting features.
 - `fuzzel` — App launcher and fuzzy finder for Wayland, inspired by rofi and dmenu
 - `gammastep` — Adjust the color temperature of your screen according to your surroundings. This may help your eyes hurt less if you are working in front of the screen at night.
+- `hyprland-per-window-layout` — Per-window keyboard layout daemon for Hyprland
 - `network-manager-applet` — Tray applet and an advanced network connection editor
 - `nnn` — n³ The unorthodox terminal file manager
 - `pyprland` — Scratchpads & many goodies for Hyprland
@@ -133,7 +134,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-05-17
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-05-19
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->
@@ -170,7 +171,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- Vladimir nett00n Budylnikov
+- Vladimir Budylnikov- Vladimir nett00n Budylnikov
 
 ---
 

@@ -35,8 +35,8 @@ cargo build --offline --release
 install -Dm755 target/release/%{name} %{buildroot}%{_bindir}/%{name}
 
 %files
-%license LICENSE
 %doc README.md
+%license LICENSE
 %{_bindir}/%{name}
 
 %changelog

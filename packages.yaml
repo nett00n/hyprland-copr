@@ -1,3 +1,4 @@
+---
 aquamarine:
   build:
     system: cmake
@@ -479,12 +480,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260516'
-      full: 24c5c13c2cef2b4324478f2fb8c2ecc386dd42d3
+      date: '20260519'
+      full: 203a121537d0868bd4d8258b58861ca970483157
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.55.0^20260516git24c5c13
+  version: 0.55.0^20260519git203a121
 hyprland-guiutils:
   build:
     system: cmake
@@ -561,18 +562,18 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhypr*.so'
   - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
-  release: 1
+  release: 0
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
-      date: '20260516'
-      full: f1569efa6a939fd68cee605d2a34d0db3af5d879
+      date: '20260517'
+      full: b3247839c94ceb76506730841f0b3735feccf37c
     patches:
     - hyprland-0.54-exclude-incompatible-plugins.patch
   summary: Official plugins for Hyprland
   url: https://github.com/hyprwm/hyprland-plugins
-  version: 0.55.0^20260516gitf1569ef
+  version: 0.55.0^20260517gitb324783
 hyprland-plugins-git:
   auto_update:
     release_type: latest-commit
@@ -620,19 +621,19 @@ hyprland-plugins-git:
   - '%{_prefix}/lib/libhypr*.so'
   - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
-  release: 1
+  release: 0
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
-      date: '20260516'
-      full: f1569efa6a939fd68cee605d2a34d0db3af5d879
+      date: '20260517'
+      full: b3247839c94ceb76506730841f0b3735feccf37c
     patches:
     - hyprland-0.54-exclude-incompatible-plugins.patch
   source_name: hyprland-plugins
   summary: Official plugins for Hyprland [Built from latest commit, unstable]
   url: https://github.com/hyprwm/hyprland-plugins
-  version: 0.55.0^20260516gitf1569ef
+  version: 0.55.0^20260517gitb324783
 hyprland-protocols:
   build:
     system: meson
@@ -1700,34 +1701,33 @@ quickshell:
   url: https://git.outfoxxed.me/quickshell/quickshell
   version: 0.2.1
 hyprland-per-window-layout:
-  version: 2.8.1
-  release: 1
-  license: MIT
-  summary: Per-window keyboard layout daemon for Hyprland
-  description: |
-    Per-window keyboard layout (language) for Hyprland wayland compositor.
-    Automatically switches keyboard layout based on the active window.
-  url: https://github.com/coffebar/hyprland-per-window-layout
-  depends_on: []
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    system: cargo
   build_requires:
   - cargo
   - rustc
-  requires: []
+  depends_on: []
+  description: |
+    Per-window keyboard layout (language) for Hyprland wayland compositor.
+    Automatically switches keyboard layout based on the active window.
   files:
-  - '%license LICENSE'
   - '%doc README.md'
+  - '%license LICENSE'
   - '%{_bindir}/%{name}'
+  license: MIT
+  release: 1
+  requires: []
+  rpm:
+    no_debug_package: false
   source:
     archives:
     - '%{name}-%{version}.tar.gz'
     - '%{name}-%{version}-vendor.tar.gz'
-    # Name of the top-level directory when source archive is extracted
     source_dir: '%{name}-%{version}'
-  build:
-    system: cargo
-    prep: []
-    commands: []
-    install: []
-    no_lto: false
-  rpm:
-    no_debug_package: false
+  summary: Per-window keyboard layout daemon for Hyprland
+  url: https://github.com/coffebar/hyprland-per-window-layout
+  version: 2.8.1

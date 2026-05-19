@@ -1,10 +1,10 @@
-%global commit f1569efa6a939fd68cee605d2a34d0db3af5d879
+%global commit b3247839c94ceb76506730841f0b3735feccf37c
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260516
+%global commitdate 20260517
 
 Name:           hyprland-plugins
-Version:        0.55.0^20260516gitf1569ef
-Release:        1%{?dist}
+Version:        0.55.0^20260517gitb324783
+Release:        0%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
@@ -48,7 +48,7 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Commit:            f1569efa6a939fd68cee605d2a34d0db3af5d879
+Commit:            b3247839c94ceb76506730841f0b3735feccf37c
 
 %prep
 %autosetup -p1 -n %{name}-%{commit}
@@ -69,6 +69,6 @@ Commit:            f1569efa6a939fd68cee605d2a34d0db3af5d879
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Sat May 16 2026 nett00n <copr@nett00n.org> - 0.55.0^20260516gitf1569ef-1
+* Mon May 18 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-0
 
-- borderspp: avoid adding multiple borders when reopening windows (#667)
+- bars: fix fg_color not working with lua (#666)
