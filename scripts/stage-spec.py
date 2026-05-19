@@ -18,6 +18,7 @@ import re
 import subprocess
 import sys
 
+from lib.build_systems import BUILD_SYSTEMS
 from lib.config import get_packager, setup_logging
 from lib.github import build_changelog
 from lib.gitmodules import get_changelog_info, parse_gitmodules, resolve_module
@@ -115,15 +116,6 @@ def generate_spec(
         build_commands = build.get("commands", [])
         install_commands = build.get("install", [])
 
-        # Default build/install commands by system
-        BUILD_SYSTEMS = {
-            "cmake": ("%cmake\n%cmake_build", "%cmake_install"),
-            "meson": ("%meson\n%meson_build", "%meson_install"),
-            "autotools": ("%configure\n%make_build", "%make_install"),
-            "configure": ("./configure\n%make_build", "%make_install"),
-            "make": ("make %{?_smp_mflags}", "make install DESTDIR=%{buildroot}"),
-            "python": ("%pyproject_build", "%pyproject_install"),
-        }
 
         # Build the build command
         if build_commands:
@@ -155,6 +147,13 @@ def generate_spec(
             else None
         )
 
+        # Prepare prep commands (including vendor tarball extraction for cargo)
+        prep_commands = build.get("prep", [])
+        if build_system == "cargo":
+            archives = source.get("archives", [])
+            if len(archives) >= 2 and "vendor" in archives[1]:
+                prep_commands = [f"tar xf %{{SOURCE1}}"] + prep_commands
+
         context = {
             "name": pkg.lower(),
             "version": pkg_meta.get("version", ""),
@@ -172,7 +171,7 @@ def generate_spec(
             "build_requires": pkg_meta.get("build_requires", []),
             "requires": pkg_meta.get("requires", []),
             "description": pkg_meta.get("description", "").strip(),
-            "prep_commands": build.get("prep", []),
+            "prep_commands": prep_commands,
             "build_cmd": build_cmd,
             "install_cmd": install_cmd,
             "files": [

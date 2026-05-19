@@ -118,3 +118,6 @@
 [submodule "submodules/quickshell/quickshell"]
 	path = submodules/quickshell/quickshell
 	url = https://git.outfoxxed.me/quickshell/quickshell.git
+[submodule "submodules/coffebar/hyprland-per-window-layout"]
+	path = submodules/coffebar/hyprland-per-window-layout
+	url = https://github.com/coffebar/hyprland-per-window-layout.git

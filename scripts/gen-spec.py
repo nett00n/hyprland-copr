@@ -17,6 +17,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+from lib.build_systems import BUILD_SYSTEMS
 from lib.gitmodules import get_changelog_info, parse_gitmodules
 from lib.jinja_utils import create_jinja_env
 from lib.paths import GITMODULES, GITHUB_RELEASE_CACHE, ROOT
@@ -205,15 +206,6 @@ def build_changelog(
     }
 
 
-BUILD_SYSTEMS = {
-    "cmake": ("%cmake\n%cmake_build", "%cmake_install"),
-    "meson": ("%meson\n%meson_build", "%meson_install"),
-    "autotools": ("%configure\n%make_build", "%make_install"),
-    # Hand-written configure scripts (no autoconf); flags come from configure_flags in packages.yaml
-    "configure": ("./configure\n%make_build", "%make_install"),
-    "make": ("make %{?_smp_mflags}", "make install DESTDIR=%{buildroot}"),
-    "python": ("%pyproject_build", "%pyproject_install"),
-}
 
 
 def build_context(
@@ -269,6 +261,14 @@ def build_context(
     bundled_deps = []
     extra_prep = []
     num_main_sources = len(source.get("archives", []))
+
+    # Auto-detect vendor tarball for cargo builds
+    if build_system == "cargo" and num_main_sources > 0:
+        # Check if the second source looks like a vendor tarball
+        archives = source.get("archives", [])
+        if len(archives) >= 2 and "vendor" in archives[1]:
+            extra_prep.append(f"tar xf %{{SOURCE1}}")
+
     for i, dep in enumerate(source.get("bundled_deps", [])):
         dep_name = dep["name"]
         dep_version = dep["version"]

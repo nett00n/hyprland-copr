@@ -1699,3 +1699,35 @@ quickshell:
   summary: Flexible QtQuick based desktop shell toolkit
   url: https://git.outfoxxed.me/quickshell/quickshell
   version: 0.2.1
+hyprland-per-window-layout:
+  version: 2.8.1
+  release: 1
+  license: MIT
+  summary: Per-window keyboard layout daemon for Hyprland
+  description: |
+    Per-window keyboard layout (language) for Hyprland wayland compositor.
+    Automatically switches keyboard layout based on the active window.
+  url: https://github.com/coffebar/hyprland-per-window-layout
+  depends_on: []
+  build_requires:
+  - cargo
+  - rustc
+  requires: []
+  files:
+  - '%license LICENSE'
+  - '%doc README.md'
+  - '%{_bindir}/%{name}'
+  source:
+    archives:
+    - '%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+    # Name of the top-level directory when source archive is extracted
+    source_dir: '%{name}-%{version}'
+  build:
+    system: cargo
+    prep: []
+    commands: []
+    install: []
+    no_lto: false
+  rpm:
+    no_debug_package: false

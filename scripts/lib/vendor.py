@@ -1,4 +1,4 @@
-"""Go vendor tarball helpers shared by stage-vendor.py and gen-vendor-tarball.py."""
+"""Vendor tarball helpers for multiple languages (Go, Rust)."""
 
 import shutil
 import subprocess
@@ -12,13 +12,28 @@ class VendorError(Exception):
     pass
 
 
+def _log_fn(log_path: Path | None):
+    """Return a logging function that writes to stdout and optionally to a file."""
+    def _log(msg: str) -> None:
+        print(f"  {msg}", flush=True)
+        if log_path:
+            with open(log_path, "a") as fh:
+                fh.write(msg + "\n")
+    return _log
+
+
 def is_go_package(meta: dict) -> bool:
     """Return True if the package requires vendoring (has golang in build_requires)."""
     return "golang" in (meta.get("build_requires") or [])
 
 
+def is_rust_package(meta: dict) -> bool:
+    """Return True if the package requires Rust vendoring (has cargo in build_requires)."""
+    return "cargo" in (meta.get("build_requires") or [])
+
+
 def resolve_source_url(pkg_meta: dict, pkg_name: str) -> str:
-    """Resolve the first source URL, expanding %{url} and %{version} macros."""
+    """Resolve the first source URL, expanding %{url}, %{name}, and %{version} macros."""
     archives = pkg_meta.get("source", {}).get("archives", [])
     if not archives:
         raise VendorError(f"no sources defined for '{pkg_name}'")
@@ -27,7 +42,7 @@ def resolve_source_url(pkg_meta: dict, pkg_name: str) -> str:
         raise VendorError(f"cannot determine source URL for '{pkg_name}'")
     url = pkg_meta.get("url", "")
     version = str(pkg_meta.get("version", ""))
-    raw_url = raw_url.replace("%{url}", url).replace("%{version}", version).strip('"')
+    raw_url = raw_url.replace("%{url}", url).replace("%{version}", version).replace("%{name}", pkg_name).strip('"')
     return raw_url
 
 
@@ -72,67 +87,36 @@ def generate(
     output: Path,
     log_path: Path | None = None,
     keep_tmpdir: bool = False,
+    submodule_path: Path | None = None,
 ) -> None:
-    """Download source, run go mod vendor, write vendor tarball to output.
+    """Download source (or use local submodule), run vendor tool, write vendor tarball.
 
+    Dispatches to language-specific vendor implementation.
     Raises VendorError on failure.
     """
-    if shutil.which("go") is None:
-        raise VendorError("'go' not found in PATH")
+    if is_rust_package(pkg_meta):
+        from lib.vendor_rust import generate as generate_rust
+        return generate_rust(pkg_name, pkg_meta, output, log_path, keep_tmpdir, submodule_path)
 
-    source_url = resolve_source_url(pkg_meta, pkg_name)
-    tmpdir = Path(tempfile.mkdtemp(prefix=f"govendor-{pkg_name}-"))
-
-    def _log(msg: str) -> None:
-        print(f"  {msg}", flush=True)
-        if log_path:
-            with open(log_path, "a") as fh:
-                fh.write(msg + "\n")
-
-    try:
-        _log(f"downloading {source_url}")
-        archive = tmpdir / "source.tar.gz"
-        _download(source_url, archive)
-
-        src_dir = _extract(archive, tmpdir)
-
-        go_subdir = pkg_meta.get("build", {}).get("go_subdir", "")
-        if go_subdir:
-            src_dir = src_dir / go_subdir
-
-        if not (src_dir / "go.mod").exists():
-            raise VendorError(f"no go.mod in extracted source at {src_dir}")
-
-        vendor_dir = src_dir / "vendor"
-        if vendor_dir.exists():
-            shutil.rmtree(vendor_dir)
-
-        _log("running: go mod vendor")
-        result = subprocess.run(
-            ["go", "mod", "vendor"],
-            cwd=src_dir,
-            capture_output=True,
-            text=True,
-        )
-        if log_path:
-            with open(log_path, "a") as fh:
-                if result.stdout:
-                    fh.write(result.stdout)
-                if result.stderr:
-                    fh.write(result.stderr)
-                fh.write(f"[exit: {result.returncode}]\n\n")
-        if result.returncode != 0:
-            raise VendorError(f"go mod vendor failed: {result.stderr.strip()}")
-
-        if not vendor_dir.exists():
-            raise VendorError("go mod vendor produced no vendor/ directory")
-
-        _log(f"packing vendor/ -> {output.name}")
-        with tarfile.open(output, "w:gz") as tf:
-            tf.add(vendor_dir, arcname="vendor")
-
-    finally:
-        if not keep_tmpdir:
+    if is_go_package(pkg_meta):
+        from lib.vendor_golang import generate as generate_go
+        source_url = resolve_source_url(pkg_meta, pkg_name)
+        tmpdir = Path(tempfile.mkdtemp(prefix=f"govendor-{pkg_name}-"))
+        try:
+            _log = _log_fn(log_path)
+            _log(f"downloading {source_url}")
+            archive = tmpdir / "source.tar.gz"
+            _download(source_url, archive)
+            src_dir = _extract(archive, tmpdir)
+            return generate_go(pkg_name, pkg_meta, tmpdir, src_dir, output, log_path)
+        except Exception:
             shutil.rmtree(tmpdir, ignore_errors=True)
-        else:
-            _log(f"tmpdir kept: {tmpdir}")
+            raise
+        finally:
+            if keep_tmpdir:
+                _log = _log_fn(log_path)
+                _log(f"tmpdir kept: {tmpdir}")
+            elif tmpdir.exists():
+                shutil.rmtree(tmpdir, ignore_errors=True)
+
+    raise VendorError(f"'{pkg_name}' is not a Go or Rust package (no 'golang' or 'cargo' in build_requires)")

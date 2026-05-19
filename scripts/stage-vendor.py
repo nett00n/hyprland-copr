@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Stage 1b: Generate Go vendor tarballs.
+"""Stage 1b: Generate vendor tarballs.
 
 Runs between stage-spec and stage-srpm. For each package that has
-'golang' in build_requires, generates a <name>-<version>-vendor.tar.gz
+'golang' or 'cargo' in build_requires, generates a <name>-<version>-vendor.tar.gz
 in ~/rpmbuild/SOURCES/ and embeds it into the subsequent SRPM so that
 COPR cloud builds have all dependencies available offline.
 
+Supports: Go (go mod vendor) and Rust (cargo vendor).
+
 Skips packages where the spec stage failed.
-Skips packages that are not Go (no 'golang' in build_requires).
+Skips packages that don't require vendoring.
 Skips packages whose vendor tarball already exists at the expected path.
 
 Must be run with network access (before entering the mock chroot).
@@ -24,10 +26,11 @@ import os
 import sys
 
 from lib.config import setup_logging
-from lib.paths import ROOT, SOURCES_DIR, get_package_log_dir
+from lib.paths import ROOT, SOURCES_DIR, GITMODULES, get_package_log_dir
 from lib.reporting import status
-from lib.vendor import VendorError, generate, is_go_package, vendor_tarball_path
+from lib.vendor import VendorError, generate, is_go_package, is_rust_package, vendor_tarball_path
 from lib.version import nvr
+from lib.gitmodules import parse_gitmodules
 from lib.yaml_utils import (
     apply_os_overrides,
     init_stage,
@@ -64,14 +67,14 @@ def run_for_package(
     log = pkg_log_dir / "05-vendor.log"
     log.unlink(missing_ok=True)
 
-    # Skip if not a Go package
-    if not is_go_package(meta):
+    # Skip if not a Go or Rust package
+    if not (is_go_package(meta) or is_rust_package(meta)):
         build_status["stages"]["vendor"][pkg] = {
             "state": "skipped",
             "version": ver,
             "log": None,
             "force_run": False,
-            "reason": "not-go",
+            "reason": "not-vendored",
         }
         return True
 
@@ -92,7 +95,16 @@ def run_for_package(
     version = str(meta["version"])
     tarball = vendor_tarball_path(pkg, version, SOURCES_DIR)
 
-    if tarball.exists():
+    # For Rust packages, also check if the source tarball exists
+    is_rust = is_rust_package(meta)
+    source_tarball = None
+    if is_rust:
+        source_tarball = SOURCES_DIR / f"{pkg}-{version}.tar.gz"
+        tarballs_exist = tarball.exists() and source_tarball.exists()
+    else:
+        tarballs_exist = tarball.exists()
+
+    if tarballs_exist:
         status("vendor", pkg, "ok")
         build_status["stages"]["vendor"][pkg] = {
             "state": "success",
@@ -105,7 +117,16 @@ def run_for_package(
 
     try:
         print(f"  [RUN]  vendor: {pkg}", flush=True)
-        generate(pkg, meta, tarball, log_path=log)
+        pkg_url = meta.get("url", "").rstrip("/")
+        submodule_path = None
+        submodules = parse_gitmodules(ROOT / GITMODULES)
+        if submodules:
+            for mod in submodules:
+                mod_url = mod.get("url", "").rstrip("/")
+                if pkg_url.removesuffix(".git") == mod_url.removesuffix(".git"):
+                    submodule_path = ROOT / mod.get("path", "")
+                    break
+        generate(pkg, meta, tarball, log_path=log, submodule_path=submodule_path)
         status("vendor", pkg, "ok")
         build_status["stages"]["vendor"][pkg] = {
             "state": "success",
