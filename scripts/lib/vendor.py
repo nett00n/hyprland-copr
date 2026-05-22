@@ -33,16 +33,28 @@ def is_rust_package(meta: dict) -> bool:
 
 
 def resolve_source_url(pkg_meta: dict, pkg_name: str) -> str:
-    """Resolve the first source URL, expanding %{url}, %{name}, and %{version} macros."""
+    """Resolve the first source URL, expanding %{url}, %{name}, and %{version} macros.
+
+    Strips .git from URL since GitHub archive endpoints do not accept it.
+    """
+    from lib.spec_utils import process_archive_urls
+
     archives = pkg_meta.get("source", {}).get("archives", [])
     if not archives:
         raise VendorError(f"no sources defined for '{pkg_name}'")
     raw_url = archives[0]
     if not raw_url:
         raise VendorError(f"cannot determine source URL for '{pkg_name}'")
-    url = pkg_meta.get("url", "")
-    version = str(pkg_meta.get("version", ""))
-    raw_url = raw_url.replace("%{url}", url).replace("%{version}", version).replace("%{name}", pkg_name).strip('"')
+
+    # Use shared archive processing to ensure .git is stripped
+    processed = process_archive_urls(
+        [raw_url],
+        pkg_meta.get("url", ""),
+        pkg_name,
+        pkg_meta.get("source", {}).get("commit") if isinstance(pkg_meta.get("source", {}).get("commit"), dict) else None,
+        str(pkg_meta.get("version", "")),
+    )
+    raw_url = str(processed[0]).strip('"')
     return raw_url
 
 

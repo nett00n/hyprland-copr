@@ -33,3 +33,4 @@ logs/
 # Environment
 .env*
 !.env.example
+/submodules/

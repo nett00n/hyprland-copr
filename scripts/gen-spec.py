@@ -325,6 +325,14 @@ def build_context(
 
     prep_commands = extra_prep + build.get("prep", [])
 
+    processed_archives = process_archive_urls(
+        source.get("archives", []),
+        pkg.get("url", ""),
+        name,
+        source.get("commit") if isinstance(source.get("commit"), dict) else None,
+        str(version),
+    )
+
     return {
         "name": name,
         "version": version,
@@ -336,7 +344,7 @@ def build_context(
         "source_name": pkg.get("source_name") or source.get("name"),
         "source_dir": pkg.get("source_dir"),
         "url": pkg["url"],
-        "sources": source.get("archives", []),
+        "sources": processed_archives,
         "patches": source.get("patches", []),
         "bundled_deps": bundled_deps,
         "build_requires": pkg.get("build_requires") or [],

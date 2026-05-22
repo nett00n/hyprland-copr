@@ -25,6 +25,7 @@ from lib.gitmodules import get_changelog_info, parse_gitmodules, resolve_module
 from lib.jinja_utils import create_jinja_env
 from lib.paths import ROOT, get_package_log_dir
 from lib.reporting import status
+from lib.spec_utils import process_archive_urls
 from lib.version import nvr
 from lib.yaml_utils import (
     apply_os_overrides,
@@ -164,7 +165,13 @@ def generate_spec(
             "commit": source.get("commit"),
             "source_name": pkg_meta.get("source_name") or source.get("name"),
             "url": pkg_meta.get("url", ""),
-            "sources": source.get("archives", []),
+            "sources": process_archive_urls(
+                source.get("archives", []),
+                pkg_meta.get("url", ""),
+                pkg.lower(),
+                source.get("commit") if isinstance(source.get("commit"), dict) else None,
+                str(pkg_meta.get("version", "")),
+            ),
             "patches": source.get("patches", []),
             "bundled_deps": source.get("bundled_deps", []),
             "source_dir": pkg_meta.get("source_dir"),
