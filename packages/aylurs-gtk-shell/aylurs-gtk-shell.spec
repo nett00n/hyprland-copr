@@ -5,8 +5,8 @@ Release:        1%{?dist}
 Summary:        Scaffolding CLI for Astal+Gnim
 License:        GPL-3.0-or-later
 URL:            https://github.com/Aylur/ags.git
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
-Source1:        %{name}-%{version}-vendor.tar.gz
+Source0:        https://github.com/Aylur/ags/archive/refs/tags/v3.1.2.tar.gz#/aylurs-gtk-shell-3.1.2.tar.gz
+Source1:        aylurs-gtk-shell-3.1.2-vendor.tar.gz
 
 BuildRequires:  gcc-c++
 BuildRequires:  gjs
@@ -52,6 +52,6 @@ popd
 %{_prefix}/share/ags/
 
 %changelog
-* Tue May 19 2026 nett00n <copr@nett00n.org> - 3.1.2-1
+* Fri May 22 2026 nett00n <copr@nett00n.org> - 3.1.2-1
 
 - Update to 3.1.2

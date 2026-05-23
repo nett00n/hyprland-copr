@@ -1,11 +1,11 @@
 
 Name:           hyprgraphics
 Version:        0.5.1
-Release:        4%{?dist}
+Release:        1%{?dist}
 Summary:        Small C++ library for graphics utilities across the Hypr ecosystem
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprgraphics
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/hyprwm/hyprgraphics/archive/refs/tags/v0.5.1.tar.gz#/hyprgraphics-0.5.1.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  file-devel
@@ -63,6 +63,6 @@ Development files for hyprgraphics.
 %{_libdir}/pkgconfig/hyprgraphics.pc
 
 %changelog
-* Mon Apr 06 2026 nett00n <copr@nett00n.org> - 0.5.1-4
+* Mon Apr 06 2026 nett00n <copr@nett00n.org> - 0.5.1-1
 
 - version: bump to 0.5.1

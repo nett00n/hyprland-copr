@@ -1,11 +1,11 @@
 
 Name:           hyprcursor
 Version:        0.1.13
-Release:        4%{?dist}
+Release:        1%{?dist}
 Summary:        A library and toolkit for the Hyprland cursor format
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprcursor
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/hyprwm/hyprcursor/archive/refs/tags/v0.1.13.tar.gz#/hyprcursor-0.1.13.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -59,6 +59,6 @@ Development files for hyprcursor.
 %{_libdir}/pkgconfig/hyprcursor.pc
 
 %changelog
-* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.13-4
+* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.13-1
 
 - version: bump to 0.1.13

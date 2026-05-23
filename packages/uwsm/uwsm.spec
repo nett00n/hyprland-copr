@@ -2,11 +2,11 @@
 
 Name:           uwsm
 Version:        0.26.4
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        Universal Wayland Session Manager
 License:        MIT
 URL:            https://github.com/Vladimir-csp/uwsm
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/Vladimir-csp/uwsm/archive/refs/tags/v0.26.4.tar.gz#/uwsm-0.26.4.tar.gz
 
 BuildRequires:  gcc-c++
 BuildRequires:  meson
@@ -37,15 +37,6 @@ COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
 Tag:               v0.26.4
 Commit:            3294dd3163bf9f2334b787b3cde5a14e56491404
-
-Build dependencies:
-gcc-c++: 16.0.1
-meson: 1.10.2
-ninja-build: 1.13.2
-python3-dbus: 1.4.0
-python3-pyxdg: 0.28
-scdoc: 1.11.3
-systemd-rpm-macros: 259.5
 
 %prep
 %autosetup -p1
@@ -91,7 +82,7 @@ Development files for uwsm.
 %files devel
 
 %changelog
-* Thu Feb 19 2026 nett00n <copr@nett00n.org> - 0.26.4-2
+* Thu Feb 19 2026 nett00n <copr@nett00n.org> - 0.26.4-1
 
 - chore: Release 0.26.4
 - fix(may-start): move up login shell check

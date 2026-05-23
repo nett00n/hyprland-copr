@@ -1,11 +1,11 @@
 
 Name:           hyprpolkitagent
 Version:        0.1.3
-Release:        4%{?dist}
+Release:        1%{?dist}
 Summary:        A polkit authentication agent written in QT/QML
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpolkitagent
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/hyprwm/hyprpolkitagent/archive/refs/tags/v0.1.3.tar.gz#/hyprpolkitagent-0.1.3.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -48,6 +48,6 @@ Commit:            7e4054410f6d6331b239fea1c659ad6a917fbf6a
 %{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service
 
 %changelog
-* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.3-4
+* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.3-1
 
 - version: bump to 0.1.3

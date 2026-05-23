@@ -1,11 +1,11 @@
 
 Name:           hyprsysteminfo
 Version:        0.2.0
-Release:        16%{?dist}
+Release:        2%{?dist}
 Summary:        System info utility for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprsysteminfo
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/hyprwm/hyprsysteminfo/archive/refs/tags/v0.2.0.tar.gz#/hyprsysteminfo-0.2.0.tar.gz
 
 BuildRequires:  aquamarine
 BuildRequires:  aquamarine-devel
@@ -59,6 +59,6 @@ sed -i '/find_package(Qt6.*WaylandClient)/a find_package(Qt6 REQUIRED COMPONENTS
 %{_prefix}/share/applications/hyprsysteminfo.desktop
 
 %changelog
-* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.2.0-16
+* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.2.0-2
 
 - version: bump to 0.2.0

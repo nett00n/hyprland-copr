@@ -5,7 +5,7 @@ Release:        1%{?dist}
 Summary:        A Wayland scanner replacement for Hypr projects
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprwayland-scanner
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/hyprwm/hyprwayland-scanner/archive/refs/tags/v0.4.6.tar.gz#/hyprwayland-scanner-0.4.6.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -26,11 +26,6 @@ COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 Package info:
 Tag:               v0.4.6
 Commit:            b8632713a6beaf28b56f2a7b0ab2fb7088dbb404
-
-Build dependencies:
-cmake: 4.3.0
-gcc-c++: 16.0.1
-ninja-build: 1.13.2
 
 %prep
 %autosetup -p1

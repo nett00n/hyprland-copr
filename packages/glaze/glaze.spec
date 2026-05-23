@@ -6,7 +6,7 @@ Release:        1%{?dist}
 Summary:        Extremely fast, in memory, JSON and reflection library for modern C++.
 License:        MIT
 URL:            https://github.com/stephenberry/glaze.git
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/stephenberry/glaze/archive/refs/tags/v7.6.0.tar.gz#/glaze-7.6.0.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++

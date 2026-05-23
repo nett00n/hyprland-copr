@@ -8,7 +8,7 @@ Release:        1%{?dist}
 Summary:        Official plugins for Hyprland [Built from latest commit, unstable]
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins.git
-Source0:        %{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz
+Source0:        https://github.com/hyprwm/hyprland-plugins/archive/b3247839c94ceb76506730841f0b3735feccf37c/hyprland-plugins-git-b324783.tar.gz
 Patch0:         hyprland-0.54-exclude-incompatible-plugins.patch
 
 BuildRequires:  cmake
@@ -72,6 +72,6 @@ Package info:
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Tue May 19 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-1
+* Sat May 23 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-1
 
 - Update to 0.55.0^20260517gitb324783

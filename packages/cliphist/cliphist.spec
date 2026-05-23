@@ -2,12 +2,12 @@
 
 Name:           cliphist
 Version:        0.7.0
-Release:        3%{?dist}
+Release:        1%{?dist}
 Summary:        Wayland clipboard manager with support for multimedia
 License:        GPL-3.0-or-later
 URL:            https://github.com/sentriz/cliphist.git
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
-Source1:        %{name}-%{version}-vendor.tar.gz
+Source0:        https://github.com/sentriz/cliphist/archive/refs/tags/v0.7.0.tar.gz#/cliphist-0.7.0.tar.gz
+Source1:        cliphist-0.7.0-vendor.tar.gz
 
 BuildRequires:  golang
 
@@ -61,7 +61,7 @@ Development files for cliphist.
 %files devel
 
 %changelog
-* Sat Oct 11 2025 nett00n <copr@nett00n.org> - 0.7.0-3
+* Sat Oct 11 2025 nett00n <copr@nett00n.org> - 0.7.0-1
 
 - chore: release 0.7.0 (#127)
 - chore: release 0.7.0

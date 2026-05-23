@@ -1,11 +1,11 @@
 
 Name:           hyprlock
 Version:        0.9.5
-Release:        5%{?dist}
+Release:        1%{?dist}
 Summary:        A gpu-accelerated screen lock for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprlock
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/hyprwm/hyprlock/archive/refs/tags/v0.9.5.tar.gz#/hyprlock-0.9.5.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -58,6 +58,6 @@ Commit:            d75e93f8ee1721d70549d96f4d14bf2948aab70c
 %{_sysconfdir}/pam.d/hyprlock
 
 %changelog
-* Sat Apr 18 2026 nett00n <copr@nett00n.org> - 0.9.5-5
+* Sat Apr 18 2026 nett00n <copr@nett00n.org> - 0.9.5-1
 
 - version: bump to 0.9.5

@@ -1,11 +1,11 @@
 
 Name:           hyprqt6engine
 Version:        0.1.0
-Release:        4%{?dist}
+Release:        1%{?dist}
 Summary:        QT6 Theme Provider for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprqt6engine
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/hyprwm/hyprqt6engine/archive/refs/tags/v0.1.0.tar.gz#/hyprqt6engine-0.1.0.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  cmake(KF6ColorScheme)
@@ -58,6 +58,6 @@ sed -i '/target_link_libraries.*hyprqtplugin/i find_package(Qt6 REQUIRED COMPONE
 %{_libdir}/qt6/plugins/styles/libhypr-style.so
 
 %changelog
-* Tue Aug 26 2025 nett00n <copr@nett00n.org> - 0.1.0-4
+* Tue Aug 26 2025 nett00n <copr@nett00n.org> - 0.1.0-1
 
 - all: initial commit

@@ -1,11 +1,11 @@
 
 Name:           hyprlang
 Version:        0.6.8
-Release:        4%{?dist}
+Release:        1%{?dist}
 Summary:        The hypr configuration language library
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprlang
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://github.com/hyprwm/hyprlang/archive/refs/tags/v0.6.8.tar.gz#/hyprlang-0.6.8.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -53,6 +53,6 @@ Development files for hyprlang.
 %{_libdir}/pkgconfig/hyprlang.pc
 
 %changelog
-* Mon Jan 05 2026 nett00n <copr@nett00n.org> - 0.6.8-4
+* Mon Jan 05 2026 nett00n <copr@nett00n.org> - 0.6.8-1
 
 - version: bump to 0.6.8
