@@ -152,7 +152,7 @@ glaze:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Extremely fast, in memory, JSON and reflection library for modern C++.
   url: https://github.com/stephenberry/glaze.git
-  version: 7.6.0
+  version: 7.7.0
 gtk4-layer-shell:
   build:
     system: meson
@@ -380,7 +380,7 @@ Hyprland:
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -474,7 +474,7 @@ Hyprland-git:
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -561,7 +561,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhypr*.so'
   - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -620,7 +620,7 @@ hyprland-plugins-git:
   - '%{_prefix}/lib/libhypr*.so'
   - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -1068,7 +1068,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1146,7 +1146,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1305,12 +1305,12 @@ pyprland:
   - '%doc README.md'
   - '%license LICENSE'
   - '%{_bindir}/pypr'
-  - /usr/bin/pypr-gui
+  - '%{_bindir}/pypr-gui'
   - '%{_bindir}/pypr-quickstart'
   - '%{python3_sitelib}/pyprland'
   - '%{python3_sitelib}/pyprland-%{version}.dist-info'
   license: MIT
-  release: 2
+  release: 3
   requires:
   - python3-aiofiles
   - python3-aiohttp

@@ -117,7 +117,6 @@ def generate_spec(
         build_commands = build.get("commands", [])
         install_commands = build.get("install", [])
 
-
         # Build the build command
         if build_commands:
             build_cmd = "\n".join(build_commands)
@@ -169,7 +168,9 @@ def generate_spec(
                 source.get("archives", []),
                 pkg_meta.get("url", ""),
                 pkg.lower(),
-                source.get("commit") if isinstance(source.get("commit"), dict) else None,
+                source.get("commit")
+                if isinstance(source.get("commit"), dict)
+                else None,
                 str(pkg_meta.get("version", "")),
             ),
             "patches": source.get("patches", []),

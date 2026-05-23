@@ -206,8 +206,6 @@ def build_changelog(
     }
 
 
-
-
 def build_context(
     name: str,
     pkg: dict,

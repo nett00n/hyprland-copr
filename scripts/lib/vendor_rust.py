@@ -54,7 +54,6 @@ def generate(
             raise
 
     try:
-
         # Handle Rust subdirectory if specified
         rust_subdir = pkg_meta.get("build", {}).get("rust_subdir", "")
         if rust_subdir:
@@ -122,7 +121,10 @@ offline = true
                     # Add all source files except .git and __pycache__ and vendor
                     for item in sorted(src_dir.rglob("*")):
                         # Skip .git, __pycache__, vendor (already in vendor tarball), and .cargo (already in vendor tarball)
-                        if any(part in (".git", "__pycache__", "vendor", ".cargo") for part in item.parts):
+                        if any(
+                            part in (".git", "__pycache__", "vendor", ".cargo")
+                            for part in item.parts
+                        ):
                             continue
                         if item.is_file():
                             arcname = f"{root_arc_name}/{item.relative_to(src_dir)}"

@@ -14,11 +14,13 @@ class VendorError(Exception):
 
 def _log_fn(log_path: Path | None):
     """Return a logging function that writes to stdout and optionally to a file."""
+
     def _log(msg: str) -> None:
         print(f"  {msg}", flush=True)
         if log_path:
             with open(log_path, "a") as fh:
                 fh.write(msg + "\n")
+
     return _log
 
 
@@ -51,7 +53,9 @@ def resolve_source_url(pkg_meta: dict, pkg_name: str) -> str:
         [raw_url],
         pkg_meta.get("url", ""),
         pkg_name,
-        pkg_meta.get("source", {}).get("commit") if isinstance(pkg_meta.get("source", {}).get("commit"), dict) else None,
+        pkg_meta.get("source", {}).get("commit")
+        if isinstance(pkg_meta.get("source", {}).get("commit"), dict)
+        else None,
         str(pkg_meta.get("version", "")),
     )
     raw_url = str(processed[0]).strip('"')
@@ -108,10 +112,14 @@ def generate(
     """
     if is_rust_package(pkg_meta):
         from lib.vendor_rust import generate as generate_rust
-        return generate_rust(pkg_name, pkg_meta, output, log_path, keep_tmpdir, submodule_path)
+
+        return generate_rust(
+            pkg_name, pkg_meta, output, log_path, keep_tmpdir, submodule_path
+        )
 
     if is_go_package(pkg_meta):
         from lib.vendor_golang import generate as generate_go
+
         source_url = resolve_source_url(pkg_meta, pkg_name)
         tmpdir = Path(tempfile.mkdtemp(prefix=f"govendor-{pkg_name}-"))
         try:
@@ -131,4 +139,6 @@ def generate(
             elif tmpdir.exists():
                 shutil.rmtree(tmpdir, ignore_errors=True)
 
-    raise VendorError(f"'{pkg_name}' is not a Go or Rust package (no 'golang' or 'cargo' in build_requires)")
+    raise VendorError(
+        f"'{pkg_name}' is not a Go or Rust package (no 'golang' or 'cargo' in build_requires)"
+    )

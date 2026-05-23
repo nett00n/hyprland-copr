@@ -28,7 +28,13 @@ import sys
 from lib.config import setup_logging
 from lib.paths import ROOT, SOURCES_DIR, GITMODULES, get_package_log_dir
 from lib.reporting import status
-from lib.vendor import VendorError, generate, is_go_package, is_rust_package, vendor_tarball_path
+from lib.vendor import (
+    VendorError,
+    generate,
+    is_go_package,
+    is_rust_package,
+    vendor_tarball_path,
+)
 from lib.version import nvr
 from lib.gitmodules import parse_gitmodules
 from lib.yaml_utils import (

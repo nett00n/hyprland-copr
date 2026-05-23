@@ -7,5 +7,8 @@ BUILD_SYSTEMS = {
     "configure": ("./configure\n%make_build", "%make_install"),
     "make": ("make %{?_smp_mflags}", "make install DESTDIR=%{buildroot}"),
     "python": ("%pyproject_build", "%pyproject_install"),
-    "cargo": ("cargo build --offline --release", "install -Dm755 target/release/%{name} %{buildroot}%{_bindir}/%{name}"),
+    "cargo": (
+        "cargo build --offline --release",
+        "install -Dm755 target/release/%{name} %{buildroot}%{_bindir}/%{name}",
+    ),
 }
