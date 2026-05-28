@@ -1,7 +1,7 @@
 
 Name:           hyprland
 Version:        0.55.2
-Release:        2%{?dist}
+Release:        4%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -11,6 +11,7 @@ BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
 BuildRequires:  glaze-devel
+BuildRequires:  glslang-devel
 BuildRequires:  hyprcursor-devel
 BuildRequires:  hyprgraphics-devel
 BuildRequires:  hyprland-protocols-devel
@@ -18,6 +19,8 @@ BuildRequires:  hyprlang-devel
 BuildRequires:  hyprutils-devel
 BuildRequires:  hyprwayland-scanner-devel
 BuildRequires:  hyprwire-devel
+BuildRequires:  inotify-tools-devel
+BuildRequires:  lcms2-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(cairo)
 BuildRequires:  pkgconfig(gbm)
@@ -101,6 +104,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Sat May 16 2026 nett00n <copr@nett00n.org> - 0.55.2-2
+* Sat May 16 2026 nett00n <copr@nett00n.org> - 0.55.2-4
 
 - version: bump to 0.55.2

@@ -1,16 +1,16 @@
 
 Name:           cpptrace
 Version:        1.0.4
-Release:        14%{?dist}
+Release:        26%{?dist}
 Summary:        Simple, portable, and self-contained stacktrace library for C++11 and newer
 License:        MIT
-URL:            https://github.com/jeremy-rifkin/cpptrace.git
-Source0:        https://github.com/jeremy-rifkin/cpptrace/archive/refs/tags/v%{version}.tar.gz#/cpptrace-%{version}.tar.gz
+URL:            https://github.com/jeremy-rifkin/cpptrace
+Source0:        https://github.com/jeremy-rifkin/cpptrace/archive/refs/tags/v1.0.4.tar.gz#/cpptrace-1.0.4.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
-BuildRequires:  libdwarf-devel
-BuildRequires:  libzstd
+BuildRequires:  libdwarf-code
+BuildRequires:  libdwarf-code-devel
 BuildRequires:  libzstd-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(libdwarf)
@@ -18,7 +18,9 @@ BuildRequires:  pkgconfig(libunwind)
 
 
 %description
-Simple, portable, and self-contained C++ stacktrace library
+Cpptrace is a simple and portable C++ stacktrace library supporting C++11 and greater on Linux, macOS, and Windows including MinGW and Cygwin environments. The goal: Make stack traces simple for once.
+
+In addition to providing access to stack traces, cpptrace also provides a mechanism for getting stacktraces from thrown exceptions which is immensely valuable for debugging and triaging
 
 Maintainer info:
 
@@ -59,6 +61,6 @@ Development files for cpptrace.
 %{_libdir}/cmake/cpptrace/Findzstd.cmake
 
 %changelog
-* Thu Jul 24 2025 nett00n <copr@nett00n.org> - 1.0.4-14
+* Thu Jul 24 2025 nett00n <copr@nett00n.org> - 1.0.4-26
 
 - Bump to v1.0.4

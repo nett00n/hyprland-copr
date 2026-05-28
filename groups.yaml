@@ -95,6 +95,8 @@ other-deps:
   packages:
   - aylurs-gtk-shell
   - cava
+  - cpptrace
   - glaze
   - gtk4-layer-shell
+  - libdwarf-code
   - sndio

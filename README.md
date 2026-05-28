@@ -127,14 +127,16 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 - `aylurs-gtk-shell` — Scaffolding CLI for Astal+Gnim
 - `cava` — Cross-platform Audio Visualizer
+- `cpptrace` — Simple, portable, and self-contained stacktrace library for C++11 and newer
 - `glaze` — Extremely fast, in memory, JSON and reflection library for modern C++.
 - `gtk4-layer-shell` — A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
+- `libdwarf-code` — Library to access DWARF debugging information
 - `sndio` — Portable version of OpenBSD's lightweight audio & MIDI sub-system
 > *\** - not provided by this repo, exists in fedora's
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-05-23
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-05-28
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

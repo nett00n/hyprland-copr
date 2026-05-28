@@ -121,3 +121,9 @@
 [submodule "submodules/coffebar/hyprland-per-window-layout"]
 	path = submodules/coffebar/hyprland-per-window-layout
 	url = https://github.com/coffebar/hyprland-per-window-layout.git
+[submodule "submodules/jeremy-rifkin/cpptrace"]
+	path = submodules/jeremy-rifkin/cpptrace
+	url = https://github.com/jeremy-rifkin/cpptrace.git
+[submodule "submodules/davea42/libdwarf-code"]
+	path = submodules/davea42/libdwarf-code
+	url = https://github.com/davea42/libdwarf-code.git
