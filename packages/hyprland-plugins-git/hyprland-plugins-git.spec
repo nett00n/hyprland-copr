@@ -72,6 +72,6 @@ Package info:
 %{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Thu May 28 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-3
+* Fri May 29 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-3
 
 - Update to 0.55.0^20260517gitb324783
