@@ -1,11 +1,11 @@
 
 Name:           aquamarine
-Version:        0.11.0
+Version:        0.12.0
 Release:        1%{?dist}
 Summary:        A very light linux rendering backend library
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/aquamarine
-Source0:        https://github.com/hyprwm/aquamarine/archive/refs/tags/v0.11.0.tar.gz#/aquamarine-0.11.0.tar.gz
+Source0:        https://github.com/hyprwm/aquamarine/archive/refs/tags/v0.12.0.tar.gz#/aquamarine-0.12.0.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -41,8 +41,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.11.0
-Commit:            cd8321eba285e3cce50c50f19d5174a0b2567297
+Tag:               v0.12.0
+Commit:            01eeae12aa171fc13869b530b0dbb918521fa401
 
 %prep
 %autosetup -p1
@@ -70,6 +70,6 @@ Development files for aquamarine.
 %{_libdir}/pkgconfig/aquamarine.pc
 
 %changelog
-* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.11.0-1
+* Sat May 30 2026 nett00n <copr@nett00n.org> - 0.12.0-1
 
-- version: bump to 0.11.0
+- version: bump to 0.12.0
