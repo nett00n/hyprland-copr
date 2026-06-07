@@ -4,7 +4,7 @@
 
 Name:           hyprland-plugins-git
 Version:        0.55.0^20260517gitb324783
-Release:        4%{?dist}
+Release:        6%{?dist}
 Summary:        Official plugins for Hyprland [Built from latest commit, unstable]
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins.git
@@ -66,12 +66,9 @@ Package info:
 %files
 %doc README.md
 %license LICENSE
-%{_prefix}/lib/libborders-plus-plus.so
-%{_prefix}/lib/libcsgo-vulkan-fix.so
 %{_prefix}/lib/libhypr*.so
-%{_prefix}/lib/libxtra-dispatchers.so
 
 %changelog
-* Mon Jun 01 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-4
+* Fri Jun 05 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-6
 
 - Update to 0.55.0^20260517gitb324783

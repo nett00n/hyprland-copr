@@ -83,6 +83,6 @@ Development files for waybar-git.
 %files devel
 
 %changelog
-* Mon Jun 01 2026 nett00n <copr@nett00n.org> - 0.15.0-1
+* Thu Jun 04 2026 nett00n <copr@nett00n.org> - 0.15.0-1
 
 - Update to 0.15.0

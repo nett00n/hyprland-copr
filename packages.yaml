@@ -320,9 +320,11 @@ Hyprland:
   - hyprutils-devel
   - hyprwayland-scanner-devel
   - hyprwire-devel
-  - inotify-tools-devel
   - lcms2-devel
+  - lua-devel
+  - luajit-devel
   - ninja-build
+  - pkgconf-pkg-config
   - pkgconfig(cairo)
   - pkgconfig(gbm)
   - pkgconfig(gio-2.0)
@@ -330,6 +332,8 @@ Hyprland:
   - pkgconfig(glesv2)
   - pkgconfig(libdrm)
   - pkgconfig(libinput)
+  - pkgconfig(lua)
+  - pkgconfig(luajit)
   - pkgconfig(muparser)
   - pkgconfig(pango)
   - pkgconfig(pangocairo)
@@ -383,7 +387,7 @@ Hyprland:
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
-  release: 5
+  release: 6
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -559,12 +563,9 @@ hyprland-plugins:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/lib/libborders-plus-plus.so'
-  - '%{_prefix}/lib/libcsgo-vulkan-fix.so'
   - '%{_prefix}/lib/libhypr*.so'
-  - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
-  release: 4
+  release: 7
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -618,12 +619,9 @@ hyprland-plugins-git:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/lib/libborders-plus-plus.so'
-  - '%{_prefix}/lib/libcsgo-vulkan-fix.so'
   - '%{_prefix}/lib/libhypr*.so'
-  - '%{_prefix}/lib/libxtra-dispatchers.so'
   license: BSD-3-Clause
-  release: 4
+  release: 6
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'

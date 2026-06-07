@@ -41,3 +41,7 @@ everything, that Hyprland recommended:
 - https://github.com/outfoxxed/hy3
 - https://github.com/levnikmyskin/hyprland-virtual-desktops
 - https://github.com/zakk4223/hyprland-easymotion
+
+seems interesting:
+- https://github.com/jjsullivan5196/wvkbd
+- https://github.com/hbuddenberg/hyprcaffeine
