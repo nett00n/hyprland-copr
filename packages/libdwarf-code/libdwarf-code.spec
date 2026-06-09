@@ -1,7 +1,7 @@
 
 Name:           libdwarf-code
 Version:        2.3.1
-Release:        3%{?dist}
+Release:        7%{?dist}
 Summary:        Library to access DWARF debugging information
 License:        LGPL 2.1
 URL:            https://github.com/davea42/libdwarf-code
@@ -33,17 +33,20 @@ Commit:            b5ef10c9df0f494596fd9d31e19048a3ed5f28ba
 %autosetup -p1
 
 %build
-%cmake -DPIC_ALWAYS=ON
+%cmake -DBUILD_SHARED=ON -DBUILD_NON_SHARED=OFF
 %cmake_build
+cmake -B build-static -DBUILD_SHARED=OFF -DBUILD_NON_SHARED=ON -DPIC_ALWAYS=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_DWARFDUMP=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build-static --parallel %{_smp_build_ncpus}
 
 %install
 %cmake_install
+install -m 644 build-static/src/lib/libdwarf/libdwarf.a %{buildroot}%{_libdir}/
 
 %files
 %doc README.md
 %{_bindir}/dwarfdump
 %{_datadir}/dwarfdump/dwarfdump.conf
-%{_libdir}/libdwarf.a
+%{_libdir}/libdwarf.so.*
 %{_mandir}/man1/dwarfdump.1.gz
 
 %package devel
@@ -62,9 +65,11 @@ Development files for libdwarf-code.
 %{_libdir}/cmake/libdwarf/libdwarfConfig.cmake
 %{_libdir}/cmake/libdwarf/libdwarfConfigVersion.cmake
 %{_libdir}/pkgconfig/libdwarf.pc
+%{_libdir}/libdwarf.so
+%{_libdir}/libdwarf.a
 
 %changelog
-* Wed Mar 04 2026 nett00n <copr@nett00n.org> - 2.3.1-3
+* Wed Mar 04 2026 nett00n <copr@nett00n.org> - 2.3.1-7
 
 - Release=2.3.1
 - -----BEGIN PGP SIGNATURE-----

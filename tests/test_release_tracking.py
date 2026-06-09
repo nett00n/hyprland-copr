@@ -15,7 +15,7 @@ class TestUpdatePackageReleases:
     """Test release auto-increment and autoreset logic."""
 
     def test_first_run_no_stored_hash(self):
-        """First run (no stored hash) → needs_rebuild=True, release = 1."""
+        """First run (no stored hash) → needs_rebuild=True, release bumped."""
         packages = {
             "test-pkg": {
                 "version": "1.0",
@@ -29,9 +29,9 @@ class TestUpdatePackageReleases:
         build_status = {"stages": {"spec": {}}}
 
         updates = update_package_releases(packages, build_status)
-        # First run, no stored content_hash → all packages need rebuild
-        # But release is already 1, so no update needed
-        assert updates == {}
+        # First run, no stored content_hash → package needs rebuild
+        # Release must be bumped: 1 → 2
+        assert updates == {"test-pkg": 2}
 
     def test_content_unchanged_no_force(self):
         """Content unchanged, no force_run → no update."""
@@ -437,12 +437,12 @@ class TestUpdatePackageReleases:
         }
 
         updates = update_package_releases(packages, build_status)
-        # pkg-a: first run, needs_rebuild=True, version_changed=True → new_release=1
-        # But current release is already 1, so no update needed
-        assert "pkg-a" not in updates
-        # pkg-b: cascaded from pkg-a, release 1 + 1 = 2
+        # pkg-a: first run, no stored entry → needs_rebuild=True → release 1 + 1 = 2
+        assert "pkg-a" in updates
+        assert updates["pkg-a"] == 2
+        # pkg-b: cascaded from pkg-a rebuild → needs_rebuild=True → release 1 + 1 = 2
         assert "pkg-b" in updates
-        assert updates["pkg-b"] == 2  # B cascaded (1 + 1)
+        assert updates["pkg-b"] == 2
 
     def test_multiple_deps_one_changed(self):
         """pkg has multiple deps, only one changed → pkg release increments once."""
@@ -566,3 +566,53 @@ class TestUpdatePackageReleases:
         updates = update_package_releases(packages, build_status)
         # release_lock=True → skipped even though version changed
         assert updates == {}
+
+    def test_dependency_release_change_does_not_cascade(self):
+        """Dependency release change alone does NOT cascade to dependents.
+
+        This verifies the fix for "metadata is still old" issue where release
+        changes in dependencies would incorrectly trigger dependent package rebuilds.
+
+        The dependency hash (used to detect content changes) excludes release,
+        so only actual content changes cascade, not release-only changes.
+        """
+        from lib.cache import _package_config_hash, _content_hash
+
+        # Dependency package
+        dep = {
+            "version": "1.0",
+            "release": 1,
+            "license": "MIT",
+            "summary": "Dependency",
+            "description": "Dep",
+            "url": "https://example.com/dep",
+        }
+
+        # Dependent package that depends on dep
+        pkg = {
+            "version": "2.0",
+            "release": 1,
+            "depends_on": ["dep"],
+            "license": "MIT",
+            "summary": "Package",
+            "description": "Pkg",
+            "url": "https://example.com/pkg",
+        }
+
+        packages = {"dep": dep, "pkg": pkg}
+
+        # Build dependency with release=1
+        all_packages_1 = {"dep": dep, "pkg": pkg}
+        dep_hash_1 = _package_config_hash(dep)
+
+        # Now bump dependency release to 2
+        dep_bumped = dict(dep)
+        dep_bumped["release"] = 2
+        all_packages_2 = {"dep": dep_bumped, "pkg": pkg}
+        dep_hash_2 = _package_config_hash(dep_bumped)
+
+        # Verify: dependency hash should NOT change with release-only change
+        assert dep_hash_1 == dep_hash_2, (
+            "Release-only change should not affect dependency hash "
+            "(prevents unnecessary cascades)"
+        )

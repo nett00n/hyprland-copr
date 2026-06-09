@@ -401,14 +401,19 @@ def update_package_releases(packages: dict, build_status: dict) -> dict[str, int
 
             # Determine new release value
             current_release = pkg_dict.get("release", 1)
+
+            # Version changed if we have a stored version that differs from current
             version_changed = (
-                last_version is None or str(pkg_dict.get("version", "")) != last_version
+                last_version is not None
+                and str(pkg_dict.get("version", "")) != last_version
             )
 
+            # If version changed or release is 0, reset to 1
+            # Otherwise, increment release (package needs rebuild)
             if version_changed or current_release == 0:
                 new_release = 1
             else:
-                # Try to increment; fallback to 1 on error
+                # Package needs rebuild: always bump release
                 try:
                     new_release = int(current_release) + 1
                 except (ValueError, TypeError):
@@ -420,10 +425,20 @@ def update_package_releases(packages: dict, build_status: dict) -> dict[str, int
 
     # Write updates back to packages.yaml if any
     if updates:
-        data = yaml.safe_load(PACKAGES_YAML.read_text())
+        import re
+
+        content = PACKAGES_YAML.read_text()
+
         for pkg_name, new_release in updates.items():
-            if pkg_name in data:
-                data[pkg_name]["release"] = new_release
-        PACKAGES_YAML.write_text(dump_yaml_pretty(data))
+            # Use regex to safely replace release value for each package
+            # Pattern: find package name at line start, then find release: value
+            pattern = (
+                f"^({re.escape(pkg_name)}:.*?^  release: )\\d+"
+                "(\\n)"
+            )
+            replacement = f"\\g<1>{new_release}\\2"
+            content = re.sub(pattern, replacement, content, flags=re.MULTILINE | re.DOTALL)
+
+        PACKAGES_YAML.write_text(content)
 
     return updates

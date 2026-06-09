@@ -74,7 +74,7 @@ aylurs-gtk-shell:
   - '%{_prefix}/bin/ags'
   - '%{_prefix}/share/ags/'
   license: GPL-3.0-or-later
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -110,7 +110,7 @@ cava:
   - '%doc README.md'
   - '%license LICENSE'
   license: MIT
-  release: 1
+  release: 2
   rpm:
     no_debug_package: true
   source:
@@ -1023,7 +1023,7 @@ Hyprshot:
   - '%license LICENSE'
   - '%{_bindir}/hyprshot'
   license: GPL-3.0-only
-  release: 1
+  release: 2
   requires:
   - /usr/bin/notify-send
   - grim
@@ -1311,7 +1311,7 @@ pyprland:
   - '%{python3_sitelib}/pyprland'
   - '%{python3_sitelib}/pyprland-%{version}.dist-info'
   license: MIT
-  release: 1
+  release: 2
   requires:
   - python3-aiofiles
   - python3-aiohttp
@@ -1419,7 +1419,7 @@ Waybar:
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 1
+  release: 2
   rpm:
     buildarch: ''
     no_debug_package: false
@@ -1488,7 +1488,7 @@ Waybar-git:
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 1
+  release: 2
   rpm:
     buildarch: ''
     no_debug_package: false
@@ -1666,9 +1666,13 @@ quickshell:
   build_requires:
   - cli11-devel
   - cmake
+  - cpptrace-devel
   - gcc-c++
+  - glib2-devel
   - glslang-devel
+  - polkit-devel
   - libdrm-devel
+  - libzstd-devel
   - mesa-libgbm-devel
   - ninja-build
   - pam-devel
@@ -1694,7 +1698,7 @@ quickshell:
   - '%{_datadir}/applications/org.quickshell.desktop'
   - '%{_datadir}/icons/hicolor/scalable/apps/org.quickshell.svg'
   license: LGPL-3.0-or-later
-  release: 16
+  release: 26
   requires: []
   rpm:
     no_debug_package: false
@@ -1725,7 +1729,7 @@ hyprland-per-window-layout:
   - '%license LICENSE'
   - '%{_bindir}/%{name}'
   license: MIT
-  release: 1
+  release: 2
   requires: []
   rpm:
     no_debug_package: false
@@ -1772,7 +1776,7 @@ cpptrace:
   - '%license LICENSE'
   - '%{_libdir}/libcpptrace.so*'
   license: MIT
-  release: 26
+  release: 30
   requires: []
   rpm:
     no_debug_package: false
@@ -1786,9 +1790,13 @@ cpptrace:
 libdwarf-code:
   build:
     commands:
-    - '%cmake -DPIC_ALWAYS=ON'
+    - '%cmake -DBUILD_SHARED=ON -DBUILD_NON_SHARED=OFF'
     - '%cmake_build'
-    install: []
+    - cmake -B build-static -DBUILD_SHARED=OFF -DBUILD_NON_SHARED=ON -DPIC_ALWAYS=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_DWARFDUMP=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    - cmake --build build-static --parallel %{_smp_build_ncpus}
+    install:
+    - '%cmake_install'
+    - install -m 644 build-static/src/lib/libdwarf/libdwarf.a %{buildroot}%{_libdir}/
     no_lto: false
     prep: []
     system: cmake
@@ -1813,14 +1821,16 @@ libdwarf-code:
     - '%{_libdir}/cmake/libdwarf/libdwarfConfig.cmake'
     - '%{_libdir}/cmake/libdwarf/libdwarfConfigVersion.cmake'
     - '%{_libdir}/pkgconfig/libdwarf.pc'
+    - '%{_libdir}/libdwarf.so'
+    - '%{_libdir}/libdwarf.a'
   files:
   - '%doc README.md'
   - '%{_bindir}/dwarfdump'
   - '%{_datadir}/dwarfdump/dwarfdump.conf'
-  - '%{_libdir}/libdwarf.a'
+  - '%{_libdir}/libdwarf.so.*'
   - '%{_mandir}/man1/dwarfdump.1.gz'
   license: LGPL 2.1
-  release: 3
+  release: 7
   requires: []
   rpm:
     no_debug_package: false

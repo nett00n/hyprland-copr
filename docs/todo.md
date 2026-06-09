@@ -45,3 +45,5 @@ everything, that Hyprland recommended:
 seems interesting:
 - https://github.com/jjsullivan5196/wvkbd
 - https://github.com/hbuddenberg/hyprcaffeine
+- https://github.com/loqusion/hyprshade
+

@@ -9,14 +9,20 @@
 #   groups.yaml   — logical groupings shown in the build report / README badges
 #
 # Nested sub-objects per package:
-#   source: — archive URLs, commit info, bundled deps, source_name
-#   build:  — build system, flags, prep/build/install overrides, no_lto
-#   rpm:    — buildarch, no_debug_package
+#   source:      — archive URLs, commit info, bundled deps, patches, source_name
+#   build:       — build system, flags, prep/build/install overrides, no_lto, go_subdir, subdir
+#   rpm:         — buildarch, no_debug_package
+#   auto_update: — enable automatic updates (latest-commit, etc.)
 #
-# build.system: cmake | meson | autotools | configure | make | python
+# build.system: cmake | meson | autotools | configure | make | python | cargo | golang
 # source.archives: list of plain URL strings; index (Source0, Source1, ...) is auto-assigned
+# source.commit: for git snapshots (no version tag); has full hash and date fields
+# source.patches: list of patch files to apply after %autosetup
+# source.source_name: override archive base directory name (if different from package name)
+# source_dir: override extracted source directory (at package level, for mismatched tarball structure)
 # files: RPM macros like %{_bindir} are passed through verbatim
 # build_requires / requires: use pkgconfig() form where possible
+# auto_update: enable auto-updates; release_type can be latest-commit, latest-release, etc.
 #
 # RPM directory macro reference: docs/rpm-dir-prefixes.md
 # Macro converter: scripts/rpm-dir-prefixes-convert.py
@@ -331,6 +337,220 @@ myapp-with-bundled:
         source_subdir: src
   build:
     system: cmake
+
+# --- golang package with vendored dependencies ----------------------------
+# Golang builds using build system: golang; can include bundled vendor tarball
+mygolangutil:
+  version: "1.0.0"
+  release: "%autorelease"
+  license: MIT
+  summary: A Go command-line utility
+  description: |
+    mygolangutil is a Go CLI tool built from vendored dependencies.
+  url: https://github.com/myorg/mygolangutil
+  build_requires:
+    - golang
+  requires: []
+  files:
+    - "%license LICENSE"
+    - "%doc README.md"
+    - "%{_bindir}/mygolangutil"
+  devel:
+    files: []
+  source:
+    archives:
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+      - "%{name}-%{version}-vendor.tar.gz"
+  build:
+    system: golang
+
+# --- cargo (Rust) package ---------------------------------------------------
+# Rust builds using build system: cargo; can include vendored deps
+myrustutil:
+  version: "1.5.0"
+  release: "%autorelease"
+  license: MIT
+  summary: A Rust command-line utility
+  description: |
+    myrustutil is a Rust CLI tool with vendored dependencies.
+  url: https://github.com/myorg/myrustutil
+  build_requires:
+    - cargo
+    - rustc
+  requires: []
+  files:
+    - "%license LICENSE"
+    - "%doc README.md"
+    - "%{_bindir}/myrustutil"
+  devel:
+    files: []
+  source:
+    archives:
+      - "%{name}-%{version}.tar.gz"
+      - "%{name}-%{version}-vendor.tar.gz"
+    source_dir: "%{name}-%{version}"
+  build:
+    system: cargo
+
+# --- git snapshot (latest commit, not version-tagged) ----------------------
+# For projects without version tags; uses commit hash and date for versioning.
+# auto_update with release_type: latest-commit enables automatic updates.
+mylatestproject:
+  version: "0.55.0^20240615gitabc1234"  # format: base^<date>git<shorthash>
+  release: "%autorelease"
+  license: MIT
+  summary: A project built from latest commit
+  description: |
+    mylatestproject tracks the latest commit since no stable releases exist.
+    This package auto-updates from the repository's latest commit.
+  url: https://github.com/myorg/mylatestproject.git
+  auto_update:
+    release_type: latest-commit
+  build_requires:
+    - cmake
+    - gcc-c++
+    - ninja-build
+  requires: []
+  files:
+    - "%license LICENSE"
+    - "%{_bindir}/mylatestproject"
+  devel:
+    files: []
+  source:
+    # commit: required when using git snapshots instead of version tags
+    commit:
+      full: abc1234567890def1234567890abcdef12345678
+      date: "20240615"
+    archives:
+      - "%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz"
+  build:
+    system: cmake
+
+# --- package with patches ---------------------------------------------------
+# Patches are applied after %autosetup; list files relative to repo root
+mypatched-pkg:
+  version: "3.2.0"
+  release: "%autorelease"
+  license: GPL-2.0-or-later
+  summary: A package that requires patches
+  description: |
+    mypatched-pkg needs downstream patches for compatibility.
+  url: https://github.com/myorg/mypatched-pkg
+  build_requires:
+    - cmake
+    - gcc-c++
+    - ninja-build
+  requires: []
+  files:
+    - "%license LICENSE"
+    - "%{_bindir}/mypatched-pkg"
+  devel:
+    files: []
+  source:
+    archives:
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+    patches:
+      - mypatched-pkg-fix-compat.patch
+      - mypatched-pkg-build-flags.patch
+  build:
+    system: cmake
+
+# --- package with build subdir and custom prep ----------------------------
+# Some projects have the actual build in a subdirectory (e.g., cli/ subdirectory).
+# go_subdir specifies where the Go code lives; subdir does the same for cmake.
+# prep allows custom shell commands after %autosetup for source tree adjustments.
+mycomplexbuild:
+  version: "2.1.0"
+  release: "%autorelease"
+  license: Apache-2.0
+  summary: A complex multi-module project
+  description: |
+    mycomplexbuild has the CLI in a cli/ subdirectory and uses custom prep steps.
+  url: https://github.com/myorg/mycomplexbuild
+  build_requires:
+    - golang
+    - meson
+    - ninja-build
+  requires: []
+  files:
+    - "%license LICENSE"
+    - "%{_bindir}/mycomplexbuild"
+  devel:
+    files: []
+  source:
+    archives:
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+      - "%{name}-%{version}-vendor.tar.gz"
+  build:
+    system: meson
+    go_subdir: cli          # Go code lives in cli/ subdirectory
+    prep:
+      - pushd cli
+      - tar xf %{SOURCE1}
+      - popd
+
+# --- meson build with custom cmake commands --------------------------------
+# For more control over build process, use custom commands instead of defaults.
+myadvancedapp:
+  version: "1.3.0"
+  release: "%autorelease"
+  license: LGPL-3.0-or-later
+  summary: An advanced application with custom build commands
+  description: |
+    myadvancedapp uses custom CMake commands for non-standard configuration.
+  url: https://github.com/myorg/myadvancedapp
+  build_requires:
+    - cmake
+    - gcc-c++
+    - ninja-build
+    - pkgconfig(Qt6)
+  requires: []
+  files:
+    - "%license LICENSE"
+    - "%{_bindir}/myadvancedapp"
+  devel:
+    files: []
+  source:
+    archives:
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+  build:
+    system: cmake
+    no_lto: true            # disable LTO (e.g., when .incbin assembly is used)
+    commands:
+      - "%cmake -DBUILD_TESTING=OFF -DENABLE_DOCS=ON"
+      - "%cmake_build"
+
+# --- noarch package with custom buildarch -----------------------------------
+# buildarch: noarch for architecture-independent packages (scripts, data)
+# buildarch: can also be left empty '' to auto-detect per package
+mydata:
+  version: "1.0.0"
+  release: "%autorelease"
+  license: CC0-1.0
+  summary: Architecture-independent data package
+  description: |
+    mydata is a collection of data files with no architecture-specific code.
+  url: https://github.com/myorg/mydata
+  build_requires: []
+  requires: []
+  files:
+    - "%doc README.md"
+    - "%license LICENSE"
+    - "%{_datadir}/mydata/"
+  devel:
+    files: []
+  source:
+    archives:
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+  build:
+    system: make
+    commands: []
+    install:
+      - "install -dm0755 %{buildroot}/%{_datadir}/mydata"
+      - "install -pm0644 data/* %{buildroot}/%{_datadir}/mydata/"
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
 
 # --- OS-version-specific overrides ----------------------------------------
 # Use the fedora: key to override fields for specific Fedora versions.

@@ -48,6 +48,21 @@ def failed_local_dep(
     return None
 
 
+def regenerate_repo_metadata() -> None:
+    """Regenerate local repo metadata to index all packages."""
+    result = subprocess.run(
+        ["createrepo_c", "--update", str(LOCAL_REPO)],
+        capture_output=True,
+        stdin=subprocess.DEVNULL,
+    )
+    if result.returncode != 0:
+        logging.error(
+            "createrepo_c failed: %s",
+            result.stderr.decode() if result.stderr else "",
+        )
+        raise RuntimeError(f"createrepo_c failed with code {result.returncode}")
+
+
 def update_local_repo(mock_chroot: str) -> None:
     result_dir = Path("/var/lib/mock") / mock_chroot / "result"
     LOCAL_REPO.mkdir(exist_ok=True)
@@ -56,18 +71,8 @@ def update_local_repo(mock_chroot: str) -> None:
         if not rpm.name.endswith(".src.rpm"):
             shutil.copy2(rpm, LOCAL_REPO)
             copied = True
-    if copied or not (LOCAL_REPO / "repodata").exists():
-        result = subprocess.run(
-            ["createrepo_c", "--update", str(LOCAL_REPO)],
-            capture_output=True,
-            stdin=subprocess.DEVNULL,
-        )
-        if result.returncode != 0:
-            logging.error(
-                "createrepo_c failed: %s",
-                result.stderr.decode() if result.stderr else "",
-            )
-            raise RuntimeError(f"createrepo_c failed with code {result.returncode}")
+    if copied:
+        regenerate_repo_metadata()
 
 
 def copy_mock_results(mock_chroot: str, pkg: str) -> list[str]:
@@ -192,6 +197,9 @@ def main() -> None:
         raise ValueError(f"Invalid MOCK_CHROOT: {mock_chroot_name}")
 
     packages, build_status = init_stage("mock")
+
+    # Regenerate repo metadata before building to ensure fresh package index
+    regenerate_repo_metadata()
 
     proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
 

@@ -59,8 +59,14 @@ def _templates_hash() -> str:
 
 
 def _package_config_hash(entry: dict) -> str:
-    """Return SHA256 hash of a package's configuration entry."""
-    normalized = _normalize_keys(entry)
+    """Return SHA256 hash of a package's configuration entry.
+
+    Excludes 'release' field so that release-only changes in dependencies
+    don't trigger cascade rebuilds of dependents.
+    """
+    # Exclude release field to prevent unnecessary cascades
+    config = {k: v for k, v in entry.items() if k != "release"}
+    normalized = _normalize_keys(config)
     return _sha256(json.dumps(normalized, sort_keys=True, default=str).encode())
 
 
