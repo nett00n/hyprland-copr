@@ -108,6 +108,6 @@ Development files for hyprland-git.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Tue Jun 09 2026 nett00n <copr@nett00n.org> - 0.55.0^20260519git203a121-3
+* Wed Jun 10 2026 nett00n <copr@nett00n.org> - 0.55.0^20260519git203a121-3
 
 - Update to 0.55.0^20260519git203a121
