@@ -1,7 +1,7 @@
 
 Name:           gtk4-layer-shell
 Version:        1.3.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
 License:        MIT
 URL:            https://github.com/wmww/gtk4-layer-shell.git
@@ -71,6 +71,6 @@ Development files for gtk4-layer-shell.
 %{_prefix}/share/vala/vapi/gtk4-layer-shell-0.vapi
 
 %changelog
-* Wed Oct 29 2025 nett00n <copr@nett00n.org> - 1.3.0-1
+* Wed Oct 29 2025 nett00n <copr@nett00n.org> - 1.3.0-2
 
 - Release 1.3.0

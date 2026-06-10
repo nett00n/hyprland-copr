@@ -1,7 +1,7 @@
 
 Name:           quickshell
 Version:        0.3.0
-Release:        26%{?dist}
+Release:        27%{?dist}
 Summary:        Flexible QtQuick based desktop shell toolkit
 License:        LGPL-3.0-or-later
 URL:            https://git.outfoxxed.me/quickshell/quickshell.git
@@ -13,7 +13,6 @@ BuildRequires:  cpptrace-devel
 BuildRequires:  gcc-c++
 BuildRequires:  glib2-devel
 BuildRequires:  glslang-devel
-BuildRequires:  polkit-devel
 BuildRequires:  libdrm-devel
 BuildRequires:  libzstd-devel
 BuildRequires:  mesa-libgbm-devel
@@ -21,6 +20,7 @@ BuildRequires:  ninja-build
 BuildRequires:  pam-devel
 BuildRequires:  pipewire-devel
 BuildRequires:  pkgconfig(jemalloc)
+BuildRequires:  polkit-devel
 BuildRequires:  qt6-qtbase-devel
 BuildRequires:  qt6-qtbase-private-devel
 BuildRequires:  qt6-qtdeclarative-devel
@@ -70,7 +70,7 @@ Development files for quickshell.
 %files devel
 
 %changelog
-* Mon May 04 2026 nett00n <copr@nett00n.org> - 0.3.0-26
+* Mon May 04 2026 nett00n <copr@nett00n.org> - 0.3.0-27
 
 - -----BEGIN PGP SIGNATURE-----
 - iHUEABYKAB0WIQQBgf+JTzR/zOsGVxBMiKGF+4kwHgUCafhhjAAKCRBMiKGF+4kw

@@ -1,3 +1,4 @@
+---
 aquamarine:
   build:
     system: cmake
@@ -37,7 +38,7 @@ aquamarine:
   - '%license LICENSE'
   - '%{_libdir}/libaquamarine.so*'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -74,7 +75,7 @@ aylurs-gtk-shell:
   - '%{_prefix}/bin/ags'
   - '%{_prefix}/share/ags/'
   license: GPL-3.0-or-later
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -110,7 +111,7 @@ cava:
   - '%doc README.md'
   - '%license LICENSE'
   license: MIT
-  release: 2
+  release: 3
   rpm:
     no_debug_package: true
   source:
@@ -144,7 +145,7 @@ glaze:
   - '%doc README.md'
   - '%license LICENSE'
   license: MIT
-  release: 1
+  release: 2
   rpm:
     no_debug_package: true
   source:
@@ -190,7 +191,7 @@ gtk4-layer-shell:
   - '%{_prefix}/lib64/libgtk4-layer-shell.so*'
   - '%{_prefix}/lib64/liblayer-shell-preload.so'
   license: MIT
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -223,7 +224,7 @@ hyprcursor:
   - '%{_bindir}/hyprcursor-util'
   - '%{_libdir}/libhyprcursor.so*'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -261,7 +262,7 @@ hyprgraphics:
   - '%license LICENSE'
   - '%{_libdir}/libhyprgraphics.so*'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -295,7 +296,7 @@ hypridle:
   - '%{_datadir}/hypr/hypridle.conf'
   - '%{_userunitdir}/hypridle.service'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -387,7 +388,7 @@ Hyprland:
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -481,7 +482,7 @@ Hyprland-git:
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -520,7 +521,7 @@ hyprland-guiutils:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprland-*'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -565,7 +566,7 @@ hyprland-plugins:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 8
+  release: 9
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -621,7 +622,7 @@ hyprland-plugins-git:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 7
+  release: 8
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -662,7 +663,7 @@ hyprland-protocols:
   - '%doc README.md'
   - '%license LICENSE'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   rpm:
     no_debug_package: true
   source:
@@ -697,7 +698,7 @@ hyprland-qt-support:
   - '%{_prefix}/lib/libhyprland-quick-style-impl.so'
   - '%{_prefix}/lib/libhyprland-quick-style.so'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -725,7 +726,7 @@ hyprlang:
   - '%license LICENSE'
   - '%{_libdir}/libhyprlang.so*'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -771,7 +772,7 @@ hyprlauncher:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprlauncher'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -813,7 +814,7 @@ hyprlock:
   - '%{_datadir}/hypr/hyprlock.conf'
   - '%{_sysconfdir}/pam.d/hyprlock'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -861,7 +862,7 @@ hyprpaper:
   - '%{_bindir}/hyprpaper'
   - '%{_userunitdir}/hyprpaper.service'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -894,7 +895,7 @@ hyprpicker:
   - '%{_prefix}/bin/hyprpicker'
   - '%{_prefix}/share/man/man1/hyprpicker.1.gz'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -924,7 +925,7 @@ hyprpolkitagent:
   - '%{_prefix}/libexec/hyprpolkitagent'
   - '%{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -958,7 +959,7 @@ hyprpwcenter:
   - '%{_prefix}/bin/hyprpwcenter'
   - '%{_prefix}/share/applications/hyprpwcenter.desktop'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -999,7 +1000,7 @@ hyprqt6engine:
   - '%{_libdir}/qt6/plugins/platformthemes/libhyprqt6engine.so'
   - '%{_libdir}/qt6/plugins/styles/libhypr-style.so'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1023,7 +1024,7 @@ Hyprshot:
   - '%license LICENSE'
   - '%{_bindir}/hyprshot'
   license: GPL-3.0-only
-  release: 2
+  release: 3
   requires:
   - /usr/bin/notify-send
   - grim
@@ -1069,7 +1070,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1101,7 +1102,7 @@ hyprsunset:
   - '%{_prefix}/bin/hyprsunset'
   - '%{_prefix}/lib/systemd/user/hyprsunset.service'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1147,7 +1148,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1192,7 +1193,7 @@ hyprtoolkit:
   - '%license LICENSE'
   - '%{_libdir}/libhyprtoolkit.so*'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1218,7 +1219,7 @@ hyprutils:
   - '%license LICENSE'
   - '%{_libdir}/libhyprutils.so*'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1244,7 +1245,7 @@ hyprwayland-scanner:
   - '%license LICENSE'
   - '%{_bindir}/hyprwayland-scanner'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1275,7 +1276,7 @@ hyprwire:
   - '%{_bindir}/hyprwire-scanner'
   - '%{_libdir}/libhyprwire.so*'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1311,7 +1312,7 @@ pyprland:
   - '%{python3_sitelib}/pyprland'
   - '%{python3_sitelib}/pyprland-%{version}.dist-info'
   license: MIT
-  release: 2
+  release: 3
   requires:
   - python3-aiofiles
   - python3-aiohttp
@@ -1357,7 +1358,7 @@ sndio:
   - '%{_prefix}/lib64/libsndio.so*'
   - '%{_prefix}/share/man/*/*.gz'
   license: ISC
-  release: 1
+  release: 2
   rpm:
     no_debug_package: false
   source:
@@ -1419,7 +1420,7 @@ Waybar:
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 2
+  release: 3
   rpm:
     buildarch: ''
     no_debug_package: false
@@ -1488,7 +1489,7 @@ Waybar-git:
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 2
+  release: 3
   rpm:
     buildarch: ''
     no_debug_package: false
@@ -1540,7 +1541,7 @@ xdg-desktop-portal-hyprland:
   - '%{_libexecdir}/%{name}'
   - '%{_userunitdir}/%{name}.service'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1577,7 +1578,7 @@ cliphist:
   - '%license LICENSE'
   - '%{_bindir}/cliphist'
   license: GPL-3.0-or-later
-  release: 1
+  release: 2
   requires:
   - wl-clipboard
   - xdg-utils
@@ -1643,7 +1644,7 @@ uwsm:
   - '%{_userunitdir}/wayland-wm-env@.service'
   - '%{_userunitdir}/wayland-wm@.service'
   license: MIT
-  release: 1
+  release: 2
   requires: []
   rpm:
     no_debug_package: true
@@ -1670,7 +1671,6 @@ quickshell:
   - gcc-c++
   - glib2-devel
   - glslang-devel
-  - polkit-devel
   - libdrm-devel
   - libzstd-devel
   - mesa-libgbm-devel
@@ -1678,6 +1678,7 @@ quickshell:
   - pam-devel
   - pipewire-devel
   - pkgconfig(jemalloc)
+  - polkit-devel
   - qt6-qtbase-devel
   - qt6-qtbase-private-devel
   - qt6-qtdeclarative-devel
@@ -1698,7 +1699,7 @@ quickshell:
   - '%{_datadir}/applications/org.quickshell.desktop'
   - '%{_datadir}/icons/hicolor/scalable/apps/org.quickshell.svg'
   license: LGPL-3.0-or-later
-  release: 26
+  release: 27
   requires: []
   rpm:
     no_debug_package: false
@@ -1729,7 +1730,7 @@ hyprland-per-window-layout:
   - '%license LICENSE'
   - '%{_bindir}/%{name}'
   license: MIT
-  release: 2
+  release: 3
   requires: []
   rpm:
     no_debug_package: false
@@ -1776,7 +1777,7 @@ cpptrace:
   - '%license LICENSE'
   - '%{_libdir}/libcpptrace.so*'
   license: MIT
-  release: 30
+  release: 31
   requires: []
   rpm:
     no_debug_package: false
@@ -1820,9 +1821,9 @@ libdwarf-code:
     - '%{_libdir}/cmake/libdwarf/libdwarf-targets.cmake'
     - '%{_libdir}/cmake/libdwarf/libdwarfConfig.cmake'
     - '%{_libdir}/cmake/libdwarf/libdwarfConfigVersion.cmake'
-    - '%{_libdir}/pkgconfig/libdwarf.pc'
-    - '%{_libdir}/libdwarf.so'
     - '%{_libdir}/libdwarf.a'
+    - '%{_libdir}/libdwarf.so'
+    - '%{_libdir}/pkgconfig/libdwarf.pc'
   files:
   - '%doc README.md'
   - '%{_bindir}/dwarfdump'
@@ -1830,7 +1831,7 @@ libdwarf-code:
   - '%{_libdir}/libdwarf.so.*'
   - '%{_mandir}/man1/dwarfdump.1.gz'
   license: LGPL 2.1
-  release: 7
+  release: 8
   requires: []
   rpm:
     no_debug_package: false

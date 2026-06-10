@@ -1,7 +1,7 @@
 
 Name:           hyprpaper
 Version:        0.8.4
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A blazing fast Wayland wallpaper utility
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpaper
@@ -60,6 +60,6 @@ Commit:            20fc0fa6c2056c388a4cd69cb394a9f989dd27c0
 %{_userunitdir}/hyprpaper.service
 
 %changelog
-* Wed Apr 29 2026 nett00n <copr@nett00n.org> - 0.8.4-2
+* Wed Apr 29 2026 nett00n <copr@nett00n.org> - 0.8.4-3
 
 - version: bump to 0.8.4

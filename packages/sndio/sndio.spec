@@ -1,7 +1,7 @@
 
 Name:           sndio
 Version:        1.10.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Portable version of OpenBSD's lightweight audio & MIDI sub-system
 License:        ISC
 URL:            https://sndio.org/git/sndio
@@ -56,6 +56,6 @@ Development files for sndio.
 %{_prefix}/lib64/pkgconfig/sndio.pc
 
 %changelog
-* Thu Aug 01 2024 nett00n <copr@nett00n.org> - 1.10.0-1
+* Thu Aug 01 2024 nett00n <copr@nett00n.org> - 1.10.0-2
 
 - Bump version to 1.10.0

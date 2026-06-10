@@ -2,7 +2,7 @@
 
 Name:           uwsm
 Version:        0.26.4
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Universal Wayland Session Manager
 License:        MIT
 URL:            https://github.com/Vladimir-csp/uwsm
@@ -82,7 +82,7 @@ Development files for uwsm.
 %files devel
 
 %changelog
-* Thu Feb 19 2026 nett00n <copr@nett00n.org> - 0.26.4-1
+* Thu Feb 19 2026 nett00n <copr@nett00n.org> - 0.26.4-2
 
 - chore: Release 0.26.4
 - fix(may-start): move up login shell check

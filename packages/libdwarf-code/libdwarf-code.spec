@@ -1,7 +1,7 @@
 
 Name:           libdwarf-code
 Version:        2.3.1
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        Library to access DWARF debugging information
 License:        LGPL 2.1
 URL:            https://github.com/davea42/libdwarf-code
@@ -64,12 +64,12 @@ Development files for libdwarf-code.
 %{_libdir}/cmake/libdwarf/libdwarf-targets.cmake
 %{_libdir}/cmake/libdwarf/libdwarfConfig.cmake
 %{_libdir}/cmake/libdwarf/libdwarfConfigVersion.cmake
-%{_libdir}/pkgconfig/libdwarf.pc
-%{_libdir}/libdwarf.so
 %{_libdir}/libdwarf.a
+%{_libdir}/libdwarf.so
+%{_libdir}/pkgconfig/libdwarf.pc
 
 %changelog
-* Wed Mar 04 2026 nett00n <copr@nett00n.org> - 2.3.1-7
+* Wed Mar 04 2026 nett00n <copr@nett00n.org> - 2.3.1-8
 
 - Release=2.3.1
 - -----BEGIN PGP SIGNATURE-----

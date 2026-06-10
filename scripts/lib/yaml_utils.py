@@ -432,12 +432,11 @@ def update_package_releases(packages: dict, build_status: dict) -> dict[str, int
         for pkg_name, new_release in updates.items():
             # Use regex to safely replace release value for each package
             # Pattern: find package name at line start, then find release: value
-            pattern = (
-                f"^({re.escape(pkg_name)}:.*?^  release: )\\d+"
-                "(\\n)"
-            )
+            pattern = f"^({re.escape(pkg_name)}:.*?^  release: )\\d+(\\n)"
             replacement = f"\\g<1>{new_release}\\2"
-            content = re.sub(pattern, replacement, content, flags=re.MULTILINE | re.DOTALL)
+            content = re.sub(
+                pattern, replacement, content, flags=re.MULTILINE | re.DOTALL
+            )
 
         PACKAGES_YAML.write_text(content)
 
