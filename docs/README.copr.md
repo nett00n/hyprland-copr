@@ -109,6 +109,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 - `cliphist` — Wayland clipboard manager with support for multimedia
 - `clipman` — A simple clipboard manager for Wayland
 - `copyq` — CopyQ is an advanced clipboard manager with powerful editing and scripting features.
+- `eww` — Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
 - `fuzzel` — App launcher and fuzzy finder for Wayland, inspired by rofi and dmenu
 - `gammastep` — Adjust the color temperature of your screen according to your surroundings. This may help your eyes hurt less if you are working in front of the screen at night.
 - `hyprland-per-window-layout` — Per-window keyboard layout daemon for Hyprland

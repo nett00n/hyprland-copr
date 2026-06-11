@@ -60,15 +60,16 @@ hyprland-deps:
 other-apps:
   label: Useful apps
   packages:
-  - pyprland
   - Waybar
   - Waybar-git
+  - ashell
   - cliphist
   - cliphist-git
-  - ashell
-  - uwsm
-  - quickshell
+  - eww
   - hyprland-per-window-layout
+  - pyprland
+  - quickshell
+  - uwsm
   packages_from_global_repo:
   - name: swaybg
     summary: Great utility if all you want is one simple static wallpaper

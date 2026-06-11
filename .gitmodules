@@ -170,3 +170,7 @@
 	path = submodules/davea42/libdwarf-code
 	url = https://github.com/davea42/libdwarf-code.git
 	ignore = dirty
+[submodule "submodules/elkowar/eww"]
+	path = submodules/elkowar/eww
+	url = https://github.com/elkowar/eww.git
+	ignore = dirty

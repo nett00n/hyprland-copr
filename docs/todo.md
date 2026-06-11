@@ -10,8 +10,6 @@
 # Packages
 
 everything, that Hyprland recommended:
-- https://github.com/elkowar/eww #Rust
-- https://github.com/danyspin97/wpaperd #Rust
 - https://github.com/MalpenZibo/ashell #Rust
 - https://github.com/GhostNaN/mpvpaper Does not compile on GCC 15 [GH Issue](https://github.com/GhostNaN/mpvpaper/issues/125)
 - https://codeberg.org/LGFae/awww #Rust

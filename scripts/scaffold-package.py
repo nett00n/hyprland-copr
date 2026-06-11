@@ -140,9 +140,16 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
     else:
         source_name = ""
 
+    # Prepare source archives with vendor tarball for cargo/golang
+    archives = [source_url]
+    prep_commands = []
+    if build_system in ("cargo", "golang"):
+        archives.append("%{name}-%{version}-vendor.tar.gz")
+        prep_commands.append("tar xf %{SOURCE1}")
+
     entry = {
         "version": version,
-        "release": "%autorelease",
+        "release": 1,
         "license": license_id,
         "summary": summary,
         "description": "FIXME",
@@ -157,11 +164,11 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
         ],
         "devel": {"files": []},
         "source": {
-            "archives": [source_url],
+            "archives": archives,
         },
         "build": {
             "system": build_system,
-            "prep": [],
+            "prep": prep_commands,
             "commands": [],
             "install": [],
             "no_lto": False,
