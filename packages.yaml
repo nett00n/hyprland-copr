@@ -1,3 +1,4 @@
+---
 aquamarine:
   build:
     system: cmake
@@ -1842,16 +1843,15 @@ libdwarf-code:
   url: https://github.com/davea42/libdwarf-code
   version: 2.3.1
 eww:
-  version: 0.6.0
-  release: 3
-  license: MIT
-  summary: Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
-  description: Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
-  url: https://github.com/elkowar/eww
-  depends_on: []
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
   build_requires:
   - atk-devel
-  - cairo-devel
   - cairo-devel
   - cargo
   - dbus-devel
@@ -1859,29 +1859,26 @@ eww:
   - glib2-devel
   - gtk-layer-shell-devel
   - gtk3-devel
-  - gtk3-devel
   - libdbusmenu-gtk3-devel
   - pango-devel
-  - pango-devel
   - rustc
-  requires: []
-  files:
-  - '%license LICENSE'
-  - '%doc README.md'
-  - /usr/bin/eww
-
+  depends_on: []
+  description: Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
   devel:
     files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - "%{_bindir}/eww"
+  license: MIT
+  release: 4
+  requires: []
+  rpm:
+    no_debug_package: false
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
     - '%{name}-%{version}-vendor.tar.gz'
-  build:
-    system: cargo
-    prep:
-    - tar xf %{SOURCE1}
-    commands: []
-    install: []
-    no_lto: false
-  rpm:
-    no_debug_package: false
+  summary: Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
+  url: https://github.com/elkowar/eww
+  version: 0.6.0
