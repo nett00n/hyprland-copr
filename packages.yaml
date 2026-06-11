@@ -145,7 +145,7 @@ glaze:
   - '%doc README.md'
   - '%license LICENSE'
   license: MIT
-  release: 2
+  release: 1
   rpm:
     no_debug_package: true
   source:
@@ -153,7 +153,7 @@ glaze:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Extremely fast, in memory, JSON and reflection library for modern C++.
   url: https://github.com/stephenberry/glaze.git
-  version: 7.7.1
+  version: 7.8.1
 gtk4-layer-shell:
   build:
     system: meson
@@ -388,7 +388,7 @@ Hyprland:
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -482,7 +482,7 @@ Hyprland-git:
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -566,7 +566,7 @@ hyprland-plugins:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 9
+  release: 10
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -622,7 +622,7 @@ hyprland-plugins-git:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 8
+  release: 9
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -1070,7 +1070,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1148,7 +1148,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'

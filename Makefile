@@ -106,7 +106,13 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv clean clean-logs clean-localrepo clean-all
+.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all
+
+save-last-build: ## Save last built RPMs and report to local-repo/ before clean
+	@mkdir -p local-repo
+	@$(CONTAINER_RUN) sh -c "cp -r /local-repo/. /work/local-repo/"
+	@[ -f build-report.yaml ] && cp build-report.yaml local-repo/build-report.yaml || true
+	@echo $(HIGHLIGHT_PREFIX) "✓ Saved last build snapshot to local-repo/"
 
 clean-logs: ## Remove all build logs and reports
 	@rm -rf logs/build logs/make build-report.yaml build-report.*.yaml
@@ -124,7 +130,7 @@ clean-localrepo: ## Purge local repo for FEDORA_VERSION to resolve dependency co
 clean-all: clean-logs clean-localrepo ## Clean logs, reports, and local repo (nuclear option)
 	@echo $(HIGHLIGHT_PREFIX) "✓ Full cleanup completed"
 
-clean: clean-logs ## Remove build logs and reports (alias for clean-logs)
+clean: save-last-build clean-logs ## Remove build logs and reports (saves last build first)
 
 # Prerequisite checks - fail fast on missing dependencies
 check-image: ## Verify container image exists for FEDORA_VERSION

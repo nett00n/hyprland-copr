@@ -46,4 +46,6 @@ seems interesting:
 - https://github.com/jjsullivan5196/wvkbd
 - https://github.com/hbuddenberg/hyprcaffeine
 - https://github.com/loqusion/hyprshade
-
+- https://danklinux.com/
+- https://github.com/amarqs182/hyprcaffeine
+- https://github.com/hbuddenberg/hyprcaffeine
