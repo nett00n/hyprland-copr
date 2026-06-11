@@ -11,7 +11,6 @@ templates/readme-copr.md.j2        # Jinja2 template for COPR README
 templates/full-report.md.j2 # Jinja2 template for detailed build report
 templates/_*.j2                    # Jinja2 snippet: simple, no includes
 templates/__*.j2                   # Jinja2 snippet: composite, includes other snippets
-templates/packages-entry.yaml.j2   # Jinja2 template for new packages.yaml entries
 scripts/full-cycle.py              # full build orchestrator: spec → vendor → srpm → mock → copr
 scripts/gen-report.py              # renders build report from build-report.yaml (--format github|copr|full-report, --output FILE)
 scripts/scaffold-package.py        # scaffolds a new packages.yaml entry from a submodule
@@ -287,6 +286,7 @@ Rust packages do **not** use vendoring. Instead, they follow the canonical COPR/
 - **vendor_golang.py** — Go module vendoring with `go mod vendor`
 - **vendor_rust.py** — ABANDONED: Rust crate vendoring (git deps are unresolvable in offline builds; Rust uses COPR native approach instead)
 - **version.py** — semantic version parsing and selection
+- **yaml_config.py** — centralized ruamel.yaml configuration for consistent formatting
 - **yaml_format.py** — YAML formatting with literal block scalar support, yamllint config parsing
 - **yaml_utils.py** — loading/saving packages.yaml, filtering, build status tracking, `init_stage()` boilerplate helper
 

@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import yaml
+from ruamel.yaml import YAML
 
 from lib.detection import (
     detect_build_system,
@@ -25,9 +26,9 @@ from lib.gitmodules import (
     parse_gitmodules,
     resolve_module,
 )
-from lib.jinja_utils import create_jinja_env
 from lib.paths import GITMODULES, PACKAGES_YAML, ROOT
 from lib.version import latest_semver
+from lib.yaml_config import DEFAULT as YAML_CONFIG
 
 
 def cmd_add(modules: list[dict], pkg_name: str) -> None:
@@ -47,10 +48,12 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
     repo = ROOT / mod["path"]
 
     if PACKAGES_YAML.exists():
-        data = yaml.safe_load(PACKAGES_YAML.read_text()) or {}
-        if key in data:
+        existing = yaml.safe_load(PACKAGES_YAML.read_text()) or {}
+        if key in existing:
             print(f"error: '{key}' already exists in packages.yaml", file=sys.stderr)
             sys.exit(1)
+    else:
+        existing = {}
 
     version = extract_version(repo)
     if version is None:
@@ -64,7 +67,7 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
     if latest:
         version = latest.lstrip("v") if isinstance(latest, str) else str(latest)
         source_url = (
-            '"%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"'
+            "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
         )
     else:
         commit_info = get_submodule_commit_with_base(repo)
@@ -73,10 +76,12 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
             prefix = base_semver if base_semver else "0"
             version = f"{prefix}^{date_str}git{short_hash}"
             commit = {"full": full_hash, "date": date_str}
-            source_url = '"%{url}/archive/%{commit}.tar.gz"'
+            source_url = "%{url}/archive/%{commit}.tar.gz"
         else:
             version = "FIXME"
-            source_url = '"%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"'
+            source_url = (
+                "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+            )
 
     build_system = detect_build_system(repo) or "FIXME"
     license_id = detect_license(repo) or "FIXME"
@@ -105,10 +110,6 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
     for dep in pkg_deps:
         build_requires.append(f"pkgconfig({dep})")
 
-    # Auto-detect depends_on from build_requires matching existing packages
-    existing: dict = {}
-    if PACKAGES_YAML.exists():
-        existing = yaml.safe_load(PACKAGES_YAML.read_text()) or {}
     pkg_by_lower = {k.lower(): k for k in existing}
     depends_on: list[str] = []
     for req in build_requires:
@@ -122,13 +123,11 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
             if resolved not in depends_on:
                 depends_on.append(resolved)
 
-    # Detect source_name from the actual tarball's top-level directory
     if version != "FIXME":
         if commit:
             tar_urls = [f"{url}/archive/{commit['full']}.tar.gz"]
             version_or_commit = commit["full"]
         else:
-            # Try both v-prefixed and bare version tags (projects differ)
             tar_urls = [
                 f"{url}/archive/refs/tags/v{version}.tar.gz",
                 f"{url}/archive/refs/tags/{version}.tar.gz",
@@ -141,35 +140,60 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
     else:
         source_name = ""
 
-    env = create_jinja_env()
-    template = env.get_template("packages-entry.yaml.j2")
-    block = template.render(
-        key=key,
-        version=version,
-        license_id=license_id,
-        summary=summary,
-        url=url,
-        source_name=source_name,
-        buildarch="",
-        no_debug_package=False,
-        commit=commit,
-        source_url=source_url,
-        build_system=build_system,
-        build_requires=build_requires,
-        depends_on=depends_on,
-        go_subdir="",
-        build_commands=[],
-        install_commands=[],
-    )
+    entry = {
+        "version": version,
+        "release": "%autorelease",
+        "license": license_id,
+        "summary": summary,
+        "description": "FIXME",
+        "url": url,
+        "depends_on": depends_on if depends_on else [],
+        "build_requires": build_requires if build_requires else [],
+        "requires": [],
+        "files": [
+            "%license LICENSE",
+            "%doc README.md",
+            *([f"%{{_bindir}}/{key}"] if build_system == "golang" else []),
+        ],
+        "devel": {"files": []},
+        "source": {
+            "archives": [source_url],
+        },
+        "build": {
+            "system": build_system,
+            "prep": [],
+            "commands": [],
+            "install": [],
+            "no_lto": False,
+        },
+        "rpm": {
+            "no_debug_package": False,
+        },
+    }
+
+    if source_name:
+        entry["source"]["name"] = source_name
+
+    if commit:
+        entry["source"]["commit"] = commit
 
     if PACKAGES_YAML.exists():
-        with PACKAGES_YAML.open("a") as f:
-            f.write(block)
+        yml = YAML()
+        yml.default_flow_style = False
+        yml.allow_unicode = True
+        yml.indent(mapping=2, sequence=2, offset=0)
+        with PACKAGES_YAML.open() as f:
+            data = yml.load(f)
+        if data is None:
+            data = {}
+        data[key] = entry
     else:
-        PACKAGES_YAML.write_text(block)
+        data = {key: entry}
+
+    PACKAGES_YAML.write_text(YAML_CONFIG.dump(data))
 
     print(f"appended '{key}' to {PACKAGES_YAML}", file=sys.stderr)
-    print(block)
+    print(YAML_CONFIG.dump({key: entry}))
 
 
 def main() -> None:
