@@ -27,7 +27,8 @@ scripts/format-yaml.py             # YAML formatter invoked by `make fmt-yaml`
 scripts/serve.py                   # dev convenience: local HTTP file server for build artifacts
 scripts/lib/                       # shared library modules for all pipeline scripts
 requirements-dev.txt               # Python deps (jinja2, pyyaml, mypy, ruff, yamllint, flake8, rpmlint)
-submodules/<org>/<name>/           # upstream sources as git submodules
+submodules/<org>/<name>/           # upstream sources as git submodules (dirty state ignored)
+.gitmodules                        # submodule definitions with ignore=dirty setting
 ```
 
 ### Template Snippet Naming Convention

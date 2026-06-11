@@ -245,13 +245,16 @@ add-submodule: check-image check-venv setup-volumes ## Register git submodule fo
 	 _name=$$(basename $$_url); \
 	 _org=$$(basename $$(dirname $$_url)); \
 	 echo $(HIGHLIGHT_PREFIX) "adding submodule submodules/$$_org/$$_name"; \
-	 git submodule add $$_url submodules/$$_org/$$_name
+	 git submodule add $$_url submodules/$$_org/$$_name || exit 1; \
+	 git config -f .gitmodules submodule.submodules/$$_org/$$_name.ignore dirty || exit 1; \
+	 echo $(HIGHLIGHT_PREFIX) "✓ configured ignore=dirty for submodule"
 
 add-new: check-image check-venv setup-volumes ## Add submodule from URL and scaffold packages.yaml entry in one step (URL=<repo-url> required)
 	@test -n "$(URL)" || (echo "$(HIGHLIGHT_PREFIX) Error: URL is required (e.g. URL=https://github.com/hyprwm/hyprpicker)"; exit 1)
 	@_name=$$(basename $(URL:.git=)); \
 	 _org=$$(basename $$(dirname $(URL))); \
 	 git submodule add $(URL) submodules/$$_org/$$_name || exit 1; \
+	 git config -f .gitmodules submodule.submodules/$$_org/$$_name.ignore dirty || exit 1; \
 	 $(CONTAINER_PYTHON) scripts/scaffold-package.py $$_name || exit 1
 
 delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, logs/build, packages/, submodules, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required)

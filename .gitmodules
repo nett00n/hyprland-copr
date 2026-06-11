@@ -1,129 +1,172 @@
 [submodule "submodules/hyprwm/aquamarine"]
 	path = submodules/hyprwm/aquamarine
 	url = https://github.com/hyprwm/aquamarine
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprcursor"]
 	path = submodules/hyprwm/hyprcursor
 	url = https://github.com/hyprwm/hyprcursor
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprgraphics"]
 	path = submodules/hyprwm/hyprgraphics
 	url = https://github.com/hyprwm/hyprgraphics
+	ignore = dirty
 [submodule "submodules/hyprwm/hypridle"]
 	path = submodules/hyprwm/hypridle
 	url = https://github.com/hyprwm/hypridle
+	ignore = dirty
 [submodule "submodules/hyprwm/Hyprland"]
 	path = submodules/hyprwm/Hyprland
 	url = https://github.com/hyprwm/Hyprland
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprland-guiutils"]
 	path = submodules/hyprwm/hyprland-guiutils
 	url = https://github.com/hyprwm/hyprland-guiutils
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprland-plugins"]
 	path = submodules/hyprwm/hyprland-plugins
 	url = https://github.com/hyprwm/hyprland-plugins
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprland-protocols"]
 	path = submodules/hyprwm/hyprland-protocols
 	url = https://github.com/hyprwm/hyprland-protocols
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprland-qt-support"]
 	path = submodules/hyprwm/hyprland-qt-support
 	url = https://github.com/hyprwm/hyprland-qt-support
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprland-qtutils"]
 	path = submodules/hyprwm/hyprland-qtutils
 	url = https://github.com/hyprwm/hyprland-qtutils
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprland-welcome"]
 	path = submodules/hyprwm/hyprland-welcome
 	url = https://github.com/hyprwm/hyprland-welcome
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprlang"]
 	path = submodules/hyprwm/hyprlang
 	url = https://github.com/hyprwm/hyprlang
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprlauncher"]
 	path = submodules/hyprwm/hyprlauncher
 	url = https://github.com/hyprwm/hyprlauncher
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprlock"]
 	path = submodules/hyprwm/hyprlock
 	url = https://github.com/hyprwm/hyprlock
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprpaper"]
 	path = submodules/hyprwm/hyprpaper
 	url = https://github.com/hyprwm/hyprpaper
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprpicker"]
 	path = submodules/hyprwm/hyprpicker
 	url = https://github.com/hyprwm/hyprpicker
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprpolkitagent"]
 	path = submodules/hyprwm/hyprpolkitagent
 	url = https://github.com/hyprwm/hyprpolkitagent
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprpwcenter"]
 	path = submodules/hyprwm/hyprpwcenter
 	url = https://github.com/hyprwm/hyprpwcenter
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprqt6engine"]
 	path = submodules/hyprwm/hyprqt6engine
 	url = https://github.com/hyprwm/hyprqt6engine
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprshutdown"]
 	path = submodules/hyprwm/hyprshutdown
 	url = https://github.com/hyprwm/hyprshutdown
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprsunset"]
 	path = submodules/hyprwm/hyprsunset
 	url = https://github.com/hyprwm/hyprsunset
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprsysteminfo"]
 	path = submodules/hyprwm/hyprsysteminfo
 	url = https://github.com/hyprwm/hyprsysteminfo
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprtoolkit"]
 	path = submodules/hyprwm/hyprtoolkit
 	url = https://github.com/hyprwm/hyprtoolkit
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprutils"]
 	path = submodules/hyprwm/hyprutils
 	url = https://github.com/hyprwm/hyprutils
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprwayland-scanner"]
 	path = submodules/hyprwm/hyprwayland-scanner
 	url = https://github.com/hyprwm/hyprwayland-scanner
+	ignore = dirty
 [submodule "submodules/hyprwm/hyprwire"]
 	path = submodules/hyprwm/hyprwire
 	url = https://github.com/hyprwm/hyprwire
+	ignore = dirty
 [submodule "submodules/hyprwm/xdg-desktop-portal-hyprland"]
 	path = submodules/hyprwm/xdg-desktop-portal-hyprland
 	url = https://github.com/hyprwm/xdg-desktop-portal-hyprland
+	ignore = dirty
 [submodule "submodules/Jas-SinghFSU/HyprPanel"]
 	path = submodules/Jas-SinghFSU/HyprPanel
 	url = https://github.com/Jas-SinghFSU/HyprPanel.git
+	ignore = dirty
 [submodule "submodules/Gustash/Hyprshot"]
 	path = submodules/Gustash/Hyprshot
 	url = https://github.com/Gustash/Hyprshot.git
+	ignore = dirty
 [submodule "submodules/wmww/gtk4-layer-shell"]
 	path = submodules/wmww/gtk4-layer-shell
 	url = https://github.com/wmww/gtk4-layer-shell.git
+	ignore = dirty
 [submodule "submodules/stephenberry/glaze"]
 	path = submodules/stephenberry/glaze
 	url = https://github.com/stephenberry/glaze.git
+	ignore = dirty
 [submodule "submodules/Aylur/ags"]
 	path = submodules/Aylur/ags
 	url = https://github.com/Aylur/ags.git
+	ignore = dirty
 [submodule "submodules/hyprland-community/pyprland"]
 	path = submodules/hyprland-community/pyprland
 	url = https://github.com/hyprland-community/pyprland.git
+	ignore = dirty
 [submodule "submodules/Alexays/Waybar"]
 	path = submodules/Alexays/Waybar
 	url = https://github.com/Alexays/Waybar.git
+	ignore = dirty
 [submodule "submodules/git/sndio"]
 	path = submodules/git/sndio
 	url = https://sndio.org/git/sndio
+	ignore = dirty
 [submodule "submodules/karlstav/cava"]
 	path = submodules/karlstav/cava
 	url = https://github.com/karlstav/cava.git
+	ignore = dirty
 [submodule "submodules/sentriz/cliphist"]
 	path = submodules/sentriz/cliphist
 	url = https://github.com/sentriz/cliphist.git
+	ignore = dirty
 [submodule "submodules/MalpenZibo/ashell"]
 	path = submodules/MalpenZibo/ashell
 	url = https://github.com/MalpenZibo/ashell.git
+	ignore = dirty
 [submodule "submodules/Vladimir-csp/uwsm"]
 	path = submodules/Vladimir-csp/uwsm
 	url = https://github.com/Vladimir-csp/uwsm
+	ignore = dirty
 [submodule "submodules/quickshell/quickshell"]
 	path = submodules/quickshell/quickshell
 	url = https://git.outfoxxed.me/quickshell/quickshell.git
+	ignore = dirty
 [submodule "submodules/coffebar/hyprland-per-window-layout"]
 	path = submodules/coffebar/hyprland-per-window-layout
 	url = https://github.com/coffebar/hyprland-per-window-layout.git
+	ignore = dirty
 [submodule "submodules/jeremy-rifkin/cpptrace"]
 	path = submodules/jeremy-rifkin/cpptrace
 	url = https://github.com/jeremy-rifkin/cpptrace.git
+	ignore = dirty
 [submodule "submodules/davea42/libdwarf-code"]
 	path = submodules/davea42/libdwarf-code
 	url = https://github.com/davea42/libdwarf-code.git
+	ignore = dirty
