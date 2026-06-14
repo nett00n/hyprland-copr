@@ -2,12 +2,12 @@
 %global _lto_cflags %{nil}
 
 Name:           cava
-Version:        0.10.7
-Release:        3%{?dist}
+Version:        1.0.0
+Release:        1%{?dist}
 Summary:        Cross-platform Audio Visualizer
 License:        MIT
 URL:            https://github.com/karlstav/cava.git
-Source0:        https://github.com/karlstav/cava/archive/refs/tags/0.10.7.tar.gz#/cava-0.10.7.tar.gz
+Source0:        https://github.com/karlstav/cava/archive/refs/tags/1.0.0.tar.gz#/cava-1.0.0.tar.gz
 
 BuildRequires:  alsa-lib-devel
 BuildRequires:  cmake
@@ -51,6 +51,6 @@ Package info:
 %license LICENSE
 
 %changelog
-* Tue Jun 09 2026 nett00n <copr@nett00n.org> - 0.10.7-3
+* Sun Jun 14 2026 nett00n <copr@nett00n.org> - 1.0.0-1
 
-- Update to 0.10.7
+- Update to 1.0.0

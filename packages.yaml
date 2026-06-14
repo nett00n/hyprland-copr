@@ -38,13 +38,13 @@ aquamarine:
   - '%license LICENSE'
   - '%{_libdir}/libaquamarine.so*'
   license: BSD-3-Clause
-  release: 2
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A very light linux rendering backend library
   url: https://github.com/hyprwm/aquamarine
-  version: 0.12.0
+  version: 0.12.1
 aylurs-gtk-shell:
   build:
     go_subdir: cli
@@ -111,7 +111,7 @@ cava:
   - '%doc README.md'
   - '%license LICENSE'
   license: MIT
-  release: 3
+  release: 1
   rpm:
     no_debug_package: true
   source:
@@ -120,7 +120,7 @@ cava:
     name: ''
   summary: Cross-platform Audio Visualizer
   url: https://github.com/karlstav/cava.git
-  version: 0.10.7
+  version: 1.0.0
 glaze:
   build:
     commands:
@@ -388,14 +388,14 @@ Hyprland:
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
-  release: 3
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
     name: Hyprland
   summary: A Modern C++ Wayland Compositor
   url: https://github.com/hyprwm/Hyprland
-  version: 0.55.3
+  version: 0.55.4
 Hyprland-git:
   auto_update:
     release_type: latest-commit
@@ -482,7 +482,7 @@ Hyprland-git:
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
-  release: 4
+  release: 5
   source:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -521,7 +521,7 @@ hyprland-guiutils:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprland-*'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -566,7 +566,7 @@ hyprland-plugins:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 10
+  release: 11
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -622,7 +622,7 @@ hyprland-plugins-git:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 9
+  release: 10
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -772,7 +772,7 @@ hyprlauncher:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprlauncher'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -862,7 +862,7 @@ hyprpaper:
   - '%{_bindir}/hyprpaper'
   - '%{_userunitdir}/hyprpaper.service'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -959,7 +959,7 @@ hyprpwcenter:
   - '%{_prefix}/bin/hyprpwcenter'
   - '%{_prefix}/share/applications/hyprpwcenter.desktop'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1070,7 +1070,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 4
+  release: 5
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1148,7 +1148,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 4
+  release: 5
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1193,7 +1193,7 @@ hyprtoolkit:
   - '%license LICENSE'
   - '%{_libdir}/libhyprtoolkit.so*'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1644,7 +1644,7 @@ uwsm:
   - '%{_userunitdir}/wayland-wm-env@.service'
   - '%{_userunitdir}/wayland-wm@.service'
   license: MIT
-  release: 2
+  release: 1
   requires: []
   rpm:
     no_debug_package: true
@@ -1654,7 +1654,7 @@ uwsm:
     bundled_deps: []
   summary: Universal Wayland Session Manager
   url: https://github.com/Vladimir-csp/uwsm
-  version: 0.26.4
+  version: 0.26.5
 quickshell:
   build:
     commands:
@@ -1869,7 +1869,7 @@ eww:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - "%{_bindir}/eww"
+  - '%{_bindir}/eww'
   license: MIT
   release: 4
   requires: []

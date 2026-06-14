@@ -1,12 +1,12 @@
 %global debug_package %{nil}
 
 Name:           uwsm
-Version:        0.26.4
-Release:        2%{?dist}
+Version:        0.26.5
+Release:        1%{?dist}
 Summary:        Universal Wayland Session Manager
 License:        MIT
 URL:            https://github.com/Vladimir-csp/uwsm
-Source0:        https://github.com/Vladimir-csp/uwsm/archive/refs/tags/v0.26.4.tar.gz#/uwsm-0.26.4.tar.gz
+Source0:        https://github.com/Vladimir-csp/uwsm/archive/refs/tags/v0.26.5.tar.gz#/uwsm-0.26.5.tar.gz
 
 BuildRequires:  gcc-c++
 BuildRequires:  meson
@@ -35,8 +35,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.26.4
-Commit:            3294dd3163bf9f2334b787b3cde5a14e56491404
+Tag:               v0.26.5
+Commit:            7bdc515bd85c8c252b6d99111527a1c2da9cb60c
 
 %prep
 %autosetup -p1
@@ -82,11 +82,8 @@ Development files for uwsm.
 %files devel
 
 %changelog
-* Thu Feb 19 2026 nett00n <copr@nett00n.org> - 0.26.4-2
+* Sat Jun 13 2026 nett00n <copr@nett00n.org> - 0.26.5-1
 
-- chore: Release 0.26.4
-- fix(may-start): move up login shell check
-- Some people put startup construct into shell rc instead of profile. While this
-- is not an optimal placement, it works. Don't clutter terminals with visible
-- dealbreaker messages.
-- fix: make CompGlobals.id_unit_string accessible to autoready fork again
+- chore: Release 0.26.5
+- fix(app): split explicitly by ".desktop:", abs path for SourcePath value
+- fix(app): fall back to local file if exists on invalid entry ID, fixes #214
