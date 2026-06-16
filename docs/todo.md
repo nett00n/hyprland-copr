@@ -47,3 +47,6 @@ seems interesting:
 - https://danklinux.com/
 - https://github.com/amarqs182/hyprcaffeine
 - https://github.com/hbuddenberg/hyprcaffeine
+- https://github.com/funinkina/openeffects
+- https://github.com/AprilNEA/OpenLogi
+
