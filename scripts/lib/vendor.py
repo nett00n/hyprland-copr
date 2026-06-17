@@ -1,7 +1,6 @@
 """Vendor tarball helpers for multiple languages (Go, Rust)."""
 
 import shutil
-import subprocess
 import tarfile
 import tempfile
 import urllib.request

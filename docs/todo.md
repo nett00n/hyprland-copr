@@ -4,9 +4,9 @@
 - Add cross-os-version build matrix visualization
 - Separate prod builds and local debug ones (?)
 - add make fmt after scaffolding
-- *-git packages to separate block
+- \*-git packages to separate block
 - #2.0 split management system and hyprland repo content. Make automations repo a submodule of content repo (?)
-
+ rm QUIET flag as unneseccary
 # Packages
 
 everything, that Hyprland recommended:

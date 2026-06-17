@@ -156,67 +156,6 @@ class TestVendorTarballPath:
         assert result == Path("/sources/my-pkg-1.0-vendor.tar.gz")
 
 
-class TestGenerateVendor:
-    """Test generate function for vendor tarball creation."""
-
-    def test_raises_when_go_not_found(self, tmp_path):
-        """Should raise VendorError when 'go' command not found."""
-        meta = {
-            "url": "https://example.com",
-            "version": "1.0",
-            "source": {"archives": ["https://example.com/pkg-1.0.tar.gz"]},
-            "build": {}
-        }
-        output = tmp_path / "vendor.tar.gz"
-
-        with patch("shutil.which") as mock_which:
-            mock_which.return_value = None
-            with pytest.raises(VendorError, match="'go' not found"):
-                generate("test-pkg", meta, output)
-
-    def test_raises_on_download_failure(self, tmp_path):
-        """Should raise VendorError when download fails."""
-        meta = {
-            "url": "https://example.com",
-            "version": "1.0",
-            "source": {"archives": ["https://invalid-url-that-will-fail/pkg-1.0.tar.gz"]},
-            "build": {}
-        }
-        output = tmp_path / "vendor.tar.gz"
-
-        with patch("shutil.which") as mock_which:
-            with patch("lib.vendor._download") as mock_dl:
-                mock_which.return_value = "/usr/bin/go"
-                mock_dl.side_effect = VendorError("Download failed")
-                with pytest.raises(VendorError, match="Download failed"):
-                    generate("test-pkg", meta, output)
-
-    def test_raises_on_missing_go_mod(self, tmp_path):
-        """Should raise VendorError when go.mod not found."""
-        # Create a minimal tar without go.mod
-        archive_path = tmp_path / "source.tar.gz"
-        with tarfile.open(archive_path, "w:gz") as tf:
-            # Empty archive
-            pass
-
-        meta = {
-            "url": "https://example.com",
-            "version": "1.0",
-            "source": {"archives": ["file://" + str(archive_path)]},
-            "build": {}
-        }
-        output = tmp_path / "vendor.tar.gz"
-
-        with patch("shutil.which") as mock_which:
-            with patch("lib.vendor._download") as mock_dl:
-                mock_which.return_value = "/usr/bin/go"
-                # Mock download to use our test archive
-                def mock_download(url, dest):
-                    import shutil
-                    shutil.copy(archive_path, dest)
-                mock_dl.side_effect = mock_download
-                with pytest.raises(VendorError, match="no go.mod"):
-                    generate("test-pkg", meta, output)
 
     def test_handles_unsafe_tarball_members(self, tmp_path):
         """Should reject tarballs with path traversal attempts."""

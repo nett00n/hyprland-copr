@@ -152,7 +152,7 @@ def generate_spec(
         if build_system == "cargo":
             archives = source.get("archives", [])
             if len(archives) >= 2 and "vendor" in archives[1]:
-                prep_commands = [f"tar xf %{{SOURCE1}}"] + prep_commands
+                prep_commands = ["tar xf %{SOURCE1}"] + prep_commands
 
         context = {
             "name": pkg.lower(),

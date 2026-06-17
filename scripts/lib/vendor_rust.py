@@ -34,6 +34,19 @@ def generate(
 
     _log = _log_fn(log_path)
 
+    # Check cargo version
+    try:
+        check = subprocess.run(
+            ["cargo", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if check.returncode != 0:
+            raise VendorError(f"cargo check failed: {check.stderr.strip()}")
+    except FileNotFoundError:
+        raise VendorError("'cargo' not found in PATH")
+
     # Determine source directory
     if submodule_path and submodule_path.exists():
         _log(f"using local submodule: {submodule_path}")
@@ -49,7 +62,7 @@ def generate(
             archive = tmpdir / "source.tar.gz"
             _download(source_url, archive)
             src_dir = _extract(archive, tmpdir)
-        except Exception as e:
+        except Exception:
             shutil.rmtree(tmpdir, ignore_errors=True)
             raise
 
@@ -72,7 +85,7 @@ def generate(
 
         _log("running: cargo vendor vendor/")
         result = subprocess.run(
-            ["cargo", "vendor", "vendor/"],
+            ["cargo", "vendor", str(vendor_dir)],
             cwd=src_dir,
             capture_output=True,
             text=True,
@@ -102,7 +115,7 @@ directory = 'vendor'
 offline = true
 """
         cargo_config.write_text(config_content)
-        _log(f"created .cargo/config.toml")
+        _log("created .cargo/config.toml")
 
         # Create vendor tarball (contains only vendor/ and .cargo/config.toml)
         _log(f"packing vendor/ -> {output.name}")

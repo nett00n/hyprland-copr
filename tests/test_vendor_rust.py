@@ -146,13 +146,15 @@ class TestGenerate:
 
             assert "vendor/ directory" in str(exc_info.value)
 
+    @patch("lib.vendor_rust.SOURCES_DIR")
     @patch("lib.vendor_rust.resolve_source_url")
     @patch("lib.vendor_rust.shutil.rmtree")
     @patch("lib.vendor_rust.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
-    def test_generate_success(self, mock_tar, mock_run, mock_rmtree, mock_resolve):
+    def test_generate_success(self, mock_tar, mock_run, mock_rmtree, mock_resolve, mock_sources_dir):
         """Test successful vendor generation."""
         mock_resolve.return_value = "https://example.com/test.tar.gz"
+        mock_sources_dir.__truediv__.return_value.exists.return_value = True
         version_result = MagicMock()
         version_result.returncode = 0
         vendor_result = MagicMock()
@@ -173,19 +175,21 @@ class TestGenerate:
             cargo_dir = src_dir / ".cargo"
             cargo_dir.mkdir()
 
-            generate("pkg", {}, Path(tmpdir) / "out.tar.gz", src_dir, False, None)
+            generate("pkg", {}, Path(tmpdir) / "out.tar.gz", None, False, src_dir)
 
             # Verify tarfile was created and files were added
             mock_tar.assert_called_once()
             assert mock_tf.add.call_count == 2  # vendor/ and .cargo/config.toml
 
+    @patch("lib.vendor_rust.SOURCES_DIR")
     @patch("lib.vendor_rust.resolve_source_url")
     @patch("lib.vendor_rust.shutil.rmtree")
     @patch("lib.vendor_rust.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
-    def test_generate_with_rust_subdir(self, mock_tar, mock_run, mock_rmtree, mock_resolve):
+    def test_generate_with_rust_subdir(self, mock_tar, mock_run, mock_rmtree, mock_resolve, mock_sources_dir):
         """Test generation with rust_subdir specified."""
         mock_resolve.return_value = "https://example.com/test.tar.gz"
+        mock_sources_dir.__truediv__.return_value.exists.return_value = True
         version_result = MagicMock()
         version_result.returncode = 0
         vendor_result = MagicMock()
@@ -206,7 +210,7 @@ class TestGenerate:
             vendor_dir.mkdir()
 
             pkg_meta = {"build": {"rust_subdir": "subdir"}}
-            generate("pkg", pkg_meta, Path(tmpdir) / "out.tar.gz", src_dir, False, None)
+            generate("pkg", pkg_meta, Path(tmpdir) / "out.tar.gz", None, False, src_dir)
 
             # Verify correct working directory was used
             calls = mock_run.call_args_list
