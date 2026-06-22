@@ -65,6 +65,11 @@ BuildRequires:  {{ dep }}
 Requires:       {{ dep }}
 {% endfor %}
 
+{# Runtime Recommends #}
+{% for dep in recommends %}
+Recommends:     {{ dep }}
+{% endfor %}
+
 {# Package Description and Changelog Info #}
 %description
 {{ description }}
