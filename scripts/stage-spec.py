@@ -178,6 +178,7 @@ def generate_spec(
             "source_dir": pkg_meta.get("source_dir"),
             "build_requires": pkg_meta.get("build_requires", []),
             "requires": pkg_meta.get("requires", []),
+            "recommends": pkg_meta.get("recommends", []),
             "description": pkg_meta.get("description", "").strip(),
             "prep_commands": prep_commands,
             "build_cmd": build_cmd,

@@ -21,6 +21,7 @@ from lib.build_systems import BUILD_SYSTEMS
 from lib.gitmodules import get_changelog_info, parse_gitmodules
 from lib.jinja_utils import create_jinja_env
 from lib.paths import GITMODULES, GITHUB_RELEASE_CACHE, ROOT
+from lib.spec_utils import process_archive_urls
 from lib.yaml_utils import apply_os_overrides, get_packages, load_repo_yaml
 
 
@@ -211,6 +212,7 @@ def build_context(
     pkg: dict,
     packager: str,
     url_to_submodule: dict,
+    project_packages: list | None = None,
     source_url: str | None = None,
     copr_url: str | None = None,
 ) -> dict:
@@ -265,7 +267,7 @@ def build_context(
         # Check if the second source looks like a vendor tarball
         archives = source.get("archives", [])
         if len(archives) >= 2 and "vendor" in archives[1]:
-            extra_prep.append(f"tar xf %{{SOURCE1}}")
+            extra_prep.append("tar xf %{SOURCE1}")
 
     for i, dep in enumerate(source.get("bundled_deps", [])):
         dep_name = dep["name"]
@@ -347,6 +349,7 @@ def build_context(
         "bundled_deps": bundled_deps,
         "build_requires": pkg.get("build_requires") or [],
         "requires": pkg.get("requires") or [],
+        "recommends": pkg.get("recommends") or [],
         "description": pkg["description"].strip(),
         "prep_commands": prep_commands,
         "build_cmd": build_cmd,
@@ -363,6 +366,8 @@ def build_context(
         }
         if (raw_devel := pkg.get("devel"))
         else None,
+        "dep_versions": [],
+        "project_packages": project_packages or [],
     }
 
 
@@ -416,7 +421,13 @@ def main() -> None:
         spec_path.write_text(
             template.render(
                 build_context(
-                    pkg_name, pkg, packager, url_to_submodule, source_url, copr_url
+                    pkg_name,
+                    pkg,
+                    packager,
+                    url_to_submodule,
+                    list(packages.keys()),
+                    source_url,
+                    copr_url,
                 )
             )
         )
