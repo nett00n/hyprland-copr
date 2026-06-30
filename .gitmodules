@@ -174,3 +174,7 @@
 	path = submodules/elkowar/eww
 	url = https://github.com/elkowar/eww.git
 	ignore = dirty
+[submodule "submodules/OpalAayan/snappy-switcher"]
+	path = submodules/OpalAayan/snappy-switcher
+	url = https://github.com/OpalAayan/snappy-switcher.git
+	ignore = dirty

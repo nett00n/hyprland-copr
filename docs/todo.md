@@ -6,7 +6,8 @@
 - add make fmt after scaffolding
 - \*-git packages to separate block
 - #2.0 split management system and hyprland repo content. Make automations repo a submodule of content repo (?)
- rm QUIET flag as unneseccary
+- rm QUIET flag as unneseccary
+
 # Packages
 
 everything, that Hyprland recommended:
@@ -33,7 +34,6 @@ everything, that Hyprland recommended:
 - https://github.com/hyprland-community/hyprland-rs #Rust
 - https://github.com/kosa12/hyprKCS #Rust
 - https://github.com/hyprland-community/hyprls
-- https://github.com/OpalAayan/snappy-switcher
 - https://github.com/zjeffer/split-monitor-workspaces
 - https://hyprtile.org/#download (?) is not git-published at first glance
 - https://github.com/outfoxxed/hy3
@@ -49,4 +49,3 @@ seems interesting:
 - https://github.com/hbuddenberg/hyprcaffeine
 - https://github.com/funinkina/openeffects
 - https://github.com/AprilNEA/OpenLogi
-

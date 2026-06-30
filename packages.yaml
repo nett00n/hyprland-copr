@@ -1885,3 +1885,52 @@ eww:
   summary: Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
   url: https://github.com/elkowar/eww
   version: 0.6.0
+snappy-switcher:
+  build:
+    commands:
+    - make %{?_smp_mflags}
+    install:
+    - '%make_install PREFIX=%{_prefix}'
+    no_lto: false
+    prep:
+    - sed -i 's/BINDIR = \$(PREFIX)\/bin/BINDIR = $(DESTDIR)$(PREFIX)\/bin/; s/DATADIR = \$(PREFIX)\/share/DATADIR = $(DESTDIR)$(PREFIX)\/share/; s/DOCDIR = \$(PREFIX)\/share/DOCDIR = $(DESTDIR)$(PREFIX)\/share/; s/SYSCONFDIR = \/etc/SYSCONFDIR = $(DESTDIR)\/etc/' Makefile
+    system: make
+  build_requires:
+  - gcc
+  - make
+  - pkgconfig(cairo)
+  - pkgconfig(glib-2.0)
+  - pkgconfig(gobject-2.0)
+  - pkgconfig(json-c)
+  - pkgconfig(librsvg-2.0)
+  - pkgconfig(pango)
+  - pkgconfig(pangocairo)
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-cursor)
+  - pkgconfig(wayland-scanner)
+  - pkgconfig(xkbcommon)
+  - wayland-protocols-devel
+  depends_on: []
+  description: |
+    The window switcher that actually understands your workflow
+
+    Pure C · Wayland Layer Shell · Zero dependencies on Electron or GTK runtimes
+  files:
+  - '%doc README.md'
+  - '%{_bindir}/snappy-install-config'
+  - '%{_bindir}/snappy-switcher'
+  - '%{_bindir}/snappy-wrapper'
+  - '%{_datadir}/snappy-switcher/themes/*.ini'
+  - '%{_docdir}/snappy-switcher/config.ini.example'
+  - "%{_sysconfdir}/xdg/snappy-switcher/config.ini"
+  license: GPL-3.0
+  release: 13
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: alt-tab switch window for wayland compositor
+  url: https://github.com/OpalAayan/snappy-switcher
+  version: 4.0.0
