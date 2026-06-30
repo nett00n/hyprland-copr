@@ -153,7 +153,7 @@ glaze:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Extremely fast, in memory, JSON and reflection library for modern C++.
   url: https://github.com/stephenberry/glaze.git
-  version: 7.8.2
+  version: 7.8.3
 gtk4-layer-shell:
   build:
     system: meson
@@ -389,7 +389,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -485,7 +485,7 @@ Hyprland-git:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 6
+  release: 7
   source:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -569,7 +569,7 @@ hyprland-plugins:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 12
+  release: 13
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -625,7 +625,7 @@ hyprland-plugins-git:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 11
+  release: 12
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -1073,7 +1073,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 6
+  release: 7
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1151,7 +1151,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 6
+  release: 7
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1315,7 +1315,7 @@ pyprland:
   - '%{python3_sitelib}/pyprland'
   - '%{python3_sitelib}/pyprland-%{version}.dist-info'
   license: MIT
-  release: 4
+  release: 1
   requires:
   - python3-aiofiles
   - python3-aiohttp
@@ -1330,7 +1330,7 @@ pyprland:
     - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Scratchpads & many goodies for Hyprland
   url: https://github.com/hyprland-community/pyprland.git
-  version: 3.4.2
+  version: 3.4.3
 sndio:
   build:
     configure_flags:
@@ -1647,7 +1647,7 @@ uwsm:
   - '%{_userunitdir}/wayland-wm-env@.service'
   - '%{_userunitdir}/wayland-wm@.service'
   license: MIT
-  release: 2
+  release: 1
   requires: []
   rpm:
     no_debug_package: true
@@ -1657,7 +1657,7 @@ uwsm:
     bundled_deps: []
   summary: Universal Wayland Session Manager
   url: https://github.com/Vladimir-csp/uwsm
-  version: 0.26.5
+  version: 0.26.6
 quickshell:
   build:
     commands:
