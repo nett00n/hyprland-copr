@@ -173,6 +173,15 @@ _PATCH_HUNK_FAILED_RE = re.compile(
     r"^(\d+) out of \d+ hunk(?:s)? FAILED -- saving rejects to file (.+)\.rej$"
 )
 
+# Rpm transaction errors: "- installing package ... needs 142MB more space on the / filesystem"
+# May be preceded by DEBUG output or other logging
+_RPM_TRANSACTION_SPACE_RE = re.compile(
+    r"- installing package (\S+) needs (\d+)MB more space on (.+) filesystem"
+)
+
+# Transaction failed: Rpm transaction failed.
+_TRANSACTION_FAILED_RE = re.compile(r"Transaction failed: Rpm transaction failed")
+
 
 def _dnf_whatprovides(query: str) -> list[str]:
     try:
@@ -851,6 +860,44 @@ def _analyze_mock_log(log_path: Path) -> list[tuple[int, str, str, str, str]]:
                     "none",
                 )
             )
+    return issues
+
+
+def _analyze_mock_root_log(log_path: Path) -> list[tuple[int, str, str, str, str]]:
+    """Scan the mock root installation log (-21-mock-root.log) for transaction/space errors."""
+    if not log_path.exists():
+        return []
+    issues: list[tuple[int, str, str, str, str]] = []
+    raw_lines = log_path.read_text(errors="replace").splitlines()
+    transaction_reported = False
+
+    for lineno, line in enumerate(raw_lines, start=1):
+        m = _TRANSACTION_FAILED_RE.search(line)
+        if m and not transaction_reported:
+            space_issues = []
+            for next_idx in range(lineno, min(lineno + 20, len(raw_lines) + 1)):
+                if next_idx - 1 < len(raw_lines):
+                    next_line = raw_lines[next_idx - 1]
+                    space_m = _RPM_TRANSACTION_SPACE_RE.search(next_line)
+                    if space_m:
+                        pkg_name = space_m.group(1)
+                        space_needed = space_m.group(2)
+                        filesystem = space_m.group(3)
+                        space_issues.append(
+                            f"{pkg_name} needs {space_needed}MB on {filesystem}"
+                        )
+            if space_issues:
+                msg = f"rpm transaction failed due to insufficient disk space — {'; '.join(space_issues[:3])} — increase mock root volume or free disk space on build machine"
+                issues.append(
+                    (
+                        lineno,
+                        line.strip(),
+                        msg,
+                        "",
+                        "none",
+                    )
+                )
+                transaction_reported = True
     return issues
 
 

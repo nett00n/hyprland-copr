@@ -7,6 +7,7 @@ from lib.log_analysis import (
     _analyze_srpm_log,
     _analyze_mock_log,
     _analyze_mock_build_log,
+    _analyze_mock_root_log,
     _suggest_providers,
 )
 from lib.paths import ROOT
@@ -69,6 +70,17 @@ def analyze_package(pkg: str) -> int:
                 if providers:
                     yaml_list = "\n      ".join(f'- "{p}"' for p in providers)
                     print(f"    suggested packages:\n      {yaml_list}")
+
+    # Mock stage (root)
+    root_log = log_dir / "21-mock-root.log"
+    if root_log.exists():
+        issues = _analyze_mock_root_log(root_log)
+        if issues:
+            issues_found = True
+            print(f"\n{HIGHLIGHT_PREFIX} Mock root issues:")
+            for lineno, raw_line, msg, dep, method in issues:
+                print(f"  - {msg}")
+                print(f"    {root_log}:{lineno}: {raw_line}")
 
     if not issues_found:
         print(f"{HIGHLIGHT_PREFIX} ✓ No issues found in {pkg} logs")

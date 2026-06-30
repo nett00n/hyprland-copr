@@ -251,6 +251,7 @@ add-submodule: check-image check-venv setup-volumes ## Register git submodule fo
 
 add-new: check-image check-venv setup-volumes ## Add submodule from URL and scaffold packages.yaml entry in one step (URL=<repo-url> required)
 	@test -n "$(URL)" || (echo "$(HIGHLIGHT_PREFIX) Error: URL is required (e.g. URL=https://github.com/hyprwm/hyprpicker)"; exit 1)
+	@echo "$(URL)" | grep -qE '^https?://' || (echo "$(HIGHLIGHT_PREFIX) Error: URL must be http:// or https://, not git:// or other schemes"; exit 1)
 	@_name=$$(basename $(URL:.git=)); \
 	 _org=$$(basename $$(dirname $(URL))); \
 	 git submodule add $(URL) submodules/$$_org/$$_name || exit 1; \
