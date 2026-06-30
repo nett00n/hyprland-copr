@@ -1,12 +1,12 @@
 
 Name:           pyprland
-Version:        3.4.2
-Release:        4%{?dist}
+Version:        3.4.3
+Release:        1%{?dist}
 Summary:        Scratchpads & many goodies for Hyprland
 BuildArch:      noarch
 License:        MIT
 URL:            https://github.com/hyprland-community/pyprland.git
-Source0:        https://github.com/hyprland-community/pyprland/archive/refs/tags/3.4.2.tar.gz#/pyprland-3.4.2.tar.gz
+Source0:        https://github.com/hyprland-community/pyprland/archive/refs/tags/3.4.3.tar.gz#/pyprland-3.4.3.tar.gz
 
 BuildRequires:  python3-devel
 BuildRequires:  python3-hatchling
@@ -55,6 +55,6 @@ python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --pref
 %{python3_sitelib}/pyprland-%{version}.dist-info
 
 %changelog
-* Thu Jun 25 2026 nett00n <copr@nett00n.org> - 3.4.2-4
+* Tue Jun 30 2026 nett00n <copr@nett00n.org> - 3.4.3-1
 
-- Update to 3.4.2
+- Update to 3.4.3

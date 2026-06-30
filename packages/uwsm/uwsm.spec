@@ -1,12 +1,12 @@
 %global debug_package %{nil}
 
 Name:           uwsm
-Version:        0.26.5
-Release:        2%{?dist}
+Version:        0.26.6
+Release:        1%{?dist}
 Summary:        Universal Wayland Session Manager
 License:        MIT
 URL:            https://github.com/Vladimir-csp/uwsm
-Source0:        https://github.com/Vladimir-csp/uwsm/archive/refs/tags/v0.26.5.tar.gz#/uwsm-0.26.5.tar.gz
+Source0:        https://github.com/Vladimir-csp/uwsm/archive/refs/tags/v0.26.6.tar.gz#/uwsm-0.26.6.tar.gz
 
 BuildRequires:  gcc-c++
 BuildRequires:  meson
@@ -35,8 +35,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.26.5
-Commit:            7bdc515bd85c8c252b6d99111527a1c2da9cb60c
+Tag:               v0.26.6
+Commit:            469a39a5436f6c1086b4904d42227c03aee2e394
 
 %prep
 %autosetup -p1
@@ -82,8 +82,8 @@ Development files for uwsm.
 %files devel
 
 %changelog
-* Sat Jun 13 2026 nett00n <copr@nett00n.org> - 0.26.5-2
+* Sun Jun 28 2026 nett00n <copr@nett00n.org> - 0.26.6-1
 
-- chore: Release 0.26.5
-- fix(app): split explicitly by ".desktop:", abs path for SourcePath value
-- fix(app): fall back to local file if exists on invalid entry ID, fixes #214
+- chore: Release 0.26.6
+- fix(app): support compat /execarg_default: directives in xdg-terminals.list
+- Also ignore unknown directives, fixes #219
