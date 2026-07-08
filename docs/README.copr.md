@@ -30,18 +30,16 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 > **Packages info**
 >
-> Nothing important since the last one. I had troubles with ARM-build, details in automation section
+> New packages:
+> - snappy switcher
 >
 > **Automation info**
 >
-> `release` a thing now, and shows real counter of builds for current version of package. The most ofthen cause of rebuild would be the dependency version update.
-> Recently all packages were build as 1.2.3-1, where "1.2.3" - was a version and "1" was a static %autorelease. But this was breaking a depedency find process. I could just replace 1 in packages.yaml, but humans are making mistakes, so full-cycle autoicrement release, while building a package.
->
-> Replaced all YAML writes with ruamel lib for simplifying code and unifying
+> Recommends field is added
 >
 > Pet your pets, sincerely yours nett00n
 >
-> 2026-04-24
+> 2026-06-30
 
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/tree/main/blog)
@@ -105,6 +103,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ### Useful apps
 
+- `ashell` — 
 - `bemenu` — Dynamic menu library and client program inspired by dmenu
 - `cliphist` — Wayland clipboard manager with support for multimedia
 - `clipman` — A simple clipboard manager for Wayland
@@ -118,6 +117,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 - `pyprland` — Scratchpads & many goodies for Hyprland
 - `quickshell` — Flexible QtQuick based desktop shell toolkit
 - `ranger` — A VIM-inspired filemanager for the console
+- `snappy-switcher` — alt-tab switch window for wayland compositor
 - `swaybg` — Great utility if all you want is one simple static wallpaper
 - `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
 - `uwsm` — Universal Wayland Session Manager
@@ -137,7 +137,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-06-30
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-07-08
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

@@ -1,14 +1,14 @@
-%global commit 203a121537d0868bd4d8258b58861ca970483157
+%global commit 6a8eb0490ce3ff3cbf9b00815f7a215e895d87e0
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260519
+%global commitdate 20260707
 
 Name:           hyprland-git
-Version:        0.55.0^20260519git203a121
-Release:        7%{?dist}
+Version:        0.55.0^20260707git6a8eb04
+Release:        1%{?dist}
 Summary:        A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 License:        BSD-3-Clause
-URL:            https://github.com/hyprwm/Hyprland.git
-Source0:        https://github.com/hyprwm/Hyprland/archive/203a121537d0868bd4d8258b58861ca970483157.tar.gz#/hyprland-git-0.55.0^20260519git203a121.tar.gz
+URL:            https://github.com/hyprwm/Hyprland
+Source0:        https://github.com/hyprwm/Hyprland/archive/6a8eb0490ce3ff3cbf9b00815f7a215e895d87e0.tar.gz#/hyprland-git-0.55.0^20260707git6a8eb04.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -48,6 +48,8 @@ BuildRequires:  pkgconfig(xkbcommon)
 BuildRequires:  udis86-devel
 
 
+Recommends:     uwsm
+
 %description
 hyprland-git
 This package is build from latest commit and can be broken
@@ -55,7 +57,7 @@ This package is build from latest commit and can be broken
 Hyprland is a 100% independent, dynamic tiling Wayland compositor that
 doesn't sacrifice on its looksIt provides the latest Wayland features,
 is highly customizable, has all the eyecandy, the most powerful plugins,
-easy IPC, much more QoL stuff than other compositors and more..
+easy IPC, much more QoL stuff than other compositors and more
 
 Maintainer info:
 
@@ -108,6 +110,6 @@ Development files for hyprland-git.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Tue Jun 30 2026 nett00n <copr@nett00n.org> - 0.55.0^20260519git203a121-7
+* Wed Jul 08 2026 nett00n <copr@nett00n.org> - 0.55.0^20260707git6a8eb04-1
 
-- Update to 0.55.0^20260519git203a121
+- Update to 0.55.0^20260707git6a8eb04

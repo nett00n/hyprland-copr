@@ -1,7 +1,7 @@
 
 Name:           pyprland
 Version:        3.4.3
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Scratchpads & many goodies for Hyprland
 BuildArch:      noarch
 License:        MIT
@@ -17,6 +17,7 @@ Requires:       python3-aiohttp
 Requires:       python3-pillow
 Requires:       qt6-qtdeclarative-devel
 Requires:       qt6-qtquickcontrols2-devel
+
 
 %description
 Power up your desktop
@@ -55,6 +56,6 @@ python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --pref
 %{python3_sitelib}/pyprland-%{version}.dist-info
 
 %changelog
-* Tue Jun 30 2026 nett00n <copr@nett00n.org> - 3.4.3-1
+* Wed Jul 08 2026 nett00n <copr@nett00n.org> - 3.4.3-2
 
 - Update to 3.4.3

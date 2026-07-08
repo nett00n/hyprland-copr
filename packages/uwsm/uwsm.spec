@@ -2,7 +2,7 @@
 
 Name:           uwsm
 Version:        0.26.6
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Universal Wayland Session Manager
 License:        MIT
 URL:            https://github.com/Vladimir-csp/uwsm
@@ -15,6 +15,7 @@ BuildRequires:  python3-dbus
 BuildRequires:  python3-pyxdg
 BuildRequires:  scdoc
 BuildRequires:  systemd-rpm-macros
+
 
 
 %description
@@ -82,7 +83,7 @@ Development files for uwsm.
 %files devel
 
 %changelog
-* Sun Jun 28 2026 nett00n <copr@nett00n.org> - 0.26.6-1
+* Sun Jun 28 2026 nett00n <copr@nett00n.org> - 0.26.6-2
 
 - chore: Release 0.26.6
 - fix(app): support compat /execarg_default: directives in xdg-terminals.list

@@ -1,7 +1,7 @@
 
 Name:           hyprland
 Version:        0.55.4
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -49,11 +49,13 @@ BuildRequires:  pkgconfig(xkbcommon)
 BuildRequires:  udis86-devel
 
 
+Recommends:     uwsm
+
 %description
 Hyprland is a 100% independent, dynamic tiling Wayland compositor that
 doesn't sacrifice on its looksIt provides the latest Wayland features,
 is highly customizable, has all the eyecandy, the most powerful plugins,
-easy IPC, much more QoL stuff than other compositors and more..
+easy IPC, much more QoL stuff than other compositors and more
 
 Maintainer info:
 
@@ -108,6 +110,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Thu Jun 11 2026 nett00n <copr@nett00n.org> - 0.55.4-3
+* Thu Jun 11 2026 nett00n <copr@nett00n.org> - 0.55.4-4
 
 - [gha] Nix: update inputs

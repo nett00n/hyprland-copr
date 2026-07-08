@@ -2,7 +2,7 @@
 
 Name:           hyprshot
 Version:        1.3.0
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Utility to easily take screenshots in Hyprland using your mouse
 BuildArch:      noarch
 License:        GPL-3.0-only
@@ -15,6 +15,7 @@ Requires:       grim
 Requires:       jq
 Requires:       slurp
 Requires:       wl-clipboard
+
 
 %description
 Hyprshot is an utility to easily take screenshot in Hyprland using your
@@ -44,6 +45,6 @@ install -Dpm0755 hyprshot -t %{buildroot}/%{_bindir}
 %{_bindir}/hyprshot
 
 %changelog
-* Wed Jun 17 2026 nett00n <copr@nett00n.org> - 1.3.0-4
+* Wed Jul 08 2026 nett00n <copr@nett00n.org> - 1.3.0-5
 
 - Update to 1.3.0

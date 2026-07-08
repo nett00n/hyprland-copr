@@ -1,7 +1,7 @@
 
 Name:           hyprshutdown
 Version:        0.1.1
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        A graceful shutdown utility for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprshutdown
@@ -18,6 +18,7 @@ BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(cairo)
 BuildRequires:  pkgconfig(libdrm)
 BuildRequires:  pkgconfig(pixman-1)
+
 
 
 %description
@@ -50,6 +51,6 @@ Commit:            db1f38b03b173984ae9ed3abeb9750583c9bbd91
 %{_prefix}/bin/hyprshutdown
 
 %changelog
-* Tue May 12 2026 nett00n <copr@nett00n.org> - 0.1.1-7
+* Tue May 12 2026 nett00n <copr@nett00n.org> - 0.1.1-8
 
 - version: bump to 0.1.1

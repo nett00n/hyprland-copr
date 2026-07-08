@@ -1,7 +1,7 @@
 
 Name:           hyprland-qt-support
 Version:        0.1.0
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A qml style provider for hypr* qt apps
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-qt-support
@@ -15,6 +15,7 @@ BuildRequires:  gcc-c++
 BuildRequires:  hyprlang-devel
 BuildRequires:  ninja-build
 BuildRequires:  qt6-rpm-macros
+
 
 
 %description
@@ -48,6 +49,6 @@ Commit:            9d4437011b4f02e60e98a3e36c7fa14bb053b502
 %{_prefix}/lib/libhyprland-quick-style.so
 
 %changelog
-* Wed Jan 08 2025 nett00n <copr@nett00n.org> - 0.1.0-3
+* Wed Jan 08 2025 nett00n <copr@nett00n.org> - 0.1.0-4
 
 - version: bump to 0.1.0
