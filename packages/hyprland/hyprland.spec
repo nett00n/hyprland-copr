@@ -1,7 +1,7 @@
 
 Name:           hyprland
 Version:        0.55.4
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -46,6 +46,7 @@ BuildRequires:  pkgconfig(xcb-errors)
 BuildRequires:  pkgconfig(xcb-icccm)
 BuildRequires:  pkgconfig(xcursor)
 BuildRequires:  pkgconfig(xkbcommon)
+BuildRequires:  readline-devel
 BuildRequires:  udis86-devel
 
 
@@ -110,6 +111,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Thu Jun 11 2026 nett00n <copr@nett00n.org> - 0.55.4-4
+* Thu Jun 11 2026 nett00n <copr@nett00n.org> - 0.55.4-5
 
 - [gha] Nix: update inputs

@@ -4,7 +4,7 @@
 
 Name:           hyprland-plugins-git
 Version:        0.55.0^20260517gitb324783
-Release:        13%{?dist}
+Release:        14%{?dist}
 Summary:        Official plugins for Hyprland [Built from latest commit, unstable]
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins.git
@@ -70,6 +70,6 @@ Package info:
 %{_prefix}/lib/libhypr*.so
 
 %changelog
-* Wed Jul 08 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-13
+* Thu Jul 09 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-14
 
 - Update to 0.55.0^20260517gitb324783
