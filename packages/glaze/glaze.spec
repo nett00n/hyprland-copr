@@ -1,12 +1,12 @@
 %global debug_package %{nil}
 
 Name:           glaze
-Version:        7.8.4
+Version:        7.9.0
 Release:        1%{?dist}
 Summary:        Extremely fast, in memory, JSON and reflection library for modern C++.
 License:        MIT
 URL:            https://github.com/stephenberry/glaze.git
-Source0:        https://github.com/stephenberry/glaze/archive/refs/tags/v7.8.4.tar.gz#/glaze-7.8.4.tar.gz
+Source0:        https://github.com/stephenberry/glaze/archive/refs/tags/v7.9.0.tar.gz#/glaze-7.9.0.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -28,8 +28,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v7.8.4
-Commit:            0a21fd9dbd36963790b6f26b9539050e13d78649
+Tag:               v7.9.0
+Commit:            f33758ad0c912471f2580fb7b3bf3a2b103214b9
 
 %prep
 %autosetup -p1
@@ -57,6 +57,6 @@ Development files for glaze.
 %{_prefix}/share/glaze/*.cmake
 
 %changelog
-* Thu Jul 02 2026 nett00n <copr@nett00n.org> - 7.8.4-1
+* Sat Jul 11 2026 nett00n <copr@nett00n.org> - 7.9.0-1
 
-- version 7.8.4 bump
+- version 7.9.0 bump
