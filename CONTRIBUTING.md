@@ -387,7 +387,7 @@ make lint    # lint-ruff + lint-flake + lint-mypy + lint-rpm + lint-yaml
 make fmt           # fmt-ruff + fmt-yaml + normalize-paths + sort-lists
 
 # Pre-commit workflow: run all checks + formatting
-make pre-commit QUIET=1   # runs: validate-packages + test + lint + fmt
+make pre-commit   # runs: validate-packages + test + lint + fmt
 ```
 
 **Linter checks:**

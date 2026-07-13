@@ -5,7 +5,6 @@ FEDORA_VERSION  := $(subst ",,$(FEDORA_VERSION))
 COPR_REPO       := $(subst ",,$(COPR_REPO))
 PACKAGE         := $(subst ",,$(PACKAGE))
 SKIP_PACKAGES   := $(subst ",,$(SKIP_PACKAGES))
-QUIET           := $(subst ",,$(QUIET))
 # Fallback defaults if not set after stripping
 FEDORA_VERSION  ?= 43
 SUPPORTED        := 42 43 44 rawhide
@@ -20,8 +19,6 @@ PACKAGE      := $(or $(PACKAGE),$(PKG))
 # Skip packages during dependency gathering (comma-separated list)
 SKIP_PACKAGES ?=
 
-# Quiet mode: QUIET=1 suppresses output and saves to logs
-QUIET        ?=
 # Log level: DEBUG, INFO (default), WARNING, ERROR, CRITICAL
 LOG_LEVEL    ?=
 # Command timeout in seconds (default 3600/60min, for long builds like mock)
@@ -79,29 +76,10 @@ PYTHON           := .venv/bin/python3
 README_COPR      := docs/README.copr.md
 COPR_INSTRUCTIONS := docs/INSTALL.copr.md
 
-# Helper: run command with optional logging
-# Usage: $(call run_with_result,command,success_msg,fail_msg,log_dir)
+# Helper: run command, echo success/failure
+# Usage: $(call run_with_result,command,success_msg,fail_msg)
 define run_with_result
-	@if [ "$(QUIET)" = "1" ] && [ -n "$4" ]; then \
-		mkdir -p "$4"; \
-		rm -f "$4"/*.log; \
-		if $1 > "$4/stdout.log" 2> "$4/stderr.log"; then \
-			echo $(HIGHLIGHT_PREFIX) "✓ $2"; \
-			_out=$$(wc -l < "$4/stdout.log" 2>/dev/null || echo 0); \
-			_err=$$(wc -l < "$4/stderr.log" 2>/dev/null || echo 0); \
-			echo $(HIGHLIGHT_PREFIX) "  stdout ($${_out} lines): $4/stdout.log"; \
-			echo $(HIGHLIGHT_PREFIX) "  stderr ($${_err} lines): $4/stderr.log"; \
-		else \
-			echo $(HIGHLIGHT_PREFIX) "✗ $3"; \
-			_out=$$(wc -l < "$4/stdout.log" 2>/dev/null || echo 0); \
-			_err=$$(wc -l < "$4/stderr.log" 2>/dev/null || echo 0); \
-			echo $(HIGHLIGHT_PREFIX) "  stdout ($${_out} lines): $4/stdout.log"; \
-			echo $(HIGHLIGHT_PREFIX) "  stderr ($${_err} lines): $4/stderr.log"; \
-			exit 1; \
-		fi; \
-	else \
-		$1 && echo $(HIGHLIGHT_PREFIX) "✓ $2" || (echo $(HIGHLIGHT_PREFIX) "✗ $3"; exit 1); \
-	fi
+	@$1 && echo $(HIGHLIGHT_PREFIX) "✓ $2" || (echo $(HIGHLIGHT_PREFIX) "✗ $3"; exit 1)
 endef
 
 
@@ -119,9 +97,6 @@ clean-logs: ## Remove all build logs and reports
 	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned build logs and reports"
 
 clean-localrepo: ## Purge local repo for FEDORA_VERSION to resolve dependency conflicts
-	@if [ -n "$(QUIET)" ]; then \
-		echo $(HIGHLIGHT_PREFIX) "Removing local repo for Fedora $(FEDORA_VERSION)..."; \
-	fi
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(LOCALREPO_VOLUME) >/dev/null 2>&1 && \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(LOCALREPO_MOUNT) $(IMAGE_NAME):$(FEDORA_VERSION) \
 			rm -rf /local-repo/* || true
@@ -183,7 +158,7 @@ setup-venv: ## Create .venv and install Python dependencies
 	.venv/bin/pip install -q -r requirements.txt
 
 test: check-image check-venv setup-volumes ## Run unit tests for scripts/ using pytest
-	$(call run_with_result,$(CONTAINER_PYTHON) -m pytest tests/ -v,Tests passed,Tests failed,$(MAKE_LOGS_DIR)/test)
+	$(call run_with_result,$(CONTAINER_PYTHON) -m pytest tests/ -v,Tests passed,Tests failed)
 
 coverage: check-image check-venv setup-volumes ## Run tests with coverage report (--format html for HTML output)
 	@mkdir -p "$(MAKE_LOGS_DIR)/coverage"
@@ -197,29 +172,29 @@ coverage: check-image check-venv setup-volumes ## Run tests with coverage report
 lint: lint-ruff lint-flake lint-mypy lint-rpm lint-yaml ## Run all linters inside container
 
 lint-ruff: check-image check-venv setup-volumes ## Run ruff check on scripts
-	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff check scripts/,Ruff check passed,Ruff check failed,$(MAKE_LOGS_DIR)/lint-ruff)
+	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff check scripts/,Ruff check passed,Ruff check failed)
 
 lint-flake: check-image check-venv setup-volumes ## Run flake8 style checker on scripts
 	$(CONTAINER_PYTHON) -m pip install -q -r requirements-dev.txt
-	$(call run_with_result,$(CONTAINER_PYTHON) -m flake8 scripts/,Flake8 check passed,Flake8 check failed,$(MAKE_LOGS_DIR)/lint-flake)
+	$(call run_with_result,$(CONTAINER_PYTHON) -m flake8 scripts/,Flake8 check passed,Flake8 check failed)
 
 lint-mypy: check-image check-venv setup-volumes ## Run mypy type checker on scripts
-	$(call run_with_result,$(CONTAINER_PYTHON) -m mypy scripts/ --ignore-missing-imports --exclude submodules,Mypy check passed,Mypy check failed,$(MAKE_LOGS_DIR)/lint-mypy)
+	$(call run_with_result,$(CONTAINER_PYTHON) -m mypy scripts/ --ignore-missing-imports --exclude submodules,Mypy check passed,Mypy check failed)
 
 lint-rpm: check-image check-venv setup-volumes ## Run rpmlint on all generated spec files
 	$(CONTAINER_PYTHON) -m pip install -q rpmlint
-	$(call run_with_result,$(CONTAINER_RUN) rpmlint -r /work/.rpmlintrc --ignore-unused-rpmlintrc packages/*/[a-z]*.spec,Rpmlint check passed,Rpmlint check failed,$(MAKE_LOGS_DIR)/lint-rpm)
+	$(call run_with_result,$(CONTAINER_RUN) rpmlint -r /work/.rpmlintrc --ignore-unused-rpmlintrc packages/*/[a-z]*.spec,Rpmlint check passed,Rpmlint check failed)
 
 lint-yaml: check-image check-venv setup-volumes ## Run yamllint on YAML files
-	$(call run_with_result,$(CONTAINER_PYTHON) -m yamllint *.yaml,Yamllint check passed,Yamllint check failed,$(MAKE_LOGS_DIR)/lint-yaml)
+	$(call run_with_result,$(CONTAINER_PYTHON) -m yamllint *.yaml,Yamllint check passed,Yamllint check failed)
 
 fmt: fmt-ruff fmt-yaml normalize-paths sort-lists ## Format and normalize all files
 
 fmt-ruff: check-image check-venv setup-volumes ## Run ruff format on scripts
-	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff format scripts/,Ruff format applied,Ruff format failed,$(MAKE_LOGS_DIR)/fmt-ruff)
+	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff format scripts/,Ruff format applied,Ruff format failed)
 
 fmt-yaml: check-image check-venv setup-volumes ## Format YAML files with consistent style
-	$(call run_with_result,$(CONTAINER_PYTHON) scripts/format-yaml.py '*.yaml',YAML format applied,YAML format failed,$(MAKE_LOGS_DIR)/fmt-yaml)
+	$(call run_with_result,$(CONTAINER_PYTHON) scripts/format-yaml.py '*.yaml',YAML format applied,YAML format failed)
 
 pre-commit: check-venv ## Run all checks and formatting (test + lint + fmt). Use COVERAGE=1 to include coverage report
 	@$(PYTHON) scripts/validate-packages.py || exit 1
@@ -331,7 +306,7 @@ container-build: ## Build image for FEDORA_VERSION
 		--build-arg UID=$(USER_ID) \
 		--build-arg GID=$(GROUP_ID) \
 		-t $(IMAGE_NAME):$(FEDORA_VERSION) \
-		-f Containerfile .,Built $(IMAGE_NAME):$(FEDORA_VERSION),Container build failed,$(MAKE_LOGS_DIR)/container-build)
+		-f Containerfile .,Built $(IMAGE_NAME):$(FEDORA_VERSION),Container build failed)
 
 container-enter: ## Enter interactive shell in container for FEDORA_VERSION
 	$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run -it --rm \
@@ -374,15 +349,8 @@ sources: check-image setup-volumes ## Download sources for PACKAGE (or all) usin
 		if [ ! -f "$$_spec" ]; then \
 			echo "$(HIGHLIGHT_PREFIX) ✗ sources: $$pkg - spec file not found: $$_spec"; exit 1; \
 		fi; \
-		if [ -n "$(QUIET)" ]; then \
-			_ld="$(MAKE_LOGS_DIR)/pkg-sources/$$pkg"; mkdir -p "$$_ld"; \
-			$(CONTAINER_RUN) spectool -g -R $$_spec > "$$_ld/stdout.log" 2> "$$_ld/stderr.log" || \
-				(echo "$(HIGHLIGHT_PREFIX) ✗ sources: $$pkg"; exit 1); \
-			echo "$(HIGHLIGHT_PREFIX) ✓ sources: $$pkg"; \
-		else \
-			echo "$(HIGHLIGHT_PREFIX) sources: $$pkg"; \
-			$(CONTAINER_RUN) spectool -g -R $$_spec || exit 1; \
-		fi; \
+		echo "$(HIGHLIGHT_PREFIX) sources: $$pkg"; \
+		$(CONTAINER_RUN) spectool -g -R $$_spec || exit 1; \
 	done
 
 FORCE_MOCK ?=
@@ -405,7 +373,7 @@ full-cycle: check-image check-venv setup-volumes ## Run full cycle with YAML rep
 		DRY_RUN=$(DRY_RUN) \
 		SYNCHRONOUS_COPR_BUILD=$(SYNCHRONOUS_COPR_BUILD) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
-		/work/.venv/bin/python3 scripts/full-cycle.py,Full cycle completed,Full cycle failed,$(MAKE_LOGS_DIR)/full-cycle)
+		/work/.venv/bin/python3 scripts/full-cycle.py,Full cycle completed,Full cycle failed)
 
 update-daily: ## Update versions, build, generate docs, push to COPR (requires COPR_REPO), git commit
 	@test -n "$(COPR_REPO)" || (echo "$(HIGHLIGHT_PREFIX) Error: COPR_REPO is not set (e.g. export COPR_REPO=nett00n/hyprland)"; exit 1)
@@ -430,35 +398,35 @@ stage-validate: check-image check-venv setup-volumes ## Run validation stage (PA
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		PACKAGE=$(PACKAGE) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
-		/work/.venv/bin/python3 scripts/stage-validate.py,Validation stage passed,Validation stage failed,$(MAKE_LOGS_DIR)/stage-validate)
+		/work/.venv/bin/python3 scripts/stage-validate.py,Validation stage passed,Validation stage failed)
 
 stage-show-plan: check-image check-venv setup-volumes ## Show build plan - what will run, cache, or skip (PACKAGE, SKIP_PACKAGES, COPR_REPO optional, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		PACKAGE=$(PACKAGE) \
 		SKIP_PACKAGES=$(SKIP_PACKAGES) \
 		COPR_REPO=$(COPR_REPO) \
-		/work/.venv/bin/python3 scripts/stage-show-plan.py,Build plan displayed,Build plan failed,$(MAKE_LOGS_DIR)/stage-show-plan)
+		/work/.venv/bin/python3 scripts/stage-show-plan.py,Build plan displayed,Build plan failed)
 
 stage-spec: check-image check-venv setup-volumes ## Run spec generation stage (PACKAGE=<name>, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		PACKAGE=$(PACKAGE) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
-		/work/.venv/bin/python3 scripts/stage-spec.py,Spec generation passed,Spec generation failed,$(MAKE_LOGS_DIR)/stage-spec)
+		/work/.venv/bin/python3 scripts/stage-spec.py,Spec generation passed,Spec generation failed)
 
 stage-vendor: check-image check-venv setup-volumes ## Run vendor tarball generation stage (Go packages only, PACKAGE=<name>, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		PACKAGE=$(PACKAGE) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
-		/work/.venv/bin/python3 scripts/stage-vendor.py,Vendor stage passed,Vendor stage failed,$(MAKE_LOGS_DIR)/stage-vendor)
+		/work/.venv/bin/python3 scripts/stage-vendor.py,Vendor stage passed,Vendor stage failed)
 
 stage-srpm: check-image check-venv setup-volumes ## Run SRPM build stage (PACKAGE=<name>, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		PACKAGE=$(PACKAGE) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
-		/work/.venv/bin/python3 scripts/stage-srpm.py,SRPM stage passed,SRPM stage failed,$(MAKE_LOGS_DIR)/stage-srpm)
+		/work/.venv/bin/python3 scripts/stage-srpm.py,SRPM stage passed,SRPM stage failed)
 
 stage-mock: check-image check-venv setup-volumes ## Run mock build stage (PACKAGE=<name>, FEDORA_VERSION, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
@@ -466,7 +434,7 @@ stage-mock: check-image check-venv setup-volumes ## Run mock build stage (PACKAG
 		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
-		/work/.venv/bin/python3 scripts/stage-mock.py,Mock build stage passed,Mock build stage failed,$(MAKE_LOGS_DIR)/stage-mock)
+		/work/.venv/bin/python3 scripts/stage-mock.py,Mock build stage passed,Mock build stage failed)
 
 stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
@@ -474,7 +442,7 @@ stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (P
 		PACKAGE=$(PACKAGE) \
 		COPR_REPO=$(COPR_REPO) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
-		/work/.venv/bin/python3 scripts/stage-copr.py,Copr submission stage passed,Copr submission stage failed,$(MAKE_LOGS_DIR)/stage-copr)
+		/work/.venv/bin/python3 scripts/stage-copr.py,Copr submission stage passed,Copr submission stage failed)
 
 stage-log-analyze: check-image check-venv setup-volumes ## Analyze build logs for packages and report actionable errors (PACKAGE=<name> for one, runs for all by default, respects SKIP_PACKAGES)
 	@for pkg in $(_PKGS); do \
