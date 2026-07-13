@@ -357,6 +357,7 @@ def update_package_releases(packages: dict, build_status: dict) -> dict[str, int
         Dict of {pkg_name: new_release} for packages that were updated
     """
     from lib.cache import _content_hash
+    from lib.deps import effective_deps
 
     dep_will_rebuild: set[str] = set()
     updates: dict[str, int] = {}
@@ -385,7 +386,8 @@ def update_package_releases(packages: dict, build_status: dict) -> dict[str, int
 
         # Check if any dependency was marked for rebuild
         dep_cascade = any(
-            dep in dep_will_rebuild for dep in pkg_dict.get("depends_on", [])
+            dep in dep_will_rebuild
+            for dep in effective_deps(pkg_name, pkg_dict, packages)
         )
 
         # Determine if this package needs rebuild

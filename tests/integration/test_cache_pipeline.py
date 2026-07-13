@@ -76,16 +76,16 @@ class TestCachePipeline:
 
     def test_rebuilt_dependency_forces_all_stages(self):
         """compute_forced_stages returns all stages when dependency rebuilt."""
-        meta = {"depends_on": ["pkg-b"]}
+        deps = {"pkg-b"}
         build_status = {"stages": {s: {"pkg-a": {}} for s in STAGE_ORDER}}
         rebuilt = {"pkg-b"}
 
-        forced = compute_forced_stages("pkg-a", meta, build_status, rebuilt)
+        forced = compute_forced_stages("pkg-a", deps, build_status, rebuilt)
         assert forced == set(STAGE_ORDER)
 
     def test_downstream_cascade_from_srpm_force_run(self):
         """Force run at srpm cascades to mock and copr."""
-        meta = {}
+        deps = set()
         build_status = {
             "stages": {
                 "spec": {"pkg-a": {"state": "success", "force_run": False}},
@@ -96,7 +96,7 @@ class TestCachePipeline:
             }
         }
 
-        forced = compute_forced_stages("pkg-a", meta, build_status, set())
+        forced = compute_forced_stages("pkg-a", deps, build_status, set())
         assert forced == {"srpm", "mock", "copr"}
 
     def test_no_force_and_matching_hashes_all_cached(self):
@@ -142,8 +142,8 @@ class TestCachePipeline:
             }
         }
 
-        meta = {}
-        forced = compute_forced_stages("pkg-a", meta, build_status, set())
+        deps = set()
+        forced = compute_forced_stages("pkg-a", deps, build_status, set())
         assert forced == set()
 
         for stage in STAGE_ORDER:
@@ -176,7 +176,7 @@ class TestCachePipeline:
 
     def test_early_stage_force_cascades_downstream(self):
         """Force run at spec cascades to vendor, srpm, mock, copr."""
-        meta = {}
+        deps = set()
         build_status = {
             "stages": {
                 "spec": {"pkg-a": {"state": "success", "force_run": True}},
@@ -187,17 +187,17 @@ class TestCachePipeline:
             }
         }
 
-        forced = compute_forced_stages("pkg-a", meta, build_status, set())
+        forced = compute_forced_stages("pkg-a", deps, build_status, set())
         assert forced == set(STAGE_ORDER)
 
     def test_no_dependencies_returns_empty_forced_set(self):
         """compute_forced_stages returns empty set when no force_run and no rebuilt deps."""
-        meta = {}
+        deps = set()
         build_status = {
             "stages": {s: {"pkg-a": {"state": "success", "force_run": False}} for s in STAGE_ORDER}
         }
 
-        forced = compute_forced_stages("pkg-a", meta, build_status, set())
+        forced = compute_forced_stages("pkg-a", deps, build_status, set())
         assert forced == set()
 
 
@@ -247,7 +247,7 @@ class TestShowPlanMatchesExecution:
     def test_plan_reflects_dep_cascade_forces_downstream(self, tmp_path, monkeypatch):
         """Plan shows 'run' for all stages when dependency is rebuilt."""
         # Setup: pkg-b depends on pkg-a
-        meta_b = {"depends_on": ["pkg-a"]}
+        deps_b = {"pkg-a"}
 
         # pkg-a was rebuilt in this run
         rebuilt = {"pkg-a"}
@@ -263,7 +263,7 @@ class TestShowPlanMatchesExecution:
             }
         }
 
-        forced_b = compute_forced_stages("pkg-b", meta_b, build_status, rebuilt)
+        forced_b = compute_forced_stages("pkg-b", deps_b, build_status, rebuilt)
 
         # All stages of pkg-b should be forced due to dep rebuild
         assert forced_b == set(STAGE_ORDER)
@@ -293,8 +293,8 @@ class TestShowPlanMatchesExecution:
             }
         }
 
-        meta = {"depends_on": []}
-        forced = compute_forced_stages("pkg-a", meta, build_status, set())
+        deps = set()
+        forced = compute_forced_stages("pkg-a", deps, build_status, set())
 
         # No forced stages, no rebuilt deps
         assert forced == set()

@@ -15,6 +15,7 @@ import os
 import sys
 
 from lib.cache import compute_input_hashes
+from lib.deps import effective_deps
 from lib.pipeline import compute_forced_stages, is_cached
 from lib.yaml_utils import (
     STAGES,
@@ -71,7 +72,8 @@ def show_plan(
         new_hashes = compute_input_hashes(pkg, meta, all_packages_full)
 
         # Compute forced stages (note: during planning, no packages have been rebuilt yet)
-        forced_stages = compute_forced_stages(pkg, meta, build_status, set())
+        deps = effective_deps(pkg, meta, all_packages_full)
+        forced_stages = compute_forced_stages(pkg, deps, build_status, set())
 
         row = []
         for stage in stages:

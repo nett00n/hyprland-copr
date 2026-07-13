@@ -8,11 +8,17 @@ from pathlib import Path
 # Add scripts to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from lib.deps import infer_deps, build_dep_graph, topological_sort, transitive_deps
+from lib.deps import (
+    declared_deps,
+    effective_deps,
+    build_dep_graph,
+    topological_sort,
+    transitive_deps,
+)
 
 
-class TestInferDeps:
-    """Test dependency inference from explicit depends_on or build_requires."""
+class TestEffectiveDeps:
+    """Test dependency resolution from explicit depends_on or build_requires."""
 
     def test_explicit_depends_on_wins(self):
         """Explicit depends_on takes precedence over build_requires."""
@@ -25,7 +31,7 @@ class TestInferDeps:
             "depends_on": ["foo", "bar"],
             "build_requires": ["baz-devel"],
         }
-        assert infer_deps("pkg", meta, all_packages) == {"foo", "bar"}
+        assert effective_deps("pkg", meta, all_packages) == {"foo", "bar"}
 
     def test_infer_from_devel_suffix(self):
         """Falls back to stripping -devel from build_requires."""
@@ -36,19 +42,19 @@ class TestInferDeps:
         meta = {
             "build_requires": ["foo-devel", "bar-devel", "some-library"],
         }
-        assert infer_deps("pkg", meta, all_packages) == {"foo", "bar"}
+        assert effective_deps("pkg", meta, all_packages) == {"foo", "bar"}
 
     def test_no_deps_returns_empty(self):
         """Package with no deps returns empty set."""
         all_packages = {"foo": {}}
         meta = {}
-        assert infer_deps("pkg", meta, all_packages) == set()
+        assert effective_deps("pkg", meta, all_packages) == set()
 
     def test_excludes_self(self):
         """Package name is excluded from dependencies."""
         all_packages = {"pkg": {}, "foo": {}}
         meta = {"depends_on": ["pkg", "foo"]}
-        assert infer_deps("pkg", meta, all_packages) == {"foo"}
+        assert effective_deps("pkg", meta, all_packages) == {"foo"}
 
     def test_case_insensitive_resolution(self):
         """Dependency names are resolved case-insensitively."""
@@ -59,7 +65,7 @@ class TestInferDeps:
         meta = {
             "depends_on": ["mypackage", "otherpkg"],
         }
-        assert infer_deps("pkg", meta, all_packages) == {"MyPackage", "OtherPkg"}
+        assert effective_deps("pkg", meta, all_packages) == {"MyPackage", "OtherPkg"}
 
     def test_missing_dep_silently_ignored(self):
         """References to non-existent packages are silently ignored."""
@@ -67,13 +73,13 @@ class TestInferDeps:
         meta = {
             "depends_on": ["foo", "nonexistent"],
         }
-        assert infer_deps("pkg", meta, all_packages) == {"foo"}
+        assert effective_deps("pkg", meta, all_packages) == {"foo"}
 
     def test_empty_build_requires(self):
         """Empty or missing build_requires is handled gracefully."""
         all_packages = {}
         meta = {"build_requires": []}
-        assert infer_deps("pkg", meta, all_packages) == set()
+        assert effective_deps("pkg", meta, all_packages) == set()
 
     def test_build_requires_with_versions(self):
         """build_requires with version specs are handled (version stripped during matching)."""
@@ -83,7 +89,29 @@ class TestInferDeps:
         }
         # The -devel is stripped, but version spec remains; no match
         # since "foo >= 1.0" is not found in packages
-        assert infer_deps("pkg", meta, all_packages) == set()
+        assert effective_deps("pkg", meta, all_packages) == set()
+
+
+class TestDeclaredDeps:
+    """Test raw depends_on field access (no build_requires inference)."""
+
+    def test_returns_declared_list(self):
+        """Returns the depends_on list verbatim."""
+        meta = {"depends_on": ["foo", "bar"]}
+        assert declared_deps(meta) == ["foo", "bar"]
+
+    def test_ignores_build_requires(self):
+        """Does not fall back to build_requires inference."""
+        meta = {"build_requires": ["foo-devel"]}
+        assert declared_deps(meta) == []
+
+    def test_missing_field_returns_empty(self):
+        """Missing depends_on returns empty list."""
+        assert declared_deps({}) == []
+
+    def test_none_value_returns_empty(self):
+        """Explicit depends_on: null returns empty list, not None."""
+        assert declared_deps({"depends_on": None}) == []
 
 
 class TestBuildDepGraph:

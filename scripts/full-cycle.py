@@ -27,7 +27,7 @@ import time
 from datetime import datetime, timezone
 
 from lib.cache import compute_input_hashes
-from lib.deps import build_dep_graph, topological_sort, transitive_deps
+from lib.deps import build_dep_graph, effective_deps, topological_sort, transitive_deps
 from lib.log_analysis import report_mock_failures
 from lib.pipeline import (
     compute_forced_stages,
@@ -230,8 +230,11 @@ def run_build_pipeline(
         # Compute input hashes once per package
         new_hashes = compute_input_hashes(pkg, meta, all_packages)
 
+        # Resolve effective dependencies once per package
+        deps = effective_deps(pkg, meta, all_packages)
+
         # Compute forced stages (from force_run or dependency cascade)
-        forced_stages = compute_forced_stages(pkg, meta, build_status, rebuilt_packages)
+        forced_stages = compute_forced_stages(pkg, deps, build_status, rebuilt_packages)
 
         # Validate (non-fatal, no caching)
         if not _stage["stage-validate"].run_for_package(
@@ -264,7 +267,7 @@ def run_build_pipeline(
                     build_status,
                     new_hashes,
                     forced_stages,
-                    meta,
+                    deps,
                     rebuilt_packages,
                 )
             )
@@ -326,7 +329,7 @@ def run_build_pipeline(
                     build_status,
                     new_hashes,
                     forced_stages,
-                    meta,
+                    deps,
                     rebuilt_packages,
                 )
             )
@@ -382,7 +385,7 @@ def run_build_pipeline(
                     build_status,
                     new_hashes,
                     forced_stages,
-                    meta,
+                    deps,
                     rebuilt_packages,
                 )
             )
@@ -446,7 +449,7 @@ def run_build_pipeline(
                         build_status,
                         new_hashes,
                         forced_stages,
-                        meta,
+                        deps,
                         rebuilt_packages,
                     )
                 )
@@ -517,7 +520,7 @@ def run_build_pipeline(
                         build_status,
                         new_hashes,
                         forced_stages,
-                        meta,
+                        deps,
                         rebuilt_packages,
                     )
                 )

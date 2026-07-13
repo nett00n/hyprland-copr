@@ -13,7 +13,7 @@ STAGE_ORDER = ["spec", "vendor", "srpm", "mock", "copr"]
 
 
 def compute_forced_stages(
-    pkg: str, meta: dict, build_status: dict, rebuilt_packages: set[str]
+    pkg: str, deps: set[str], build_status: dict, rebuilt_packages: set[str]
 ) -> set[str]:
     """Compute set of stages that must run due to force_run or dependency cascade.
 
@@ -23,7 +23,7 @@ def compute_forced_stages(
 
     Args:
         pkg: Package name
-        meta: Package metadata dict
+        deps: Package's effective dependencies (see lib.deps.effective_deps)
         build_status: Current build status dict
         rebuilt_packages: Set of packages that were rebuilt this run
 
@@ -34,7 +34,7 @@ def compute_forced_stages(
     cascade = False
 
     # If any dependency was rebuilt this run, force all stages
-    if any(dep in rebuilt_packages for dep in meta.get("depends_on", [])):
+    if any(dep in rebuilt_packages for dep in deps):
         return set(STAGE_ORDER)
 
     # Check each stage for force_run flag; once found, cascade to remaining stages
@@ -78,7 +78,7 @@ def cache_miss_reason(
     build_status: dict,
     new_hashes: dict,
     forced_stages: set[str],
-    meta: dict | None = None,
+    deps: set[str] | None = None,
     rebuilt_packages: set[str] | None = None,
 ) -> str:
     """Determine why a stage cache was missed (not cached).
@@ -92,7 +92,8 @@ def cache_miss_reason(
         build_status: Build status dict
         new_hashes: Newly computed input hashes
         forced_stages: Set of stages forced to run
-        meta: Package metadata dict (to detect dependency-based force)
+        deps: Package's effective dependencies (see lib.deps.effective_deps),
+            used to detect dependency-based force
         rebuilt_packages: Set of packages rebuilt this run (to show in reason)
 
     Returns:
@@ -108,11 +109,12 @@ def cache_miss_reason(
     """
     if stage in forced_stages:
         # Check if forced due to dependency rebuild
-        if meta and rebuilt_packages:
-            # Filter to only include deps that actually changed (not cached)
+        if deps and rebuilt_packages:
+            # Filter to only include deps that actually changed (not cached).
+            # Sorted for deterministic output (deps is a set).
             rebuilt_deps = [
                 dep
-                for dep in meta.get("depends_on", [])
+                for dep in sorted(deps)
                 if dep in rebuilt_packages
                 and build_status.get("stages", {})
                 .get(stage, {})

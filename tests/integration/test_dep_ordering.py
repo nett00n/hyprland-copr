@@ -51,7 +51,7 @@ class TestDependencyOrdering:
         }
 
         graph = build_dep_graph(packages)
-        # Self-references are filtered out by infer_deps, so graph has no self-edge
+        # Self-references are filtered out by effective_deps, so graph has no self-edge
         assert graph["pkg-a"] == set()
         # This means no error is raised
         sorted_pkgs = topological_sort(graph)
