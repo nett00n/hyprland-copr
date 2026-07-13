@@ -48,3 +48,27 @@ seems interesting:
 - https://github.com/hbuddenberg/hyprcaffeine
 - https://github.com/funinkina/openeffects
 - https://github.com/AprilNEA/OpenLogi
+- https://github.com/gnomeria/usbtree
+
+hyprland-plugins:
+- https://github.com/fedsfarm/gloview
+- https://github.com/yayuuu/hyprland-scroll-overview
+- https://github.com/surprizeattackxx-dotcom/hypr-gamma
+- https://github.com/raybbian/hyprtasking
+- https://github.com/SsubezZ/hyprtoplr
+- https://github.com/0xFMD/hyprmodoro
+- https://github.com/alexhulbert/Hyprchroma
+- https://github.com/VirtCode/hypr-dynamic-cursors
+- https://github.com/zakk4223/hyprland-easymotion
+- https://github.com/KZDKM/Hyprspace
+- https://github.com/ernestoCruz05/hycov
+- https://github.com/micha4w/Hypr-DarkWindow
+- https://github.com/levnikmyskin/hyprland-virtual-desktops
+- https://github.com/outfoxxed/hy3
+- https://github.com/ItsDrike/hyprland-dwindle-autogroup
+- https://github.com/pyt0xic/hyprfocus
+- https://github.com/zakk4223/hyprRiver
+- https://github.com/zakk4223/hyprNStack
+- https://github.com/horriblename/hyprgrass
+- https://github.com/zjeffer/split-monitor-workspaces
+
