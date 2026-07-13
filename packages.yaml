@@ -352,6 +352,7 @@ Hyprland:
   - udis86-devel
   depends_on:
   - aquamarine
+  - glaze
   - hyprcursor
   - hyprgraphics
   - hyprland-protocols
@@ -492,12 +493,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260711'
-      full: 824ed12c9d40a857bb5952b5b209d27d78e01d5b
+      date: '20260712'
+      full: f4b9c1ab240f5c5d2b5a2e659113361e476772a5
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.55.0^20260711git824ed12
+  version: 0.55.0^20260712gitf4b9c1a
 hyprland-guiutils:
   build:
     system: cmake
