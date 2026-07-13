@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from lib.config import setup_logging
-from lib.deps import build_dep_graph, infer_deps, topological_sort
+from lib.deps import build_dep_graph, effective_deps, topological_sort
 from lib.paths import LOCAL_REPO, ROOT, get_package_log_dir, mock_chroot
 from lib.reporting import status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
@@ -42,7 +42,7 @@ from lib.yaml_utils import (
 def failed_local_dep(
     name: str, meta: dict, all_packages: dict, failed: dict
 ) -> str | None:
-    for dep in infer_deps(name, meta, all_packages):
+    for dep in effective_deps(name, meta, all_packages):
         if failed.get(dep):
             return dep
     return None

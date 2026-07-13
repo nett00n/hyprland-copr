@@ -3,6 +3,7 @@
 import hashlib
 import json
 
+from lib.deps import effective_deps
 from lib.gitmodules import parse_gitmodules, resolve_module, get_submodule_commit
 from lib.paths import GITMODULES, ROOT, TEMPLATE_DIR
 
@@ -70,12 +71,14 @@ def _package_config_hash(entry: dict) -> str:
     return _sha256(json.dumps(normalized, sort_keys=True, default=str).encode())
 
 
-def _dependencies_hashes(meta: dict, all_packages: dict) -> dict[str, str]:
-    """Return {dep_name: hash} for each dependency in depends_on."""
+def _dependencies_hashes(pkg: str, meta: dict, all_packages: dict) -> dict[str, str]:
+    """Return {dep_name: hash} for each of pkg's effective dependencies.
+
+    Sorted for deterministic dict/YAML key order (effective_deps returns a set).
+    """
     return {
         dep: _package_config_hash(all_packages[dep])
-        for dep in meta.get("depends_on", [])
-        if dep in all_packages
+        for dep in sorted(effective_deps(pkg, meta, all_packages))
     }
 
 
@@ -99,7 +102,7 @@ def compute_input_hashes(pkg: str, meta: dict, all_packages: dict) -> dict:
         "source_commit": _source_commit(pkg, meta),
         "templates": _templates_hash(),
         "package_config": _package_config_hash(meta),
-        "dependencies": _dependencies_hashes(meta, all_packages),
+        "dependencies": _dependencies_hashes(pkg, meta, all_packages),
         "patches": _patches_hashes(pkg, meta),
         "content": _content_hash(meta),
         "package_version": str(meta.get("version", "")),

@@ -3,11 +3,18 @@
 from collections import deque
 
 
-def infer_deps(name: str, meta: dict, all_packages: dict) -> set[str]:
-    """Return set of package names that `name` depends on.
+def declared_deps(meta: dict) -> list[str]:
+    """Return the raw `depends_on` list from package config, as declared (no inference)."""
+    return list(meta.get("depends_on") or [])
+
+
+def effective_deps(name: str, meta: dict, all_packages: dict) -> set[str]:
+    """Return the authoritative set of package names that `name` depends on.
 
     Uses explicit `depends_on` list when present (authoritative).
     Falls back to stripping -devel suffix from build_requires entries.
+    This is the single source of truth for the dependency DAG: build order,
+    cache invalidation, force-rebuild cascade, and failure gating all use it.
     """
     pkg_by_lower = {k.lower(): k for k in all_packages}
     explicit = meta.get("depends_on")
@@ -31,7 +38,7 @@ def infer_deps(name: str, meta: dict, all_packages: dict) -> set[str]:
 def build_dep_graph(all_packages: dict) -> dict[str, set[str]]:
     """Build {pkg_name: set[dep_pkg_name]} graph from all packages."""
     return {
-        name: infer_deps(name, meta, all_packages)
+        name: effective_deps(name, meta, all_packages)
         for name, meta in all_packages.items()
     }
 

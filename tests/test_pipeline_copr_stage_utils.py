@@ -17,7 +17,7 @@ class TestComputeForcedStages:
 
     def test_no_deps_rebuilt_no_force_flags(self):
         """No forced stages when no deps rebuilt and no force flags."""
-        meta = {"depends_on": []}
+        deps = set()
         build_status = {
             "stages": {
                 "spec": {"pkg": {"force_run": False}},
@@ -28,19 +28,19 @@ class TestComputeForcedStages:
             }
         }
         rebuilt = set()
-        assert compute_forced_stages("pkg", meta, build_status, rebuilt) == set()
+        assert compute_forced_stages("pkg", deps, build_status, rebuilt) == set()
 
     def test_dep_rebuilt_forces_all_stages(self):
         """Any rebuilt dependency forces all stages."""
-        meta = {"depends_on": ["dep1", "dep2"]}
+        deps = {"dep1", "dep2"}
         build_status = {"stages": {}}
         rebuilt = {"dep1"}
-        result = compute_forced_stages("pkg", meta, build_status, rebuilt)
+        result = compute_forced_stages("pkg", deps, build_status, rebuilt)
         assert result == {"spec", "vendor", "srpm", "mock", "copr"}
 
     def test_force_run_on_spec_cascades(self):
         """force_run on spec stage cascades to downstream."""
-        meta = {"depends_on": []}
+        deps = set()
         build_status = {
             "stages": {
                 "spec": {"pkg": {"force_run": True}},
@@ -51,12 +51,12 @@ class TestComputeForcedStages:
             }
         }
         rebuilt = set()
-        result = compute_forced_stages("pkg", meta, build_status, rebuilt)
+        result = compute_forced_stages("pkg", deps, build_status, rebuilt)
         assert result == {"spec", "vendor", "srpm", "mock", "copr"}
 
     def test_force_run_on_srpm_does_not_affect_upstream(self):
         """force_run on srpm does not force spec or vendor."""
-        meta = {"depends_on": []}
+        deps = set()
         build_status = {
             "stages": {
                 "spec": {"pkg": {"force_run": False}},
@@ -67,30 +67,30 @@ class TestComputeForcedStages:
             }
         }
         rebuilt = set()
-        result = compute_forced_stages("pkg", meta, build_status, rebuilt)
+        result = compute_forced_stages("pkg", deps, build_status, rebuilt)
         assert result == {"srpm", "mock", "copr"}
         assert "spec" not in result
         assert "vendor" not in result
 
     def test_dep_rebuilt_overrides_stage_entries(self):
         """Rebuilt dep forces all stages even if no force_run flags."""
-        meta = {"depends_on": ["other"]}
+        deps = {"other"}
         build_status = {
             "stages": {
                 "spec": {"pkg": {"force_run": False}},
             }
         }
         rebuilt = {"other"}
-        result = compute_forced_stages("pkg", meta, build_status, rebuilt)
+        result = compute_forced_stages("pkg", deps, build_status, rebuilt)
         # All stages forced regardless of stage entries
         assert len(result) == 5
 
     def test_missing_stage_entry_no_crash(self):
         """Missing stage entry doesn't crash."""
-        meta = {"depends_on": []}
+        deps = set()
         build_status = {"stages": {}}  # empty
         rebuilt = set()
-        result = compute_forced_stages("pkg", meta, build_status, rebuilt)
+        result = compute_forced_stages("pkg", deps, build_status, rebuilt)
         assert result == set()
 
     def test_skipped_vendor_dep_not_in_rebuilt_packages(self):
@@ -104,12 +104,12 @@ class TestComputeForcedStages:
         calling is_cached(), preventing the false cache miss that would add the
         non-Go package to rebuilt_packages.
         """
-        meta = {"depends_on": ["aquamarine", "glaze"]}
+        deps = {"aquamarine", "glaze"}
         build_status = {"stages": {}}
         # rebuilt_packages is empty because the fix prevents non-Go packages
         # from being added when they have vendor state="skipped"
         rebuilt = set()
-        result = compute_forced_stages("Hyprland", meta, build_status, rebuilt)
+        result = compute_forced_stages("Hyprland", deps, build_status, rebuilt)
         # Should NOT force all stages when deps are not in rebuilt_packages
         assert result == set()
 
@@ -327,29 +327,27 @@ class TestCacheMissReason:
     def test_forced_due_to_operator(self):
         """Return 'forced' when force_run set by operator (no deps rebuilt)."""
         build_status = {}
-        meta = {"depends_on": []}
+        deps = set()
         rebuilt = set()
-        result = cache_miss_reason("spec", "pkg", build_status, {}, {"spec"}, meta, rebuilt)
+        result = cache_miss_reason("spec", "pkg", build_status, {}, {"spec"}, deps, rebuilt)
         assert result == "forced"
 
     def test_forced_due_to_dep_rebuild(self):
         """Return 'forced (dep rebuilt: ...)' when dependency was rebuilt."""
         build_status = {}
-        meta = {"depends_on": ["hyprutils", "hyprlang"]}
+        deps = {"hyprutils", "hyprlang"}
         rebuilt = {"hyprutils"}
-        result = cache_miss_reason("spec", "pkg", build_status, {}, {"spec"}, meta, rebuilt)
+        result = cache_miss_reason("spec", "pkg", build_status, {}, {"spec"}, deps, rebuilt)
         assert result == "forced (dep rebuilt: hyprutils)"
 
     def test_forced_due_to_multiple_dep_rebuilds(self):
         """Return reason with all rebuilt deps."""
         build_status = {}
-        meta = {"depends_on": ["hyprutils", "hyprlang", "hyprwayland"]}
+        deps = {"hyprutils", "hyprlang", "hyprwayland"}
         rebuilt = {"hyprutils", "hyprlang"}
-        result = cache_miss_reason("spec", "pkg", build_status, {}, {"spec"}, meta, rebuilt)
-        # Order may vary due to set, so just check the structure
-        assert result.startswith("forced (dep rebuilt: ")
-        assert "hyprutils" in result
-        assert "hyprlang" in result
+        result = cache_miss_reason("spec", "pkg", build_status, {}, {"spec"}, deps, rebuilt)
+        # Sorted alphabetically for deterministic output
+        assert result == "forced (dep rebuilt: hyprlang, hyprutils)"
 
     def test_forced_filters_out_cached_deps(self):
         """Filter out deps from reason if they ended up cached."""
@@ -362,9 +360,9 @@ class TestCacheMissReason:
                 }
             }
         }
-        meta = {"depends_on": ["aquamarine", "glaze", "hyprlang"]}
+        deps = {"aquamarine", "glaze", "hyprlang"}
         rebuilt = {"aquamarine", "glaze", "hyprlang"}
-        result = cache_miss_reason("spec", "pkg", build_status, {}, {"spec"}, meta, rebuilt)
+        result = cache_miss_reason("spec", "pkg", build_status, {}, {"spec"}, deps, rebuilt)
         # Only hyprlang should be in reason (others are cached)
         assert result == "forced (dep rebuilt: hyprlang)"
         assert "aquamarine" not in result
