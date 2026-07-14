@@ -40,6 +40,7 @@ everything, that Hyprland recommended:
 - https://github.com/zakk4223/hyprland-easymotion
 
 seems interesting:
+- https://github.com/noctalia-dev/noctalia
 - https://github.com/jjsullivan5196/wvkbd
 - https://github.com/hbuddenberg/hyprcaffeine
 - https://github.com/loqusion/hyprshade
