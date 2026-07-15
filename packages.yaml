@@ -352,6 +352,7 @@ Hyprland:
   - udis86-devel
   depends_on:
   - aquamarine
+  - glaze
   - hyprcursor
   - hyprgraphics
   - hyprland-protocols
