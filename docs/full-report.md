@@ -47,10 +47,10 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 <!-- END: Header -->
 
-## Build Report — Fedora 44 · 2026-07-20
+## Build Report — Fedora 44 · 2026-07-21
 
 > **Chroot:** `fedora-44-x86_64`
-> **Timestamp:** `2026-07-20T09:59:38+00:00`
+> **Timestamp:** `2026-07-21T07:01:46+00:00`
 
 ---
 
@@ -302,7 +302,7 @@ A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-14 07:20:37 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-14 07:20:48 UTC | 18m 12s | Local build test |
-| **COPR** | ![copr](https://img.shields.io/badge/copr-failed-red?style=for-the-badge) | 2026-07-20 10:01:03 UTC |  | prior-failed |
+| **COPR** | ![copr](https://img.shields.io/badge/copr-failed-red?style=for-the-badge) | 2026-07-21 07:03:14 UTC |  | prior-failed |
 ---
 
 ### `hyprland-guiutils` — 0.2.1
@@ -726,7 +726,7 @@ Flexible QtQuick based desktop shell toolkit
 | **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
 | **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-12 11:38:57 UTC |  | Source RPM created |
 | **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-12 11:38:58 UTC | 11m 49s | Local build test |
-| **COPR** | ![copr](https://img.shields.io/badge/copr-failed-red?style=for-the-badge) | 2026-07-20 10:01:00 UTC |  | prior-failed |
+| **COPR** | ![copr](https://img.shields.io/badge/copr-failed-red?style=for-the-badge) | 2026-07-21 07:03:08 UTC |  | prior-failed |
 ---
 
 ### `snappy-switcher` — 4.0.0
