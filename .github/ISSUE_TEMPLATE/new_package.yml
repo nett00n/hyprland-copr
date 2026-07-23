@@ -1,0 +1,62 @@
+name: New package request
+description: Ask for a package to be added to the COPR repo
+labels: ["Package request"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Package name
+      description: Upstream project name (as it should appear in packages.yaml)
+      placeholder: hyprfoo
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Upstream URL
+      description: GitHub (or other) repo URL. Feeds `make add-new URL=...`
+      placeholder: https://github.com/org/hyprfoo
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What it does
+      description: One or two sentences
+    validations:
+      required: true
+
+  - type: input
+    id: license
+    attributes:
+      label: License
+      description: SPDX identifier if known (e.g. GPL-3.0, MIT)
+    validations:
+      required: false
+
+  - type: dropdown
+    id: build_system
+    attributes:
+      label: Build system
+      options:
+        - cmake
+        - meson
+        - autotools
+        - make
+        - go
+        - unknown
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: Not already in `packages.yaml`
+          required: true
+        - label: Has a stable release/tag (not just a git HEAD)
+          required: false
+
