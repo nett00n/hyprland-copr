@@ -3,8 +3,8 @@
 %global commitdate 20260517
 
 Name:           hyprland-plugins
-Version:        0.55.0
-Release:        16%{?dist}
+Version:        0.56.0
+Release:        1%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
@@ -49,8 +49,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.55.0
-Commit:            90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
+Tag:               v0.56.0
+Commit:            7644cecdb947060682891a0db2a0cdc5c0b9e704
 
 %prep
 %autosetup -p1 -n %{name}-%{commit}
@@ -68,12 +68,12 @@ Commit:            90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2
 %{_prefix}/lib/libhypr*.so
 
 %changelog
-* Wed May 13 2026 nett00n <copr@nett00n.org> - 0.55.0-16
+* Mon Jul 20 2026 nett00n <copr@nett00n.org> - 0.56.0-1
 
-- v0.55.0
+- v0.56.0
 - -----BEGIN SSH SIGNATURE-----
-- U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAg6r0Z7DWuB90jK6uIn817QHwUTW
-- zw79TZqMStVAtQO70AAAADZ2l0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5
-- AAAAQEtuVyIHobR7pqUJHyjAEjzWyifwbkKyZg7nlTtxXv+lb7TgbZ1250yRS3727YmcDA
-- JNbNLoy+ocEygSEDUJegc=
+- U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAg4vfCZPfelzgrVHHxdluu2XrLU6
+- Fl5wIcXPvtAXjG9oAAAAADZ2l0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5
+- AAAAQJY+a+a/VCzsH/q34Wwy5Mp5XfXZvwULzX52GLq4lFSehqymrnGeCibAga4gJ0Spsm
+- DIyNKZVwN1WCtWp6KPUQU=
 - -----END SSH SIGNATURE-----

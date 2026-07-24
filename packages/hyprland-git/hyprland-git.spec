@@ -1,14 +1,14 @@
-%global commit 824ed12c9d40a857bb5952b5b209d27d78e01d5b
+%global commit 62d890eaccc3fcbdc00f85fe27d611d0a8681e7a
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260711
+%global commitdate 20260723
 
 Name:           hyprland-git
-Version:        0.55.0^20260711git824ed12
+Version:        0.56.0^20260723git62d890e
 Release:        1%{?dist}
 Summary:        A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
-Source0:        https://github.com/hyprwm/Hyprland/archive/824ed12c9d40a857bb5952b5b209d27d78e01d5b.tar.gz#/hyprland-git-0.55.0^20260711git824ed12.tar.gz
+Source0:        https://github.com/hyprwm/Hyprland/archive/62d890eaccc3fcbdc00f85fe27d611d0a8681e7a.tar.gz#/hyprland-git-0.56.0^20260723git62d890e.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -111,6 +111,6 @@ Development files for hyprland-git.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Tue Jul 14 2026 nett00n <copr@nett00n.org> - 0.55.0^20260711git824ed12-1
+* Fri Jul 24 2026 nett00n <copr@nett00n.org> - 0.56.0^20260723git62d890e-1
 
-- Update to 0.55.0^20260711git824ed12
+- Update to 0.56.0^20260723git62d890e

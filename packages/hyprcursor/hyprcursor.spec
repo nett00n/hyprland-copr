@@ -1,7 +1,7 @@
 
 Name:           hyprcursor
 Version:        0.1.13
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        A library and toolkit for the Hyprland cursor format
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprcursor
@@ -60,6 +60,6 @@ Development files for hyprcursor.
 %{_libdir}/pkgconfig/hyprcursor.pc
 
 %changelog
-* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.13-4
+* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.13-5
 
 - version: bump to 0.1.13

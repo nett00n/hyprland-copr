@@ -1,11 +1,11 @@
 
 Name:           hyprland-guiutils
-Version:        0.2.1
-Release:        6%{?dist}
+Version:        0.2.2
+Release:        1%{?dist}
 Summary:        Hyprland GUI utilities
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-guiutils
-Source0:        https://github.com/hyprwm/hyprland-guiutils/archive/refs/tags/v0.2.1.tar.gz#/hyprland-guiutils-0.2.1.tar.gz
+Source0:        https://github.com/hyprwm/hyprland-guiutils/archive/refs/tags/v0.2.2.tar.gz#/hyprland-guiutils-0.2.2.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -32,8 +32,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.2.1
-Commit:            c2e906261142f5dd1ee0bfc44abba23e2754c660
+Tag:               v0.2.2
+Commit:            a16ad89ed5fb4192c966018a80c652de8d96f748
 
 %prep
 %autosetup -p1
@@ -51,6 +51,6 @@ Commit:            c2e906261142f5dd1ee0bfc44abba23e2754c660
 %{_prefix}/bin/hyprland-*
 
 %changelog
-* Mon Dec 29 2025 nett00n <copr@nett00n.org> - 0.2.1-6
+* Mon Jul 20 2026 nett00n <copr@nett00n.org> - 0.2.2-1
 
-- version: bump to 0.2.1
+- version: bump to 0.2.2

@@ -1,11 +1,11 @@
 
 Name:           hyprsunset
-Version:        0.3.3
-Release:        4%{?dist}
+Version:        0.4.0
+Release:        1%{?dist}
 Summary:        An application to enable a blue-light filter on Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprsunset
-Source0:        https://github.com/hyprwm/hyprsunset/archive/refs/tags/v0.3.3.tar.gz#/hyprsunset-0.3.3.tar.gz
+Source0:        https://github.com/hyprwm/hyprsunset/archive/refs/tags/v0.4.0.tar.gz#/hyprsunset-0.4.0.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -29,8 +29,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.3.3
-Commit:            057feb7a724b7fc0f3a406d6db08b59734db006a
+Tag:               v0.4.0
+Commit:            25f704346ec22e7623b0873ef8c4573b57ca1512
 
 %prep
 %autosetup -p1
@@ -49,6 +49,6 @@ Commit:            057feb7a724b7fc0f3a406d6db08b59734db006a
 %{_prefix}/lib/systemd/user/hyprsunset.service
 
 %changelog
-* Fri Oct 03 2025 nett00n <copr@nett00n.org> - 0.3.3-4
+* Mon Jul 13 2026 nett00n <copr@nett00n.org> - 0.4.0-1
 
-- version: bump to 0.3.3
+- version: bump to 0.4.0
