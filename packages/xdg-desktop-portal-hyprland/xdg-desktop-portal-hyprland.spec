@@ -1,7 +1,7 @@
 
 Name:           xdg-desktop-portal-hyprland
 Version:        1.4.0
-Release:        1%{?dist}
+Release:        3%{?dist}
 Summary:        An XDG-Destop-Portal backend for Hyprland (and wlroots)
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/xdg-desktop-portal-hyprland
@@ -13,6 +13,8 @@ BuildRequires:  hyprland-protocols-devel
 BuildRequires:  hyprlang-devel
 BuildRequires:  hyprutils-devel
 BuildRequires:  hyprwayland-scanner-devel
+BuildRequires:  libeis-devel
+BuildRequires:  libuuid-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(gbm)
 BuildRequires:  pkgconfig(libdrm)
@@ -65,6 +67,6 @@ Commit:            f36f5ff9e94dc5698d6a66e5cebd8d6b2e599068
 %{_userunitdir}/%{name}.service
 
 %changelog
-* Sat Jul 18 2026 nett00n <copr@nett00n.org> - 1.4.0-1
+* Sat Jul 18 2026 nett00n <copr@nett00n.org> - 1.4.0-3
 
 - version: bump to 1.4.0

@@ -1516,6 +1516,8 @@ xdg-desktop-portal-hyprland:
   - hyprlang-devel
   - hyprutils-devel
   - hyprwayland-scanner-devel
+  - libeis-devel
+  - libuuid-devel
   - ninja-build
   - pkgconfig(gbm)
   - pkgconfig(libdrm)
@@ -1547,7 +1549,7 @@ xdg-desktop-portal-hyprland:
   - '%{_libexecdir}/%{name}'
   - '%{_userunitdir}/%{name}.service'
   license: BSD-3-Clause
-  release: 1
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
