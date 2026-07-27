@@ -296,13 +296,13 @@ hypridle:
   - '%{_datadir}/hypr/hypridle.conf'
   - '%{_userunitdir}/hypridle.service'
   license: BSD-3-Clause
-  release: 5
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: An idle management daemon for Hyprland
   url: https://github.com/hyprwm/hypridle
-  version: 0.1.7
+  version: 0.1.8
 Hyprland:
   build:
     prep:
@@ -493,12 +493,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260725'
-      full: 453d96e92739a2a0b865cf9166d48ba14ec14b7b
+      date: '20260727'
+      full: fdd49ae16e205fb5e5178ade21f7cd4c9af06ef2
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.56.0^20260725git453d96e
+  version: 0.56.0^20260727gitfdd49ae
 hyprland-guiutils:
   build:
     system: cmake

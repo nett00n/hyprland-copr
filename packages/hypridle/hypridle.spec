@@ -1,11 +1,11 @@
 
 Name:           hypridle
-Version:        0.1.7
-Release:        5%{?dist}
+Version:        0.1.8
+Release:        1%{?dist}
 Summary:        An idle management daemon for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hypridle
-Source0:        https://github.com/hyprwm/hypridle/archive/refs/tags/v0.1.7.tar.gz#/hypridle-0.1.7.tar.gz
+Source0:        https://github.com/hyprwm/hypridle/archive/refs/tags/v0.1.8.tar.gz#/hypridle-0.1.8.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -30,8 +30,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.1.7
-Commit:            5430b73ddf148651bcf35fa39ed4d757c7534028
+Tag:               v0.1.8
+Commit:            e5c01af0842bd66617f7004568df9406111d6e80
 
 %prep
 %autosetup -p1
@@ -51,6 +51,6 @@ Commit:            5430b73ddf148651bcf35fa39ed4d757c7534028
 %{_userunitdir}/hypridle.service
 
 %changelog
-* Wed Aug 27 2025 nett00n <copr@nett00n.org> - 0.1.7-5
+* Sun Jul 26 2026 nett00n <copr@nett00n.org> - 0.1.8-1
 
-- version: bump to 0.1.7
+- version: bump to 0.1.8
