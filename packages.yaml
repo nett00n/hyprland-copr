@@ -44,7 +44,7 @@ aquamarine:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A very light linux rendering backend library
   url: https://github.com/hyprwm/aquamarine
-  version: 0.13.0
+  version: 0.14.0
 aylurs-gtk-shell:
   build:
     go_subdir: cli
@@ -391,7 +391,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 7
+  release: 8
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -493,12 +493,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260727'
-      full: fdd49ae16e205fb5e5178ade21f7cd4c9af06ef2
+      date: '20260728'
+      full: b5f71b249753ffdf54027a0760930b9f3dfe50a0
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.56.0^20260727gitfdd49ae
+  version: 0.56.0^20260728gitb5f71b2
 hyprland-guiutils:
   build:
     system: cmake
@@ -527,7 +527,7 @@ hyprland-guiutils:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprland-*'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -572,7 +572,7 @@ hyprland-plugins:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -628,7 +628,7 @@ hyprland-plugins-git:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 16
+  release: 17
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -778,7 +778,7 @@ hyprlauncher:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprlauncher'
   license: BSD-3-Clause
-  release: 7
+  release: 8
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -868,7 +868,7 @@ hyprpaper:
   - '%{_bindir}/hyprpaper'
   - '%{_userunitdir}/hyprpaper.service'
   license: BSD-3-Clause
-  release: 7
+  release: 8
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -965,7 +965,7 @@ hyprpwcenter:
   - '%{_prefix}/bin/hyprpwcenter'
   - '%{_prefix}/share/applications/hyprpwcenter.desktop'
   license: BSD-3-Clause
-  release: 7
+  release: 8
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1076,7 +1076,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 10
+  release: 11
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1154,7 +1154,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 10
+  release: 11
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1199,7 +1199,7 @@ hyprtoolkit:
   - '%license LICENSE'
   - '%{_libdir}/libhyprtoolkit.so*'
   license: BSD-3-Clause
-  release: 7
+  release: 8
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
