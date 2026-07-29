@@ -187,6 +187,22 @@ def setup_build_status(
     return build_status
 
 
+def mock_failed_packages(packages: dict, build_status: dict) -> list[str]:
+    """Return names of packages whose mock stage ended this run in a "failed" state.
+
+    Used to gate Copr submission on the whole run, not just the failed package:
+    per-package pipelines used to submit each package to Copr as soon as its
+    own mock succeeded, so a healthy early package (e.g. hyprutils) could
+    already be public on Copr by the time a later, dependent package (e.g.
+    Hyprland) failed mock -- publishing a dependency set that doesn't
+    actually work together. See docs/bugs.md / issue #8.
+    """
+    mock_stage = build_status.get("stages", {}).get("mock", {})
+    return sorted(
+        pkg for pkg in packages if mock_stage.get(pkg, {}).get("state") == "failed"
+    )
+
+
 def run_build_pipeline(
     packages: dict,
     build_status: dict,
@@ -198,12 +214,17 @@ def run_build_pipeline(
     skip_copr: bool = False,
     synchronous_copr: bool = False,
 ) -> None:
-    """Run per-package pipeline orchestration: validate→spec→vendor→srpm→mock→copr.
+    """Run per-package pipeline orchestration: validate→spec→vendor→srpm→mock, then copr.
 
-    Each package goes through all applicable stages before moving to the next package.
-    Per-package skip-on-failure enables faster feedback and independent tracking.
-    Tracks rebuilt packages to cascade forced stages to dependents.
+    Each package goes through validate/spec/vendor/srpm/mock before moving to the
+    next package. Per-package skip-on-failure enables faster feedback and independent
+    tracking. Tracks rebuilt packages to cascade forced stages to dependents.
     Respects skip_mock and skip_copr flags to skip those stages entirely.
+
+    Copr submission runs as a separate pass AFTER every package has gone through
+    mock, and is skipped entirely (for every package) if any package's mock stage
+    failed this run -- a broken dependency set must never be partially published.
+
     If synchronous_copr is False (default), COPR builds use --nowait for async submission.
     """
     all_packages = get_packages()
@@ -473,9 +494,6 @@ def run_build_pipeline(
                         reason=reason,
                     )
                     save_build_status(build_status)
-                    # Skip copr unless it is forced
-                    if "copr" not in forced_stages:
-                        continue
                 else:
                     inject_stage_meta(
                         "mock",
@@ -489,61 +507,91 @@ def run_build_pipeline(
 
             save_build_status(build_status)
 
-        # Copr
+    # Copr: a separate pass, only after every package has gone through mock.
+    # If anything failed mock this run, no package is submitted -- see
+    # mock_failed_packages() docstring.
+    blockers = (
+        []
+        if skip_copr or not copr_repo
+        else mock_failed_packages(packages, build_status)
+    )
+    if blockers:
+        print(
+            f"\n  ✗ mock failed for: {', '.join(blockers)} -- "
+            "skipping Copr submission for all packages this run",
+            file=sys.stderr,
+        )
+
+    print("\n=== Full Cycle (Per-Package): Copr ===")
+    for pkg, meta in packages.items():
+        print(f"\n  {pkg}:")
+
         if skip_copr:
             print("    copr: skipped (SKIP_COPR=true)")
             entry = build_status["stages"]["copr"].get(pkg)
             if entry:
                 entry["reason"] = "SKIP_COPR"
-        elif copr_repo:
-            if is_cached("copr", pkg, build_status, new_hashes, forced_stages):
-                print("    copr: cached")
-                entry = build_status["stages"]["copr"].get(pkg)
-                if entry:
-                    entry["reason"] = "cached"
-            else:
-                rebuilt_packages.add(pkg)
-                started_at = int(time.time())
-                prior_state = (
-                    build_status.get("stages", {})
-                    .get("copr", {})
-                    .get(pkg, {})
-                    .get("state")
-                )
-                is_proceed_skip = proceed and prior_state == "success"
-                reason = (
-                    "proceed-skip"
-                    if is_proceed_skip
-                    else cache_miss_reason(
-                        "copr",
-                        pkg,
-                        build_status,
-                        new_hashes,
-                        forced_stages,
-                        deps,
-                        rebuilt_packages,
-                    )
-                )
-                success = _stage["stage-copr"].run_for_package(
-                    pkg,
-                    meta,
-                    build_status,
-                    fedora_version,
-                    copr_repo,
-                    proceed,
-                    synchronous_copr,
-                )
-                inject_stage_meta(
+            continue
+
+        if not copr_repo:
+            continue
+
+        if blockers:
+            print(f"    copr: blocked (mock failed for {', '.join(blockers)})")
+            entry = build_status["stages"]["copr"].setdefault(pkg, {})
+            entry["reason"] = f"blocked: mock failed for {', '.join(blockers)}"
+            save_build_status(build_status)
+            continue
+
+        new_hashes = compute_input_hashes(pkg, meta, all_packages)
+        deps = effective_deps(pkg, meta, all_packages)
+        forced_stages = compute_forced_stages(pkg, deps, build_status, rebuilt_packages)
+
+        if is_cached("copr", pkg, build_status, new_hashes, forced_stages):
+            print("    copr: cached")
+            entry = build_status["stages"]["copr"].get(pkg)
+            if entry:
+                entry["reason"] = "cached"
+        else:
+            rebuilt_packages.add(pkg)
+            started_at = int(time.time())
+            prior_state = (
+                build_status.get("stages", {}).get("copr", {}).get(pkg, {}).get("state")
+            )
+            is_proceed_skip = proceed and prior_state == "success"
+            reason = (
+                "proceed-skip"
+                if is_proceed_skip
+                else cache_miss_reason(
                     "copr",
                     pkg,
                     build_status,
-                    started_at,
                     new_hashes,
-                    update_hashes=not is_proceed_skip and success,
-                    reason=reason,
+                    forced_stages,
+                    deps,
+                    rebuilt_packages,
                 )
+            )
+            success = _stage["stage-copr"].run_for_package(
+                pkg,
+                meta,
+                build_status,
+                fedora_version,
+                copr_repo,
+                proceed,
+                synchronous_copr,
+            )
+            inject_stage_meta(
+                "copr",
+                pkg,
+                build_status,
+                started_at,
+                new_hashes,
+                update_hashes=not is_proceed_skip and success,
+                reason=reason,
+            )
 
-            save_build_status(build_status)
+        save_build_status(build_status)
 
 
 def finalize_report(

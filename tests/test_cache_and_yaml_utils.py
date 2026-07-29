@@ -574,8 +574,8 @@ class TestWriteYamlPreservingComments:
         pkg_file = tmp_path / "packages.yaml"
         pkg_file.write_text("mypackage:\n  url: 'https://github.com/foo/bar'\n  version: '1.0'")
 
-        url_to_latest = {"https://github.com/foo/bar": "2.0"}
-        changed = write_yaml_preserving_comments(pkg_file, url_to_latest)
+        pkg_to_latest = {"mypackage": "2.0"}
+        changed = write_yaml_preserving_comments(pkg_file, pkg_to_latest)
 
         assert "mypackage" in changed
         assert changed["mypackage"] == ("1.0", "2.0")
@@ -589,8 +589,8 @@ class TestWriteYamlPreservingComments:
         pkg_file = tmp_path / "packages.yaml"
         pkg_file.write_text("mypackage:\n  url: 'https://github.com/foo/bar'\n  version: '1.0'")
 
-        url_to_latest = {"https://github.com/foo/bar": "1.0"}
-        changed = write_yaml_preserving_comments(pkg_file, url_to_latest)
+        pkg_to_latest = {"mypackage": "1.0"}
+        changed = write_yaml_preserving_comments(pkg_file, pkg_to_latest)
 
         assert changed == {}
 
@@ -601,11 +601,11 @@ class TestWriteYamlPreservingComments:
             "mypackage:\n  url: 'https://github.com/foo/bar'\n  version: '1.0'\n  source:\n    commit: {}\n  auto_update:\n    release_type: latest-commit"
         )
 
-        url_to_commit_info = {
-            "https://github.com/foo/bar": ("abc123full", "abc123", "20250115", "1.0")
+        pkg_to_commit_info = {
+            "mypackage": ("abc123full", "abc123", "20250115", "1.0")
         }
         changed = write_yaml_preserving_comments(
-            pkg_file, {}, url_to_commit_info
+            pkg_file, {}, pkg_to_commit_info
         )
 
         # Should update with commit version
@@ -616,8 +616,8 @@ class TestWriteYamlPreservingComments:
         pkg_file = tmp_path / "packages.yaml"
         pkg_file.write_text("pkg1:\n  url: 'https://a'\n  version: '1.0'\npkg2:\n  url: 'https://b'\n  version: '2.0'")
 
-        url_to_latest = {"https://a": "2.0", "https://b": "2.0"}
-        changed = write_yaml_preserving_comments(pkg_file, url_to_latest)
+        pkg_to_latest = {"pkg1": "2.0", "pkg2": "2.0"}
+        changed = write_yaml_preserving_comments(pkg_file, pkg_to_latest)
 
         assert len(changed) == 1  # Only pkg1 changed
         assert "pkg1" in changed
@@ -692,8 +692,8 @@ test-pkg:
   description: Test pkg
 """)
 
-        url_to_latest = {"https://example.com/test": "2.0"}
-        write_yaml_preserving_comments(yaml_file, url_to_latest, None)
+        pkg_to_latest = {"test-pkg": "2.0"}
+        write_yaml_preserving_comments(yaml_file, pkg_to_latest, None)
 
         content = yaml_file.read_text()
         assert "version: '2.0'" in content or 'version: "2.0"' in content
@@ -712,8 +712,8 @@ test-pkg:
   description: Test pkg
 """)
 
-        url_to_latest = {"https://example.com/test": "1.0"}
-        write_yaml_preserving_comments(yaml_file, url_to_latest, None)
+        pkg_to_latest = {"test-pkg": "1.0"}
+        write_yaml_preserving_comments(yaml_file, pkg_to_latest, None)
 
         content = yaml_file.read_text()
         assert "release: 3" in content
@@ -735,15 +735,15 @@ test-pkg:
       date: "20260101"
 """)
 
-        url_to_commit_info = {
-            "https://example.com/test": (
+        pkg_to_commit_info = {
+            "test-pkg": (
                 "def4567890123456789",  # new full hash
                 "def4567",  # new short hash
                 "20260102",  # new date
                 "0",  # base version
             )
         }
-        write_yaml_preserving_comments(yaml_file, {}, url_to_commit_info)
+        write_yaml_preserving_comments(yaml_file, {}, pkg_to_commit_info)
 
         content = yaml_file.read_text()
         assert "0^20260102gitdef4567" in content

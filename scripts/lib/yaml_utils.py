@@ -278,8 +278,8 @@ def init_stage(  # type: ignore
 
 def write_yaml_preserving_comments(
     path: Path,
-    url_to_latest: dict[str, str],
-    url_to_commit_info: dict[str, tuple[str, str, str, str | None]] | None = None,
+    pkg_to_latest: dict[str, str],
+    pkg_to_commit_info: dict[str, tuple[str, str, str, str | None]] | None = None,
 ) -> dict[str, tuple[str, str]]:
     """Update version/commit fields in packages.yaml using yaml load/dump.
 
@@ -287,25 +287,28 @@ def write_yaml_preserving_comments(
     When version changes, also sets release=0 to signal autoreset in next pre-build step.
     Returns {pkg_name: (old_version, new_version)} for changed packages.
 
-    url_to_commit_info values are 4-tuples: (full_hash, short_hash, date_YYYYMMDD, base_semver | None)
+    Both dicts are keyed by PACKAGE NAME (not url): multiple packages can point
+    at the same submodule url (e.g. a stable package and its "-git" sibling)
+    and need independent version resolution.
+
+    pkg_to_commit_info values are 4-tuples: (full_hash, short_hash, date_YYYYMMDD, base_semver | None)
     """
-    if url_to_commit_info is None:
-        url_to_commit_info = {}
+    if pkg_to_commit_info is None:
+        pkg_to_commit_info = {}
 
     data = yaml.safe_load(path.read_text())
     changed: dict[str, tuple[str, str]] = {}
 
     for pkg_name, pkg_data in data.items():
-        pkg_url = pkg_data.get("url", "")
         current_ver = str(pkg_data.get("version", ""))
 
-        new_ver = url_to_latest.get(pkg_url)
+        new_ver = pkg_to_latest.get(pkg_name)
         if new_ver and new_ver != current_ver:
             pkg_data["version"] = new_ver
             pkg_data["release"] = 0  # Reset release on version change
             changed[pkg_name] = (current_ver, new_ver)
-        elif pkg_url in url_to_commit_info:
-            full_hash, short_hash, date_str, base_semver = url_to_commit_info[pkg_url]
+        elif pkg_name in pkg_to_commit_info:
+            full_hash, short_hash, date_str, base_semver = pkg_to_commit_info[pkg_name]
             prefix = base_semver if base_semver else "0"
             new_commit_ver = f"{prefix}^{date_str}git{short_hash}"
 

@@ -22,6 +22,7 @@ import re
 import shutil
 import subprocess
 import sys
+from functools import cmp_to_key
 from pathlib import Path
 from typing import Any
 
@@ -63,6 +64,76 @@ def regenerate_repo_metadata() -> None:
         raise RuntimeError(f"createrepo_c failed with code {result.returncode}")
 
 
+def _rpm_query(rpm_path: Path, fmt: str) -> str:
+    """Query a single field from an RPM file via rpm --queryformat."""
+    result = subprocess.run(
+        ["rpm", "-qp", "--queryformat", fmt, str(rpm_path)],
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _evr(rpm_path: Path) -> str:
+    """Return epoch:version-release for an RPM, normalizing unset epoch to 0."""
+    epoch = _rpm_query(rpm_path, "%|EPOCH?{%{EPOCH}}:{0}|")
+    version_release = _rpm_query(rpm_path, "%{VERSION}-%{RELEASE}")
+    return f"{epoch}:{version_release}"
+
+
+def _vercmp(evr_a: str, evr_b: str) -> int:
+    """Compare two epoch:version-release strings via rpmdev-vercmp.
+
+    Returns -1, 0, or 1 (evr_a older/equal/newer than evr_b).
+    """
+    result = subprocess.run(
+        ["rpmdev-vercmp", evr_a, evr_b],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 11:
+        return 1
+    if result.returncode == 12:
+        return -1
+    return 0
+
+
+def prune_local_repo() -> bool:
+    """Delete all but the newest NVR per (name, arch) in LOCAL_REPO.
+
+    Nothing else here ever removes an old build: every rebuild only adds a
+    new NVR, so a stale hyprutils-0.13.1 can sit next to 0.14.0 forever (see
+    docs/bugs.md). mock's dnf resolves build deps against everything in the
+    repo, so this only bloats disk today, but a repo left in a half-pruned
+    state after a partial run is exactly the kind of thing that could
+    resolve the wrong version later.
+
+    Returns True if anything was removed.
+    """
+    by_key: dict[tuple[str, str], list[tuple[str, Path]]] = {}
+    for rpm_path in LOCAL_REPO.glob("*.rpm"):
+        if rpm_path.name.endswith(".src.rpm"):
+            continue
+        name = _rpm_query(rpm_path, "%{NAME}")
+        arch = _rpm_query(rpm_path, "%{ARCH}")
+        if not name or not arch:
+            continue
+        by_key.setdefault((name, arch), []).append((_evr(rpm_path), rpm_path))
+
+    def _by_evr(a: tuple[str, Path], b: tuple[str, Path]) -> int:
+        return _vercmp(a[0], b[0])
+
+    removed = False
+    for entries in by_key.values():
+        if len(entries) < 2:
+            continue
+        entries.sort(key=cmp_to_key(_by_evr))
+        for _stale_evr, stale_path in entries[:-1]:
+            stale_path.unlink()
+            removed = True
+    return removed
+
+
 def update_local_repo(mock_chroot: str) -> None:
     result_dir = Path("/var/lib/mock") / mock_chroot / "result"
     LOCAL_REPO.mkdir(exist_ok=True)
@@ -71,7 +142,8 @@ def update_local_repo(mock_chroot: str) -> None:
         if not rpm.name.endswith(".src.rpm"):
             shutil.copy2(rpm, LOCAL_REPO)
             copied = True
-    if copied:
+    pruned = prune_local_repo()
+    if copied or pruned:
         regenerate_repo_metadata()
 
 

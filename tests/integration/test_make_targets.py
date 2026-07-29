@@ -152,6 +152,192 @@ class TestFullCycleFinalize:
                 )
 
 
+class TestMockFailedPackages:
+    """Test mock_failed_packages(), the pure helper behind the Copr gate."""
+
+    def test_no_failures(self):
+        packages = {"hyprutils": {}, "Hyprland": {}}
+        build_status = {
+            "stages": {
+                "mock": {
+                    "hyprutils": {"state": "success"},
+                    "Hyprland": {"state": "success"},
+                }
+            }
+        }
+        assert full_cycle.mock_failed_packages(packages, build_status) == []
+
+    def test_one_failure(self):
+        packages = {"hyprutils": {}, "Hyprland": {}}
+        build_status = {
+            "stages": {
+                "mock": {
+                    "hyprutils": {"state": "success"},
+                    "Hyprland": {"state": "failed"},
+                }
+            }
+        }
+        assert full_cycle.mock_failed_packages(packages, build_status) == ["Hyprland"]
+
+    def test_missing_entry_not_a_failure(self):
+        """A package with no mock entry at all (e.g. skipped) isn't a 'failure'."""
+        packages = {"pkg1": {}}
+        build_status = {"stages": {"mock": {}}}
+        assert full_cycle.mock_failed_packages(packages, build_status) == []
+
+    def test_only_considers_packages_in_this_run(self):
+        """A failure recorded for a package outside this run's set doesn't count."""
+        packages = {"hyprutils": {}}
+        build_status = {
+            "stages": {
+                "mock": {
+                    "hyprutils": {"state": "success"},
+                    "some-other-pkg": {"state": "failed"},
+                }
+            }
+        }
+        assert full_cycle.mock_failed_packages(packages, build_status) == []
+
+
+class TestCoprGatedByMockFailure:
+    """Regression coverage for issue #8: per-package pipelines used to submit
+    each package to Copr as soon as its own mock succeeded, so a healthy early
+    package (hyprutils) could already be public by the time a later, dependent
+    package (Hyprland) failed mock. Copr submission must now be an all-or-nothing
+    pass gated on every package's mock having succeeded this run.
+    """
+
+    def _base_build_status(self):
+        return {
+            "stages": {s: {} for s in ["validate", "spec", "vendor", "srpm", "mock", "copr"]}
+        }
+
+    def _run(self, packages, mock_outcomes, copr_repo="nett00n/hyprland"):
+        """Run run_build_pipeline with heavy mocking; return (build_status, copr_mock)."""
+        build_status = self._base_build_status()
+
+        def fake_mock_run_for_package(
+            pkg, meta, build_status, fedora_version, mock_chroot_name,
+            proceed, mock_failed, all_pkgs,
+        ):
+            ok = mock_outcomes[pkg]
+            build_status["stages"]["mock"][pkg] = {
+                "state": "success" if ok else "failed"
+            }
+            mock_failed[pkg] = not ok
+            return ok
+
+        def fake_is_cached(stage, pkg, build_status, new_hashes, forced_stages):
+            # Only mock/copr are "not cached" -- exercises the real branches.
+            return stage not in ("mock", "copr")
+
+        with patch.object(full_cycle, "get_packages", return_value=packages), \
+             patch.object(full_cycle, "compute_input_hashes", return_value={}), \
+             patch.object(full_cycle, "effective_deps", return_value=set()), \
+             patch.object(full_cycle, "is_cached", side_effect=fake_is_cached), \
+             patch.object(full_cycle, "cache_miss_reason", return_value="test"), \
+             patch.object(full_cycle, "save_build_status"), \
+             patch.object(full_cycle.time, "sleep"), \
+             patch.object(full_cycle._stage["stage-show-plan"], "show_plan"), \
+             patch.object(full_cycle._stage["stage-validate"], "run_global_checks"), \
+             patch.object(
+                 full_cycle._stage["stage-validate"], "run_for_package", return_value=True
+             ), \
+             patch.object(full_cycle._stage["stage-copr"], "check_copr_credentials"), \
+             patch.object(
+                 full_cycle._stage["stage-mock"],
+                 "run_for_package",
+                 side_effect=fake_mock_run_for_package,
+             ), \
+             patch.object(
+                 full_cycle._stage["stage-copr"], "run_for_package", return_value=True
+             ) as copr_mock:
+            full_cycle.run_build_pipeline(
+                packages,
+                build_status,
+                fedora_version="44",
+                mock_chroot_name="fedora-44-x86_64",
+                copr_repo=copr_repo,
+                proceed=False,
+            )
+
+        return build_status, copr_mock
+
+    def test_one_package_mock_failure_blocks_copr_for_all(self):
+        packages = {"hyprutils": {}, "Hyprland": {}}
+        build_status, copr_mock = self._run(
+            packages, {"hyprutils": True, "Hyprland": False}
+        )
+
+        # hyprutils succeeded its own mock build, but must NOT reach Copr.
+        copr_mock.assert_not_called()
+        assert "blocked" in build_status["stages"]["copr"]["hyprutils"]["reason"]
+        assert "blocked" in build_status["stages"]["copr"]["Hyprland"]["reason"]
+        assert "Hyprland" in build_status["stages"]["copr"]["hyprutils"]["reason"]
+
+    def test_all_mock_success_copr_runs_for_all(self):
+        packages = {"hyprutils": {}, "Hyprland": {}}
+        build_status, copr_mock = self._run(
+            packages, {"hyprutils": True, "Hyprland": True}
+        )
+
+        assert copr_mock.call_count == 2
+        called_pkgs = {c.args[0] for c in copr_mock.call_args_list}
+        assert called_pkgs == {"hyprutils", "Hyprland"}
+
+    def test_skip_copr_env_bypasses_gate_entirely(self):
+        """SKIP_COPR=true still just skips -- no blocked-reason noise."""
+        packages = {"hyprutils": {}, "Hyprland": {}}
+        build_status = self._base_build_status()
+        # Seed a prior successful copr entry, as a real repeated run would have.
+        build_status["stages"]["copr"]["hyprutils"] = {"state": "success"}
+
+        def fake_mock_run_for_package(
+            pkg, meta, build_status, fedora_version, mock_chroot_name,
+            proceed, mock_failed, all_pkgs,
+        ):
+            build_status["stages"]["mock"][pkg] = {"state": "failed"}
+            mock_failed[pkg] = True
+            return False
+
+        def fake_is_cached(stage, pkg, build_status, new_hashes, forced_stages):
+            return stage not in ("mock", "copr")
+
+        with patch.object(full_cycle, "get_packages", return_value=packages), \
+             patch.object(full_cycle, "compute_input_hashes", return_value={}), \
+             patch.object(full_cycle, "effective_deps", return_value=set()), \
+             patch.object(full_cycle, "is_cached", side_effect=fake_is_cached), \
+             patch.object(full_cycle, "cache_miss_reason", return_value="test"), \
+             patch.object(full_cycle, "save_build_status"), \
+             patch.object(full_cycle.time, "sleep"), \
+             patch.object(full_cycle._stage["stage-show-plan"], "show_plan"), \
+             patch.object(full_cycle._stage["stage-validate"], "run_global_checks"), \
+             patch.object(
+                 full_cycle._stage["stage-validate"], "run_for_package", return_value=True
+             ), \
+             patch.object(full_cycle._stage["stage-copr"], "check_copr_credentials"), \
+             patch.object(
+                 full_cycle._stage["stage-mock"],
+                 "run_for_package",
+                 side_effect=fake_mock_run_for_package,
+             ), \
+             patch.object(
+                 full_cycle._stage["stage-copr"], "run_for_package", return_value=True
+             ) as copr_mock:
+            full_cycle.run_build_pipeline(
+                packages,
+                build_status,
+                fedora_version="44",
+                mock_chroot_name="fedora-44-x86_64",
+                copr_repo="nett00n/hyprland",
+                proceed=False,
+                skip_copr=True,
+            )
+
+        copr_mock.assert_not_called()
+        assert build_status["stages"]["copr"]["hyprutils"]["reason"] == "SKIP_COPR"
+
+
 class TestInfoTargets:
     """Test informational make targets."""
 

@@ -22,6 +22,7 @@ from lib.reporting import status
 from lib.validation import (
     validate_gitmodules,
     validate_group_membership,
+    validate_no_duplicate_urls,
     validate_package,
 )
 from lib.yaml_utils import (
@@ -97,6 +98,13 @@ def run_global_checks(all_packages: dict, build_status: dict) -> bool:
         status("validate", "groups", "ok")
     total_errors += len(grp_errors)
     total_warnings += len(grp_warnings)
+
+    # Warn on packages sharing a url (see validate_no_duplicate_urls docstring)
+    dup_errors, dup_warnings = validate_no_duplicate_urls(all_packages)
+    for w in dup_warnings:
+        print(f"    warn: {w}")
+    total_errors += len(dup_errors)
+    total_warnings += len(dup_warnings)
 
     # Validate .gitmodules
     gm_errors, gm_warnings = validate_gitmodules(ROOT)
