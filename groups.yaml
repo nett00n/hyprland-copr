@@ -67,10 +67,11 @@ other-apps:
   - cliphist-git
   - eww
   - hyprland-per-window-layout
+  - mpvpaper
   - pyprland
   - quickshell
-  - uwsm
   - snappy-switcher
+  - uwsm
   packages_from_global_repo:
   - name: swaybg
     summary: Great utility if all you want is one simple static wallpaper

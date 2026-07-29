@@ -174,3 +174,7 @@
 	path = submodules/OpalAayan/snappy-switcher
 	url = https://github.com/OpalAayan/snappy-switcher.git
 	ignore = dirty
+[submodule "submodules/GhostNaN/mpvpaper"]
+	path = submodules/GhostNaN/mpvpaper
+	url = https://github.com/GhostNaN/mpvpaper.git
+	ignore = dirty
