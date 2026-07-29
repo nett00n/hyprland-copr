@@ -298,7 +298,9 @@ class TestMain:
             "\turl = https://github.com/test/test.git\n"
         )
         monkeypatch.setattr(uv, "GITMODULES", gitmodules)
-        monkeypatch.setattr(uv, "PACKAGES_YAML", tmp_path / "packages.yaml")
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
 
         packages = {
             "test": {
@@ -338,7 +340,9 @@ class TestMain:
             "\turl = https://github.com/test/test.git\n"
         )
         monkeypatch.setattr(uv, "GITMODULES", gitmodules)
-        monkeypatch.setattr(uv, "PACKAGES_YAML", tmp_path / "packages.yaml")
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
 
         packages = {
             "test": {
@@ -383,7 +387,9 @@ class TestMain:
             "\turl = https://github.com/test/test.git\n"
         )
         monkeypatch.setattr(uv, "GITMODULES", gitmodules)
-        monkeypatch.setattr(uv, "PACKAGES_YAML", tmp_path / "packages.yaml")
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
 
         packages = {
             "test": {
@@ -423,7 +429,9 @@ class TestMain:
             "\turl = https://github.com/test/test.git\n"
         )
         monkeypatch.setattr(uv, "GITMODULES", gitmodules)
-        monkeypatch.setattr(uv, "PACKAGES_YAML", tmp_path / "packages.yaml")
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
 
         packages = {
             "test": {
@@ -541,3 +549,80 @@ class TestMain:
         captured = capsys.readouterr()
         assert "updated packages.yaml:" in captured.err
         assert "test: 1.0.0 -> 1.5.0" in captured.err
+
+    def test_shared_url_packages_resolved_independently(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """Regression: two packages sharing one submodule url (e.g. a stable
+        package and its "-git" sibling) must each get their own release_type
+        applied. Keying by url instead of package name let the "-git" sibling's
+        config silently shadow the stable package's, freezing it forever
+        (see docs/bugs.md / issue #8).
+        """
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+
+        # "Stable" has no auto_update (default: semver). "Stable-git" tracks
+        # latest-commit. Both point at the exact same url.
+        packages = {
+            "Stable": {
+                "url": "https://github.com/test/test",
+            },
+            "Stable-git": {
+                "url": "https://github.com/test/test",
+                "auto_update": {"release_type": "latest-commit"},
+            },
+        }
+
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule"):
+                    with patch.object(uv, "fetch_tags") as mock_fetch:
+                        with patch.object(uv, "latest_semver") as mock_semver:
+                            with patch.object(
+                                uv, "get_submodule_commit_with_base"
+                            ) as mock_commit:
+                                with patch.object(
+                                    uv, "write_yaml_preserving_comments"
+                                ) as mock_write:
+                                    mock_parse.return_value = [
+                                        {
+                                            "name": "test",
+                                            "path": "submodules/test",
+                                            "url": "https://github.com/test/test",
+                                        }
+                                    ]
+                                    mock_fetch.return_value = ["v0.56.1"]
+                                    mock_semver.return_value = "v0.56.1"
+                                    mock_commit.return_value = (
+                                        "924a3573abcdef",
+                                        "924a357",
+                                        "20260728",
+                                        "0.56.0",
+                                    )
+                                    mock_write.return_value = {}
+                                    uv.main()
+
+        mock_write.assert_called_once()
+        _, args, _ = mock_write.mock_calls[0]
+        pkg_to_latest, pkg_to_commit_info = args[1], args[2]
+
+        # Stable must get its semver bump ...
+        assert pkg_to_latest == {"Stable": "0.56.1"}
+        # ... and Stable-git must independently get its commit-based version,
+        # not be skipped because "Stable" already claimed this url.
+        assert pkg_to_commit_info == {
+            "Stable-git": ("924a3573abcdef", "924a357", "20260728", "0.56.0")
+        }
+
+        captured = capsys.readouterr()
+        assert "latest: 0.56.1" in captured.out
+        assert "0.56.0^20260728git924a357" in captured.out

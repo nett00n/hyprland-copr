@@ -305,8 +305,6 @@ hypridle:
   version: 0.1.8
 Hyprland:
   build:
-    prep:
-    - sed -i 's|^install(TARGETS start-hyprland)|target_include_directories(start-hyprland PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glaze-src/include")\ninstall(TARGETS start-hyprland)|' start/CMakeLists.txt
     system: cmake
   build_requires:
   - aquamarine-devel
@@ -332,6 +330,7 @@ Hyprland:
   - pkgconfig(gl)
   - pkgconfig(glesv2)
   - pkgconfig(libdrm)
+  - pkgconfig(libeis-1.0)
   - pkgconfig(libinput)
   - pkgconfig(lua)
   - pkgconfig(luajit)
@@ -391,14 +390,14 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 8
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
     name: Hyprland
   summary: A Modern C++ Wayland Compositor
   url: https://github.com/hyprwm/Hyprland
-  version: 0.55.4
+  version: 0.56.1
 Hyprland-git:
   auto_update:
     release_type: latest-commit

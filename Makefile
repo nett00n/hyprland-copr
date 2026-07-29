@@ -391,7 +391,7 @@ build-pop: check-image check-venv setup-volumes ## Remove mock/copr build status
 		read ans; \
 		[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "$(HIGHLIGHT_PREFIX) Aborted."; exit 1; }; \
 	fi
-	@PACKAGE="$(PACKAGE)" $(CONTAINER_PYTHON) scripts/pkg-build-pop.py || exit 1
+	@$(CONTAINER_RUN) env PACKAGE=$(PACKAGE) /work/.venv/bin/python3 scripts/pkg-build-pop.py || exit 1
 
 stage-validate: check-image check-venv setup-volumes ## Run validation stage (PACKAGE=<name>, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \

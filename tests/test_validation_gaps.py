@@ -10,6 +10,7 @@ import pytest
 
 from lib.validation import (
     validate_package,
+    validate_no_duplicate_urls,
     REQUIRED_FIELDS,
     VALID_BUILD_SYSTEMS,
 )
@@ -307,3 +308,63 @@ class TestValidatePackage:
 
         # Should have error about unknown override key
         assert any("invalid_key" in e or "unknown" in e.lower() for e in errors)
+
+
+class TestValidateNoDuplicateUrls:
+    """Test validate_no_duplicate_urls function.
+
+    Regression coverage for issue #8: Hyprland-git's url lost its ".git"
+    suffix, making it identical to stable Hyprland's, which let Hyprland-git's
+    auto_update.release_type silently shadow stable Hyprland's in
+    update-versions.py and froze it at 0.55.4 for weeks.
+    """
+
+    def test_no_duplicates_is_clean(self):
+        """Distinct urls produce no warnings or errors."""
+        all_packages = {
+            "pkg-a": {"url": "https://github.com/org/a"},
+            "pkg-b": {"url": "https://github.com/org/b"},
+        }
+
+        errors, warnings = validate_no_duplicate_urls(all_packages)
+
+        assert errors == []
+        assert warnings == []
+
+    def test_shared_url_warns(self):
+        """Two packages sharing a url produce a warning naming both."""
+        all_packages = {
+            "Hyprland": {"url": "https://github.com/hyprwm/Hyprland"},
+            "Hyprland-git": {"url": "https://github.com/hyprwm/Hyprland"},
+        }
+
+        errors, warnings = validate_no_duplicate_urls(all_packages)
+
+        assert errors == []
+        assert len(warnings) == 1
+        assert "Hyprland" in warnings[0]
+        assert "Hyprland-git" in warnings[0]
+
+    def test_distinguishing_git_suffix_avoids_warning(self):
+        """A .git suffix difference is enough to avoid the collision."""
+        all_packages = {
+            "Waybar": {"url": "https://github.com/Alexays/Waybar.git"},
+            "Waybar-git": {"url": "https://github.com/Alexays/Waybar"},
+        }
+
+        errors, warnings = validate_no_duplicate_urls(all_packages)
+
+        assert errors == []
+        assert warnings == []
+
+    def test_missing_url_ignored(self):
+        """Packages without a url don't spuriously collide with each other."""
+        all_packages = {
+            "pkg-a": {},
+            "pkg-b": {},
+        }
+
+        errors, warnings = validate_no_duplicate_urls(all_packages)
+
+        assert errors == []
+        assert warnings == []

@@ -295,6 +295,12 @@ Rust packages do **not** use vendoring. Instead, they follow the canonical COPR/
 
 The `update-versions.py` script manages version updates for submodule-based packages. The `auto_update` field in `packages.yaml` controls the update strategy per package.
 
+Config and resolved versions are keyed by **package name**, not `url`. Two packages
+can legitimately point at the same submodule `url` — e.g. a stable package and its
+`-git` sibling tracking the same upstream repo — and each gets its own
+`auto_update.release_type` applied independently. `make stage-validate` warns if two
+packages share a `url`, as a nudge to double-check both have the config they need.
+
 ### Basic auto_update Configuration
 
 ```yaml
@@ -476,6 +482,13 @@ to complete immediately after submission without blocking for build completion.
 
 - **Async mode (default):** Submits builds and records the build IDs, pipeline completes immediately
 - **Synchronous mode:** Set `SYNCHRONOUS_COPR_BUILD=true` to wait for builds to complete before exiting
+
+Copr submission runs as its own pass, only after every package in the run has gone
+through `mock`. If any package's `mock` stage failed, **no package is submitted** —
+a healthy package must never be published while a sibling in the same dependency
+set is broken (previously each package could be submitted mid-graph, so an early
+success like `hyprutils` could reach Copr before a later dependent like `Hyprland`
+was even attempted).
 
 #### Build Report Generation
 

@@ -153,6 +153,42 @@ def validate_group_membership(all_packages: dict) -> tuple[list[str], list[str]]
     return errors, warnings
 
 
+def validate_no_duplicate_urls(all_packages: dict) -> tuple[list[str], list[str]]:
+    """Warn when two or more packages declare the exact same url.
+
+    update-versions.py resolves each package's submodule by matching its url;
+    a duplicate is legitimate (e.g. a stable package and its "-git" sibling
+    tracking the same upstream repo) as long as each package's own
+    auto_update.release_type is applied independently. This check exists to
+    surface the duplication itself, since an accidental collision (e.g. one
+    side losing a distinguishing ".git" suffix) previously let one package's
+    auto_update config silently shadow another's version resolution.
+
+    Args:
+        all_packages: Dict of all packages
+
+    Returns:
+        Tuple of (errors, warnings) as lists of strings — always empty errors
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    by_url: dict[str, list[str]] = {}
+    for pkg, meta in all_packages.items():
+        url = meta.get("url", "")
+        if url:
+            by_url.setdefault(url, []).append(pkg)
+
+    for url, pkgs in sorted(by_url.items()):
+        if len(pkgs) > 1:
+            warnings.append(
+                f"url '{url}' is shared by packages: {', '.join(sorted(pkgs))}"
+                " — verify each has independent auto_update.release_type"
+            )
+
+    return errors, warnings
+
+
 def validate_gitmodules(root_path=ROOT) -> tuple[list[str], list[str]]:
     """Validate .gitmodules conventions.
 
