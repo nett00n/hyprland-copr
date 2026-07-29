@@ -50,7 +50,6 @@
 
 everything, that Hyprland recommended:
 - https://github.com/MalpenZibo/ashell #Rust
-- https://github.com/GhostNaN/mpvpaper Does not compile on GCC 15 [GH Issue](https://github.com/GhostNaN/mpvpaper/issues/125)
 - https://codeberg.org/LGFae/awww #Rust
 - https://gmithub.com/anufrievroman/waypaper
 - https://github.com/davatorium/rofi

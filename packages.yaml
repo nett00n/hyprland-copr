@@ -1,4 +1,3 @@
----
 aquamarine:
   build:
     system: cmake
@@ -1939,3 +1938,43 @@ snappy-switcher:
   summary: alt-tab switch window for wayland compositor
   url: https://github.com/OpalAayan/snappy-switcher
   version: 4.0.0
+mpvpaper:
+  version: 1.9
+  release: 5
+  license: GPL-3.0-or-later
+  summary: A video wallpaper program for wlroots based wayland compositors.
+  description: mpvpaper is a wallpaper program for wlroots based wayland compositors, such as sway. That allows you to play videos with mpv as your wallpaper.
+  url: https://github.com/GhostNaN/mpvpaper
+  depends_on: []
+  build_requires:
+  - gcc-c++
+  - meson
+  - mpv-devel
+  - ninja-build
+  - pkgconfig(egl)
+  - pkgconfig(mpv)
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-egl)
+  - pkgconfig(wayland-protocols)
+  requires: []
+  files:
+  - /usr/bin/mpvpaper-holder
+  - /usr/bin/mpvpaper
+  - '%license LICENSE'
+  - '%doc README.md'
+  devel:
+    files: []
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  build:
+    system: meson
+    prep: []
+    commands: []
+    install: []
+    no_lto: false
+  rpm:
+    no_debug_package: false
+  auto_update:
+    release_type: latest-tag
+
