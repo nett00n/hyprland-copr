@@ -32,6 +32,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 >
 > New packages:
 > - snappy switcher
+> - mpvpaper
 >
 > **Automation info**
 >
@@ -112,6 +113,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 - `fuzzel` — App launcher and fuzzy finder for Wayland, inspired by rofi and dmenu
 - `gammastep` — Adjust the color temperature of your screen according to your surroundings. This may help your eyes hurt less if you are working in front of the screen at night.
 - `hyprland-per-window-layout` — Per-window keyboard layout daemon for Hyprland
+- `mpvpaper` — A video wallpaper program for wlroots based wayland compositors.
 - `network-manager-applet` — Tray applet and an advanced network connection editor
 - `nnn` — n³ The unorthodox terminal file manager
 - `pyprland` — Scratchpads & many goodies for Hyprland
@@ -137,7 +139,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-07-28
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-07-29
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->
@@ -174,7 +176,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- Vladimir nett00n Budylnikov- Vladimir Budylnikov
+- Vladimir Budylnikov- Vladimir nett00n Budylnikov
 
 ---
 

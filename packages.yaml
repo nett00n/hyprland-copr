@@ -1,3 +1,4 @@
+---
 aquamarine:
   build:
     system: cmake
@@ -487,17 +488,17 @@ Hyprland-git:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 1
+  release: 0
   source:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
       date: '20260728'
-      full: b5f71b249753ffdf54027a0760930b9f3dfe50a0
+      full: 924a35735ebadd67c8a078042060fe7e6ba7e060
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.56.0^20260728gitb5f71b2
+  version: 0.56.0^20260728git924a357
 hyprland-guiutils:
   build:
     system: cmake
@@ -1939,13 +1940,14 @@ snappy-switcher:
   url: https://github.com/OpalAayan/snappy-switcher
   version: 4.0.0
 mpvpaper:
-  version: 1.9
-  release: 5
-  license: GPL-3.0-or-later
-  summary: A video wallpaper program for wlroots based wayland compositors.
-  description: mpvpaper is a wallpaper program for wlroots based wayland compositors, such as sway. That allows you to play videos with mpv as your wallpaper.
-  url: https://github.com/GhostNaN/mpvpaper
-  depends_on: []
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    system: meson
   build_requires:
   - gcc-c++
   - meson
@@ -1956,25 +1958,23 @@ mpvpaper:
   - pkgconfig(wayland-client)
   - pkgconfig(wayland-egl)
   - pkgconfig(wayland-protocols)
-  requires: []
-  files:
-  - /usr/bin/mpvpaper-holder
-  - /usr/bin/mpvpaper
-  - '%license LICENSE'
-  - '%doc README.md'
+  depends_on: []
+  description: mpvpaper is a wallpaper program for wlroots based wayland compositors, such as sway. That allows you to play videos with mpv as your wallpaper.
   devel:
     files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - "%{_bindir}/mpvpaper"
+  - "%{_bindir}/mpvpaper-holder"
+  license: GPL-3.0-or-later
+  release: 6
+  requires: []
+  rpm:
+    no_debug_package: false
   source:
     archives:
     - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  build:
-    system: meson
-    prep: []
-    commands: []
-    install: []
-    no_lto: false
-  rpm:
-    no_debug_package: false
-  auto_update:
-    release_type: latest-tag
-
+  summary: A video wallpaper program for wlroots based wayland compositors.
+  url: https://github.com/GhostNaN/mpvpaper
+  version: 1.9

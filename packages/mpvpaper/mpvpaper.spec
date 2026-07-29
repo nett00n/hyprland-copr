@@ -1,7 +1,7 @@
 
 Name:           mpvpaper
 Version:        1.9
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        A video wallpaper program for wlroots based wayland compositors.
 License:        GPL-3.0-or-later
 URL:            https://github.com/GhostNaN/mpvpaper
@@ -41,10 +41,10 @@ Package info:
 %meson_install
 
 %files
-/usr/bin/mpvpaper-holder
-/usr/bin/mpvpaper
-%license LICENSE
 %doc README.md
+%license LICENSE
+%{_bindir}/mpvpaper
+%{_bindir}/mpvpaper-holder
 
 %package devel
 Summary:        Development files for A video wallpaper program for wlroots based wayland compositors.
@@ -56,6 +56,6 @@ Development files for mpvpaper.
 %files devel
 
 %changelog
-* Wed Jul 29 2026 nett00n <copr@nett00n.org> - 1.9-5
+* Wed Jul 29 2026 nett00n <copr@nett00n.org> - 1.9-6
 
 - Update to 1.9

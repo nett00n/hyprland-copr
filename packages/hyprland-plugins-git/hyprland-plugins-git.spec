@@ -70,6 +70,6 @@ Package info:
 %{_prefix}/lib/libhypr*.so
 
 %changelog
-* Tue Jul 28 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-17
+* Wed Jul 29 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-17
 
 - Update to 0.55.0^20260517gitb324783
