@@ -2,7 +2,7 @@
 
 Name:           cliphist
 Version:        0.7.0
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Wayland clipboard manager with support for multimedia
 License:        GPL-3.0-or-later
 URL:            https://github.com/sentriz/cliphist.git
@@ -62,7 +62,7 @@ Development files for cliphist.
 %files devel
 
 %changelog
-* Sat Oct 11 2025 nett00n <copr@nett00n.org> - 0.7.0-4
+* Sat Oct 11 2025 nett00n <copr@nett00n.org> - 0.7.0-5
 
 - chore: release 0.7.0 (#127)
 - chore: release 0.7.0

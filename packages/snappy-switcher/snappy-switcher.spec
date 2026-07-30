@@ -2,7 +2,7 @@
 
 Name:           snappy-switcher
 Version:        4.0.0
-Release:        14%{?dist}
+Release:        15%{?dist}
 Summary:        alt-tab switch window for wayland compositor
 License:        GPL-3.0
 URL:            https://github.com/OpalAayan/snappy-switcher
@@ -60,6 +60,6 @@ make %{?_smp_mflags}
 %{_sysconfdir}/xdg/snappy-switcher/config.ini
 
 %changelog
-* Wed Jun 03 2026 nett00n <copr@nett00n.org> - 4.0.0-14
+* Wed Jun 03 2026 nett00n <copr@nett00n.org> - 4.0.0-15
 
 - fix(build): resolve wayland-protocols path for Fedora

@@ -1,11 +1,11 @@
 
 Name:           hyprland
-Version:        0.55.4
-Release:        8%{?dist}
+Version:        0.56.1
+Release:        3%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
-Source0:        https://github.com/hyprwm/Hyprland/archive/refs/tags/v0.55.4.tar.gz#/hyprland-0.55.4.tar.gz
+Source0:        https://github.com/hyprwm/Hyprland/archive/refs/tags/v0.56.1.tar.gz#/hyprland-0.56.1.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -30,6 +30,7 @@ BuildRequires:  pkgconfig(gio-2.0)
 BuildRequires:  pkgconfig(gl)
 BuildRequires:  pkgconfig(glesv2)
 BuildRequires:  pkgconfig(libdrm)
+BuildRequires:  pkgconfig(libeis-1.0)
 BuildRequires:  pkgconfig(libinput)
 BuildRequires:  pkgconfig(lua)
 BuildRequires:  pkgconfig(luajit)
@@ -65,12 +66,11 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.55.4
-Commit:            a0136d8c04687bb36eb8a28eb9d1ff92aea99704
+Tag:               v0.56.1
+Commit:            5c9377c15f85c50648f35ca5a213754f95b93ca0
 
 %prep
 %autosetup -p1 -n Hyprland-%{version}
-sed -i 's|^install(TARGETS start-hyprland)|target_include_directories(start-hyprland PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glaze-src/include")\ninstall(TARGETS start-hyprland)|' start/CMakeLists.txt
 
 %build
 %cmake
@@ -111,6 +111,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Thu Jun 11 2026 nett00n <copr@nett00n.org> - 0.55.4-8
+* Mon Jul 27 2026 nett00n <copr@nett00n.org> - 0.56.1-3
 
-- [gha] Nix: update inputs
+- version: bump to 0.56.1

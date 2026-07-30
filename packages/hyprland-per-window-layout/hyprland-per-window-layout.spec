@@ -1,7 +1,7 @@
 
 Name:           hyprland-per-window-layout
 Version:        2.8.1
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Per-window keyboard layout daemon for Hyprland
 License:        MIT
 URL:            https://github.com/coffebar/hyprland-per-window-layout.git
@@ -41,6 +41,6 @@ install -Dm755 target/release/%{name} %{buildroot}%{_bindir}/%{name}
 %{_bindir}/%{name}
 
 %changelog
-* Wed Jul 08 2026 nett00n <copr@nett00n.org> - 2.8.1-5
+* Thu Jul 30 2026 nett00n <copr@nett00n.org> - 2.8.1-6
 
 - Update to 2.8.1
