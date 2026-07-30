@@ -8,26 +8,31 @@ Must be run inside the rpm toolbox container (invoked via Makefile).
 Environment variables:
   PACKAGE         If set, show only these packages (comma-separated, optional)
   SKIP_PACKAGES   If set, exclude these packages (comma-separated, optional)
+  FEDORA_VERSION  Fedora version to target (default: 43)
+  MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   COPR_REPO       If set, include copr stage in plan (optional)
 """
 
 import os
-import sys
 
+from lib import build_db
 from lib.cache import compute_input_hashes
 from lib.deps import effective_deps
+from lib.paths import resolve_target
 from lib.pipeline import compute_forced_stages, is_cached
 from lib.yaml_utils import (
     STAGES,
     filter_packages,
     get_packages,
-    load_build_status,
     skip_packages,
 )
 
 
 def show_plan(
-    package: str = "", skip_packages_arg: str = "", copr_repo: str = ""
+    package: str = "",
+    skip_packages_arg: str = "",
+    copr_repo: str = "",
+    target: str = "",
 ) -> None:
     """Display build plan as a table.
 
@@ -40,15 +45,11 @@ def show_plan(
         package: If set, show only these package(s). Comma-separated. If empty, show all.
         skip_packages_arg: If set, exclude these package(s). Comma-separated.
         copr_repo: If set, include copr stage in plan (optional)
+        target: build_db target key (mock chroot) to read cached state from
     """
-    try:
-        build_status = load_build_status()
-    except FileNotFoundError:
-        print(
-            "error: build-report.yaml not found (run after validate stage)",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    if not target:
+        fedora_version = os.environ.get("FEDORA_VERSION", "43")
+        target = resolve_target(fedora_version, os.environ.get("MOCK_CHROOT", ""))
 
     # Load full package set (needed for compute_input_hashes to resolve deps)
     all_packages_full = get_packages()
@@ -63,7 +64,7 @@ def show_plan(
     print("  " + "-" * (30 + 10 * len(stages)))
 
     for pkg in packages_to_show:
-        if pkg not in build_status.get("stages", {}).get("validate", {}):
+        if build_db.get_stage(pkg, "validate", target) is None:
             continue
 
         meta = all_packages_full.get(pkg, {})
@@ -73,20 +74,19 @@ def show_plan(
 
         # Compute forced stages (note: during planning, no packages have been rebuilt yet)
         deps = effective_deps(pkg, meta, all_packages_full)
-        forced_stages = compute_forced_stages(pkg, deps, build_status, set())
+        forced_stages = compute_forced_stages(pkg, deps, target, set())
 
         row = []
         for stage in stages:
-            entry_state = (
-                build_status.get("stages", {}).get(stage, {}).get(pkg, {}).get("state")
-            )
+            entry = build_db.get_stage(pkg, stage, target)
+            entry_state = entry.get("state") if entry else None
 
             # Determine label based on state and cache logic
             if entry_state == "skipped":
                 label = "skip"
             elif entry_state == "failed":
                 label = "retry"
-            elif is_cached(stage, pkg, build_status, new_hashes, forced_stages):
+            elif is_cached(stage, pkg, target, new_hashes, forced_stages):
                 label = "cache"
             else:
                 label = "run"

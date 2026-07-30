@@ -11,12 +11,38 @@
 
 - `/var/lib/mock` (mock's own chroot cache) isn't mounted as a volume like `rpmbuild`/`local-repo` are -> since containers run `--rm`, every fresh `make stage-mock` run rebuilds/bootstraps the whole chroot from scratch instead of reusing a cached one, costing real time on every `update-daily`. Would need cache-invalidation handling if persisted, since a stale local-repo (see bugs.md) could then poison a persisted chroot's dnf cache too
 
-# Build report data model
+# Build report db
 
-- build-report.yaml has no per-Fedora-version key -> one slot per (stage, package), rebuilding for a 2nd OS version overwrites the 1st version's result. `run.fedora_version` is also a single global field
-- only "last attempt" is stored, not "last success" -> a failed rebuild overwrites the previous known-good version/log/build_id, no `last_success` kept alongside `last_attempt`
-- `save_build_status()` rewrites the whole file (175KB/4093 lines today, 44 pkgs x 6 stages) once per package inside the build loop -> O(n^2) I/O, only there for crash-resilience checkpointing
-- decide: yaml vs sqlite for build-report. build-report.yaml is gitignored (not committed) so "diffable in git" isn't a real argument for keeping yaml; sqlite (stdlib, no new dep) would give (package, stage, fedora_version, attempt_type) as a real composite key + cheap row upserts instead of full-file rewrites, at the cost of losing quick cat/grep debugging and requiring gen-report.py/stage-show-plan.py to move off yaml.safe_load
+Migrated from build-report.yaml to build-report.db (sqlite, stdlib) -- see git
+history for the migration. Composite key is now `(package, stage, target)`,
+row upserts instead of full-file rewrites, and an `artifacts` table tracks
+disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
+
+- only "last attempt" is stored per (package, stage, target), not "last success" -> a failed rebuild overwrites the previous known-good version/log/build_id, no `last_success` kept alongside `last_attempt`
+- `is_cached()` trusts `state`+hashes alone; the `artifacts` table now records the RPM/SRPM path that produced a "success" state, but nothing cross-checks it's still on disk before trusting the cache (see docs/bugs.md)
+- export sqlite -> yaml/json snapshot for offline diffing (`make db-export`)
+- artifact sha256 to detect corrupted local-repo RPMs
+- `db-prune` is newest-by-mtime only (see docs/bugs.md); no real NVR comparison, no age- or size-based policy
+- `db-shell`/`db-usage`/`db-prune` only resolve correctly inside the container (artifact paths are container-absolute); no host-side fallback
+
+# Build matrix (arch / non-fedora distros)
+
+- db key is already `target` (= mock chroot, e.g. fedora-44-x86_64) and `runs` carries
+  distro/distro_version/arch, so aarch64 and centos need no schema change. Everything else
+  is still fedora+x86_64-only:
+- FEDORA_VERSION is the only env knob; needs a TARGET (or DISTRO+ARCH) var, and
+  SUPPORTED/mock_chroot()/Containerfile FROM are all fedora-hardcoded
+- podman volumes are keyed rpmbuild-$(FEDORA_VERSION) / local-repo-$(FEDORA_VERSION);
+  need the arch in the name or two arches clobber each other
+- aarch64 builds need qemu-user-static binfmt or a native runner; mock --forcearch is
+  not enough for real cross-arch
+- packages.yaml has `fedora:` override blocks only -> need distro-agnostic override keys,
+  and `lib/version.py:nvr()` hardcodes the .fcNN dist tag (centos wants .el10)
+- `artifacts` has no arch column; a noarch subpackage's arch != its target's arch
+- copr rows are keyed by the local mock target, but COPR fans out to its own chroots ->
+  a real matrix needs copr rows keyed by the COPR chroot instead
+- gen-report/templates assume one target per report (`run.fedora_version`); a matrix view
+  needs a package x target grid (see also "cross-os-version build matrix visualization")
 
 # Makefile
 
@@ -32,9 +58,9 @@
 
 - `scripts/gen-spec.py` (~440 lines) duplicates `lib/github.py` (release cache, changelog) and `lib/config.get_packager` almost verbatim, has no Makefile target, unused except by its own test -> looks like a dead pre-pipeline prototype, remove or replace with lib calls
 - `scripts/validate-package-urls.py` is dead code, zero references outside its own test -> remove
-- `tests/conftest.py` and `tests/integration/conftest.py` are ~95% identical (fake_repo/fake_build_status/minimal_package fixtures copy-pasted), even though tests/integration/ already inherits the parent conftest -> dedupe
-- `scripts/full-cycle.py:run_build_pipeline` has ~320 lines of repeated per-stage orchestration (spec/vendor/srpm/mock/copr all same shape: cache check -> run_for_package -> inject_stage_meta -> save_build_status) -> candidate for a small stage-runner abstraction
-- each `stage-*.py` (validate/spec/vendor/srpm/mock/copr) copy-pastes its own "config: skip" result dict (~6-8 lines x6) -> extract to a `lib/stage_utils` helper
+- `tests/conftest.py` and `tests/integration/conftest.py` are ~95% identical (fake_repo/minimal_package fixtures copy-pasted), even though tests/integration/ already inherits the parent conftest -> dedupe
+- `scripts/full-cycle.py:run_build_pipeline` has ~320 lines of repeated per-stage orchestration (spec/vendor/srpm/mock/copr all same shape: cache check -> run_for_package -> build_db.finalize_stage) -> candidate for a small stage-runner abstraction
+- each `stage-*.py` (validate/spec/vendor/srpm/mock/copr) copy-pastes its own "config: skip" result dict (~6-8 lines x6) -> extract to a small helper (the old `lib/stage_utils.py` was removed in the sqlite migration, its one function unused; a new home is needed for this)
 - 9 top-level scripts have zero tests: format-yaml, gather-requires, list-tags, pkg-build-pop, pkg-log-analysis, rpm-dir-prefixes-convert, set-package-release, sort-yaml-lists, validate-packages -> violates project's own TDD rule; worst offenders are the two regex-based YAML block parsers (sort-yaml-lists.py, rpm-dir-prefixes-convert.py) and validate-packages.py itself (the pre-commit gate)
 - `scripts/lib/log_analysis.py` (944 lines) is ~30 copy-pasted `if m: issues.append(...); continue` blocks from hand-written regexes -> a data table of (regex, formatter) pairs would cut it by half+
 - `vendor_golang.py`/`vendor_rust.py` hand-roll subprocess+log-writing instead of using `lib/subprocess_utils.run_cmd`, which already does exactly that

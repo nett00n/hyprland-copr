@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
-"""Generate a Markdown README from build-report.yaml using a Jinja2 template."""
+"""Generate a Markdown README from build-report.db using a Jinja2 template."""
 
 import argparse
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
-
+from lib import build_db
 from lib.copr import COPR_BUILD_URL, poll_copr_status
 from lib.jinja_utils import create_jinja_env
-from lib.paths import BUILD_STATUS_YAML, GROUPS_YAML, PACKAGES_YAML, REPO_YAML, ROOT
+from lib.paths import GROUPS_YAML, PACKAGES_YAML, REPO_YAML, ROOT, resolve_target
 from lib.subprocess_utils import run_git
 from lib.version import clean_version
 from lib.yaml_utils import (
     get_packages,
     load_groups_yaml,
     load_repo_yaml,
-    save_build_status,
 )
 
 
@@ -54,6 +53,13 @@ def _format_date(started_at: int | None) -> str:
         return ""
     dt = datetime.fromtimestamp(started_at, tz=timezone.utc)
     return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+def _iso(epoch: int | None) -> str:
+    """Format a unix epoch as an ISO-8601 UTC string (templates slice run.timestamp[:10])."""
+    if epoch is None:
+        return ""
+    return datetime.fromtimestamp(epoch, tz=timezone.utc).isoformat(timespec="seconds")
 
 
 def collect_packages(
@@ -248,7 +254,7 @@ def main() -> None:
     parser.add_argument(
         "--skip-copr-poll",
         action="store_true",
-        help="Skip polling COPR status updates (use cached status from build-report.yaml).",
+        help="Skip polling COPR status updates (use cached status from build-report.db).",
     )
     args = parser.parse_args()
     template_name = (
@@ -257,22 +263,30 @@ def main() -> None:
         else "full-report.md.j2"
     )
 
-    if not BUILD_STATUS_YAML.exists():
-        print(f"error: {BUILD_STATUS_YAML} not found", file=sys.stderr)
+    target = resolve_target(
+        os.environ.get("FEDORA_VERSION", "43"), os.environ.get("MOCK_CHROOT", "")
+    )
+    run_row = build_db.latest_run(target)
+    if run_row is None:
+        print(
+            f"error: no build recorded for {target} in build-report.db", file=sys.stderr
+        )
         sys.exit(1)
 
-    data = yaml.safe_load(BUILD_STATUS_YAML.read_text())
-    run = data.get("run", {})
-    stages = data.get("stages", {})
+    run = {
+        "fedora_version": run_row.get("distro_version", target),
+        "mock_chroot": run_row.get("target", target),
+        "timestamp": _iso(run_row.get("started_at")),
+        "completed_at": run_row.get("completed_at"),
+    }
+    stages = build_db.stage_map(target)
 
     # Poll COPR status for packages with non-terminal states (unless skipped)
     if not args.skip_copr_poll:
-        copr_stage = stages.get("copr") or {}
-        packages_list = list(copr_stage.keys())
-        if poll_copr_status(stages, packages_list):
-            # Status was updated, save it back
-            data["stages"] = stages
-            save_build_status(data)
+        packages_list = list(stages.get("copr", {}).keys())
+        if poll_copr_status(target, packages_list):
+            # Status was updated in the DB; reload to pick it up.
+            stages = build_db.stage_map(target)
 
     pkg_meta = get_packages() if PACKAGES_YAML.exists() else {}
     repo = load_repo_yaml() if REPO_YAML.exists() else {}

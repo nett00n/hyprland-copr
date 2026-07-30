@@ -8,7 +8,27 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import pytest
 
+from lib import build_db, paths
 from lib.yaml_utils import update_package_releases
+
+TARGET = "fedora-44-x86_64"
+
+
+@pytest.fixture(autouse=True)
+def build_db_path(tmp_path, monkeypatch):
+    """Point lib.paths.BUILD_DB at a fresh tmp file and close the cached connection after."""
+    db_path = tmp_path / "build-report.db"
+    monkeypatch.setattr(paths, "BUILD_DB", db_path)
+    yield db_path
+    build_db.close()
+
+
+def _seed(pkg: str, stage: str, hashes: dict | None = None, force_run: int = 0, state: str = "success") -> None:
+    """Seed a stage row, optionally with hashes (which requires state=success)."""
+    run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+    build_db.set_stage(pkg, stage, TARGET, run_id, state, force_run=force_run)
+    if hashes is not None:
+        build_db.finalize_stage(pkg, stage, TARGET, started_at=1, hashes=hashes)
 
 
 class TestUpdatePackageReleases:
@@ -26,9 +46,8 @@ class TestUpdatePackageReleases:
                 "url": "https://example.com",
             }
         }
-        build_status = {"stages": {"spec": {}}}
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         # First run, no stored content_hash → package needs rebuild
         # Release must be bumped: 1 → 2
         assert updates == {"test-pkg": 2}
@@ -50,20 +69,13 @@ class TestUpdatePackageReleases:
         # Compute the actual content hash for this package
         actual_content = _content_hash(pkg_dict)
 
-        build_status = {
-            "stages": {
-                "spec": {
-                    "test-pkg": {
-                        "hashes": {
-                            "content": actual_content,  # <- matches computed
-                            "package_version": "1.0",
-                        }
-                    }
-                }
-            }
-        }
+        _seed(
+            "test-pkg",
+            "spec",
+            hashes={"content": actual_content, "package_version": "1.0"},  # <- matches computed
+        )
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         # Content unchanged, no cascade → no update
         assert updates == {}
 
@@ -79,20 +91,13 @@ class TestUpdatePackageReleases:
                 "url": "https://example.com",
             }
         }
-        build_status = {
-            "stages": {
-                "spec": {
-                    "test-pkg": {
-                        "hashes": {
-                            "content": "old_hash",  # <- doesn't match computed
-                            "package_version": "1.0",
-                        }
-                    }
-                }
-            }
-        }
+        _seed(
+            "test-pkg",
+            "spec",
+            hashes={"content": "old_hash", "package_version": "1.0"},  # <- doesn't match computed
+        )
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         assert "test-pkg" in updates
         assert updates["test-pkg"] == 3  # 2 + 1
 
@@ -108,20 +113,13 @@ class TestUpdatePackageReleases:
                 "url": "https://example.com",
             }
         }
-        build_status = {
-            "stages": {
-                "spec": {
-                    "test-pkg": {
-                        "hashes": {
-                            "content": "old_hash",
-                            "package_version": "1.0",  # <- version was 1.0
-                        }
-                    }
-                }
-            }
-        }
+        _seed(
+            "test-pkg",
+            "spec",
+            hashes={"content": "old_hash", "package_version": "1.0"},  # <- version was 1.0
+        )
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         assert "test-pkg" in updates
         assert updates["test-pkg"] == 1  # Reset on version change
 
@@ -137,20 +135,13 @@ class TestUpdatePackageReleases:
                 "url": "https://example.com",
             }
         }
-        build_status = {
-            "stages": {
-                "spec": {
-                    "test-pkg": {
-                        "hashes": {
-                            "content": "current_hash",
-                            "package_version": "1.0",  # <- same version
-                        }
-                    }
-                }
-            }
-        }
+        _seed(
+            "test-pkg",
+            "spec",
+            hashes={"content": "current_hash", "package_version": "1.0"},  # <- same version
+        )
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         assert "test-pkg" in updates
         assert updates["test-pkg"] == 1
 
@@ -166,20 +157,13 @@ class TestUpdatePackageReleases:
                 "url": "https://example.com",
             }
         }
-        build_status = {
-            "stages": {
-                "spec": {
-                    "test-pkg": {
-                        "hashes": {
-                            "content": "old_hash",  # <- differs → needs rebuild
-                            "package_version": "1.0",
-                        }
-                    }
-                }
-            }
-        }
+        _seed(
+            "test-pkg",
+            "spec",
+            hashes={"content": "old_hash", "package_version": "1.0"},  # <- differs → needs rebuild
+        )
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         assert "test-pkg" in updates
         assert updates["test-pkg"] == 1  # Fallback
 
@@ -195,21 +179,14 @@ class TestUpdatePackageReleases:
                 "url": "https://example.com",
             }
         }
-        build_status = {
-            "stages": {
-                "spec": {
-                    "test-pkg": {
-                        "hashes": {
-                            "content": "current_hash",
-                            "package_version": "1.0",
-                        },
-                        "force_run": True,  # <- operator forced rebuild
-                    }
-                }
-            }
-        }
+        _seed(
+            "test-pkg",
+            "spec",
+            hashes={"content": "current_hash", "package_version": "1.0"},
+            force_run=1,  # <- operator forced rebuild
+        )
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         assert "test-pkg" in updates
         assert updates["test-pkg"] == 3  # 2 + 1
 
@@ -225,25 +202,12 @@ class TestUpdatePackageReleases:
                 "url": "https://example.com",
             }
         }
-        build_status = {
-            "stages": {
-                "spec": {
-                    "test-pkg": {
-                        "hashes": {
-                            "content": "current_hash",
-                            "package_version": "1.0",
-                        }
-                    }
-                },
-                "mock": {
-                    "test-pkg": {
-                        "force_run": True,  # <- forced in downstream stage
-                    }
-                },
-            }
-        }
+        _seed(
+            "test-pkg", "spec", hashes={"content": "current_hash", "package_version": "1.0"}
+        )
+        _seed("test-pkg", "mock", force_run=1)  # <- forced in downstream stage
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         assert "test-pkg" in updates
         assert updates["test-pkg"] == 3  # 2 + 1
 
@@ -268,26 +232,10 @@ class TestUpdatePackageReleases:
                 "url": "https://example.com/b",
             },
         }
-        build_status = {
-            "stages": {
-                "spec": {
-                    "pkg-a": {
-                        "hashes": {
-                            "content": "old_hash_a",  # <- A's content changed
-                            "package_version": "1.0",
-                        }
-                    },
-                    "pkg-b": {
-                        "hashes": {
-                            "content": "current_hash_b",
-                            "package_version": "1.0",
-                        }
-                    },
-                }
-            }
-        }
+        _seed("pkg-a", "spec", hashes={"content": "old_hash_a", "package_version": "1.0"})
+        _seed("pkg-b", "spec", hashes={"content": "current_hash_b", "package_version": "1.0"})
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         assert "pkg-a" in updates
         assert updates["pkg-a"] == 2  # A's content changed
         assert "pkg-b" in updates
@@ -323,32 +271,11 @@ class TestUpdatePackageReleases:
                 "url": "https://example.com/c",
             },
         }
-        build_status = {
-            "stages": {
-                "spec": {
-                    "pkg-a": {
-                        "hashes": {
-                            "content": "old_hash_a",  # <- A changed
-                            "package_version": "1.0",
-                        }
-                    },
-                    "pkg-b": {
-                        "hashes": {
-                            "content": "current_hash_b",
-                            "package_version": "1.0",
-                        }
-                    },
-                    "pkg-c": {
-                        "hashes": {
-                            "content": "current_hash_c",
-                            "package_version": "1.0",
-                        }
-                    },
-                }
-            }
-        }
+        _seed("pkg-a", "spec", hashes={"content": "old_hash_a", "package_version": "1.0"})
+        _seed("pkg-b", "spec", hashes={"content": "current_hash_b", "package_version": "1.0"})
+        _seed("pkg-c", "spec", hashes={"content": "current_hash_c", "package_version": "1.0"})
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         assert updates["pkg-a"] == 2  # A changed
         assert updates["pkg-b"] == 2  # B cascaded
         assert updates["pkg-c"] == 2  # C cascaded
@@ -376,31 +303,19 @@ class TestUpdatePackageReleases:
         }
         packages = {"pkg-a": pkg_a, "pkg-b": pkg_b}
 
-        build_status = {
-            "stages": {
-                "spec": {
-                    "pkg-a": {
-                        "hashes": {
-                            "content": "old_hash_a",  # <- differs from computed
-                            "package_version": "1.0",
-                        }
-                    },
-                    "pkg-b": {
-                        "hashes": {
-                            "content": _content_hash(pkg_b),  # <- matches
-                            "package_version": "1.0",
-                        }
-                    },
-                }
-            }
-        }
+        _seed("pkg-a", "spec", hashes={"content": "old_hash_a", "package_version": "1.0"})
+        _seed(
+            "pkg-b",
+            "spec",
+            hashes={"content": _content_hash(pkg_b), "package_version": "1.0"},  # <- matches
+        )
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         assert "pkg-a" in updates
         assert "pkg-b" not in updates  # B not affected
 
     def test_no_stored_entry_for_dep(self):
-        """dep missing from build_status → treated as first-run, cascades."""
+        """dep missing from the DB → treated as first-run, cascades."""
         from lib.cache import _content_hash
 
         pkg_a = {
@@ -422,21 +337,10 @@ class TestUpdatePackageReleases:
         }
         packages = {"pkg-a": pkg_a, "pkg-b": pkg_b}
 
-        build_status = {
-            "stages": {
-                "spec": {
-                    # pkg-a not in build_status (first run for A)
-                    "pkg-b": {
-                        "hashes": {
-                            "content": _content_hash(pkg_b),
-                            "package_version": "1.0",
-                        }
-                    }
-                }
-            }
-        }
+        # pkg-a has no spec row at all (first run for A)
+        _seed("pkg-b", "spec", hashes={"content": _content_hash(pkg_b), "package_version": "1.0"})
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         # pkg-a: first run, no stored entry → needs_rebuild=True → release 1 + 1 = 2
         assert "pkg-a" in updates
         assert updates["pkg-a"] == 2
@@ -475,40 +379,21 @@ class TestUpdatePackageReleases:
         }
         packages = {"dep-1": dep1, "dep-2": dep2, "pkg": pkg}
 
-        build_status = {
-            "stages": {
-                "spec": {
-                    "dep-1": {
-                        "hashes": {
-                            "content": "old_hash_dep1",  # <- differs from computed
-                            "package_version": "1.0",
-                        }
-                    },
-                    "dep-2": {
-                        "hashes": {
-                            "content": _content_hash(dep2),  # <- matches
-                            "package_version": "1.0",
-                        }
-                    },
-                    "pkg": {
-                        "hashes": {
-                            "content": _content_hash(pkg),  # <- matches
-                            "package_version": "1.0",
-                        }
-                    },
-                }
-            }
-        }
+        _seed("dep-1", "spec", hashes={"content": "old_hash_dep1", "package_version": "1.0"})
+        _seed(
+            "dep-2",
+            "spec",
+            hashes={"content": _content_hash(dep2), "package_version": "1.0"},  # <- matches
+        )
+        _seed("pkg", "spec", hashes={"content": _content_hash(pkg), "package_version": "1.0"})
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         assert updates["dep-1"] == 2
         assert "dep-2" not in updates
         assert updates["pkg"] == 6  # cascaded from dep-1 (5 + 1)
 
     def test_release_lock_prevents_auto_increment(self):
         """release_lock: true → package skipped, release not updated."""
-        from lib.cache import _content_hash
-
         pkg_dict = {
             "version": "1.0",
             "release": 5,
@@ -520,20 +405,9 @@ class TestUpdatePackageReleases:
         }
         packages = {"test-pkg": pkg_dict}
 
-        build_status = {
-            "stages": {
-                "spec": {
-                    "test-pkg": {
-                        "hashes": {
-                            "content": "old_hash",  # <- differs from computed
-                            "package_version": "1.0",
-                        }
-                    }
-                }
-            }
-        }
+        _seed("test-pkg", "spec", hashes={"content": "old_hash", "package_version": "1.0"})
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         # release_lock=True → skipped, no update
         assert updates == {}
 
@@ -550,20 +424,9 @@ class TestUpdatePackageReleases:
         }
         packages = {"test-pkg": pkg_dict}
 
-        build_status = {
-            "stages": {
-                "spec": {
-                    "test-pkg": {
-                        "hashes": {
-                            "content": "old_hash",
-                            "package_version": "1.0",
-                        }
-                    }
-                }
-            }
-        }
+        _seed("test-pkg", "spec", hashes={"content": "old_hash", "package_version": "1.0"})
 
-        updates = update_package_releases(packages, build_status)
+        updates = update_package_releases(packages, TARGET)
         # release_lock=True → skipped even though version changed
         assert updates == {}
 

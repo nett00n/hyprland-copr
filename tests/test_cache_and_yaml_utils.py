@@ -7,7 +7,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
+from lib import build_db
 from lib.cache import hashes_match, _sha256, _package_config_hash, _dependencies_hashes, _patches_hashes
+from lib.build_db import now_epoch
 from lib.yaml_utils import (
     find_package_name,
     filter_packages,
@@ -17,12 +19,11 @@ from lib.yaml_utils import (
     load_repo_yaml,
     load_groups_yaml,
     dump_yaml_pretty,
-    save_build_status,
-    pop_build_stages,
-    now_epoch,
-    init_stage,
+    prepare_stage,
     write_yaml_preserving_comments,
 )
+
+TARGET = "fedora-44-x86_64"
 
 
 class TestHashesMatch:
@@ -320,51 +321,10 @@ class TestApplyOsOverrides:
         assert result["name"] == "test"  # name not in override list
 
 
-class TestLoadBuildStatus:
-    """Test load_build_status normalization."""
-
-    def test_missing_stages_key_normalized(self, tmp_path, monkeypatch):
-        """load_build_status should normalize missing 'stages' key."""
-        from lib.yaml_utils import load_build_status
-        from lib import paths
-
-        monkeypatch.setattr(paths, "BUILD_STATUS_YAML", tmp_path / "build-report.yaml")
-
-        # Write a build-report.yaml with missing stages key
-        report_file = tmp_path / "build-report.yaml"
-        report_file.write_text("{}")
-
-        status = load_build_status(report_file)
-        # Should have normalized structure with stages key
-        assert "stages" in status
-
-    def test_empty_file_normalized(self, tmp_path, monkeypatch):
-        """load_build_status should normalize empty YAML file."""
-        from lib.yaml_utils import load_build_status
-        from lib import paths
-
-        monkeypatch.setattr(paths, "BUILD_STATUS_YAML", tmp_path / "build-report.yaml")
-
-        report_file = tmp_path / "build-report.yaml"
-        report_file.write_text("")
-
-        status = load_build_status(report_file)
-        # Empty file should use default structure
-        assert "stages" in status
-
-    def test_non_existent_file_default_structure(self, tmp_path, monkeypatch):
-        """load_build_status should return default structure if file missing."""
-        from lib.yaml_utils import load_build_status
-        from lib import paths
-
-        monkeypatch.setattr(paths, "BUILD_STATUS_YAML", tmp_path / "build-report.yaml")
-
-        report_file = tmp_path / "build-report.yaml"
-
-        status = load_build_status(report_file)
-        # Non-existent file should use default structure
-        assert "stages" in status
-        assert isinstance(status["stages"], dict)
+# TestLoadBuildStatus removed: load_build_status() no longer exists (build
+# state lives in build-report.db). The equivalent "fresh/missing store ->
+# usable empty structure" coverage is tests/test_build_db.py's
+# test_fresh_db_creates_schema_at_current_user_version.
 
 
 class TestLoadPackagesYaml:
@@ -476,21 +436,9 @@ class TestLoadGroupsYaml:
         assert result == {}
 
 
-class TestPopBuildStages:
-    """Test pop_build_stages function."""
-
-    def test_handles_missing_packages(self, tmp_path, monkeypatch):
-        """Should handle packages not in report."""
-        from lib import paths
-
-        status_file = tmp_path / "build-report.yaml"
-        monkeypatch.setattr(paths, "BUILD_STATUS_YAML", status_file)
-
-        initial = {"stages": {"mock": {}, "copr": {}}}
-        save_build_status(initial, status_file)
-
-        affected = pop_build_stages(["nonexistent"], ("mock", "copr"))
-        assert affected == []
+# TestPopBuildStages removed: pop_build_stages() no longer exists (superseded
+# by lib.build_db.set_force_run, called directly by pkg-build-pop.py). Fully
+# covered by tests/test_build_db.py's TestForceRun.
 
 
 class TestNowEpoch:
@@ -511,59 +459,82 @@ class TestNowEpoch:
         assert before <= result <= after + 1
 
 
-class TestInitStage:
-    """Test init_stage function."""
+class TestPrepareStage:
+    """Test prepare_stage function (replaces the old init_stage)."""
 
-    def test_returns_packages_and_status(self, tmp_path, monkeypatch, caplog):
-        """Should return tuple of (packages, build_status)."""
+    @pytest.fixture(autouse=True)
+    def _build_db_path(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(build_db.paths, "BUILD_DB", tmp_path / "build-report.db")
+        yield
+        build_db.close()
+
+    # NOTE: get_packages()'s `path: Path = PACKAGES_YAML` default binds at
+    # import time, so monkeypatching `paths.PACKAGES_YAML` does not isolate
+    # prepare_stage() from the real repo packages.yaml (pre-existing gap,
+    # out of scope for this migration -- see docs/todo.md). These tests use
+    # "hyprutils", a real, stable package in the committed packages.yaml,
+    # rather than assuming isolation that doesn't actually happen.
+
+    def test_returns_packages(self, tmp_path, monkeypatch):
+        """Should return the filtered packages dict."""
         from lib import paths
 
-        # Setup mock packages.yaml
-        packages_file = tmp_path / "packages.yaml"
-        packages_file.write_text("pkg1:\n  version: '1.0'")
-        monkeypatch.setattr(paths, "PACKAGES_YAML", packages_file)
-
-        status_file = tmp_path / "build-report.yaml"
-        monkeypatch.setattr(paths, "BUILD_STATUS_YAML", status_file)
         monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path / "logs")
-
-        # Clear env vars
         monkeypatch.delenv("PACKAGE", raising=False)
         monkeypatch.delenv("SKIP_PACKAGES", raising=False)
-        monkeypatch.delenv("PROCEED_BUILD", raising=False)
 
-        result = init_stage("spec", include_all=False)
+        packages = prepare_stage("spec", TARGET, proceed=False)
+        assert isinstance(packages, dict)
+        assert "hyprutils" in packages
+
+    def test_returns_all_packages_and_packages_when_include_all(self, tmp_path, monkeypatch):
+        """include_all=True returns (all_packages, packages)."""
+        from lib import paths
+
+        monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path / "logs")
+        monkeypatch.delenv("PACKAGE", raising=False)
+        monkeypatch.delenv("SKIP_PACKAGES", raising=False)
+
+        result = prepare_stage("spec", TARGET, proceed=False, include_all=True)
         assert isinstance(result, tuple)
         assert len(result) == 2
-        packages, build_status = result
-        assert isinstance(packages, dict)
-        assert isinstance(build_status, dict)
-        assert "stages" in build_status
+        all_packages, packages = result
+        assert "hyprutils" in all_packages
+        assert "hyprutils" in packages
 
     def test_clears_stage_if_not_resuming(self, tmp_path, monkeypatch):
-        """Should clear stage data if not resuming (PROCEED_BUILD != true)."""
+        """Should clear stage data if not resuming (proceed=False)."""
         from lib import paths
 
-        packages_file = tmp_path / "packages.yaml"
-        packages_file.write_text("pkg1:\n  version: '1.0'")
-        monkeypatch.setattr(paths, "PACKAGES_YAML", packages_file)
-
-        status_file = tmp_path / "build-report.yaml"
-        monkeypatch.setattr(paths, "BUILD_STATUS_YAML", status_file)
         monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path / "logs")
 
-        # Pre-populate build status
-        pre_status = {"stages": {"spec": {"pkg1": {"state": "success"}}}}
-        save_build_status(pre_status, status_file)
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "spec", TARGET, run_id, "success")
 
         monkeypatch.delenv("PACKAGE", raising=False)
         monkeypatch.delenv("SKIP_PACKAGES", raising=False)
-        monkeypatch.setenv("PROCEED_BUILD", "false")
 
-        packages, build_status = init_stage("spec")
+        prepare_stage("spec", TARGET, proceed=False)
 
-        # Stage should be cleared
-        assert build_status["stages"]["spec"] == {}
+        assert build_db.get_stage("hyprutils", "spec", TARGET) is None
+
+    def test_preserves_stage_if_resuming(self, tmp_path, monkeypatch):
+        """Should NOT clear stage data if resuming (proceed=True)."""
+        from lib import paths
+
+        monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path / "logs")
+
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "spec", TARGET, run_id, "success")
+
+        monkeypatch.delenv("PACKAGE", raising=False)
+        monkeypatch.delenv("SKIP_PACKAGES", raising=False)
+
+        prepare_stage("spec", TARGET, proceed=True)
+
+        entry = build_db.get_stage("hyprutils", "spec", TARGET)
+        assert entry is not None
+        assert entry["state"] == "success"
 
 
 class TestWriteYamlPreservingComments:

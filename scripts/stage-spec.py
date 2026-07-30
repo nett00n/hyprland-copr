@@ -2,13 +2,14 @@
 """Stage 1: Generate spec files for each package.
 
 Reads packages.yaml and generates spec files per package, then records
-success/failure in build-report.yaml.
+success/failure in build-report.db.
 
 Must be run inside the rpm toolbox container (invoked via Makefile).
 
 Environment variables:
   PACKAGE         Build only this package (optional, comma-separated)
   FEDORA_VERSION  Fedora version to target (default: 43)
+  MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   LOG_LEVEL       Logging level: DEBUG, INFO (default), WARNING, ERROR
 """
 
@@ -18,21 +19,21 @@ import re
 import subprocess
 import sys
 
+from lib import build_db
 from lib.build_systems import BUILD_SYSTEMS
 from lib.config import get_packager, setup_logging
 from lib.github import build_changelog
 from lib.gitmodules import get_changelog_info, parse_gitmodules, resolve_module
 from lib.jinja_utils import create_jinja_env
-from lib.paths import ROOT, get_package_log_dir
+from lib.paths import ARCH, DISTRO, ROOT, get_package_log_dir, resolve_target
 from lib.reporting import status
 from lib.spec_utils import process_archive_urls
 from lib.version import nvr
 from lib.yaml_utils import (
     apply_os_overrides,
     get_packages,
-    init_stage,
     load_repo_yaml,
-    save_build_status,
+    prepare_stage,
 )
 
 
@@ -206,23 +207,20 @@ def run_for_package(
     pkg: str,
     meta: dict,
     all_packages: dict,
-    build_status: dict,
     fedora_version: str,
+    target: str,
+    run_id: int,
 ) -> bool:
     """Run spec generation for a single package. Return True on success/skip, False on failure.
 
-    Updates build_status["stages"]["spec"][pkg] in-place.
-    Does not call save_build_status().
+    Writes the spec stage row for `pkg`.
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
         print(f"  [skip] {pkg} (fedora:{fedora_version} skip)")
-        build_status["stages"]["spec"][pkg] = {
-            "state": "skipped",
-            "version": None,
-            "force_run": False,
-            "reason": "config: skip",
-        }
+        build_db.set_stage(
+            pkg, "spec", target, run_id, "skipped", reason="config: skip"
+        )
         return True
 
     ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
@@ -253,32 +251,44 @@ def run_for_package(
     state = "success" if ok else "failed"
     status("spec", pkg, "ok" if ok else "fail")
 
-    entry: dict = {
-        "state": state,
-        "version": ver,
-        "log": str(log.relative_to(ROOT)),
-        "force_run": False,
-    }
-    if "devel" in meta:
-        entry["subpackages"] = {"devel": {"state": state, "version": ver}}
-    build_status["stages"]["spec"][pkg] = entry
+    build_db.set_stage(
+        pkg,
+        "spec",
+        target,
+        run_id,
+        state,
+        version=ver,
+        log=str(log.relative_to(ROOT)),
+        has_devel=1 if "devel" in meta else 0,
+    )
 
     return ok
 
 
 def main() -> None:
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
+    mock_chroot_override = os.environ.get("MOCK_CHROOT", "")
+    target = resolve_target(fedora_version, mock_chroot_override)
+    proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
 
-    packages, build_status = init_stage("spec")
+    run_id = build_db.start_run(
+        target,
+        DISTRO,
+        fedora_version,
+        ARCH,
+        package_filter=os.environ.get("PACKAGE", ""),
+    )
+
+    packages = prepare_stage("spec", target, proceed)
     all_packages = get_packages()
 
     failed = False
     print("\n=== spec ===")
     for pkg, meta in packages.items():
-        if not run_for_package(pkg, meta, all_packages, build_status, fedora_version):
+        if not run_for_package(pkg, meta, all_packages, fedora_version, target, run_id):
             failed = True
-        save_build_status(build_status)
 
+    build_db.finish_run(run_id, "failed" if failed else "ok")
     if failed:
         sys.exit(1)
 

@@ -2,16 +2,23 @@
 """Remove mock and copr build status entries for packages.
 
 Environment variables:
-  PACKAGE  Comma-separated list of packages (optional; all packages if empty)
+  PACKAGE         Comma-separated list of packages (optional; all packages if empty)
+  FEDORA_VERSION  Fedora version to target (default: 43)
+  MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
 """
 
 import os
 import sys
 
-from lib.yaml_utils import find_package_name, get_packages, pop_build_stages
+from lib import build_db
+from lib.paths import resolve_target
+from lib.yaml_utils import find_package_name, get_packages
 
 
 def main() -> None:
+    fedora_version = os.environ.get("FEDORA_VERSION", "43")
+    target = resolve_target(fedora_version, os.environ.get("MOCK_CHROOT", ""))
+
     package_env = os.environ.get("PACKAGE", "")
     if package_env:
         all_packages = get_packages()
@@ -32,7 +39,7 @@ def main() -> None:
         print("nothing to do", file=sys.stderr)
         sys.exit(0)
 
-    affected = pop_build_stages(pkgs)
+    affected = build_db.set_force_run(pkgs, ("mock", "copr"), target)
     if affected:
         print(f"cleared mock/copr for: {', '.join(affected)}")
     else:

@@ -13,8 +13,13 @@ BUILD_LOG_DIR = LOG_DIR / "build"
 LOCAL_REPO = ROOT / "local-repo"
 TEMPLATE_DIR = ROOT / "templates"
 GITHUB_RELEASE_CACHE = ROOT / "cache" / "github-releases.json"
-BUILD_STATUS_YAML = ROOT / "build-report.yaml"
+BUILD_DB = ROOT / "build-report.db"
 SOURCES_DIR = Path.home() / "rpmbuild" / "SOURCES"
+
+# The build matrix is fedora+x86_64-only today; see docs/todo.md "Build matrix"
+# for what else needs to change before that's not true.
+DISTRO = "fedora"
+ARCH = "x86_64"
 
 
 def get_package_log_dir(pkg_name: str) -> Path:
@@ -27,3 +32,10 @@ def mock_chroot(fedora_version: str) -> str:
     if fedora_version == "rawhide":
         return "fedora-rawhide-x86_64"
     return f"fedora-{fedora_version}-x86_64"
+
+
+def resolve_target(fedora_version: str, mock_chroot_override: str = "") -> str:
+    """Return the build_db `target` key: MOCK_CHROOT override if set, else derived
+    from fedora_version. This is also the actual mock chroot name passed to `mock -r`.
+    """
+    return mock_chroot_override or mock_chroot(fedora_version)

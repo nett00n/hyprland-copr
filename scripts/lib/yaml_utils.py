@@ -1,23 +1,26 @@
-"""YAML loading/saving utilities for packages.yaml and build-report.yaml."""
+"""YAML loading/saving utilities for packages.yaml, plus build-stage boilerplate.
+
+Build state itself lives in build-report.db (see lib.build_db); the stage
+bootstrap helper here (prepare_stage) still belongs next to the packages.yaml
+loaders it composes with, same as the old init_stage() did.
+"""
 
 import os
 import sys
-import time
 from pathlib import Path
-from typing import Literal, overload
 
 import yaml
 
+from . import build_db
 from .paths import (
     BUILD_LOG_DIR,
-    BUILD_STATUS_YAML,
     GROUPS_YAML,
     PACKAGES_YAML,
     REPO_YAML,
 )
 from .yaml_config import DEFAULT as DEFAULT_YAML_CONFIG
 
-STAGES = ["validate", "spec", "vendor", "srpm", "mock", "copr"]
+STAGES = build_db.STAGES
 
 
 def find_package_name(packages: dict, query: str) -> str | None:
@@ -176,104 +179,39 @@ def apply_os_overrides(pkg: dict, fedora_version: str) -> dict:
     return result
 
 
-def load_build_status(path: Path = BUILD_STATUS_YAML) -> dict:
-    """Load build-report.yaml or return empty structure."""
-    if path.exists():
-        try:
-            data = yaml.safe_load(path.read_text())
-            if not isinstance(data, dict):
-                # Non-dict content, use default structure
-                data = {}
-        except yaml.YAMLError as e:
-            sys.exit(f"error: failed to parse {path}: {e}")
-    else:
-        data = {}
-
-    # Normalize: ensure stages key exists
-    if "stages" not in data:
-        data["stages"] = {s: {} for s in STAGES}
-
-    return data
-
-
 def dump_yaml_pretty(data: dict) -> str:
     """Dump YAML data in pretty format matching yamllint defaults."""
     return DEFAULT_YAML_CONFIG.dump(data)
 
 
-def save_build_status(status: dict, path: Path = BUILD_STATUS_YAML) -> None:
-    """Save build-report.yaml, creating parent dirs if needed."""
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(dump_yaml_pretty(status))
+def prepare_stage(
+    stage_name: str,
+    target: str,
+    proceed: bool,
+    include_all: bool = False,
+) -> dict | tuple[dict, dict]:
+    """Resolve PACKAGE/SKIP_PACKAGES env filters; clear this stage's DB rows
+    for the filtered package set, unless resuming (PROCEED_BUILD=true).
 
+    Returns `packages`, or `(all_packages, packages)` if include_all=True.
 
-def pop_build_stages(
-    pkgs: list[str] | set[str],
-    stages: tuple[str, ...] = ("mock", "copr"),
-) -> list[str]:
-    """Set force_run: true flag for pkgs in given stages in build-report.yaml.
-
-    Returns sorted list of package names that were affected.
-    """
-    build_status = load_build_status()
-    status_stages = build_status.get("stages", {})
-    affected: set[str] = set()
-    for stage in stages:
-        if stage not in status_stages:
-            status_stages[stage] = {}
-        stage_data = status_stages[stage]
-        for pkg in pkgs:
-            if pkg in stage_data:
-                stage_data[pkg]["force_run"] = True
-                affected.add(pkg)
-    save_build_status(build_status)
-    return sorted(affected)
-
-
-def now_epoch() -> int:
-    """Return current Unix timestamp as integer."""
-    return int(time.time())
-
-
-@overload
-def init_stage(
-    stage_name: str, include_all: Literal[False] = False
-) -> tuple[dict, dict]: ...
-
-
-@overload
-def init_stage(
-    stage_name: str, include_all: Literal[True]
-) -> tuple[dict, dict, dict]: ...
-
-
-def init_stage(  # type: ignore
-    stage_name: str, include_all: bool = False
-) -> tuple[dict, dict] | tuple[dict, dict, dict]:
-    """Initialize a stage with standard boilerplate.
-
-    Returns (packages, build_status) after filtering and initialization.
-    If include_all=True, returns (all_packages, packages, build_status).
+    Scoped to `packages` -- unlike the old init_stage(), which wiped the
+    WHOLE stage regardless of the PACKAGE filter (see docs/bugs.md/#8).
     """
     package_env = os.environ.get("PACKAGE", "")
     skip_env = os.environ.get("SKIP_PACKAGES", "")
-    proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
 
     all_packages = get_packages()
     packages = filter_packages(all_packages, package_env)
     packages = skip_packages(packages, skip_env)
 
     BUILD_LOG_DIR.mkdir(parents=True, exist_ok=True)
-    build_status = load_build_status()
-    # Only clear stage if NOT resuming (PROCEED_BUILD=false)
     if not proceed:
-        build_status.setdefault("stages", {})[stage_name] = {}
-    else:
-        build_status.setdefault("stages", {}).setdefault(stage_name, {})
+        build_db.clear_stage(stage_name, target, packages=list(packages))
 
     if include_all:
-        return all_packages, packages, build_status
-    return packages, build_status
+        return all_packages, packages
+    return packages
 
 
 def write_yaml_preserving_comments(
@@ -335,7 +273,7 @@ def write_yaml_preserving_comments(
     return changed
 
 
-def update_package_releases(packages: dict, build_status: dict) -> dict[str, int]:
+def update_package_releases(packages: dict, target: str) -> dict[str, int]:
     """Auto-increment or reset release values for packages.
 
     Pre-build step, called in topological order (packages dict preserves order).
@@ -354,7 +292,7 @@ def update_package_releases(packages: dict, build_status: dict) -> dict[str, int
 
     Args:
         packages: Dict of {pkg_name: pkg_dict}, in topological order
-        build_status: Current build status dict with stored hashes
+        target: build_db target key (mock chroot) to read stored state from
 
     Returns:
         Dict of {pkg_name: new_release} for packages that were updated
@@ -373,18 +311,15 @@ def update_package_releases(packages: dict, build_status: dict) -> dict[str, int
         content_hash = _content_hash(pkg_dict)
 
         # Read stored state
-        last_entry = build_status.get("stages", {}).get("spec", {}).get(pkg_name, {})
+        last_entry = build_db.get_stage(pkg_name, "spec", target) or {}
         stored_hashes = last_entry.get("hashes", {})
         last_content_hash = stored_hashes.get("content")
         last_version = stored_hashes.get("package_version")
 
         # Check for force_run in any stage
         force_run = any(
-            build_status.get("stages", {})
-            .get(stage, {})
-            .get(pkg_name, {})
-            .get("force_run", False)
-            for stage in ["validate", "spec", "vendor", "srpm", "mock", "copr"]
+            (build_db.get_stage(pkg_name, stage, target) or {}).get("force_run", False)
+            for stage in STAGES
         )
 
         # Check if any dependency was marked for rebuild

@@ -9,6 +9,7 @@ Must be run inside the rpm toolbox container (invoked via Makefile).
 Environment variables:
   PACKAGE         Validate only this package (optional, comma-separated)
   FEDORA_VERSION  Fedora version to target (default: 43)
+  MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   SKIP_PACKAGES   Skip these packages (optional, comma-separated)
 """
 
@@ -16,8 +17,9 @@ import logging
 import os
 import sys
 
+from lib import build_db
 from lib.config import setup_logging
-from lib.paths import ROOT
+from lib.paths import ARCH, DISTRO, ROOT, resolve_target
 from lib.reporting import status
 from lib.validation import (
     validate_gitmodules,
@@ -25,33 +27,27 @@ from lib.validation import (
     validate_no_duplicate_urls,
     validate_package,
 )
-from lib.yaml_utils import (
-    apply_os_overrides,
-    init_stage,
-    save_build_status,
-)
+from lib.yaml_utils import apply_os_overrides, prepare_stage
 
 
 def run_for_package(
     pkg: str,
     meta: dict,
     all_packages: dict,
-    build_status: dict,
     fedora_version: str,
+    target: str,
+    run_id: int,
 ) -> bool:
     """Validate a single package. Return True if OK or skipped, False if failed.
 
-    Updates build_status["stages"]["validate"][pkg] in-place.
-    Does not call save_build_status().
+    Writes the validate stage row for `pkg`.
     """
     resolved = apply_os_overrides(meta, fedora_version)
     if resolved.get("_skip"):
         status("validate", pkg, "skip")
-        build_status["stages"]["validate"][pkg] = {
-            "state": "skipped",
-            "force_run": False,
-            "reason": "config: skip",
-        }
+        build_db.set_stage(
+            pkg, "validate", target, run_id, "skipped", reason="config: skip"
+        )
         return True
 
     print(f"  [RUN]  validate: {pkg}", flush=True)
@@ -68,20 +64,23 @@ def run_for_package(
     for w in warnings:
         print(f"    warn: {w}")
 
-    build_status["stages"]["validate"][pkg] = {
-        "state": state,
-        "errors": len(errors),
-        "warnings": len(warnings),
-        "force_run": False,
-    }
+    build_db.set_stage(
+        pkg,
+        "validate",
+        target,
+        run_id,
+        state,
+        errors=len(errors),
+        warnings=len(warnings),
+    )
     return state == "success"
 
 
-def run_global_checks(all_packages: dict, build_status: dict) -> bool:
+def run_global_checks(all_packages: dict) -> bool:
     """Run global validation checks (group membership and .gitmodules).
 
-    Updates build_status["stages"]["validate"] in-place.
-    Returns True if all checks pass, False if any failed.
+    Returns True if all checks pass, False if any failed. Prints results;
+    does not write any stage row (these checks aren't per-package).
     """
     failed = False
     total_errors = 0
@@ -130,16 +129,29 @@ def run_global_checks(all_packages: dict, build_status: dict) -> bool:
 
 def main() -> None:
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
+    mock_chroot_override = os.environ.get("MOCK_CHROOT", "")
+    target = resolve_target(fedora_version, mock_chroot_override)
+    proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
 
-    all_packages, packages, build_status = init_stage("validate", include_all=True)
+    run_id = build_db.start_run(
+        target,
+        DISTRO,
+        fedora_version,
+        ARCH,
+        package_filter=os.environ.get("PACKAGE", ""),
+    )
+
+    all_packages, packages = prepare_stage(
+        "validate", target, proceed, include_all=True
+    )
 
     print("\n=== validate ===")
 
     for pkg, meta in packages.items():
-        run_for_package(pkg, meta, all_packages, build_status, fedora_version)
+        run_for_package(pkg, meta, all_packages, fedora_version, target, run_id)
 
-    global_ok = run_global_checks(all_packages, build_status)
-    save_build_status(build_status)
+    global_ok = run_global_checks(all_packages)
+    build_db.finish_run(run_id, "ok" if global_ok else "failed")
 
     if not global_ok:
         sys.exit(1)

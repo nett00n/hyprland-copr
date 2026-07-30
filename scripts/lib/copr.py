@@ -10,6 +10,7 @@ Provides functions for:
 import re
 import sys
 
+from lib import build_db
 from lib.subprocess_utils import run_cmd
 
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{}/"
@@ -72,25 +73,25 @@ def validate_copr_repo(copr_repo: str) -> bool:
     return bool(re.match(r"^[\w-]+/[\w.-]+$", copr_repo))
 
 
-def poll_copr_status(stages: dict, packages_list: list[str]) -> bool:
+def poll_copr_status(target: str, packages_list: list[str]) -> bool:
     """Poll COPR status for packages with non-terminal states using copr-cli.
 
-    Queries the status of pending builds and updates their state in the
-    provided stages dict. Skips packages that don't have a build_id or are
+    Queries the status of pending builds and updates their state in
+    build-report.db (touching only the `state` column -- see
+    build_db.update_state). Skips packages that don't have a build_id or are
     already in terminal states (success/failed).
 
     Args:
-        stages: build_status["stages"] dict with copr stage entries
+        target: build_db target key (mock chroot) to read/write copr rows for
         packages_list: List of package names to check
 
     Returns:
         True if any status was updated, False otherwise
     """
     updated = False
-    copr_stage = stages.get("copr") or {}
 
     for pkg in packages_list:
-        entry = copr_stage.get(pkg, {})
+        entry = build_db.get_stage(pkg, "copr", target) or {}
         build_id = entry.get("build_id")
         state = entry.get("state")
 
@@ -116,7 +117,7 @@ def poll_copr_status(stages: dict, packages_list: list[str]) -> bool:
 
         # Update if status changed
         if new_state and new_state != state:
-            entry["state"] = new_state
+            build_db.update_state(pkg, "copr", target, new_state)
             updated = True
 
     return updated
