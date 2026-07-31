@@ -8,9 +8,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import pytest
 
+from lib import build_db, paths
+
 # Import gen-report as a module
 import importlib
 gen_report = importlib.import_module("gen-report")
+
+TARGET = "fedora-43-x86_64"  # matches default FEDORA_VERSION="43" gen-report.py falls back to
 
 
 class TestGenReportArgumentParsing:
@@ -326,13 +330,21 @@ class TestGenReportGetLatestBlog:
 class TestGenReportMain:
     """Test main() function integration."""
 
+    @pytest.fixture(autouse=True)
+    def _build_db_path(self, tmp_path, monkeypatch):
+        """Point lib.paths.BUILD_DB at a fresh tmp file and close the cached connection after."""
+        monkeypatch.setattr(paths, "BUILD_DB", tmp_path / "build-report.db")
+        yield
+        build_db.close()
+
+    def _seed_run(self, target: str = TARGET) -> None:
+        build_db.start_run(target, "fedora", "43", "x86_64")
+
     def test_main_writes_to_stdout_by_default(self, tmp_path, capsys):
         """Should print to stdout when --output not provided."""
-        build_status_yaml = tmp_path / "build-report.yaml"
-        build_status_yaml.write_text("run: {}\nstages: {}")
+        self._seed_run()
 
-        with patch.object(gen_report, "BUILD_STATUS_YAML", build_status_yaml), \
-             patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
              patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
              patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
              patch.object(gen_report, "ROOT", tmp_path), \
@@ -354,12 +366,10 @@ class TestGenReportMain:
 
     def test_main_writes_to_file_with_output_arg(self, tmp_path):
         """Should write to file when --output provided."""
-        build_status_yaml = tmp_path / "build-report.yaml"
-        build_status_yaml.write_text("run: {}\nstages: {}")
+        self._seed_run()
         output_file = tmp_path / "README.md"
 
-        with patch.object(gen_report, "BUILD_STATUS_YAML", build_status_yaml), \
-             patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
              patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
              patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
              patch.object(gen_report, "ROOT", tmp_path), \
@@ -380,9 +390,9 @@ class TestGenReportMain:
         assert output_file.read_text() == "Generated output"
 
     def test_main_exits_when_build_status_missing(self, tmp_path):
-        """Should exit with error when build-report.yaml missing."""
-        with patch.object(gen_report, "BUILD_STATUS_YAML", tmp_path / "nonexistent.yaml"), \
-             patch("sys.argv", ["gen-report.py"]), \
+        """Should exit with error when no run has ever been recorded for this target."""
+        # No _seed_run() call -- empty DB, mirrors the old "file missing" case.
+        with patch("sys.argv", ["gen-report.py"]), \
              pytest.raises(SystemExit) as exc_info:
             gen_report.main()
 
@@ -390,11 +400,9 @@ class TestGenReportMain:
 
     def test_main_selects_correct_template(self, tmp_path):
         """Should select correct template based on format."""
-        build_status_yaml = tmp_path / "build-report.yaml"
-        build_status_yaml.write_text("run: {}\nstages: {}")
+        self._seed_run()
 
-        with patch.object(gen_report, "BUILD_STATUS_YAML", build_status_yaml), \
-             patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
              patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
              patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
              patch.object(gen_report, "ROOT", tmp_path), \
@@ -414,40 +422,11 @@ class TestGenReportMain:
             # Should request full-report.md.j2 template
             mock_jinja_env.get_template.assert_called_with("full-report.md.j2")
 
-    def test_main_saves_updated_copr_status(self, tmp_path):
-        """Should save build status when COPR status was updated."""
-        build_status_yaml = tmp_path / "build-report.yaml"
-        build_status_yaml.write_text("run: {}\nstages: {}")
-
-        with patch.object(gen_report, "BUILD_STATUS_YAML", build_status_yaml), \
-             patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch.object(gen_report, "save_build_status") as mock_save, \
-             patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch("sys.argv", ["gen-report.py"]):
-
-            mock_poll.return_value = True  # Status was updated
-            mock_template = MagicMock()
-            mock_template.render.return_value = ""
-            mock_jinja_env = MagicMock()
-            mock_jinja_env.get_template.return_value = mock_template
-            mock_env.return_value = mock_jinja_env
-
-            gen_report.main()
-
-            # Should have called save_build_status
-            assert mock_save.called
-
     def test_main_polls_copr_by_default(self, tmp_path):
         """Should poll COPR status by default."""
-        build_status_yaml = tmp_path / "build-report.yaml"
-        build_status_yaml.write_text("run: {}\nstages: {copr: {}}")
+        self._seed_run()
 
-        with patch.object(gen_report, "BUILD_STATUS_YAML", build_status_yaml), \
-             patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
              patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
              patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
              patch.object(gen_report, "ROOT", tmp_path), \
@@ -469,11 +448,9 @@ class TestGenReportMain:
 
     def test_main_skips_copr_poll_when_flag_set(self, tmp_path):
         """Should skip COPR polling when --skip-copr-poll is set."""
-        build_status_yaml = tmp_path / "build-report.yaml"
-        build_status_yaml.write_text("run: {}\nstages: {copr: {}}")
+        self._seed_run()
 
-        with patch.object(gen_report, "BUILD_STATUS_YAML", build_status_yaml), \
-             patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
              patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
              patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
              patch.object(gen_report, "ROOT", tmp_path), \
@@ -494,12 +471,10 @@ class TestGenReportMain:
 
     def test_main_with_output_and_skip_copr_poll(self, tmp_path):
         """Should write to file and skip COPR polling when both flags set."""
-        build_status_yaml = tmp_path / "build-report.yaml"
-        build_status_yaml.write_text("run: {}\nstages: {copr: {}}")
+        self._seed_run()
         output_file = tmp_path / "report.md"
 
-        with patch.object(gen_report, "BUILD_STATUS_YAML", build_status_yaml), \
-             patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
              patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
              patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
              patch.object(gen_report, "ROOT", tmp_path), \
@@ -521,30 +496,31 @@ class TestGenReportMain:
             # Should NOT have polled COPR
             assert not mock_poll.called
 
-    def test_main_copr_update_not_saved_when_skipped(self, tmp_path):
-        """Should not save build_status when COPR poll is skipped even if status exists."""
-        build_status_yaml = tmp_path / "build-report.yaml"
-        build_status_yaml.write_text("run: {}\nstages: {copr: {pkg1: {build_id: 123}}}")
+    def test_main_reloads_stage_map_when_copr_status_updated(self, tmp_path):
+        """After poll_copr_status reports a change, main() re-reads from the DB."""
+        self._seed_run()
+        run_id = build_db.start_run(TARGET, "fedora", "43", "x86_64")
+        build_db.set_stage("pkg1", "copr", TARGET, run_id, "unknown", build_id=123)
 
-        with patch.object(gen_report, "BUILD_STATUS_YAML", build_status_yaml), \
-             patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
              patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
              patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
              patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch.object(gen_report, "save_build_status") as mock_save, \
              patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch("sys.argv", ["gen-report.py", "--skip-copr-poll"]):
+             patch("sys.argv", ["gen-report.py"]):
 
-            mock_template = MagicMock()
-            mock_template.render.return_value = ""
-            mock_jinja_env = MagicMock()
-            mock_jinja_env.get_template.return_value = mock_template
-            mock_env.return_value = mock_jinja_env
+            def fake_poll(target, packages_list):
+                build_db.update_state("pkg1", "copr", target, "success")
+                return True
 
-            gen_report.main()
+            with patch.object(gen_report, "poll_copr_status", side_effect=fake_poll):
+                mock_template = MagicMock()
+                mock_template.render.return_value = ""
+                mock_jinja_env = MagicMock()
+                mock_jinja_env.get_template.return_value = mock_template
+                mock_env.return_value = mock_jinja_env
 
-            # Should NOT have called poll_copr_status
-            assert not mock_poll.called
-            # Should NOT have saved build_status
-            assert not mock_save.called
+                gen_report.main()
+
+        # The updated state must have made it into the DB (and thus into the render).
+        assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "success"

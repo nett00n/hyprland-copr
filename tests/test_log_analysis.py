@@ -12,12 +12,16 @@ from lib.log_analysis import (
     _analyze_srpm_log,
     _analyze_mock_log,
     _analyze_mock_build_log,
+    _analyze_copr_log,
+    _analyze_copr_chroot_summary,
+    _analyze_copr_chroot_logs,
     _suggest_providers,
     _dnf_whatprovides,
     _dnf_search,
     _print_stage_issues,
     report_srpm_failures,
     report_mock_failures,
+    report_copr_failures,
 )
 
 
@@ -657,6 +661,31 @@ class TestAnalyzeMockBuildLog:
         assert len(bad_exit) > 0
         assert "File not found" in bad_exit[0][2]
 
+    def test_bad_exit_status_with_compiler_error_context(self, tmp_path):
+        """Bad exit status looks back far enough to find a compiler diagnostic.
+
+        Regression: the lookback keyword list matched bare "error:" and
+        "fatal error:" but not the mid-line "path:line:col: error: msg" shape
+        gcc/g++ emit, so a %build failure caused purely by a compile error
+        (no separate "gmake: ***" summary line close enough) fell through to
+        the generic "check previous lines" message instead of naming the
+        actual error.
+        """
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "[ 43%] Building CXX object CMakeFiles/hyprland_lib.dir/src/helpers/MiscFunctions.cpp.o\n"
+            "src/helpers/MiscFunctions.cpp:841:37: error: 'starts_with' is not a member of 'std::ranges'\n"
+            "gmake[2]: *** [CMakeFiles/hyprland_lib.dir/build.make:2787: CMakeFiles/hyprland_lib.dir/src/helpers/MiscFunctions.cpp.o] Error 1\n"
+            "gmake[1]: *** [CMakeFiles/Makefile2:1090: CMakeFiles/hyprland_lib.dir/all] Error 2\n"
+            "gmake: *** [Makefile:169: all] Error 2\n"
+            "error: Bad exit status from /var/tmp/rpm-tmp.kXTiCt (%build)\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        bad_exit = [i for i in issues if "failed during build" in i[2]]
+        assert len(bad_exit) == 1
+        assert "'starts_with' is not a member of 'std::ranges'" in bad_exit[0][2]
+        assert "check previous lines" not in bad_exit[0][2]
+
     def test_bad_exit_status_with_missing_tool_context(self, tmp_path):
         """Bad exit status includes missing tool context."""
         log_file = tmp_path / "21-mock-build.log"
@@ -954,6 +983,122 @@ class TestPrintStageIssues:
         assert captured.out.count("Post-build analysis:") == 1
 
 
+class TestAnalyzeCoprLog:
+    """Test _analyze_copr_log (-30-copr.log)."""
+
+    def test_synchronous_build_failure_detected(self, tmp_path):
+        """Real-world fixture: synchronous copr-cli watched the build to failure."""
+        log_file = tmp_path / "30-copr.log"
+        log_file.write_text(
+            "$ copr-cli build nett00n/hyprland '/root/rpmbuild/SRPMS/hyprland-git.src.rpm'\n"
+            "Uploading package /root/rpmbuild/SRPMS/hyprland-git.src.rpm\n"
+            "Build was added to hyprland:\n"
+            "  https://copr.fedorainfracloud.org/coprs/build/10798066\n"
+            "Created builds: 10798066\n"
+            "Watching build(s): (this may be safely interrupted)\n"
+            "  13:11:13 Build 10798066: failed\n"
+            "\n"
+            "Build error: Build(s) 10798066 failed.\n"
+            "[exit: 4]\n"
+        )
+        issues = _analyze_copr_log(log_file)
+        assert len(issues) == 1
+        lineno, raw_line, msg, dep, method = issues[0]
+        assert dep == "10798066"
+        assert "10798066" in msg
+        assert "copr.fedorainfracloud.org/coprs/build/10798066" in msg
+
+    def test_clean_submission_no_issues(self, tmp_path):
+        """Async submission log (no failure watched) reports nothing."""
+        log_file = tmp_path / "30-copr.log"
+        log_file.write_text(
+            "$ copr-cli build --nowait nett00n/hyprland '/root/rpmbuild/SRPMS/pkg.src.rpm'\n"
+            "Uploading package /root/rpmbuild/SRPMS/pkg.src.rpm\n"
+            "Build was added to hyprland:\n"
+            "  https://copr.fedorainfracloud.org/coprs/build/123\n"
+            "Created builds: 123\n"
+            "[exit: 0]\n"
+        )
+        assert _analyze_copr_log(log_file) == []
+
+    def test_nonexistent_log_file(self, tmp_path):
+        """Nonexistent log file returns empty list."""
+        assert _analyze_copr_log(tmp_path / "nonexistent.log") == []
+
+
+class TestAnalyzeCoprChrootSummary:
+    """Test _analyze_copr_chroot_summary (-30-copr-chroots.log)."""
+
+    def test_mixed_results_flagged(self, tmp_path):
+        """Some chroots failed, others succeeded -- the actionable case."""
+        log_file = tmp_path / "30-copr-chroots.log"
+        log_file.write_text(
+            "fedora-44-x86_64 succeeded https://download.example.com/f44x86/\n"
+            "fedora-44-aarch64 succeeded https://download.example.com/f44aarch/\n"
+            "fedora-rawhide-x86_64 succeeded https://download.example.com/rawx86/\n"
+            "fedora-rawhide-aarch64 succeeded https://download.example.com/rawaarch/\n"
+            "fedora-43-x86_64 failed https://download.example.com/f43x86/\n"
+            "fedora-43-aarch64 failed https://download.example.com/f43aarch/\n"
+        )
+        issues = _analyze_copr_chroot_summary(log_file)
+        assert len(issues) == 1
+        msg = issues[0][2]
+        assert "fedora-43-x86_64" in msg
+        assert "fedora-43-aarch64" in msg
+        assert "4 succeeded" in msg
+        assert "os_overrides" in msg
+
+    def test_all_failed_no_mismatch_note(self, tmp_path):
+        """Every chroot failed -- nothing chroot-specific to call out."""
+        log_file = tmp_path / "30-copr-chroots.log"
+        log_file.write_text(
+            "fedora-44-x86_64 failed https://download.example.com/f44/\n"
+            "fedora-43-x86_64 failed https://download.example.com/f43/\n"
+        )
+        assert _analyze_copr_chroot_summary(log_file) == []
+
+    def test_all_succeeded_no_issues(self, tmp_path):
+        """Every chroot succeeded -- nothing to report."""
+        log_file = tmp_path / "30-copr-chroots.log"
+        log_file.write_text(
+            "fedora-44-x86_64 succeeded https://download.example.com/f44/\n"
+        )
+        assert _analyze_copr_chroot_summary(log_file) == []
+
+    def test_nonexistent_log_file(self, tmp_path):
+        """Nonexistent log file (no failure was ever fetched) returns empty list."""
+        assert _analyze_copr_chroot_summary(tmp_path / "nonexistent.log") == []
+
+
+class TestAnalyzeCoprChrootLogs:
+    """Test _analyze_copr_chroot_logs (31-copr-<chroot>.log, per package dir)."""
+
+    def test_reuses_mock_build_analyzer_per_chroot(self, tmp_path):
+        """Each 31-copr-<chroot>.log is parsed by _analyze_mock_build_log."""
+        pkg_dir = tmp_path / "Hyprland-git"
+        pkg_dir.mkdir()
+        (pkg_dir / "31-copr-fedora-43-x86_64.log").write_text(
+            "src/helpers/MiscFunctions.cpp:841:37: error: 'starts_with' is not a member of 'std::ranges'\n"
+            "error: Bad exit status from /var/tmp/rpm-tmp.kXTiCt (%build)\n"
+        )
+        (pkg_dir / "31-copr-fedora-44-x86_64.log").write_text("")  # succeeded, no issues
+
+        results = _analyze_copr_chroot_logs(pkg_dir)
+
+        assert list(results.keys()) == ["fedora-43-x86_64"]
+        assert any("starts_with" in msg for _, _, msg, _, _ in results["fedora-43-x86_64"])
+
+    def test_no_chroot_logs_returns_empty(self, tmp_path):
+        """Package dir with no 31-copr-*.log files (nothing fetched)."""
+        pkg_dir = tmp_path / "pkg"
+        pkg_dir.mkdir()
+        assert _analyze_copr_chroot_logs(pkg_dir) == {}
+
+    def test_nonexistent_dir_returns_empty(self, tmp_path):
+        """Package log dir doesn't exist at all."""
+        assert _analyze_copr_chroot_logs(tmp_path / "nonexistent") == {}
+
+
 class TestReportFailures:
     """Test report_srpm_failures and report_mock_failures functions."""
 
@@ -984,3 +1129,43 @@ class TestReportFailures:
 
         report_mock_failures(packages, log_dir)
         # Should complete without error
+
+    def test_report_copr_failures_iterates_packages(self, tmp_path, capsys):
+        """Should process all packages, including any fetched chroot logs."""
+        packages = {"pkg1": {}, "pkg2": {}}
+        log_dir = tmp_path / "logs"
+        log_dir.mkdir()
+        (log_dir / "pkg1").mkdir()
+        (log_dir / "pkg2").mkdir()
+        (log_dir / "pkg1" / "30-copr.log").write_text("")
+        (log_dir / "pkg2" / "30-copr.log").write_text("")
+
+        report_copr_failures(packages, log_dir)
+        # Should complete without error
+
+    def test_report_copr_failures_prints_chroot_mismatch_before_build_detail(
+        self, tmp_path, capsys
+    ):
+        """The chroot summary note should appear before per-chroot compile errors."""
+        packages = {"Hyprland-git": {}}
+        log_dir = tmp_path / "logs"
+        pkg_dir = log_dir / "Hyprland-git"
+        pkg_dir.mkdir(parents=True)
+        (pkg_dir / "30-copr.log").write_text(
+            "Build error: Build(s) 10798066 failed.\n[exit: 4]\n"
+        )
+        (pkg_dir / "30-copr-chroots.log").write_text(
+            "fedora-44-x86_64 succeeded https://download.example.com/f44/\n"
+            "fedora-43-x86_64 failed https://download.example.com/f43/\n"
+        )
+        (pkg_dir / "31-copr-fedora-43-x86_64.log").write_text(
+            "src/helpers/MiscFunctions.cpp:841:37: error: 'starts_with' is not a member of 'std::ranges'\n"
+            "error: Bad exit status from /var/tmp/rpm-tmp.kXTiCt (%build)\n"
+        )
+
+        report_copr_failures(packages, log_dir)
+
+        out = capsys.readouterr().out
+        assert "failed on fedora-43-x86_64 only" in out
+        assert "starts_with" in out
+        assert out.index("failed on fedora-43-x86_64 only") < out.index("starts_with")

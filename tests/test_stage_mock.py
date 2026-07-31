@@ -3,7 +3,7 @@
 Nothing previously removed an old NVR from local-repo/: every mock rebuild
 only ever added a file, so e.g. hyprutils-0.13.1 could sit next to 0.14.0
 forever (see docs/bugs.md). prune_local_repo() keeps only the newest NVR per
-(name, arch).
+(name, arch), and now also drops the matching artifact row.
 """
 
 import importlib
@@ -11,10 +11,29 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+
+from lib import build_db, paths
 
 # Load stage-mock.py module (has hyphen, can't import normally)
 stage_mock = importlib.import_module("scripts.stage-mock")
+
+TARGET = "fedora-44-x86_64"
+
+
+@pytest.fixture(autouse=True)
+def build_db_path(tmp_path, monkeypatch):
+    """Point lib.paths.BUILD_DB at a fresh tmp file and close the cached connection after.
+
+    prune_local_repo() now calls build_db.delete_artifact() -- without this,
+    every test in this file would touch the real repo-root build-report.db.
+    """
+    db_path = tmp_path / "isolated-build-report.db"
+    monkeypatch.setattr(paths, "BUILD_DB", db_path)
+    yield db_path
+    build_db.close()
 
 
 def _fake_rpm_query(evr_by_name_arch: dict[tuple[str, str], str]):
@@ -67,6 +86,30 @@ class TestPruneLocalRepo:
         assert removed is True
         assert not old.exists()
         assert new.exists()
+
+    def test_removed_file_drops_artifact_row(self, tmp_path, monkeypatch):
+        """Pruning a stale RPM also removes its artifact ledger row."""
+        monkeypatch.setattr(stage_mock, "LOCAL_REPO", tmp_path)
+        old = tmp_path / "hyprutils@x86_64__old.rpm"
+        new = tmp_path / "hyprutils@x86_64__new.rpm"
+        old.write_text("old")
+        new.write_text("new")
+        build_db.record_artifact(str(old), "repo", "rpm", "hyprutils", TARGET, "0.13.1-4.fc44")
+        build_db.record_artifact(str(new), "repo", "rpm", "hyprutils", TARGET, "0.14.0-1.fc44")
+
+        fake = _fake_rpm_query({("hyprutils", "x86_64"): "0.13.1-4"})
+
+        def fake_evr(rpm_path: Path) -> str:
+            version_release = "0.13.1-4" if rpm_path.name == old.name else "0.14.0-1"
+            return f"0:{version_release}"
+
+        with patch.object(stage_mock, "_rpm_query", side_effect=fake):
+            with patch.object(stage_mock, "_evr", side_effect=fake_evr):
+                stage_mock.prune_local_repo()
+
+        remaining_paths = {a["path"] for a in build_db.artifacts(package="hyprutils")}
+        assert str(old) not in remaining_paths
+        assert str(new) in remaining_paths
 
     def test_no_duplicates_removes_nothing(self, tmp_path, monkeypatch):
         monkeypatch.setattr(stage_mock, "LOCAL_REPO", tmp_path)
@@ -181,11 +224,14 @@ class TestUpdateLocalRepo:
 
         with patch.object(stage_mock, "prune_local_repo", return_value=False):
             with patch.object(stage_mock, "regenerate_repo_metadata") as mock_regen:
-                stage_mock.update_local_repo("fedora-44-x86_64")
+                copied = stage_mock.update_local_repo("fedora-44-x86_64")
 
         assert (local_repo / "hyprutils-0.14.0-1.fc44.x86_64.rpm").exists()
         assert not (local_repo / "hyprutils-0.14.0-1.fc44.src.rpm").exists()
         mock_regen.assert_called_once()
+        # Returns the absolute path of the copied (non-src) RPM, for the
+        # caller to record as an artifact.
+        assert copied == [str(local_repo / "hyprutils-0.14.0-1.fc44.x86_64.rpm")]
 
     def test_regenerates_on_prune_alone(self, tmp_path, monkeypatch):
         """Even with no new RPMs copied, a pruning pass should still trigger

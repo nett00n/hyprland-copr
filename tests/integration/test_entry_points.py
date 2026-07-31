@@ -10,6 +10,11 @@ import pytest
 
 # Import using importlib to handle module names with dashes
 import importlib
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
+
+from lib import build_db, paths
+
 stage_validate = importlib.import_module("scripts.stage-validate")
 stage_spec = importlib.import_module("scripts.stage-spec")
 stage_copr = importlib.import_module("scripts.stage-copr")
@@ -20,48 +25,58 @@ run_global_checks = stage_validate.run_global_checks
 main = stage_validate.main
 spec_run_for_package = stage_spec.run_for_package
 
+TARGET = "fedora-44-x86_64"
+
+
+@pytest.fixture(autouse=True)
+def build_db_path(tmp_path, monkeypatch):
+    """Point lib.paths.BUILD_DB at a fresh tmp file and close the cached connection after."""
+    db_path = tmp_path / "build-report.db"
+    monkeypatch.setattr(paths, "BUILD_DB", db_path)
+    yield db_path
+    build_db.close()
+
+
+@pytest.fixture
+def run_id():
+    return build_db.start_run(TARGET, "fedora", "44", "x86_64")
+
 
 class TestStageValidate:
     """Tests for stage-validate.py entry point."""
 
-    def test_validate_run_for_package_skip(self, tmp_path):
+    def test_validate_run_for_package_skip(self, run_id):
         """Test that skipped packages are marked correctly."""
         pkg = "test-pkg"
         meta = {"_skip": True}
         all_packages = {}
-        build_status = {"stages": {"validate": {}}}
 
-        result = validate_run_for_package(
-            pkg, meta, all_packages, build_status, "43"
-        )
+        result = validate_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
 
         assert result is True
-        assert build_status["stages"]["validate"][pkg]["state"] == "skipped"
+        assert build_db.get_stage(pkg, "validate", TARGET)["state"] == "skipped"
 
-    def test_validate_run_for_package_success(self):
+    def test_validate_run_for_package_success(self, run_id):
         """Test successful package validation."""
         pkg = "test-pkg"
         meta = {"name": pkg}
         all_packages = {}
-        build_status = {"stages": {"validate": {}}}
 
         with patch.object(stage_validate, "validate_package") as mock_validate:
             mock_validate.return_value = ([], [])  # No errors or warnings
 
-            result = validate_run_for_package(
-                pkg, meta, all_packages, build_status, "43"
-            )
+            result = validate_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
 
         assert result is True
-        assert build_status["stages"]["validate"][pkg]["state"] == "success"
-        assert build_status["stages"]["validate"][pkg]["errors"] == 0
+        entry = build_db.get_stage(pkg, "validate", TARGET)
+        assert entry["state"] == "success"
+        assert entry["errors"] == 0
 
-    def test_validate_run_for_package_with_errors(self):
+    def test_validate_run_for_package_with_errors(self, run_id):
         """Test package validation with errors."""
         pkg = "bad-pkg"
         meta = {"name": pkg}
         all_packages = {}
-        build_status = {"stages": {"validate": {}}}
 
         errors = ["Error 1", "Error 2"]
         warnings = ["Warning 1"]
@@ -69,68 +84,63 @@ class TestStageValidate:
         with patch.object(stage_validate, "validate_package") as mock_validate:
             mock_validate.return_value = (errors, warnings)
 
-            result = validate_run_for_package(
-                pkg, meta, all_packages, build_status, "43"
-            )
+            result = validate_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
 
         assert result is False
-        assert build_status["stages"]["validate"][pkg]["state"] == "failed"
-        assert build_status["stages"]["validate"][pkg]["errors"] == 2
-        assert build_status["stages"]["validate"][pkg]["warnings"] == 1
+        entry = build_db.get_stage(pkg, "validate", TARGET)
+        assert entry["state"] == "failed"
+        assert entry["errors"] == 2
+        assert entry["warnings"] == 1
 
     def test_run_global_checks_success(self):
         """Test global checks pass."""
         all_packages = {}
-        build_status = {"stages": {"validate": {}}}
 
         with patch.object(stage_validate, "validate_group_membership") as mock_group, \
              patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules:
             mock_group.return_value = ([], [])
             mock_gitmodules.return_value = ([], [])
 
-            result = run_global_checks(all_packages, build_status)
+            result = run_global_checks(all_packages)
 
         assert result is True
 
     def test_run_global_checks_with_errors(self):
         """Test global checks fail with errors."""
         all_packages = {}
-        build_status = {"stages": {"validate": {}}}
 
         with patch.object(stage_validate, "validate_group_membership") as mock_group, \
              patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules:
             mock_group.return_value = (["Group error"], [])
             mock_gitmodules.return_value = ([], [])
 
-            result = run_global_checks(all_packages, build_status)
+            result = run_global_checks(all_packages)
 
         assert result is False
 
     def test_run_global_checks_with_gitmodules_errors(self):
         """Test global checks fail when gitmodules has errors."""
         all_packages = {}
-        build_status = {"stages": {"validate": {}}}
 
         with patch.object(stage_validate, "validate_group_membership") as mock_group, \
              patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules:
             mock_group.return_value = ([], [])
             mock_gitmodules.return_value = (["Gitmodules error"], [])
 
-            result = run_global_checks(all_packages, build_status)
+            result = run_global_checks(all_packages)
 
         assert result is False
 
     def test_run_global_checks_with_warnings(self, capsys):
         """Test global checks with warnings print count."""
         all_packages = {}
-        build_status = {"stages": {"validate": {}}}
 
         with patch.object(stage_validate, "validate_group_membership") as mock_group, \
              patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules:
             mock_group.return_value = ([], ["Group warning"])
             mock_gitmodules.return_value = ([], ["Gitmodules warning"])
 
-            result = run_global_checks(all_packages, build_status)
+            result = run_global_checks(all_packages)
 
         assert result is True
         captured = capsys.readouterr()
@@ -139,38 +149,37 @@ class TestStageValidate:
     def test_run_global_checks_with_both_group_and_gitmodules_errors(self):
         """Test global checks fail when both group and gitmodules have errors."""
         all_packages = {}
-        build_status = {"stages": {"validate": {}}}
 
         with patch.object(stage_validate, "validate_group_membership") as mock_group, \
              patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules:
             mock_group.return_value = (["Group error 1"], [])
             mock_gitmodules.return_value = (["Gitmodules error 1"], [])
 
-            result = run_global_checks(all_packages, build_status)
+            result = run_global_checks(all_packages)
 
         assert result is False
 
-    def test_main_success(self):
+    def test_main_success(self, monkeypatch):
         """Test main() function with successful validation."""
-        with patch.object(stage_validate, "init_stage") as mock_init, \
+        monkeypatch.delenv("PROCEED_BUILD", raising=False)
+        with patch.object(stage_validate, "prepare_stage") as mock_prepare, \
              patch.object(stage_validate, "run_for_package") as mock_run, \
-             patch.object(stage_validate, "run_global_checks") as mock_global, \
-             patch.object(stage_validate, "save_build_status") as mock_save:
-            mock_init.return_value = ({}, {}, {"stages": {"validate": {}}})
+             patch.object(stage_validate, "run_global_checks") as mock_global:
+            mock_prepare.return_value = ({}, {})
             mock_run.return_value = True
             mock_global.return_value = True
 
             # Should not raise
             main()
 
-    def test_main_exits_on_global_check_failure(self):
+    def test_main_exits_on_global_check_failure(self, monkeypatch):
         """Test main() exits with code 1 on global check failure."""
-        with patch.object(stage_validate, "init_stage") as mock_init, \
+        monkeypatch.delenv("PROCEED_BUILD", raising=False)
+        with patch.object(stage_validate, "prepare_stage") as mock_prepare, \
              patch.object(stage_validate, "run_for_package") as mock_run, \
              patch.object(stage_validate, "run_global_checks") as mock_global, \
-             patch.object(stage_validate, "save_build_status") as mock_save, \
              pytest.raises(SystemExit) as exc_info:
-            mock_init.return_value = ({}, {}, {"stages": {"validate": {}}})
+            mock_prepare.return_value = ({}, {})
             mock_run.return_value = True
             mock_global.return_value = False
 
@@ -199,19 +208,18 @@ raise KeyboardInterrupt()
 class TestStageSpec:
     """Tests for stage-spec.py entry point."""
 
-    def test_spec_run_for_package_skip(self):
+    def test_spec_run_for_package_skip(self, run_id):
         """Test that skipped packages are marked correctly."""
         pkg = "test-pkg"
         meta = {"_skip": True}
         all_packages = {}
-        build_status = {"stages": {"spec": {}}}
 
-        result = spec_run_for_package(pkg, meta, all_packages, build_status, "43")
+        result = spec_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
 
         assert result is True
-        assert build_status["stages"]["spec"][pkg]["state"] == "skipped"
+        assert build_db.get_stage(pkg, "spec", TARGET)["state"] == "skipped"
 
-    def test_spec_run_for_package_success(self, tmp_path):
+    def test_spec_run_for_package_success(self, tmp_path, run_id):
         """Test successful spec generation."""
         pkg = "test-pkg"
         meta = {
@@ -219,7 +227,6 @@ class TestStageSpec:
             "release": 1,
         }
         all_packages = {pkg: meta}
-        build_status = {"stages": {"spec": {}}}
 
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
@@ -229,12 +236,12 @@ class TestStageSpec:
              patch.object(stage_spec, "ROOT", tmp_path):
             mock_gen.return_value = "# Generated spec"
             mock_log_dir.return_value = log_dir
-            result = spec_run_for_package(pkg, meta, all_packages, build_status, "43")
+            result = spec_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
 
         assert result is True
-        assert build_status["stages"]["spec"][pkg]["state"] == "success"
+        assert build_db.get_stage(pkg, "spec", TARGET)["state"] == "success"
 
-    def test_spec_run_for_package_failure(self, tmp_path):
+    def test_spec_run_for_package_failure(self, tmp_path, run_id):
         """Test spec generation failure."""
         pkg = "bad-pkg"
         meta = {
@@ -242,7 +249,6 @@ class TestStageSpec:
             "release": 1,
         }
         all_packages = {pkg: meta}
-        build_status = {"stages": {"spec": {}}}
 
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
@@ -252,12 +258,12 @@ class TestStageSpec:
              patch.object(stage_spec, "ROOT", tmp_path):
             mock_gen.side_effect = RuntimeError("Template error")
             mock_log_dir.return_value = log_dir
-            result = spec_run_for_package(pkg, meta, all_packages, build_status, "43")
+            result = spec_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
 
         assert result is False
-        assert build_status["stages"]["spec"][pkg]["state"] == "failed"
+        assert build_db.get_stage(pkg, "spec", TARGET)["state"] == "failed"
 
-    def test_spec_creates_log_file(self, tmp_path):
+    def test_spec_creates_log_file(self, tmp_path, run_id):
         """Test that spec generation creates a log file."""
         pkg = "test-pkg"
         meta = {
@@ -265,7 +271,6 @@ class TestStageSpec:
             "release": 1,
         }
         all_packages = {pkg: meta}
-        build_status = {"stages": {"spec": {}}}
 
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
@@ -275,13 +280,13 @@ class TestStageSpec:
              patch.object(stage_spec, "ROOT", tmp_path):
             mock_gen.return_value = "# spec content"
             mock_log_dir.return_value = log_dir
-            spec_run_for_package(pkg, meta, all_packages, build_status, "43")
+            spec_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
 
         log_file = log_dir / "00-spec.log"
         assert log_file.exists()
 
-    def test_spec_devel_subpackage(self, tmp_path):
-        """Test that devel subpackage is included when present."""
+    def test_spec_devel_subpackage(self, tmp_path, run_id):
+        """Test that has_devel is set when a devel subpackage is present."""
         pkg = "test-pkg"
         meta = {
             "version": "1.0.0",
@@ -289,7 +294,6 @@ class TestStageSpec:
             "devel": {"requires": []},  # devel subpackage
         }
         all_packages = {pkg: meta}
-        build_status = {"stages": {"spec": {}}}
 
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
@@ -299,72 +303,102 @@ class TestStageSpec:
              patch.object(stage_spec, "ROOT", tmp_path):
             mock_gen.return_value = "# spec"
             mock_log_dir.return_value = log_dir
-            spec_run_for_package(pkg, meta, all_packages, build_status, "43")
+            spec_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
 
-        assert "subpackages" in build_status["stages"]["spec"][pkg]
-        assert "devel" in build_status["stages"]["spec"][pkg]["subpackages"]
+        assert build_db.get_stage(pkg, "spec", TARGET)["has_devel"] == 1
 
 
 class TestStageCoprBlocking:
     """Tests for stage-copr.py entry point blocking logic."""
 
-    def test_copr_run_for_package_skip(self):
+    def test_copr_run_for_package_skip(self, run_id):
         """Test that skipped packages are marked correctly."""
         pkg = "test-pkg"
         meta = {"_skip": True}
-        build_status = {"stages": {"copr": {}}}
 
         result = stage_copr.run_for_package(
-            pkg, meta, build_status, "43", "nett00n/hyprland",
-            proceed=False, synchronous=False
+            pkg, meta, "43", "nett00n/hyprland", proceed=False,
+            target=TARGET, run_id=run_id, synchronous=False,
         )
 
         assert result is True
-        assert build_status["stages"]["copr"][pkg]["state"] == "skipped"
+        assert build_db.get_stage(pkg, "copr", TARGET)["state"] == "skipped"
 
-    def test_copr_blocked_by_srpm_failure(self):
+    def test_copr_blocked_by_srpm_failure(self, run_id):
         """Test COPR skipped when SRPM failed."""
         pkg = "test-pkg"
         meta = {"version": "1.0.0", "release": 1}
-        build_status = {
-            "stages": {
-                "copr": {},
-                "srpm": {pkg: {"state": "failed"}},
-                "mock": {pkg: {"state": "success"}},
-            },
-        }
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "failed")
+        build_db.set_stage(pkg, "mock", TARGET, run_id, "success")
 
         result = stage_copr.run_for_package(
-            pkg, meta, build_status, "43", "nett00n/hyprland",
-            proceed=False, synchronous=False
+            pkg, meta, "43", "nett00n/hyprland", proceed=False,
+            target=TARGET, run_id=run_id, synchronous=False,
         )
 
         assert result is True
-        assert build_status["stages"]["copr"][pkg]["state"] == "skipped"
+        assert build_db.get_stage(pkg, "copr", TARGET)["state"] == "skipped"
 
-    def test_copr_blocked_by_mock_failure(self):
+    def test_copr_blocked_by_mock_failure(self, run_id):
         """Test COPR skipped when mock failed."""
         pkg = "test-pkg"
         meta = {"version": "1.0.0", "release": 1}
-        build_status = {
-            "stages": {
-                "copr": {},
-                "srpm": {pkg: {"state": "success"}},
-                "mock": {pkg: {"state": "failed"}},
-            },
-        }
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path="/some/path.src.rpm")
+        build_db.set_stage(pkg, "mock", TARGET, run_id, "failed")
 
         result = stage_copr.run_for_package(
-            pkg, meta, build_status, "43", "nett00n/hyprland",
-            proceed=False, synchronous=False
+            pkg, meta, "43", "nett00n/hyprland", proceed=False,
+            target=TARGET, run_id=run_id, synchronous=False,
         )
 
         assert result is True
-        assert build_status["stages"]["copr"][pkg]["state"] == "skipped"
+        assert build_db.get_stage(pkg, "copr", TARGET)["state"] == "skipped"
+
+    def test_copr_sync_failure_records_build_id_and_fetches_logs(
+        self, run_id, tmp_path
+    ):
+        """Sync mode: a build that fails after submission still records the
+        build_id (copr-cli prints "Created builds: N" before it starts
+        watching) and triggers a fetch of the failed chroots' logs.
+        """
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path="/some/path.src.rpm")
+        build_db.set_stage(pkg, "mock", TARGET, run_id, "success")
+
+        stdout = (
+            "Uploading package /some/path.src.rpm\n"
+            "Build was added to hyprland:\n"
+            "Created builds: 10798066\n"
+            "Watching build(s): (this may be safely interrupted)\n"
+            "  13:11:13 Build 10798066: failed\n"
+        )
+
+        with (
+            patch.object(stage_copr, "run_cmd", return_value=(False, stdout, "")),
+            patch.object(stage_copr, "fetch_failed_chroot_logs") as mock_fetch_logs,
+            patch.object(stage_copr, "get_package_log_dir", return_value=tmp_path),
+            patch.object(stage_copr, "ROOT", tmp_path),
+        ):
+            result = stage_copr.run_for_package(
+                pkg, meta, "43", "nett00n/hyprland", proceed=False,
+                target=TARGET, run_id=run_id, synchronous=True,
+            )
+
+        assert result is False
+        entry = build_db.get_stage(pkg, "copr", TARGET)
+        assert entry["state"] == "failed"
+        assert entry["build_id"] == 10798066
+        mock_fetch_logs.assert_called_once_with(pkg, 10798066)
 
 
 class TestStageShowPlan:
     """Tests for stage-show-plan.py show_plan() function."""
+
+    def _seed_validate(self, pkg_states: dict) -> None:
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        for pkg, state in pkg_states.items():
+            build_db.set_stage(pkg, "validate", TARGET, run_id, state or "unknown")
 
     def test_show_plan_no_filter(self, capsys):
         """Test all packages shown when no PACKAGE/SKIP set."""
@@ -373,21 +407,11 @@ class TestStageShowPlan:
             "pkg-b": {"version": "2.0"},
             "pkg-c": {"version": "3.0"},
         }
-        build_status = {
-            "stages": {
-                "validate": {
-                    "pkg-a": {"state": "success"},
-                    "pkg-b": {"state": None},
-                    "pkg-c": {"state": "failed"},
-                }
-            }
-        }
+        self._seed_validate({"pkg-a": "success", "pkg-b": None, "pkg-c": "failed"})
 
-        with patch.object(stage_show_plan, "get_packages") as mock_get, \
-             patch.object(stage_show_plan, "load_build_status") as mock_load:
+        with patch.object(stage_show_plan, "get_packages") as mock_get:
             mock_get.return_value = packages
-            mock_load.return_value = build_status
-            stage_show_plan.show_plan()
+            stage_show_plan.show_plan(target=TARGET)
 
         captured = capsys.readouterr()
         assert "pkg-a" in captured.out
@@ -400,20 +424,11 @@ class TestStageShowPlan:
             "pkg-a": {"version": "1.0"},
             "pkg-b": {"version": "2.0"},
         }
-        build_status = {
-            "stages": {
-                "validate": {
-                    "pkg-a": {"state": "success"},
-                    "pkg-b": {"state": None},
-                }
-            }
-        }
+        self._seed_validate({"pkg-a": "success", "pkg-b": None})
 
-        with patch.object(stage_show_plan, "get_packages") as mock_get, \
-             patch.object(stage_show_plan, "load_build_status") as mock_load:
+        with patch.object(stage_show_plan, "get_packages") as mock_get:
             mock_get.return_value = packages
-            mock_load.return_value = build_status
-            stage_show_plan.show_plan(package="pkg-a")
+            stage_show_plan.show_plan(package="pkg-a", target=TARGET)
 
         captured = capsys.readouterr()
         assert "pkg-a" in captured.out
@@ -426,21 +441,11 @@ class TestStageShowPlan:
             "pkg-b": {"version": "2.0"},
             "pkg-c": {"version": "3.0"},
         }
-        build_status = {
-            "stages": {
-                "validate": {
-                    "pkg-a": {"state": "success"},
-                    "pkg-b": {"state": None},
-                    "pkg-c": {"state": "failed"},
-                }
-            }
-        }
+        self._seed_validate({"pkg-a": "success", "pkg-b": None, "pkg-c": "failed"})
 
-        with patch.object(stage_show_plan, "get_packages") as mock_get, \
-             patch.object(stage_show_plan, "load_build_status") as mock_load:
+        with patch.object(stage_show_plan, "get_packages") as mock_get:
             mock_get.return_value = packages
-            mock_load.return_value = build_status
-            stage_show_plan.show_plan(package="pkg-a, pkg-c")
+            stage_show_plan.show_plan(package="pkg-a, pkg-c", target=TARGET)
 
         captured = capsys.readouterr()
         assert "pkg-a" in captured.out
@@ -454,21 +459,11 @@ class TestStageShowPlan:
             "pkg-b": {"version": "2.0"},
             "pkg-c": {"version": "3.0"},
         }
-        build_status = {
-            "stages": {
-                "validate": {
-                    "pkg-a": {"state": "success"},
-                    "pkg-b": {"state": None},
-                    "pkg-c": {"state": "failed"},
-                }
-            }
-        }
+        self._seed_validate({"pkg-a": "success", "pkg-b": None, "pkg-c": "failed"})
 
-        with patch.object(stage_show_plan, "get_packages") as mock_get, \
-             patch.object(stage_show_plan, "load_build_status") as mock_load:
+        with patch.object(stage_show_plan, "get_packages") as mock_get:
             mock_get.return_value = packages
-            mock_load.return_value = build_status
-            stage_show_plan.show_plan(skip_packages_arg="pkg-b")
+            stage_show_plan.show_plan(skip_packages_arg="pkg-b", target=TARGET)
 
         captured = capsys.readouterr()
         assert "pkg-a" in captured.out
@@ -483,23 +478,16 @@ class TestStageShowPlan:
             "pkg-c": {"version": "3.0"},
             "pkg-d": {"version": "4.0"},
         }
-        build_status = {
-            "stages": {
-                "validate": {
-                    "pkg-a": {"state": "success"},
-                    "pkg-b": {"state": None},
-                    "pkg-c": {"state": "failed"},
-                    "pkg-d": {"state": "success"},
-                }
-            }
-        }
+        self._seed_validate(
+            {"pkg-a": "success", "pkg-b": None, "pkg-c": "failed", "pkg-d": "success"}
+        )
 
-        with patch.object(stage_show_plan, "get_packages") as mock_get, \
-             patch.object(stage_show_plan, "load_build_status") as mock_load:
+        with patch.object(stage_show_plan, "get_packages") as mock_get:
             mock_get.return_value = packages
-            mock_load.return_value = build_status
             # PACKAGE filters to a,b,c; SKIP removes b → a,c shown
-            stage_show_plan.show_plan(package="pkg-a,pkg-b,pkg-c", skip_packages_arg="pkg-b")
+            stage_show_plan.show_plan(
+                package="pkg-a,pkg-b,pkg-c", skip_packages_arg="pkg-b", target=TARGET
+            )
 
         captured = capsys.readouterr()
         assert "pkg-a" in captured.out
@@ -510,14 +498,12 @@ class TestStageShowPlan:
     def test_show_plan_unknown_package_exits(self):
         """Test unknown PACKAGE causes sys.exit."""
         packages = {"pkg-a": {"version": "1.0"}}
-        build_status = {"stages": {"validate": {"pkg-a": {"state": "success"}}}}
+        self._seed_validate({"pkg-a": "success"})
 
         with patch.object(stage_show_plan, "get_packages") as mock_get, \
-             patch.object(stage_show_plan, "load_build_status") as mock_load, \
              pytest.raises(SystemExit):
             mock_get.return_value = packages
-            mock_load.return_value = build_status
-            stage_show_plan.show_plan(package="nonexistent")
+            stage_show_plan.show_plan(package="nonexistent", target=TARGET)
 
     def test_show_plan_case_insensitive(self, capsys):
         """Test PACKAGE name is case-insensitive."""
@@ -525,20 +511,11 @@ class TestStageShowPlan:
             "MyPkg": {"version": "1.0"},
             "OtherPkg": {"version": "2.0"},
         }
-        build_status = {
-            "stages": {
-                "validate": {
-                    "MyPkg": {"state": "success"},
-                    "OtherPkg": {"state": None},
-                }
-            }
-        }
+        self._seed_validate({"MyPkg": "success", "OtherPkg": None})
 
-        with patch.object(stage_show_plan, "get_packages") as mock_get, \
-             patch.object(stage_show_plan, "load_build_status") as mock_load:
+        with patch.object(stage_show_plan, "get_packages") as mock_get:
             mock_get.return_value = packages
-            mock_load.return_value = build_status
-            stage_show_plan.show_plan(package="mypkg")  # lowercase
+            stage_show_plan.show_plan(package="mypkg", target=TARGET)  # lowercase
 
         captured = capsys.readouterr()
         assert "MyPkg" in captured.out

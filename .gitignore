@@ -23,12 +23,14 @@ local-repo/
 /var/lib/mock/
 
 # Build report and logs
+build-report.db
+build-report.db-*
 build-report.yaml
 build-report.*.yaml
 logs/
 .coverage
 .htmlcov/
-
+.cache
 
 # Environment
 .env*

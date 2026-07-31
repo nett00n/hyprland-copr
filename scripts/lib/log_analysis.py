@@ -4,6 +4,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from lib.copr import COPR_BUILD_URL
+
 # meson.build:86:14: ERROR: Dependency "upower-glib" not found, tried pkgconfig
 _MESON_DEP_RE = re.compile(
     r'meson\.build:\d+:\d+: ERROR: Dependency "([^"]+)" not found, tried (\S+)'
@@ -33,6 +35,13 @@ _SRPM_MISSING_SOURCE_RE = re.compile(
 # Generic error: line handler (catches miscellaneous errors)
 # error: Something went wrong: details...
 _GENERIC_ERROR_RE = re.compile(r"^error: (.+)$")
+
+# Build error: Build(s) 10798066 failed.
+# Written by `copr-cli build` when SYNCHRONOUS_COPR_BUILD=true watches a
+# build to a failed terminal state. Doesn't match _GENERIC_ERROR_RE (no
+# leading "error:"), which is why the copr stage previously produced no
+# actionable output at all.
+_COPR_BUILD_FAILED_RE = re.compile(r"^Build error: Build\(s\) (\d+) failed")
 
 # + %cmake  (unexpanded RPM macro run as shell command → "fg: no job control")
 _UNEXPANDED_MACRO_RE = re.compile(r"^\+ %(\w+)")
@@ -718,6 +727,7 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                     x in prev_line
                     for x in [
                         "fatal error:",
+                        ": error:",  # compiler diagnostics: path:line:col: error: msg
                         "FAILED",
                         "not found",
                         "No such file",
@@ -901,6 +911,104 @@ def _analyze_mock_root_log(log_path: Path) -> list[tuple[int, str, str, str, str
     return issues
 
 
+def _analyze_copr_log(log_path: Path) -> list[tuple[int, str, str, str, str]]:
+    """Scan the Copr submission log (-30-copr.log) for build failures.
+
+    In async mode (default) the stage log just records submission; failure
+    is only known once polled later, so this typically finds nothing. In
+    synchronous mode (SYNCHRONOUS_COPR_BUILD=true) copr-cli watches the
+    build to completion and prints "Build error: Build(s) N failed." on
+    failure -- this is the whole visible failure signal without also having
+    the per-chroot builder logs (see _analyze_copr_chroot_logs).
+    """
+    if not log_path.exists():
+        return []
+    issues: list[tuple[int, str, str, str, str]] = []
+    for lineno, line in enumerate(
+        log_path.read_text(errors="replace").splitlines(), start=1
+    ):
+        m = _COPR_BUILD_FAILED_RE.match(line)
+        if m:
+            build_id = m.group(1)
+            issues.append(
+                (
+                    lineno,
+                    line.strip(),
+                    f"Copr build {build_id} failed — see {COPR_BUILD_URL.format(build_id)} "
+                    "and 31-copr-<chroot>.log (if fetched) for the per-chroot builder output",
+                    build_id,
+                    "none",
+                )
+            )
+    return issues
+
+
+def _analyze_copr_chroot_summary(
+    log_path: Path,
+) -> list[tuple[int, str, str, str, str]]:
+    """Scan the per-chroot summary (-30-copr-chroots.log) for a chroot mismatch.
+
+    Written by lib.copr.fetch_failed_chroot_logs: one line per chroot,
+    "<name> <state> <result_url>". Copr builds every chroot in the project
+    (e.g. fedora-43/44/rawhide x86_64/aarch64) while local mock only builds
+    one FEDORA_VERSION target -- so a failure that's specific to some chroots
+    can never reproduce locally. Surfacing that split is the single most
+    actionable fact, ahead of the per-chroot compiler errors.
+    """
+    if not log_path.exists():
+        return []
+    failed: list[str] = []
+    succeeded: list[str] = []
+    for line in log_path.read_text(errors="replace").splitlines():
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        name, state = parts[0], parts[1]
+        if state == "failed":
+            failed.append(name)
+        elif state == "succeeded":
+            succeeded.append(name)
+    if not failed or not succeeded:
+        return []
+    msg = (
+        f"failed on {', '.join(failed)} only ({len(succeeded)} succeeded: "
+        f"{', '.join(succeeded)}) — release/toolchain-specific breakage, "
+        "consider an os_overrides skip in packages.yaml"
+    )
+    return [
+        (
+            1,
+            f"chroots: {len(failed)} failed, {len(succeeded)} succeeded",
+            msg,
+            "",
+            "none",
+        )
+    ]
+
+
+def _analyze_copr_chroot_logs(
+    pkg_log_dir: Path,
+) -> dict[str, list[tuple[int, str, str, str, str]]]:
+    """Scan downloaded per-chroot Copr builder logs (31-copr-<chroot>.log).
+
+    These are full mock build logs in the same format as -21-mock-build.log
+    (fetched by lib.copr.fetch_failed_chroot_logs after a Copr build fails),
+    so this reuses _analyze_mock_build_log verbatim instead of duplicating
+    its patterns.
+
+    Returns {chroot_name: issues} for each 31-copr-*.log with issues found.
+    """
+    if not pkg_log_dir.exists():
+        return {}
+    results: dict[str, list[tuple[int, str, str, str, str]]] = {}
+    for log_path in sorted(pkg_log_dir.glob("31-copr-*.log")):
+        chroot_name = log_path.stem.removeprefix("31-copr-")
+        issues = _analyze_mock_build_log(log_path)
+        if issues:
+            results[chroot_name] = issues
+    return results
+
+
 def _print_stage_issues(
     stage_label: str,
     pkg: str,
@@ -942,3 +1050,33 @@ def report_mock_failures(packages: dict, log_dir: Path) -> None:
         ]:
             log_path = log_dir / pkg / filename
             _print_stage_issues(label, pkg, log_path, analyzer(log_path), first)
+
+
+def report_copr_failures(packages: dict, log_dir: Path) -> None:
+    """Print actionable errors from Copr stage logs.
+
+    Order matters: the chroot-mismatch summary (which chroots failed vs.
+    succeeded) is the most actionable single fact, so it's printed before
+    the per-chroot compiler-error detail.
+    """
+    first = [True]
+    for pkg in packages:
+        pkg_log_dir = log_dir / pkg
+
+        copr_log = pkg_log_dir / "30-copr.log"
+        _print_stage_issues("copr", pkg, copr_log, _analyze_copr_log(copr_log), first)
+
+        chroot_summary = pkg_log_dir / "30-copr-chroots.log"
+        _print_stage_issues(
+            "copr/chroots",
+            pkg,
+            chroot_summary,
+            _analyze_copr_chroot_summary(chroot_summary),
+            first,
+        )
+
+        for chroot_name, issues in _analyze_copr_chroot_logs(pkg_log_dir).items():
+            chroot_log = pkg_log_dir / f"31-copr-{chroot_name}.log"
+            _print_stage_issues(
+                f"copr/build:{chroot_name}", pkg, chroot_log, issues, first
+            )

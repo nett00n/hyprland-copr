@@ -17,6 +17,7 @@ Must be run with network access (before entering the mock chroot).
 Environment variables:
   PACKAGE         Build only this package (optional, comma-separated)
   FEDORA_VERSION  Fedora version to target (default: 43)
+  MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   SKIP_PACKAGES   Skip these packages (optional, comma-separated)
   LOG_LEVEL       Logging level: DEBUG, INFO (default), WARNING, ERROR
 """
@@ -25,8 +26,9 @@ import logging
 import os
 import sys
 
+from lib import build_db
 from lib.config import setup_logging
-from lib.paths import ROOT, SOURCES_DIR, GITMODULES, get_package_log_dir
+from lib.paths import ARCH, DISTRO, GITMODULES, ROOT, SOURCES_DIR, resolve_target
 from lib.reporting import status
 from lib.vendor import (
     VendorError,
@@ -37,65 +39,49 @@ from lib.vendor import (
 )
 from lib.version import nvr
 from lib.gitmodules import parse_gitmodules
-from lib.yaml_utils import (
-    apply_os_overrides,
-    init_stage,
-    save_build_status,
-)
+from lib.yaml_utils import apply_os_overrides, prepare_stage
 
 
 def run_for_package(
     pkg: str,
     meta: dict,
-    build_status: dict,
     fedora_version: str,
+    target: str,
+    run_id: int,
 ) -> bool:
     """Run vendoring for a single package. Return True on success/skip, False on failure.
 
-    Updates build_status["stages"]["vendor"][pkg] in-place.
-    Does not call save_build_status().
+    Writes the vendor stage row for `pkg`.
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
         print(f"  [skip] {pkg} (fedora:{fedora_version} skip)")
-        build_status["stages"]["vendor"][pkg] = {
-            "state": "skipped",
-            "version": None,
-            "log": None,
-            "force_run": False,
-            "reason": "config: skip",
-        }
+        build_db.set_stage(
+            pkg, "vendor", target, run_id, "skipped", reason="config: skip"
+        )
         return True
 
     ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
-    pkg_log_dir = get_package_log_dir(pkg)
+    pkg_log_dir = ROOT / "logs" / "build" / pkg
     pkg_log_dir.mkdir(parents=True, exist_ok=True)
     log = pkg_log_dir / "05-vendor.log"
     log.unlink(missing_ok=True)
 
     # Skip if not a Go or Rust package
     if not (is_go_package(meta) or is_rust_package(meta)):
-        build_status["stages"]["vendor"][pkg] = {
-            "state": "skipped",
-            "version": ver,
-            "log": None,
-            "force_run": False,
-            "reason": "not-vendored",
-        }
+        build_db.set_stage(
+            pkg, "vendor", target, run_id, "skipped", version=ver, reason="not-vendored"
+        )
         return True
 
-    # Skip if spec stage failed (read from build_status)
-    spec_stage = build_status.get("stages", {}).get("spec", {})
-    spec_state = spec_stage.get(pkg, {}).get("state", "")
-    if spec_state == "failed" or (spec_stage and pkg not in spec_stage):
+    # Skip if spec stage failed
+    spec_entry = build_db.get_stage(pkg, "spec", target)
+    spec_state = spec_entry.get("state", "") if spec_entry else ""
+    if spec_state == "failed" or spec_entry is None:
         status("vendor", pkg, "skip", "spec failed")
-        build_status["stages"]["vendor"][pkg] = {
-            "state": "skipped",
-            "version": ver,
-            "log": None,
-            "force_run": False,
-            "reason": "spec failed",
-        }
+        build_db.set_stage(
+            pkg, "vendor", target, run_id, "skipped", version=ver, reason="spec failed"
+        )
         return True
 
     version = str(meta["version"])
@@ -110,15 +96,23 @@ def run_for_package(
     else:
         tarballs_exist = tarball.exists()
 
+    def _record_tarballs() -> None:
+        # Absolute container paths: SOURCES_DIR is /root/rpmbuild/SOURCES, a
+        # podman volume, not under ROOT.
+        build_db.record_artifact(
+            str(tarball), "rpmbuild-volume", "vendor", pkg, target, ver
+        )
+        if source_tarball is not None:
+            build_db.record_artifact(
+                str(source_tarball), "rpmbuild-volume", "vendor", pkg, target, ver
+            )
+
     if tarballs_exist:
         status("vendor", pkg, "ok")
-        build_status["stages"]["vendor"][pkg] = {
-            "state": "success",
-            "version": ver,
-            "path": str(tarball),
-            "log": None,
-            "force_run": False,
-        }
+        build_db.set_stage(
+            pkg, "vendor", target, run_id, "success", version=ver, path=str(tarball)
+        )
+        _record_tarballs()
         return True
 
     try:
@@ -134,41 +128,58 @@ def run_for_package(
                     break
         generate(pkg, meta, tarball, log_path=log, submodule_path=submodule_path)
         status("vendor", pkg, "ok")
-        build_status["stages"]["vendor"][pkg] = {
-            "state": "success",
-            "version": ver,
-            "path": str(tarball),
-            "log": str(log.relative_to(ROOT)),
-            "force_run": False,
-        }
+        build_db.set_stage(
+            pkg,
+            "vendor",
+            target,
+            run_id,
+            "success",
+            version=ver,
+            path=str(tarball),
+            log=str(log.relative_to(ROOT)),
+        )
+        _record_tarballs()
         return True
     except VendorError as exc:
         status("vendor", pkg, "fail")
         with open(log, "a") as fh:
             fh.write(f"error: {exc}\n")
-        build_status["stages"]["vendor"][pkg] = {
-            "state": "failed",
-            "version": ver,
-            "path": None,
-            "log": str(log.relative_to(ROOT)),
-            "force_run": False,
-        }
+        build_db.set_stage(
+            pkg,
+            "vendor",
+            target,
+            run_id,
+            "failed",
+            version=ver,
+            log=str(log.relative_to(ROOT)),
+        )
         return False
 
 
 def main() -> None:
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
+    mock_chroot_override = os.environ.get("MOCK_CHROOT", "")
+    target = resolve_target(fedora_version, mock_chroot_override)
+    proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
 
-    packages, build_status = init_stage("vendor")
+    run_id = build_db.start_run(
+        target,
+        DISTRO,
+        fedora_version,
+        ARCH,
+        package_filter=os.environ.get("PACKAGE", ""),
+    )
+
+    packages = prepare_stage("vendor", target, proceed)
     SOURCES_DIR.mkdir(parents=True, exist_ok=True)
 
     failed = False
     print("\n=== vendor ===")
     for pkg, meta in packages.items():
-        if not run_for_package(pkg, meta, build_status, fedora_version):
+        if not run_for_package(pkg, meta, fedora_version, target, run_id):
             failed = True
 
-    save_build_status(build_status)
+    build_db.finish_run(run_id, "failed" if failed else "ok")
     if failed:
         sys.exit(1)
 

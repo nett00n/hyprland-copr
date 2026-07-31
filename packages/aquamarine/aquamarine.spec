@@ -1,7 +1,7 @@
 
 Name:           aquamarine
 Version:        0.14.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A very light linux rendering backend library
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/aquamarine
@@ -71,6 +71,6 @@ Development files for aquamarine.
 %{_libdir}/pkgconfig/aquamarine.pc
 
 %changelog
-* Mon Jul 27 2026 nett00n <copr@nett00n.org> - 0.14.0-1
+* Mon Jul 27 2026 nett00n <copr@nett00n.org> - 0.14.0-2
 
 - version: bump to 0.14.0

@@ -3,13 +3,16 @@
 import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch, call
-import logging
+from unittest.mock import patch
 
 import pytest
 
 # Import using importlib to handle module names with dashes
 import importlib
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
+
+from lib import build_db, paths
 
 full_cycle = importlib.import_module("scripts.full-cycle")
 stage_copr = importlib.import_module("scripts.stage-copr")
@@ -19,6 +22,8 @@ stage_mock = importlib.import_module("scripts.stage-mock")
 stage_show_plan = importlib.import_module("scripts.stage-show-plan")
 
 ROOT = Path(__file__).parent.parent.parent
+
+TARGET = "fedora-44-x86_64"
 
 
 def run_make(target: str, env=None, **kwargs) -> subprocess.CompletedProcess:
@@ -31,6 +36,15 @@ def run_make(target: str, env=None, **kwargs) -> subprocess.CompletedProcess:
         env=env,
         **kwargs,
     )
+
+
+@pytest.fixture(autouse=True)
+def build_db_path(tmp_path, monkeypatch):
+    """Point lib.paths.BUILD_DB at a fresh tmp file and close the cached connection after."""
+    db_path = tmp_path / "build-report.db"
+    monkeypatch.setattr(paths, "BUILD_DB", db_path)
+    yield db_path
+    build_db.close()
 
 
 class TestFullCycleFinalize:
@@ -46,110 +60,110 @@ class TestFullCycleFinalize:
     def test_async_copr_unknown_state_not_failure(self):
         """When SYNCHRONOUS_COPR_BUILD=false, 'unknown' COPR state is valid."""
         packages = {"pkg1": {}, "pkg2": {}}
-        build_status = {
-            "run": {"timestamp": "2025-01-01T00:00:00+00:00"},
-            "stages": {
-                "spec": {
-                    "pkg1": {"state": "success"},
-                    "pkg2": {"state": "success"},
-                },
-                "copr": {
-                    "pkg1": {"state": "unknown"},  # valid in async mode
-                    "pkg2": {"state": "unknown"},
-                },
-            },
-        }
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        for pkg in packages:
+            build_db.set_stage(pkg, "spec", TARGET, run_id, "success")
+            build_db.set_stage(pkg, "copr", TARGET, run_id, "unknown")
 
-        with patch.object(full_cycle, "load_build_status") as mock_load, \
-             patch.object(full_cycle, "print_summary"), \
-             patch.object(full_cycle, "dump_yaml_pretty"), \
-             patch.object(full_cycle, "report_mock_failures"):
-            mock_load.return_value = build_status
-
-            with patch.object(Path, "write_text"):
-                # Should not raise SystemExit
-                full_cycle.finalize_report(
-                    packages, build_status, "", synchronous_copr=False
-                )
+        with patch.object(full_cycle, "print_summary"), patch.object(
+            full_cycle, "report_mock_failures"
+        ), patch.object(full_cycle, "report_copr_failures"):
+            # Should not raise SystemExit
+            full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
 
     def test_sync_copr_failed_is_failure(self):
         """When SYNCHRONOUS_COPR_BUILD=true, 'failed' COPR state is failure."""
         packages = {"pkg1": {}}
-        build_status = {
-            "run": {"timestamp": "2025-01-01T00:00:00+00:00"},
-            "stages": {
-                "copr": {
-                    "pkg1": {"state": "failed"},  # failure in sync mode
-                },
-            },
-        }
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg1", "copr", TARGET, run_id, "failed")
 
-        with patch.object(full_cycle, "load_build_status") as mock_load, \
-             patch.object(full_cycle, "print_summary"), \
-             patch.object(full_cycle, "dump_yaml_pretty"), \
-             patch.object(full_cycle, "report_mock_failures"), \
-             pytest.raises(SystemExit) as exc:
-            mock_load.return_value = build_status
-
-            with patch.object(Path, "write_text"):
-                full_cycle.finalize_report(
-                    packages, build_status, "", synchronous_copr=True
-                )
+        with patch.object(full_cycle, "print_summary"), patch.object(
+            full_cycle, "report_mock_failures"
+        ), patch.object(
+            full_cycle, "report_copr_failures"
+        ) as mock_report_copr, pytest.raises(SystemExit) as exc:
+            full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=True)
 
         assert exc.value.code == 1
+        mock_report_copr.assert_called_once_with(packages, full_cycle.BUILD_LOG_DIR)
+
+    def test_async_copr_failed_state_does_not_report(self):
+        """Async mode: a 'failed' copr state doesn't drive exit or log analysis here --
+        it only becomes terminal later, when gen-report.py polls (see
+        lib.copr.poll_copr_status), and that's where the failed chroots'
+        logs get fetched.
+        """
+        packages = {"pkg1": {}}
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg1", "copr", TARGET, run_id, "failed")
+
+        with patch.object(full_cycle, "print_summary"), patch.object(
+            full_cycle, "report_mock_failures"
+        ), patch.object(full_cycle, "report_copr_failures") as mock_report_copr:
+            # Should not raise SystemExit -- copr is excluded from any_failed when async.
+            full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
+
+        mock_report_copr.assert_not_called()
 
     def test_non_copr_failed_always_fails(self):
         """Failed spec/srpm/mock stage always fails, regardless of sync setting."""
         packages = {"pkg1": {}}
-        build_status = {
-            "run": {"timestamp": "2025-01-01T00:00:00+00:00"},
-            "stages": {
-                "spec": {
-                    "pkg1": {"state": "failed"},
-                },
-            },
-        }
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg1", "spec", TARGET, run_id, "failed")
 
-        with patch.object(full_cycle, "load_build_status") as mock_load, \
-             patch.object(full_cycle, "print_summary"), \
-             patch.object(full_cycle, "dump_yaml_pretty"), \
-             patch.object(full_cycle, "report_mock_failures"), \
-             pytest.raises(SystemExit) as exc:
-            mock_load.return_value = build_status
-
-            with patch.object(Path, "write_text"):
-                full_cycle.finalize_report(
-                    packages, build_status, "", synchronous_copr=False
-                )
+        with patch.object(full_cycle, "print_summary"), patch.object(
+            full_cycle, "report_mock_failures"
+        ), patch.object(full_cycle, "report_copr_failures"), pytest.raises(
+            SystemExit
+        ) as exc:
+            full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
 
         assert exc.value.code == 1
 
     def test_validation_failure_ignored(self):
         """Validation stage failures do not cause pipeline failure."""
         packages = {"pkg1": {}}
-        build_status = {
-            "run": {"timestamp": "2025-01-01T00:00:00+00:00"},
-            "stages": {
-                "validate": {
-                    "pkg1": {"state": "failed"},  # validation fails
-                },
-                "spec": {
-                    "pkg1": {"state": "success"},
-                },
-            },
-        }
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg1", "validate", TARGET, run_id, "failed")
+        build_db.set_stage("pkg1", "spec", TARGET, run_id, "success")
 
-        with patch.object(full_cycle, "load_build_status") as mock_load, \
-             patch.object(full_cycle, "print_summary"), \
-             patch.object(full_cycle, "dump_yaml_pretty"), \
-             patch.object(full_cycle, "report_mock_failures"):
-            mock_load.return_value = build_status
+        with patch.object(full_cycle, "print_summary"), patch.object(
+            full_cycle, "report_mock_failures"
+        ), patch.object(full_cycle, "report_copr_failures"):
+            # Should not raise SystemExit
+            full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
 
-            with patch.object(Path, "write_text"):
-                # Should not raise SystemExit
-                full_cycle.finalize_report(
-                    packages, build_status, "", synchronous_copr=False
-                )
+    def test_only_considers_packages_in_this_run(self):
+        """A failure recorded for a package outside this run's package set doesn't count.
+
+        Regression coverage for issue #23: the old finalize_report scanned the
+        WHOLE persisted report, so one stale failed row from an unrelated
+        package made every future run exit non-zero.
+        """
+        packages = {"pkg1": {}}
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg1", "spec", TARGET, run_id, "success")
+        build_db.set_stage("some-other-pkg", "spec", TARGET, run_id, "failed")
+
+        with patch.object(full_cycle, "print_summary"), patch.object(
+            full_cycle, "report_mock_failures"
+        ), patch.object(full_cycle, "report_copr_failures"):
+            # Should not raise SystemExit -- "some-other-pkg" isn't in `packages`.
+            full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
+
+    def test_finish_run_records_exit_state(self):
+        packages = {"pkg1": {}}
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg1", "spec", TARGET, run_id, "success")
+
+        with patch.object(full_cycle, "print_summary"), patch.object(
+            full_cycle, "report_mock_failures"
+        ), patch.object(full_cycle, "report_copr_failures"):
+            full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
+
+        conn = build_db.connect()
+        row = conn.execute("SELECT exit_state FROM runs WHERE id = ?", (run_id,)).fetchone()
+        assert row["exit_state"] == "ok"
 
 
 class TestMockFailedPackages:
@@ -157,46 +171,31 @@ class TestMockFailedPackages:
 
     def test_no_failures(self):
         packages = {"hyprutils": {}, "Hyprland": {}}
-        build_status = {
-            "stages": {
-                "mock": {
-                    "hyprutils": {"state": "success"},
-                    "Hyprland": {"state": "success"},
-                }
-            }
-        }
-        assert full_cycle.mock_failed_packages(packages, build_status) == []
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "mock", TARGET, run_id, "success")
+        build_db.set_stage("Hyprland", "mock", TARGET, run_id, "success")
+        assert full_cycle.mock_failed_packages(packages, TARGET) == []
 
     def test_one_failure(self):
         packages = {"hyprutils": {}, "Hyprland": {}}
-        build_status = {
-            "stages": {
-                "mock": {
-                    "hyprutils": {"state": "success"},
-                    "Hyprland": {"state": "failed"},
-                }
-            }
-        }
-        assert full_cycle.mock_failed_packages(packages, build_status) == ["Hyprland"]
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "mock", TARGET, run_id, "success")
+        build_db.set_stage("Hyprland", "mock", TARGET, run_id, "failed")
+        assert full_cycle.mock_failed_packages(packages, TARGET) == ["Hyprland"]
 
     def test_missing_entry_not_a_failure(self):
         """A package with no mock entry at all (e.g. skipped) isn't a 'failure'."""
         packages = {"pkg1": {}}
-        build_status = {"stages": {"mock": {}}}
-        assert full_cycle.mock_failed_packages(packages, build_status) == []
+        build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        assert full_cycle.mock_failed_packages(packages, TARGET) == []
 
     def test_only_considers_packages_in_this_run(self):
         """A failure recorded for a package outside this run's set doesn't count."""
         packages = {"hyprutils": {}}
-        build_status = {
-            "stages": {
-                "mock": {
-                    "hyprutils": {"state": "success"},
-                    "some-other-pkg": {"state": "failed"},
-                }
-            }
-        }
-        assert full_cycle.mock_failed_packages(packages, build_status) == []
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "mock", TARGET, run_id, "success")
+        build_db.set_stage("some-other-pkg", "mock", TARGET, run_id, "failed")
+        assert full_cycle.mock_failed_packages(packages, TARGET) == []
 
 
 class TestCoprGatedByMockFailure:
@@ -207,77 +206,74 @@ class TestCoprGatedByMockFailure:
     pass gated on every package's mock having succeeded this run.
     """
 
-    def _base_build_status(self):
-        return {
-            "stages": {s: {} for s in ["validate", "spec", "vendor", "srpm", "mock", "copr"]}
-        }
-
-    def _run(self, packages, mock_outcomes, copr_repo="nett00n/hyprland"):
-        """Run run_build_pipeline with heavy mocking; return (build_status, copr_mock)."""
-        build_status = self._base_build_status()
+    def _run(self, packages, mock_outcomes, copr_repo="nett00n/hyprland", skip_copr=False):
+        """Run run_build_pipeline with heavy mocking; return (target, run_id, copr_mock)."""
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
 
         def fake_mock_run_for_package(
-            pkg, meta, build_status, fedora_version, mock_chroot_name,
-            proceed, mock_failed, all_pkgs,
+            pkg, meta, fedora_version, target, proceed, mock_failed, all_pkgs, run_id_
         ):
             ok = mock_outcomes[pkg]
-            build_status["stages"]["mock"][pkg] = {
-                "state": "success" if ok else "failed"
-            }
+            build_db.set_stage(pkg, "mock", target, run_id_, "success" if ok else "failed")
             mock_failed[pkg] = not ok
             return ok
 
-        def fake_is_cached(stage, pkg, build_status, new_hashes, forced_stages):
+        def fake_is_cached(stage, pkg, target, new_hashes, forced_stages):
             # Only mock/copr are "not cached" -- exercises the real branches.
             return stage not in ("mock", "copr")
 
-        with patch.object(full_cycle, "get_packages", return_value=packages), \
-             patch.object(full_cycle, "compute_input_hashes", return_value={}), \
-             patch.object(full_cycle, "effective_deps", return_value=set()), \
-             patch.object(full_cycle, "is_cached", side_effect=fake_is_cached), \
-             patch.object(full_cycle, "cache_miss_reason", return_value="test"), \
-             patch.object(full_cycle, "save_build_status"), \
-             patch.object(full_cycle.time, "sleep"), \
-             patch.object(full_cycle._stage["stage-show-plan"], "show_plan"), \
-             patch.object(full_cycle._stage["stage-validate"], "run_global_checks"), \
-             patch.object(
-                 full_cycle._stage["stage-validate"], "run_for_package", return_value=True
-             ), \
-             patch.object(full_cycle._stage["stage-copr"], "check_copr_credentials"), \
-             patch.object(
-                 full_cycle._stage["stage-mock"],
-                 "run_for_package",
-                 side_effect=fake_mock_run_for_package,
-             ), \
-             patch.object(
-                 full_cycle._stage["stage-copr"], "run_for_package", return_value=True
-             ) as copr_mock:
+        with patch.object(full_cycle, "get_packages", return_value=packages), patch.object(
+            full_cycle, "compute_input_hashes", return_value={}
+        ), patch.object(full_cycle, "effective_deps", return_value=set()), patch.object(
+            full_cycle, "is_cached", side_effect=fake_is_cached
+        ), patch.object(
+            full_cycle, "cache_miss_reason", return_value="test"
+        ), patch.object(
+            full_cycle.time, "sleep"
+        ), patch.object(
+            full_cycle._stage["stage-show-plan"], "show_plan"
+        ), patch.object(
+            full_cycle._stage["stage-validate"], "run_global_checks"
+        ), patch.object(
+            full_cycle._stage["stage-validate"], "run_for_package", return_value=True
+        ), patch.object(
+            full_cycle._stage["stage-copr"], "check_copr_credentials"
+        ), patch.object(
+            full_cycle._stage["stage-mock"],
+            "run_for_package",
+            side_effect=fake_mock_run_for_package,
+        ), patch.object(
+            full_cycle._stage["stage-copr"], "run_for_package", return_value=True
+        ) as copr_mock:
             full_cycle.run_build_pipeline(
                 packages,
-                build_status,
+                TARGET,
+                run_id,
                 fedora_version="44",
-                mock_chroot_name="fedora-44-x86_64",
                 copr_repo=copr_repo,
                 proceed=False,
+                skip_copr=skip_copr,
             )
 
-        return build_status, copr_mock
+        return run_id, copr_mock
 
     def test_one_package_mock_failure_blocks_copr_for_all(self):
         packages = {"hyprutils": {}, "Hyprland": {}}
-        build_status, copr_mock = self._run(
+        run_id, copr_mock = self._run(
             packages, {"hyprutils": True, "Hyprland": False}
         )
 
         # hyprutils succeeded its own mock build, but must NOT reach Copr.
         copr_mock.assert_not_called()
-        assert "blocked" in build_status["stages"]["copr"]["hyprutils"]["reason"]
-        assert "blocked" in build_status["stages"]["copr"]["Hyprland"]["reason"]
-        assert "Hyprland" in build_status["stages"]["copr"]["hyprutils"]["reason"]
+        hyprutils_entry = build_db.get_stage("hyprutils", "copr", TARGET)
+        hyprland_entry = build_db.get_stage("Hyprland", "copr", TARGET)
+        assert "blocked" in hyprutils_entry["reason"]
+        assert "blocked" in hyprland_entry["reason"]
+        assert "Hyprland" in hyprutils_entry["reason"]
 
     def test_all_mock_success_copr_runs_for_all(self):
         packages = {"hyprutils": {}, "Hyprland": {}}
-        build_status, copr_mock = self._run(
+        run_id, copr_mock = self._run(
             packages, {"hyprutils": True, "Hyprland": True}
         )
 
@@ -288,54 +284,19 @@ class TestCoprGatedByMockFailure:
     def test_skip_copr_env_bypasses_gate_entirely(self):
         """SKIP_COPR=true still just skips -- no blocked-reason noise."""
         packages = {"hyprutils": {}, "Hyprland": {}}
-        build_status = self._base_build_status()
         # Seed a prior successful copr entry, as a real repeated run would have.
-        build_status["stages"]["copr"]["hyprutils"] = {"state": "success"}
+        seed_run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "copr", TARGET, seed_run_id, "success")
 
-        def fake_mock_run_for_package(
-            pkg, meta, build_status, fedora_version, mock_chroot_name,
-            proceed, mock_failed, all_pkgs,
-        ):
-            build_status["stages"]["mock"][pkg] = {"state": "failed"}
-            mock_failed[pkg] = True
-            return False
-
-        def fake_is_cached(stage, pkg, build_status, new_hashes, forced_stages):
-            return stage not in ("mock", "copr")
-
-        with patch.object(full_cycle, "get_packages", return_value=packages), \
-             patch.object(full_cycle, "compute_input_hashes", return_value={}), \
-             patch.object(full_cycle, "effective_deps", return_value=set()), \
-             patch.object(full_cycle, "is_cached", side_effect=fake_is_cached), \
-             patch.object(full_cycle, "cache_miss_reason", return_value="test"), \
-             patch.object(full_cycle, "save_build_status"), \
-             patch.object(full_cycle.time, "sleep"), \
-             patch.object(full_cycle._stage["stage-show-plan"], "show_plan"), \
-             patch.object(full_cycle._stage["stage-validate"], "run_global_checks"), \
-             patch.object(
-                 full_cycle._stage["stage-validate"], "run_for_package", return_value=True
-             ), \
-             patch.object(full_cycle._stage["stage-copr"], "check_copr_credentials"), \
-             patch.object(
-                 full_cycle._stage["stage-mock"],
-                 "run_for_package",
-                 side_effect=fake_mock_run_for_package,
-             ), \
-             patch.object(
-                 full_cycle._stage["stage-copr"], "run_for_package", return_value=True
-             ) as copr_mock:
-            full_cycle.run_build_pipeline(
-                packages,
-                build_status,
-                fedora_version="44",
-                mock_chroot_name="fedora-44-x86_64",
-                copr_repo="nett00n/hyprland",
-                proceed=False,
-                skip_copr=True,
-            )
+        run_id, copr_mock = self._run(
+            packages,
+            {"hyprutils": False, "Hyprland": False},
+            skip_copr=True,
+        )
 
         copr_mock.assert_not_called()
-        assert build_status["stages"]["copr"]["hyprutils"]["reason"] == "SKIP_COPR"
+        entry = build_db.get_stage("hyprutils", "copr", TARGET)
+        assert entry["reason"] == "SKIP_COPR"
 
 
 class TestInfoTargets:
@@ -363,19 +324,14 @@ class TestSrpmBlocking:
         """SRPM skipped when spec stage failed."""
         pkg = "test-pkg"
         meta = {"version": "1.0.0", "release": 1}
-        build_status = {
-            "stages": {
-                "srpm": {},
-                "spec": {
-                    pkg: {"state": "failed"}  # spec failed
-                },
-            },
-        }
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(pkg, "spec", TARGET, run_id, "failed")
         fedora_version = "44"
 
         result = stage_srpm.run_for_package(
-            pkg, meta, build_status, fedora_version, proceed=False
+            pkg, meta, fedora_version, proceed=False, target=TARGET, run_id=run_id
         )
 
         assert result is True
-        assert build_status["stages"]["srpm"][pkg]["state"] == "skipped"
+        entry = build_db.get_stage(pkg, "srpm", TARGET)
+        assert entry["state"] == "skipped"

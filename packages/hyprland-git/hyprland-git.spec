@@ -1,14 +1,14 @@
-%global commit b5f71b249753ffdf54027a0760930b9f3dfe50a0
+%global commit 8668a5392179f99fb9ab3699ede233484bee0b51
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260728
+%global commitdate 20260730
 
 Name:           hyprland-git
-Version:        0.56.0^20260728gitb5f71b2
-Release:        1%{?dist}
+Version:        0.56.0^20260730git8668a53
+Release:        2%{?dist}
 Summary:        A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
-Source0:        https://github.com/hyprwm/Hyprland/archive/b5f71b249753ffdf54027a0760930b9f3dfe50a0.tar.gz#/hyprland-git-0.56.0^20260728gitb5f71b2.tar.gz
+Source0:        https://github.com/hyprwm/Hyprland/archive/8668a5392179f99fb9ab3699ede233484bee0b51.tar.gz#/hyprland-git-0.56.0^20260730git8668a53.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -22,6 +22,7 @@ BuildRequires:  hyprlang-devel
 BuildRequires:  hyprutils-devel
 BuildRequires:  hyprwayland-scanner-devel
 BuildRequires:  hyprwire-devel
+BuildRequires:  libeis-devel
 BuildRequires:  lua-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(cairo)
@@ -46,6 +47,7 @@ BuildRequires:  pkgconfig(xcb-icccm)
 BuildRequires:  pkgconfig(xcursor)
 BuildRequires:  pkgconfig(xkbcommon)
 BuildRequires:  readline-devel
+BuildRequires:  sdbus-cpp-devel
 BuildRequires:  udis86-devel
 
 
@@ -111,6 +113,6 @@ Development files for hyprland-git.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Tue Jul 28 2026 nett00n <copr@nett00n.org> - 0.56.0^20260728gitb5f71b2-1
+* Fri Jul 31 2026 nett00n <copr@nett00n.org> - 0.56.0^20260730git8668a53-2
 
-- Update to 0.56.0^20260728gitb5f71b2
+- Update to 0.56.0^20260730git8668a53

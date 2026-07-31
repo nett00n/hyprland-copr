@@ -16,4 +16,4 @@ Automation features of this repo, one-liners + tags. Detailed stories live in `d
 - **COPR-0012** Regenerate all docs (README, COPR readme, full report) from the single build-state source of truth. `#docs #reporting`
 - **COPR-0013** Manage the package set: list upstream tags, set/lock releases, delete a package cleanly, reset build status. `#packages #maintenance`
 - **COPR-0014** Request a new package through a GitHub issue-template form that feeds the add-package automation. `#packages #intake`
-- **COPR-0015** Persist all build state in `build-report.yaml` as the single source of truth: per-stage hash-based caching, release history, timestamped backups. `#persistence #state #caching` — [details](features/COPR-0015-build-state-persistence.md)
+- **COPR-0015** Persist all build state in `build-report.db` (sqlite) as the single source of truth: per-stage hash-based caching, per-target (Fedora version) isolation, artifact tracking for disk cleanup. `#persistence #state #caching` — [details](features/COPR-0015-build-state-persistence.md)

@@ -8,7 +8,7 @@ import pytest
 # Add scripts to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from lib.yaml_utils import STAGES
+from lib import build_db
 
 
 @pytest.fixture
@@ -28,8 +28,9 @@ def fake_repo(tmp_path, monkeypatch):
     monkeypatch.setattr(paths, "GROUPS_YAML", tmp_path / "groups.yaml")
     monkeypatch.setattr(paths, "GITMODULES", tmp_path / ".gitmodules")
     monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path / "logs" / "build")
-    monkeypatch.setattr(paths, "BUILD_STATUS_YAML", tmp_path / "build-report.yaml")
+    monkeypatch.setattr(paths, "BUILD_DB", tmp_path / "build-report.db")
     monkeypatch.setattr(paths, "TEMPLATE_DIR", tmp_path / "templates")
+    build_db.close()
 
     # Create minimal packages.yaml
     (tmp_path / "packages.yaml").write_text("""{
@@ -74,22 +75,6 @@ def fake_repo(tmp_path, monkeypatch):
         "groups_yaml": tmp_path / "groups.yaml",
         "gitmodules": tmp_path / ".gitmodules",
     }
-
-
-@pytest.fixture
-def fake_build_status(tmp_path):
-    """Write empty build-report.yaml to tmp_path."""
-    build_report = tmp_path / "build-report.yaml"
-    status = {"stages": {s: {} for s in STAGES}}
-
-    # Create parent dir
-    build_report.parent.mkdir(parents=True, exist_ok=True)
-
-    # Dump as YAML
-    import yaml
-    build_report.write_text(yaml.dump(status, default_flow_style=False))
-
-    return build_report
 
 
 @pytest.fixture

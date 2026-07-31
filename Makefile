@@ -84,17 +84,18 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all
+.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all db-usage db-prune db-shell db-nuke
 
-save-last-build: ## Save last built RPMs and report to local-repo/ before clean
+save-last-build: ## Save last built RPMs and build-report.db to local-repo/ before clean
 	@mkdir -p local-repo
 	@$(CONTAINER_RUN) sh -c "cp -r /local-repo/. /work/local-repo/"
-	@[ -f build-report.yaml ] && cp build-report.yaml local-repo/build-report.yaml || true
+	@[ -f build-report.db ] && cp build-report.db local-repo/build-report.db || true
 	@echo $(HIGHLIGHT_PREFIX) "✓ Saved last build snapshot to local-repo/"
 
-clean-logs: ## Remove all build logs and reports
-	@rm -rf logs/build logs/make build-report.yaml build-report.*.yaml
-	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned build logs and reports"
+clean-logs: check-image check-venv setup-volumes ## Remove build logs; clears stage/run state but keeps the artifact ledger (use db-nuke to also drop that)
+	@rm -rf logs/build logs/make
+	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --reset || true
+	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned build logs and stage state (artifact ledger preserved)"
 
 clean-localrepo: ## Purge local repo for FEDORA_VERSION to resolve dependency conflicts
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(LOCALREPO_VOLUME) >/dev/null 2>&1 && \
@@ -102,10 +103,10 @@ clean-localrepo: ## Purge local repo for FEDORA_VERSION to resolve dependency co
 			rm -rf /local-repo/* || true
 	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned local repo: $(LOCALREPO_VOLUME)"
 
-clean-all: clean-logs clean-localrepo ## Clean logs, reports, and local repo (nuclear option)
+clean-all: clean-logs clean-localrepo ## Clean logs and local repo; build-report.db's artifact ledger survives (see db-nuke)
 	@echo $(HIGHLIGHT_PREFIX) "✓ Full cleanup completed"
 
-clean: save-last-build clean-logs ## Remove build logs and reports (saves last build first)
+clean: save-last-build clean-logs ## Remove build logs (saves last build first)
 
 # Prerequisite checks - fail fast on missing dependencies
 check-image: ## Verify container image exists for FEDORA_VERSION
@@ -146,9 +147,14 @@ help: ## Show this help
 	@echo "    make full-cycle PACKAGE=hyprland COPR_REPO=nett00n/hyprland"
 	@echo ""
 	@echo "  Cleanup (when dependency conflicts occur):"
-	@echo "    make clean              # Remove logs and reports"
+	@echo "    make clean              # Remove build logs"
 	@echo "    make clean-localrepo    # Clear local repo RPMs (resolve conflicts)"
-	@echo "    make clean-all          # Remove logs, reports, and local repo"
+	@echo "    make clean-all          # Remove logs and local repo"
+	@echo ""
+	@echo "  Build artifact tracking (build-report.db):"
+	@echo "    make db-usage           # Disk usage by package/target"
+	@echo "    make db-prune           # Reclaim space (dry-run; CONFIRM=1 to delete)"
+	@echo "    make db-shell           # Interactive sqlite3 shell"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*## ' Makefile | \
 		awk -F': ' '{split($$1, parts, " "); split($$2, desc, "## "); printf "  \033[36m%-24s\033[0m %s\n", parts[1], desc[2]}'
@@ -237,7 +243,7 @@ delete-package: check-image check-venv setup-volumes ## Remove package from pack
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PKG or PACKAGE is required (e.g. PKG=hyprpicker)"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) Removing package '$(PACKAGE)'..."
 	@$(CONTAINER_PYTHON) -c "import yaml; d = yaml.safe_load(open('packages.yaml')); d.pop('$(PACKAGE)', None); open('packages.yaml', 'w').write(yaml.dump(d, sort_keys=False))"
-	@if [ -f build-report.yaml ]; then $(CONTAINER_PYTHON) -c "import yaml; d = yaml.safe_load(open('build-report.yaml')); [d.get('stages', {}).get(s, {}).pop('$(PACKAGE)', None) for s in ['validate', 'spec', 'vendor', 'srpm', 'mock', 'copr']]; open('build-report.yaml', 'w').write(yaml.dump(d, sort_keys=False))"; fi
+	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --forget $(PACKAGE)
 	@rm -rf logs/build/$(PACKAGE) packages/$(PACKAGE)
 	@_path=$$(git config -f .gitmodules --get-regexp '^submodule\.' | grep -E 'path\s' | grep '/$(PACKAGE)$$' | cut -d' ' -f2); \
 	 if [ -n "$$_path" ]; then \
@@ -268,20 +274,44 @@ gather-requires: check-image check-venv setup-volumes ## Suggest requires entrie
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE is required"; exit 1)
 	$(CONTAINER_PYTHON) scripts/gather-requires.py $(PACKAGE)
 
-gen-report: check-image check-venv setup-volumes ## Render build-report.yaml to stdout (--format github|copr)
-	$(CONTAINER_PYTHON) scripts/gen-report.py $(if $(FORMAT),--format $(FORMAT),)
+gen-report: check-image check-venv setup-volumes ## Render build-report.db to stdout for FEDORA_VERSION (--format github|copr)
+	$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) \
+		/work/.venv/bin/python3 scripts/gen-report.py $(if $(FORMAT),--format $(FORMAT),)
 
-readme: check-image check-venv setup-volumes ## Generate README.md, docs/README.copr.md, and docs/full-report.md
+readme: check-image check-venv setup-volumes ## Generate README.md, docs/README.copr.md, and docs/full-report.md for FEDORA_VERSION
 	@mkdir -p "$(MAKE_LOGS_DIR)/readme"
-	@$(CONTAINER_PYTHON) scripts/gen-report.py --format github --output ./README.md \
+	@$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) \
+		/work/.venv/bin/python3 scripts/gen-report.py --format github --output ./README.md \
 		2>"$(MAKE_LOGS_DIR)/readme/github.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ GitHub README failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ GitHub README generated"
-	@$(CONTAINER_PYTHON) scripts/gen-report.py --format copr --output ./docs/README.copr.md --skip-copr-poll \
+	@$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) \
+		/work/.venv/bin/python3 scripts/gen-report.py --format copr --output ./docs/README.copr.md --skip-copr-poll \
 		2>"$(MAKE_LOGS_DIR)/readme/copr.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ COPR README failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ COPR README generated"
-	@$(CONTAINER_PYTHON) scripts/gen-report.py --format full-report --output ./docs/full-report.md --skip-copr-poll \
+	@$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) \
+		/work/.venv/bin/python3 scripts/gen-report.py --format full-report --output ./docs/full-report.md --skip-copr-poll \
 		2>"$(MAKE_LOGS_DIR)/readme/full-report.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ Full Report failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ Full Report generated"
+
+db-usage: check-image check-venv setup-volumes ## Report disk usage of tracked build artifacts by package/target
+	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --usage
+
+db-prune: check-image check-venv setup-volumes ## Remove all but the newest artifact per (package,target,kind). Dry-run by default; CONFIRM=1 to actually delete
+	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --prune $(if $(filter 1,$(CONFIRM)),--confirm,)
+
+db-shell: check-image check-venv ## Open an interactive sqlite3 shell on build-report.db
+	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run -it --rm \
+		-v $(WORKDIR_MOUNT) \
+		-v $(VENV_MOUNT) \
+		-w /work \
+		$(IMAGE_NAME):$(FEDORA_VERSION) /work/.venv/bin/python3 -m sqlite3 build-report.db
+
+db-nuke: ## DESTROY build-report.db entirely: artifact ledger + all run/stage history (irreversible; confirmation required)
+	@printf "$(HIGHLIGHT_PREFIX) Destroy build-report.db entirely (artifact ledger + all history)? [y/N] "; \
+	read ans; \
+	[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "$(HIGHLIGHT_PREFIX) Aborted."; exit 1; }
+	@rm -f build-report.db build-report.db-wal build-report.db-shm
+	@echo $(HIGHLIGHT_PREFIX) "✓ build-report.db destroyed"
 
 # Update the COPR project description and instructions from markdown files.
 # Requires: copr-cli installed + ~/.config/copr token
@@ -391,7 +421,8 @@ build-pop: check-image check-venv setup-volumes ## Remove mock/copr build status
 		read ans; \
 		[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "$(HIGHLIGHT_PREFIX) Aborted."; exit 1; }; \
 	fi
-	@$(CONTAINER_RUN) env PACKAGE=$(PACKAGE) /work/.venv/bin/python3 scripts/pkg-build-pop.py || exit 1
+	@$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) PACKAGE=$(PACKAGE) \
+		/work/.venv/bin/python3 scripts/pkg-build-pop.py || exit 1
 
 stage-validate: check-image check-venv setup-volumes ## Run validation stage (PACKAGE=<name>, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
@@ -402,6 +433,8 @@ stage-validate: check-image check-venv setup-volumes ## Run validation stage (PA
 
 stage-show-plan: check-image check-venv setup-volumes ## Show build plan - what will run, cache, or skip (PACKAGE, SKIP_PACKAGES, COPR_REPO optional, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
+		FEDORA_VERSION=$(FEDORA_VERSION) \
+		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
 		SKIP_PACKAGES=$(SKIP_PACKAGES) \
 		COPR_REPO=$(COPR_REPO) \

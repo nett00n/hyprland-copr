@@ -3,17 +3,21 @@
 Provides helpers for:
 - Computing which stages must be forced to run
 - Determining if stages are cached and can be skipped
-- Injecting metadata into stage entries
+- Choosing the `reason` string recorded for a stage's cache outcome
+
+Stamping run metadata after a stage executes (the old `inject_stage_meta`) is
+now `lib.build_db.finalize_stage` -- it's a plain UPDATE, not orchestration.
 """
 
+from lib import build_db
 from lib.cache import hashes_match
 
-# Stage order for cascading force_run
-STAGE_ORDER = ["spec", "vendor", "srpm", "mock", "copr"]
+# Stage order for cascading force_run (all stages except validate, which has no cache).
+STAGE_ORDER = build_db.STAGES[1:]
 
 
 def compute_forced_stages(
-    pkg: str, deps: set[str], build_status: dict, rebuilt_packages: set[str]
+    pkg: str, deps: set[str], target: str, rebuilt_packages: set[str]
 ) -> set[str]:
     """Compute set of stages that must run due to force_run or dependency cascade.
 
@@ -24,7 +28,7 @@ def compute_forced_stages(
     Args:
         pkg: Package name
         deps: Package's effective dependencies (see lib.deps.effective_deps)
-        build_status: Current build status dict
+        target: build_db target key (mock chroot, e.g. fedora-44-x86_64)
         rebuilt_packages: Set of packages that were rebuilt this run
 
     Returns:
@@ -39,7 +43,7 @@ def compute_forced_stages(
 
     # Check each stage for force_run flag; once found, cascade to remaining stages
     for stage in STAGE_ORDER:
-        entry = build_status.get("stages", {}).get(stage, {}).get(pkg, {})
+        entry = build_db.get_stage(pkg, stage, target) or {}
         if cascade or entry.get("force_run", False):
             forced.add(stage)
             cascade = True
@@ -47,7 +51,7 @@ def compute_forced_stages(
 
 
 def is_cached(
-    stage: str, pkg: str, build_status: dict, new_hashes: dict, forced_stages: set[str]
+    stage: str, pkg: str, target: str, new_hashes: dict, forced_stages: set[str]
 ) -> bool:
     """Check if a stage result is cached and can be skipped.
 
@@ -59,7 +63,7 @@ def is_cached(
     Args:
         stage: Stage name
         pkg: Package name
-        build_status: Current build status dict
+        target: build_db target key
         new_hashes: Newly computed input hashes for this stage
         forced_stages: Set of stages that must run (cannot be skipped)
 
@@ -68,14 +72,16 @@ def is_cached(
     """
     if stage in forced_stages:
         return False
-    entry = build_status.get("stages", {}).get(stage, {}).get(pkg, {})
+    entry = build_db.get_stage(pkg, stage, target)
+    if entry is None:
+        return False
     return entry.get("state") == "success" and hashes_match(entry, new_hashes)
 
 
 def cache_miss_reason(
     stage: str,
     pkg: str,
-    build_status: dict,
+    target: str,
     new_hashes: dict,
     forced_stages: set[str],
     deps: set[str] | None = None,
@@ -84,12 +90,12 @@ def cache_miss_reason(
     """Determine why a stage cache was missed (not cached).
 
     Returns a reason string explaining why is_cached() returned False.
-    Used to set the 'reason' field on stage entries that run.
+    Used as the `reason` recorded on stage rows that run.
 
     Args:
         stage: Stage name
         pkg: Package name
-        build_status: Build status dict
+        target: build_db target key
         new_hashes: Newly computed input hashes
         forced_stages: Set of stages forced to run
         deps: Package's effective dependencies (see lib.deps.effective_deps),
@@ -97,12 +103,25 @@ def cache_miss_reason(
         rebuilt_packages: Set of packages rebuilt this run (to show in reason)
 
     Returns:
-        Reason string. Examples:
+        Canonical reason string. Full vocabulary (some set here, some set
+        directly by full-cycle.py/stage scripts for cases that aren't cache
+        misses):
+        - "cached" — cache hit, hashes match (full-cycle.py, via update_reason)
         - "forced" — force_run flag set by operator
-        - "forced (dep rebuilt: hyprutils)" — dependency was rebuilt (and not cached)
+        - "forced (dep rebuilt: hyprutils)" — dependency was rebuilt
+        - "forced (dep rebuilt: hyprutils, hyprlang)" — multiple deps rebuilt
+        - "hash-mismatch" — stored hashes differ from computed
+        - "prior-failed" — prior state was "failed"
+        - "prior-skipped" — prior state was "skipped"
         - "first-run" — no prior entry exists
-        - "prior-{state}" — prior state was failed/skipped
-        - "hash-mismatch" — hashes differ
+        - "proceed-skip" — PROCEED_BUILD=true, prior state success (full-cycle.py)
+        - "SKIP_MOCK" / "SKIP_COPR" — env var skip (full-cycle.py)
+        - "config: skip" — fedora:<ver>: skip: true in packages.yaml (stage scripts)
+        - "not-vendored" — vendor skipped, package is not Go/Rust (stage-vendor.py)
+        - "spec failed" — spec stage failed (vendor/srpm downstream) (stage scripts)
+        - "srpm {state}" — srpm upstream (mock/copr) (stage scripts)
+        - "mock {state}" — mock upstream (copr) (stage scripts)
+        - "local dep failed: <name>" — local dep failed in mock (stage-mock.py)
 
     Note: When listing rebuilt dependencies, only includes deps that actually changed
     (reason != "cached"). Cached dependencies are filtered out even if in rebuilt_packages.
@@ -116,10 +135,7 @@ def cache_miss_reason(
                 dep
                 for dep in sorted(deps)
                 if dep in rebuilt_packages
-                and build_status.get("stages", {})
-                .get(stage, {})
-                .get(dep, {})
-                .get("reason")
+                and (build_db.get_stage(dep, stage, target) or {}).get("reason")
                 != "cached"
             ]
             if rebuilt_deps:
@@ -127,7 +143,7 @@ def cache_miss_reason(
                 return f"forced (dep rebuilt: {deps_str})"
         return "forced"
 
-    entry = build_status.get("stages", {}).get(stage, {}).get(pkg)
+    entry = build_db.get_stage(pkg, stage, target)
     if entry is None:
         return "first-run"
 
@@ -136,58 +152,3 @@ def cache_miss_reason(
         return f"prior-{state}"
 
     return "hash-mismatch"
-
-
-def inject_stage_meta(
-    stage: str,
-    pkg: str,
-    build_status: dict,
-    started_at: int,
-    new_hashes: dict,
-    update_hashes: bool = True,
-    reason: str | None = None,
-) -> None:
-    """Inject metadata into a stage entry after execution.
-
-    Updates:
-    - started_at: timestamp when stage execution started
-    - hashes: input hashes (only if update_hashes=True and state is "success")
-    - reason: human-readable string explaining why stage was skipped or triggered a run
-    - Clears force_run flag (one-shot, must be re-set to force again)
-
-    Args:
-        stage: Stage name
-        pkg: Package name
-        build_status: Build status dict (modified in-place)
-        started_at: Unix timestamp when stage started
-        new_hashes: Input hashes computed for this stage
-        update_hashes: If False, preserve stored hashes (for proceed-skip cases)
-        reason: Canonical reason string. Examples:
-            - "cached" — cache hit, hashes match
-            - "forced" — force_run flag set by operator
-            - "forced (dep rebuilt: hyprutils)" — dependency was rebuilt
-            - "forced (dep rebuilt: hyprutils, hyprlang)" — multiple deps rebuilt
-            - "hash-mismatch" — stored hashes differ from computed
-            - "prior-failed" — prior state was "failed"
-            - "prior-skipped" — prior state was "skipped"
-            - "first-run" — no prior entry exists
-            - "proceed-skip" — PROCEED_BUILD=true, prior state success
-            - "SKIP_MOCK" / "SKIP_COPR" — env var skip
-            - "config: skip" — fedora:<ver>: skip: true in packages.yaml
-            - "not-go" — vendor skipped, package is not Go
-            - "spec failed" — spec stage failed (vendor/srpm downstream)
-            - "srpm {state}" — srpm upstream (mock/copr)
-            - "mock {state}" — mock upstream (copr)
-            - "local dep failed: <name>" — local dep failed in mock
-    """
-    entry = build_status.get("stages", {}).get(stage, {}).get(pkg)
-    if entry is None:
-        return
-    entry["started_at"] = started_at
-    entry.pop(
-        "force_run", None
-    )  # cleared after every run; operator must re-set to force again
-    if update_hashes and entry.get("state") == "success":
-        entry["hashes"] = new_hashes
-    if reason is not None:
-        entry["reason"] = reason

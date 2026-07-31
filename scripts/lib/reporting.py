@@ -30,8 +30,12 @@ def status(stage: str, pkg: str, result: str, detail: str = "") -> None:
     print(f"  {tag} {stage}: {pkg}{suffix}")
 
 
-def print_summary(packages: dict, report: dict, copr_repo: str) -> None:
-    """Print the final build summary table."""
+def print_summary(packages: dict, stages: dict, copr_repo: str) -> None:
+    """Print the final build summary table.
+
+    `stages` is the {stage: {package: entry}} shape returned by
+    lib.build_db.stage_map(target).
+    """
     if not packages:
         print("\nNo packages to summarize.")
         return
@@ -46,7 +50,7 @@ def print_summary(packages: dict, report: dict, copr_repo: str) -> None:
     for pkg in packages:
         row = f"{pkg:<{col_w}}"
         for stage in stage_keys:
-            pkg_data = report.get("stages", {}).get(stage, {}).get(pkg, {})
+            pkg_data = stages.get(stage, {}).get(pkg, {})
             state = pkg_data.get("state", "-")
             reason = pkg_data.get("reason", "")
             # Show "cached" if stage was cached, otherwise show state
