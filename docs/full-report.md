@@ -51,10 +51,10 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 <!-- END: Header -->
 
-## Build Report — Fedora 44 · 2026-07-30
+## Build Report — Fedora 44 · 2026-07-31
 
 > **Chroot:** `fedora-44-x86_64`
-> **Timestamp:** `2026-07-30T10:53:46+00:00`
+> **Timestamp:** `2026-07-31T07:39:39+00:00`
 
 ---
 
@@ -82,10 +82,10 @@ A very light linux rendering backend library
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:28:34 UTC | 1h 9m | forced (dep rebuilt: hyprutils, hyprwayland-scanner) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprutils, hyprwayland-scanner) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:28:35 UTC | 1h 8m | forced (dep rebuilt: hyprutils, hyprwayland-scanner) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:28:36 UTC | 1m 49s | forced (dep rebuilt: hyprutils, hyprwayland-scanner) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:28:34 UTC | 21h 2m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:28:35 UTC | 21h 2m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:28:36 UTC | 1m 49s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -98,10 +98,10 @@ Scaffolding CLI for Astal+Gnim
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:22:26 UTC | 1h 15m | forced (dep rebuilt: gtk4-layer-shell) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-success-brightgreen?style=for-the-badge) | — | — | forced (dep rebuilt: gtk4-layer-shell) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:22:32 UTC | 1h 15m | forced (dep rebuilt: gtk4-layer-shell) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:22:33 UTC | 1m 15s | forced (dep rebuilt: gtk4-layer-shell) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:22:26 UTC | 21h 9m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-success-brightgreen?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:22:32 UTC | 21h 9m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:22:33 UTC | 1m 15s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -114,10 +114,10 @@ Cross-platform Audio Visualizer
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:31:31 UTC | 1h 6m | forced (dep rebuilt: sndio) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: sndio) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:31:33 UTC | 1h 6m | forced (dep rebuilt: sndio) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:31:35 UTC | 50s | forced (dep rebuilt: sndio) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 07:58:31 UTC | 33m 2s | forced (dep rebuilt: sndio) |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 07:58:32 UTC | 33m 1s | forced (dep rebuilt: sndio) |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-31 07:58:33 UTC | 1m 35s | forced (dep rebuilt: sndio) |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -130,10 +130,10 @@ Wayland clipboard manager with support for multimedia
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:03:26 UTC | 1h 34m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-success-brightgreen?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:04:31 UTC | 1h 33m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:04:33 UTC | 47s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:03:26 UTC | 21h 28m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-success-brightgreen?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:04:31 UTC | 21h 27m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:04:33 UTC | 47s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -146,10 +146,10 @@ Simple, portable, and self-contained stacktrace library for C++11 and newer
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:41:59 UTC | 55m 35s | forced (dep rebuilt: libdwarf-code) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: libdwarf-code) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:42:00 UTC | 55m 34s | forced (dep rebuilt: libdwarf-code) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:42:01 UTC | 1m 6s | forced (dep rebuilt: libdwarf-code) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:41:59 UTC | 20h 49m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:42:00 UTC | 20h 49m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:42:01 UTC | 1m 6s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -162,10 +162,10 @@ Elkowars Wacky Widgets is a standalone widget system made in Rust that allows yo
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:09:23 UTC | 1h 28m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-success-brightgreen?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:09:55 UTC | 1h 27m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:09:58 UTC | 10m 18s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:09:23 UTC | 21h 22m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-success-brightgreen?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:09:55 UTC | 21h 21m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:09:58 UTC | 10m 18s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -178,10 +178,10 @@ Extremely fast, in memory, JSON and reflection library for modern C++.
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 10:53:52 UTC | 1h 43m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 10:53:52 UTC | 1h 43m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 10:53:54 UTC | 3m 23s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 07:39:45 UTC | 51m 48s | hash-mismatch |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 07:39:45 UTC | 51m 48s | hash-mismatch |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-31 07:39:46 UTC | 12m 54s | hash-mismatch |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -194,10 +194,10 @@ A library to create panels and other desktop components for Wayland using the La
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 10:57:17 UTC | 1h 40m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 10:57:17 UTC | 1h 40m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 10:57:19 UTC | 1m 49s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 10:57:17 UTC | 21h 34m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 10:57:17 UTC | 21h 34m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 10:57:19 UTC | 1m 49s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -210,10 +210,10 @@ A library and toolkit for the Hyprland cursor format
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:46:07 UTC | 51m 27s | forced (dep rebuilt: hyprlang) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprlang) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:46:07 UTC | 51m 27s | forced (dep rebuilt: hyprlang) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:46:09 UTC | 1m 16s | forced (dep rebuilt: hyprlang) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:46:07 UTC | 20h 45m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:46:07 UTC | 20h 45m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:46:09 UTC | 1m 16s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -226,10 +226,10 @@ Small C++ library for graphics utilities across the Hypr ecosystem
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:25:05 UTC | 1h 12m | forced (dep rebuilt: hyprutils) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprutils) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:25:06 UTC | 1h 12m | forced (dep rebuilt: hyprutils) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:25:08 UTC | 1m 6s | forced (dep rebuilt: hyprutils) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:25:05 UTC | 21h 6m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:25:06 UTC | 21h 6m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:25:08 UTC | 1m 6s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -242,10 +242,10 @@ An idle management daemon for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:45:07 UTC | 52m 27s | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:45:08 UTC | 52m 26s | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:45:09 UTC | 58s | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:45:07 UTC | 20h 46m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:45:08 UTC | 20h 46m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:45:09 UTC | 58s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -258,14 +258,14 @@ A Modern C++ Wayland Compositor
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:08:54 UTC | 28m 40s | forced (dep rebuilt: aquamarine, glaze, hyprcursor, hyprgraphics, hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner, hyprwire) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: aquamarine, glaze, hyprcursor, hyprgraphics, hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner, hyprwire) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:08:56 UTC | 28m 38s | forced (dep rebuilt: aquamarine, glaze, hyprcursor, hyprgraphics, hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner, hyprwire) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:09:05 UTC | 19m 8s | forced (dep rebuilt: aquamarine, glaze, hyprcursor, hyprgraphics, hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner, hyprwire) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 08:09:02 UTC | 22m 31s | forced (dep rebuilt: glaze) |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 08:09:04 UTC | 22m 29s | forced (dep rebuilt: glaze) |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-31 08:09:07 UTC | 18m 18s | forced (dep rebuilt: glaze) |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
-### `hyprland-git` — 0.56.0^20260729git2b1723a
+### `hyprland-git` — 0.56.0^20260730git8668a53
 
 A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 
@@ -274,10 +274,10 @@ A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:07:52 UTC | 29m 42s | forced (dep rebuilt: aquamarine, glaze, hyprcursor, hyprgraphics, hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner, hyprwire) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: aquamarine, glaze, hyprcursor, hyprgraphics, hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner, hyprwire) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:07:55 UTC | 29m 39s | forced (dep rebuilt: aquamarine, glaze, hyprcursor, hyprgraphics, hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner, hyprwire) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-failed-red?style=for-the-badge) | 2026-07-30 12:08:05 UTC | 29m 29s | forced (dep rebuilt: aquamarine, glaze, hyprcursor, hyprgraphics, hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner, hyprwire) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 08:04:46 UTC | 26m 47s | forced (dep rebuilt: glaze) |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 08:04:48 UTC | 26m 45s | forced (dep rebuilt: glaze) |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-failed-red?style=for-the-badge) | 2026-07-31 08:07:20 UTC | 24m 13s | forced (dep rebuilt: glaze) |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -290,10 +290,10 @@ Hyprland GUI utilities
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:34:59 UTC | 2m 35s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:35:00 UTC | 2m 34s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:35:01 UTC | 1m 8s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:34:59 UTC | 19h 56m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:35:00 UTC | 19h 56m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:35:01 UTC | 1m 8s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -306,10 +306,10 @@ Per-window keyboard layout daemon for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:06:01 UTC | 1h 31m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-success-brightgreen?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:06:15 UTC | 1h 31m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:06:16 UTC | 2m 1s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:06:01 UTC | 21h 25m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-success-brightgreen?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:06:15 UTC | 21h 25m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:06:16 UTC | 2m 1s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -322,10 +322,10 @@ Official plugins for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:36:52 UTC | 42s | forced (dep rebuilt: Hyprland) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: Hyprland) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:36:52 UTC | 42s | forced (dep rebuilt: Hyprland) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-failed-red?style=for-the-badge) | 2026-07-30 12:36:54 UTC | 40s | forced (dep rebuilt: Hyprland) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 08:30:13 UTC | 1m 20s | forced (dep rebuilt: Hyprland) |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 08:30:14 UTC | 1m 19s | forced (dep rebuilt: Hyprland) |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-failed-red?style=for-the-badge) | 2026-07-31 08:30:14 UTC | 1m 19s | forced (dep rebuilt: Hyprland) |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -338,10 +338,10 @@ Official plugins for Hyprland [Built from latest commit, unstable]
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:36:09 UTC | 1m 25s | forced (dep rebuilt: Hyprland) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: Hyprland) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:36:10 UTC | 1m 24s | forced (dep rebuilt: Hyprland) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-failed-red?style=for-the-badge) | 2026-07-30 12:36:12 UTC | 1m 22s | forced (dep rebuilt: Hyprland) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 08:30:53 UTC | 40s | forced (dep rebuilt: Hyprland) |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 08:30:54 UTC | 39s | forced (dep rebuilt: Hyprland) |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-failed-red?style=for-the-badge) | 2026-07-31 08:30:54 UTC | 39s | forced (dep rebuilt: Hyprland) |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -354,10 +354,10 @@ Wayland protocol extensions for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:08 UTC | 1h 38m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:08 UTC | 1h 38m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:09 UTC | 30s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:08 UTC | 21h 32m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:08 UTC | 21h 32m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:09 UTC | 30s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -370,10 +370,10 @@ A qml style provider for hypr* qt apps
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:50:57 UTC | 46m 37s | forced (dep rebuilt: hyprlang) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprlang) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:50:58 UTC | 46m 36s | forced (dep rebuilt: hyprlang) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:50:59 UTC | 1m 22s | forced (dep rebuilt: hyprlang) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:50:57 UTC | 20h 40m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:50:58 UTC | 20h 40m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:50:59 UTC | 1m 22s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -386,10 +386,10 @@ The hypr configuration language library
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:26:14 UTC | 1h 11m | forced (dep rebuilt: hyprutils) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprutils) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:26:15 UTC | 1h 11m | forced (dep rebuilt: hyprutils) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:26:16 UTC | 1m 4s | forced (dep rebuilt: hyprutils) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:26:14 UTC | 21h 5m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:26:15 UTC | 21h 5m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:26:16 UTC | 1m 4s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -402,10 +402,10 @@ A multipurpose and versatile launcher / picker for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:33:28 UTC | 4m 6s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils, hyprwire) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils, hyprwire) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:33:28 UTC | 4m 6s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils, hyprwire) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:33:30 UTC | 1m 29s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils, hyprwire) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:33:28 UTC | 19h 58m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:33:28 UTC | 19h 58m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:33:30 UTC | 1m 29s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -418,10 +418,10 @@ A gpu-accelerated screen lock for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:43:07 UTC | 54m 27s | forced (dep rebuilt: hyprgraphics, hyprlang, hyprutils, hyprwayland-scanner) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprgraphics, hyprlang, hyprutils, hyprwayland-scanner) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:43:08 UTC | 54m 26s | forced (dep rebuilt: hyprgraphics, hyprlang, hyprutils, hyprwayland-scanner) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:43:10 UTC | 1m 57s | forced (dep rebuilt: hyprgraphics, hyprlang, hyprutils, hyprwayland-scanner) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:43:07 UTC | 20h 48m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:43:08 UTC | 20h 48m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:43:10 UTC | 1m 57s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -434,10 +434,10 @@ A blazing fast Wayland wallpaper utility
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:32:17 UTC | 5m 17s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils, hyprwayland-scanner, hyprwire) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils, hyprwayland-scanner, hyprwire) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:32:18 UTC | 5m 16s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils, hyprwayland-scanner, hyprwire) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:32:19 UTC | 1m 9s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprtoolkit, hyprutils, hyprwayland-scanner, hyprwire) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:32:17 UTC | 19h 59m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:32:18 UTC | 19h 59m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:32:19 UTC | 1m 9s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -450,10 +450,10 @@ A wlroots-compatible Wayland color picker that does not suck
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:30:25 UTC | 1h 7m | forced (dep rebuilt: hyprutils, hyprwayland-scanner) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprutils, hyprwayland-scanner) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:30:26 UTC | 1h 7m | forced (dep rebuilt: hyprutils, hyprwayland-scanner) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:30:28 UTC | 1m 3s | forced (dep rebuilt: hyprutils, hyprwayland-scanner) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:30:25 UTC | 21h 1m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:30:26 UTC | 21h 1m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:30:28 UTC | 1m 3s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -466,10 +466,10 @@ A polkit authentication agent written in QT/QML
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:23:48 UTC | 1h 13m | forced (dep rebuilt: hyprutils) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprutils) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:23:48 UTC | 1h 13m | forced (dep rebuilt: hyprutils) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:23:50 UTC | 1m 15s | forced (dep rebuilt: hyprutils) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:23:48 UTC | 21h 7m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:23:48 UTC | 21h 7m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:23:50 UTC | 1m 15s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -482,10 +482,10 @@ Volume management center for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:28:13 UTC | 9m 21s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprtoolkit, hyprutils) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: aquamarine, hyprgraphics, hyprtoolkit, hyprutils) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:28:14 UTC | 9m 20s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprtoolkit, hyprutils) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:28:16 UTC | 1m 25s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprtoolkit, hyprutils) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:28:13 UTC | 20h 3m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:28:14 UTC | 20h 3m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:28:16 UTC | 1m 25s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -498,10 +498,10 @@ QT6 Theme Provider for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:47:25 UTC | 50m 9s | forced (dep rebuilt: hyprlang, hyprutils) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprlang, hyprutils) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:47:26 UTC | 50m 8s | forced (dep rebuilt: hyprlang, hyprutils) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:47:28 UTC | 1m 33s | forced (dep rebuilt: hyprlang, hyprutils) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:47:25 UTC | 20h 44m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:47:26 UTC | 20h 44m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:47:28 UTC | 1m 33s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -514,10 +514,10 @@ Utility to easily take screenshots in Hyprland using your mouse
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:39 UTC | 1h 37m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:40 UTC | 1h 37m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:42 UTC | 22s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:39 UTC | 21h 31m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:40 UTC | 21h 31m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 10:59:42 UTC | 22s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -530,10 +530,10 @@ A graceful shutdown utility for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:29:41 UTC | 7m 53s | forced (dep rebuilt: aquamarine, glaze, hyprgraphics, hyprtoolkit, hyprutils) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: aquamarine, glaze, hyprgraphics, hyprtoolkit, hyprutils) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:29:41 UTC | 7m 53s | forced (dep rebuilt: aquamarine, glaze, hyprgraphics, hyprtoolkit, hyprutils) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:29:43 UTC | 1m 13s | forced (dep rebuilt: aquamarine, glaze, hyprgraphics, hyprtoolkit, hyprutils) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 08:27:25 UTC | 4m 8s | forced (dep rebuilt: glaze) |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 08:27:25 UTC | 4m 8s | forced (dep rebuilt: glaze) |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-31 08:27:26 UTC | 1m 9s | forced (dep rebuilt: glaze) |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -546,10 +546,10 @@ An application to enable a blue-light filter on Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:52:21 UTC | 45m 13s | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:52:22 UTC | 45m 12s | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:52:23 UTC | 56s | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:52:21 UTC | 20h 39m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:52:22 UTC | 20h 39m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:52:23 UTC | 56s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -562,10 +562,10 @@ System info utility for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 12:30:56 UTC | 6m 38s | forced (dep rebuilt: aquamarine, glaze, hyprgraphics, hyprtoolkit, hyprutils) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: aquamarine, glaze, hyprgraphics, hyprtoolkit, hyprutils) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 12:30:57 UTC | 6m 37s | forced (dep rebuilt: aquamarine, glaze, hyprgraphics, hyprtoolkit, hyprutils) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 12:31:00 UTC | 1m 17s | forced (dep rebuilt: aquamarine, glaze, hyprgraphics, hyprtoolkit, hyprutils) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 08:28:35 UTC | 2m 58s | forced (dep rebuilt: glaze) |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 08:28:37 UTC | 2m 56s | forced (dep rebuilt: glaze) |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-31 08:28:37 UTC | 1m 36s | forced (dep rebuilt: glaze) |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -578,10 +578,10 @@ A modern C++ Wayland-native GUI toolkit
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:53:19 UTC | 44m 15s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprutils, hyprwayland-scanner) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprutils, hyprwayland-scanner) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:53:20 UTC | 44m 14s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprutils, hyprwayland-scanner) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:53:21 UTC | 2m 17s | forced (dep rebuilt: aquamarine, hyprgraphics, hyprlang, hyprutils, hyprwayland-scanner) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:53:19 UTC | 20h 38m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:53:20 UTC | 20h 38m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:53:21 UTC | 2m 17s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -594,10 +594,10 @@ Small C++ library for utilities used across the Hypr ecosystem
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:00:04 UTC | 1h 37m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:00:05 UTC | 1h 37m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:00:06 UTC | 57s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:00:04 UTC | 21h 31m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:00:05 UTC | 21h 31m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:00:06 UTC | 57s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -610,10 +610,10 @@ A Wayland scanner replacement for Hypr projects
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:01:03 UTC | 1h 36m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:01:03 UTC | 1h 36m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:01:05 UTC | 59s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:01:03 UTC | 21h 30m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:01:03 UTC | 21h 30m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:01:05 UTC | 59s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -626,10 +626,10 @@ A fast and consistent wire protocol for IPC
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:27:20 UTC | 1h 10m | forced (dep rebuilt: hyprutils) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprutils) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:27:20 UTC | 1h 10m | forced (dep rebuilt: hyprutils) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:27:22 UTC | 1m 12s | forced (dep rebuilt: hyprutils) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:27:20 UTC | 21h 4m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:27:20 UTC | 21h 4m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:27:22 UTC | 1m 12s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -642,10 +642,10 @@ Library to access DWARF debugging information
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:08:17 UTC | 1h 29m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:08:17 UTC | 1h 29m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:08:19 UTC | 1m 4s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:08:17 UTC | 21h 23m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:08:17 UTC | 21h 23m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:08:19 UTC | 1m 4s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -658,10 +658,10 @@ A video wallpaper program for wlroots based wayland compositors.
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:21:07 UTC | 1h 16m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:21:09 UTC | 1h 16m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:21:10 UTC | 1m 16s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:21:07 UTC | 21h 10m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:21:09 UTC | 21h 10m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:21:10 UTC | 1m 16s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -674,10 +674,10 @@ Scratchpads & many goodies for Hyprland
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:02:04 UTC | 1h 35m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:02:05 UTC | 1h 35m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:02:07 UTC | 35s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:02:04 UTC | 21h 29m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:02:05 UTC | 21h 29m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:02:07 UTC | 35s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -690,10 +690,10 @@ Flexible QtQuick based desktop shell toolkit
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:55:38 UTC | 41m 56s | forced (dep rebuilt: cpptrace) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: cpptrace) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:55:39 UTC | 41m 55s | forced (dep rebuilt: cpptrace) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:55:41 UTC | 12m 11s | forced (dep rebuilt: cpptrace) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:55:38 UTC | 20h 35m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:55:39 UTC | 20h 35m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:55:41 UTC | 12m 11s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -706,10 +706,10 @@ alt-tab switch window for wayland compositor
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:20:16 UTC | 1h 17m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:20:17 UTC | 1h 17m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:20:20 UTC | 47s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:20:16 UTC | 21h 11m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:20:17 UTC | 21h 11m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:20:20 UTC | 47s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -722,10 +722,10 @@ Portable version of OpenBSD's lightweight audio & MIDI sub-system
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:02:42 UTC | 1h 34m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:02:42 UTC | 1h 34m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:02:43 UTC | 43s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 07:52:40 UTC | 38m 53s | hash-mismatch |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 07:52:41 UTC | 38m 52s | hash-mismatch |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-31 07:52:41 UTC | 42s | hash-mismatch |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -738,10 +738,10 @@ Universal Wayland Session Manager
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:05:20 UTC | 1h 32m | first-run |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | first-run |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:05:20 UTC | 1h 32m | first-run |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:05:22 UTC | 39s | first-run |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:05:20 UTC | 21h 26m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:05:20 UTC | 21h 26m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:05:22 UTC | 39s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -754,10 +754,10 @@ Highly customizable Wayland bar for Sway and Wlroots based compositors
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:37:13 UTC | 1h | forced (dep rebuilt: sndio) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: sndio) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:37:16 UTC | 1h | forced (dep rebuilt: sndio) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:37:17 UTC | 4m 42s | forced (dep rebuilt: sndio) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 08:00:08 UTC | 31m 25s | forced (dep rebuilt: sndio) |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 08:00:11 UTC | 31m 22s | forced (dep rebuilt: sndio) |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-31 08:00:11 UTC | 4m 35s | forced (dep rebuilt: sndio) |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -770,10 +770,10 @@ Highly customizable Wayland bar for Sway and Wlroots based compositors [Built fr
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:32:25 UTC | 1h 5m | forced (dep rebuilt: sndio) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: sndio) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:32:26 UTC | 1h 5m | forced (dep rebuilt: sndio) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:32:28 UTC | 4m 45s | forced (dep rebuilt: sndio) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-31 07:53:23 UTC | 38m 10s | forced (dep rebuilt: sndio) |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-31 07:53:25 UTC | 38m 8s | forced (dep rebuilt: sndio) |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-31 07:53:25 UTC | 5m 6s | forced (dep rebuilt: sndio) |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -786,10 +786,10 @@ An XDG-Destop-Portal backend for Hyprland (and wlroots)
 | Stage | Status | Date | Duration | Details |
 |:------|:-------|:-----|:--------:|---------|
 | **Validate** | ![validate](https://img.shields.io/badge/validate-success-brightgreen?style=for-the-badge) | — | — | 0 error(s), 0 warning(s) |
-| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:49:01 UTC | 48m 33s | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
-| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
-| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:49:02 UTC | 48m 32s | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
-| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:49:04 UTC | 1m 53s | forced (dep rebuilt: hyprland-protocols, hyprlang, hyprutils, hyprwayland-scanner) |
+| **Spec** | ![spec](https://img.shields.io/badge/spec-success-brightgreen?style=for-the-badge) | 2026-07-30 11:49:01 UTC | 20h 42m | RPM spec file processing |
+| **Vendor** | ![vendor](https://img.shields.io/badge/vendor-skipped-lightgrey?style=for-the-badge) | — | — | Skipped |
+| **SRPM** | ![srpm](https://img.shields.io/badge/srpm-success-brightgreen?style=for-the-badge) | 2026-07-30 11:49:02 UTC | 20h 42m | Source RPM created |
+| **Mock** | ![mock](https://img.shields.io/badge/mock-success-brightgreen?style=for-the-badge) | 2026-07-30 11:49:04 UTC | 1m 53s | Local build test |
 | **COPR** | ![copr](https://img.shields.io/badge/copr-skipped-lightgrey?style=for-the-badge) |  |  | blocked: mock failed for Hyprland-git, hyprland-plugins, hyprland-plugins-git |
 ---
 
@@ -823,7 +823,7 @@ An XDG-Destop-Portal backend for Hyprland (and wlroots)
 
 - `hypridle` (0.1.8) — An idle management daemon for Hyprland
 - `hyprland` (0.56.1) — A Modern C++ Wayland Compositor
-- `hyprland-git` (0.56.0^20260729git2b1723a) — A Modern C++ Wayland Compositor [Built from latest commit, unstable]
+- `hyprland-git` (0.56.0^20260730git8668a53) — A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 - `hyprland-guiutils` (0.2.2) — Hyprland GUI utilities
 - `hyprland-plugins` (0.56.0) — Official plugins for Hyprland
 - `hyprland-plugins-git` (0.55.0^20260517gitb324783) — Official plugins for Hyprland [Built from latest commit, unstable]

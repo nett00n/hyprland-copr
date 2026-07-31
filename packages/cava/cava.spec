@@ -52,6 +52,6 @@ Package info:
 %license LICENSE
 
 %changelog
-* Thu Jul 30 2026 nett00n <copr@nett00n.org> - 1.0.0-4
+* Fri Jul 31 2026 nett00n <copr@nett00n.org> - 1.0.0-4
 
 - Update to 1.0.0

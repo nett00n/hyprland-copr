@@ -320,6 +320,7 @@ Hyprland:
   - hyprwayland-scanner-devel
   - hyprwire-devel
   - lcms2-devel
+  - libeis-devel
   - lua-devel
   - luajit-devel
   - ninja-build
@@ -390,7 +391,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -418,6 +419,7 @@ Hyprland-git:
   - hyprutils-devel
   - hyprwayland-scanner-devel
   - hyprwire-devel
+  - libeis-devel
   - lua-devel
   - ninja-build
   - pkgconfig(cairo)
@@ -492,12 +494,12 @@ Hyprland-git:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260729'
-      full: 2b1723adda7da821bb503ef4de7abb42d746ac51
+      date: '20260730'
+      full: 8668a5392179f99fb9ab3699ede233484bee0b51
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.56.0^20260729git2b1723a
+  version: 0.56.0^20260730git8668a53
 hyprland-guiutils:
   build:
     system: cmake
@@ -571,7 +573,7 @@ hyprland-plugins:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -627,7 +629,7 @@ hyprland-plugins-git:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 18
+  release: 19
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
