@@ -67,7 +67,7 @@ class TestFullCycleFinalize:
 
         with patch.object(full_cycle, "print_summary"), patch.object(
             full_cycle, "report_mock_failures"
-        ):
+        ), patch.object(full_cycle, "report_copr_failures"):
             # Should not raise SystemExit
             full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
 
@@ -79,10 +79,31 @@ class TestFullCycleFinalize:
 
         with patch.object(full_cycle, "print_summary"), patch.object(
             full_cycle, "report_mock_failures"
-        ), pytest.raises(SystemExit) as exc:
+        ), patch.object(
+            full_cycle, "report_copr_failures"
+        ) as mock_report_copr, pytest.raises(SystemExit) as exc:
             full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=True)
 
         assert exc.value.code == 1
+        mock_report_copr.assert_called_once_with(packages, full_cycle.BUILD_LOG_DIR)
+
+    def test_async_copr_failed_state_does_not_report(self):
+        """Async mode: a 'failed' copr state doesn't drive exit or log analysis here --
+        it only becomes terminal later, when gen-report.py polls (see
+        lib.copr.poll_copr_status), and that's where the failed chroots'
+        logs get fetched.
+        """
+        packages = {"pkg1": {}}
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg1", "copr", TARGET, run_id, "failed")
+
+        with patch.object(full_cycle, "print_summary"), patch.object(
+            full_cycle, "report_mock_failures"
+        ), patch.object(full_cycle, "report_copr_failures") as mock_report_copr:
+            # Should not raise SystemExit -- copr is excluded from any_failed when async.
+            full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
+
+        mock_report_copr.assert_not_called()
 
     def test_non_copr_failed_always_fails(self):
         """Failed spec/srpm/mock stage always fails, regardless of sync setting."""
@@ -92,7 +113,9 @@ class TestFullCycleFinalize:
 
         with patch.object(full_cycle, "print_summary"), patch.object(
             full_cycle, "report_mock_failures"
-        ), pytest.raises(SystemExit) as exc:
+        ), patch.object(full_cycle, "report_copr_failures"), pytest.raises(
+            SystemExit
+        ) as exc:
             full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
 
         assert exc.value.code == 1
@@ -106,7 +129,7 @@ class TestFullCycleFinalize:
 
         with patch.object(full_cycle, "print_summary"), patch.object(
             full_cycle, "report_mock_failures"
-        ):
+        ), patch.object(full_cycle, "report_copr_failures"):
             # Should not raise SystemExit
             full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
 
@@ -124,7 +147,7 @@ class TestFullCycleFinalize:
 
         with patch.object(full_cycle, "print_summary"), patch.object(
             full_cycle, "report_mock_failures"
-        ):
+        ), patch.object(full_cycle, "report_copr_failures"):
             # Should not raise SystemExit -- "some-other-pkg" isn't in `packages`.
             full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
 
@@ -135,7 +158,7 @@ class TestFullCycleFinalize:
 
         with patch.object(full_cycle, "print_summary"), patch.object(
             full_cycle, "report_mock_failures"
-        ):
+        ), patch.object(full_cycle, "report_copr_failures"):
             full_cycle.finalize_report(packages, TARGET, run_id, "", synchronous_copr=False)
 
         conn = build_db.connect()

@@ -25,7 +25,12 @@ from typing import Any
 
 from lib import build_db
 from lib.config import setup_logging
-from lib.copr import check_copr_credentials, parse_build_id, validate_copr_repo
+from lib.copr import (
+    check_copr_credentials,
+    fetch_failed_chroot_logs,
+    parse_build_id,
+    validate_copr_repo,
+)
 from lib.paths import ARCH, DISTRO, ROOT, get_package_log_dir, resolve_target
 from lib.reporting import status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
@@ -114,8 +119,16 @@ def run_for_package(
     else:
         state = "failed"
 
-    build_id = parse_build_id(stdout) if ok else None
+    # copr-cli prints "Created builds: N" as soon as the build is submitted,
+    # before it starts watching/waiting -- so a build_id can exist even when
+    # the overall command later fails (synchronous mode watched the build to
+    # a "failed" terminal state). Parse it unconditionally so failed builds
+    # still get a build_id recorded, which fetch_failed_chroot_logs needs.
+    build_id = parse_build_id(stdout)
     status("copr", pkg, "ok" if ok else "fail")
+
+    if not ok and synchronous and build_id:
+        fetch_failed_chroot_logs(pkg, build_id)
 
     extra: dict[str, Any] = {}
     if ok and synchronous:

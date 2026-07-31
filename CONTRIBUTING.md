@@ -155,7 +155,14 @@ Alternatively, step by step:
 1. This would execute spec generation to `packages/<name>/<name>.spec`,
    srpm creation and local build
 
-1. Check build logs in `logs/`
+1. Check build logs in `logs/build/<name>/`:
+
+   `00-spec`/`10-srpm`/`20-mock`/`21-mock-build`/`21-mock-root` — local stages.
+   `30-copr` — Copr submission (and, if `SYNCHRONOUS_COPR_BUILD=true`, the
+   watched build result). On a Copr failure, `30-copr-chroots.log` (per-chroot
+   states) and `31-copr-<chroot>.log` (downloaded builder logs for the chroots
+   that failed) are fetched automatically (see `docs/bugs.md` for why local
+   mock can't reproduce a chroot-specific Copr failure).
 
 1. If the build failed, analyze logs for actionable errors:
 
@@ -163,11 +170,12 @@ Alternatively, step by step:
    make stage-log-analyze PACKAGE=<name>
    ```
 
-   This parses mock/srpm logs and reports:
+   This parses local-stage and Copr logs and reports:
    - Missing dependencies and suggested packages
    - Incompatible plugins (internal header errors)
    - Missing source files (broken submodules)
    - Other compile errors with line references
+   - Copr build failures, including which chroots failed vs. succeeded
 
 1. Fix issues in `packages.yaml` (add `build_requires`, exclude incompatible plugins, etc.) and retry
 

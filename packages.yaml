@@ -444,6 +444,7 @@ Hyprland-git:
   - pkgconfig(xcursor)
   - pkgconfig(xkbcommon)
   - readline-devel
+  - sdbus-cpp-devel
   - udis86-devel
   depends_on:
   - aquamarine
@@ -489,7 +490,7 @@ Hyprland-git:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'

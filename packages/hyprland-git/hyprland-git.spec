@@ -4,7 +4,7 @@
 
 Name:           hyprland-git
 Version:        0.56.0^20260730git8668a53
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -47,6 +47,7 @@ BuildRequires:  pkgconfig(xcb-icccm)
 BuildRequires:  pkgconfig(xcursor)
 BuildRequires:  pkgconfig(xkbcommon)
 BuildRequires:  readline-devel
+BuildRequires:  sdbus-cpp-devel
 BuildRequires:  udis86-devel
 
 
@@ -112,6 +113,6 @@ Development files for hyprland-git.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Fri Jul 31 2026 nett00n <copr@nett00n.org> - 0.56.0^20260730git8668a53-1
+* Fri Jul 31 2026 nett00n <copr@nett00n.org> - 0.56.0^20260730git8668a53-2
 
 - Update to 0.56.0^20260730git8668a53

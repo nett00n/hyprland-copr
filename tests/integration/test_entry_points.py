@@ -354,6 +354,43 @@ class TestStageCoprBlocking:
         assert result is True
         assert build_db.get_stage(pkg, "copr", TARGET)["state"] == "skipped"
 
+    def test_copr_sync_failure_records_build_id_and_fetches_logs(
+        self, run_id, tmp_path
+    ):
+        """Sync mode: a build that fails after submission still records the
+        build_id (copr-cli prints "Created builds: N" before it starts
+        watching) and triggers a fetch of the failed chroots' logs.
+        """
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path="/some/path.src.rpm")
+        build_db.set_stage(pkg, "mock", TARGET, run_id, "success")
+
+        stdout = (
+            "Uploading package /some/path.src.rpm\n"
+            "Build was added to hyprland:\n"
+            "Created builds: 10798066\n"
+            "Watching build(s): (this may be safely interrupted)\n"
+            "  13:11:13 Build 10798066: failed\n"
+        )
+
+        with (
+            patch.object(stage_copr, "run_cmd", return_value=(False, stdout, "")),
+            patch.object(stage_copr, "fetch_failed_chroot_logs") as mock_fetch_logs,
+            patch.object(stage_copr, "get_package_log_dir", return_value=tmp_path),
+            patch.object(stage_copr, "ROOT", tmp_path),
+        ):
+            result = stage_copr.run_for_package(
+                pkg, meta, "43", "nett00n/hyprland", proceed=False,
+                target=TARGET, run_id=run_id, synchronous=True,
+            )
+
+        assert result is False
+        entry = build_db.get_stage(pkg, "copr", TARGET)
+        assert entry["state"] == "failed"
+        assert entry["build_id"] == 10798066
+        mock_fetch_logs.assert_called_once_with(pkg, 10798066)
+
 
 class TestStageShowPlan:
     """Tests for stage-show-plan.py show_plan() function."""

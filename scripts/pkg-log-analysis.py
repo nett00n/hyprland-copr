@@ -8,6 +8,9 @@ from lib.log_analysis import (
     _analyze_mock_log,
     _analyze_mock_build_log,
     _analyze_mock_root_log,
+    _analyze_copr_log,
+    _analyze_copr_chroot_summary,
+    _analyze_copr_chroot_logs,
     _suggest_providers,
 )
 from lib.paths import ROOT
@@ -81,6 +84,40 @@ def analyze_package(pkg: str) -> int:
             for lineno, raw_line, msg, dep, method in issues:
                 print(f"  - {msg}")
                 print(f"    {root_log}:{lineno}: {raw_line}")
+
+    # COPR stage (submission/synchronous-watch log)
+    copr_log = log_dir / "30-copr.log"
+    if copr_log.exists():
+        issues = _analyze_copr_log(copr_log)
+        if issues:
+            issues_found = True
+            print(f"\n{HIGHLIGHT_PREFIX} COPR stage issues:")
+            for lineno, raw_line, msg, dep, method in issues:
+                print(f"  - {msg}")
+                print(f"    {copr_log}:{lineno}")
+
+    # COPR per-chroot summary (which chroots failed vs. succeeded)
+    chroot_summary_log = log_dir / "30-copr-chroots.log"
+    if chroot_summary_log.exists():
+        issues = _analyze_copr_chroot_summary(chroot_summary_log)
+        if issues:
+            issues_found = True
+            print(f"\n{HIGHLIGHT_PREFIX} COPR chroot mismatch:")
+            for lineno, raw_line, msg, dep, method in issues:
+                print(f"  - {msg}")
+
+    # COPR builder issues (downloaded per-chroot logs for failed chroots)
+    for chroot_name, issues in _analyze_copr_chroot_logs(log_dir).items():
+        chroot_log = log_dir / f"31-copr-{chroot_name}.log"
+        issues_found = True
+        print(f"\n{HIGHLIGHT_PREFIX} COPR builder issues ({chroot_name}):")
+        for lineno, raw_line, msg, dep, method in issues:
+            print(f"  - {msg}")
+            print(f"    {chroot_log}:{lineno}: {raw_line}")
+            providers = _suggest_providers(dep, method)
+            if providers:
+                yaml_list = "\n      ".join(f'- "{p}"' for p in providers)
+                print(f"    suggested packages:\n      {yaml_list}")
 
     if not issues_found:
         print(f"{HIGHLIGHT_PREFIX} ✓ No issues found in {pkg} logs")

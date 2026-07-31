@@ -28,7 +28,7 @@ import time
 from lib import build_db
 from lib.cache import compute_input_hashes
 from lib.deps import build_dep_graph, effective_deps, topological_sort, transitive_deps
-from lib.log_analysis import report_mock_failures
+from lib.log_analysis import report_mock_failures, report_copr_failures
 from lib.pipeline import (
     compute_forced_stages,
     is_cached,
@@ -581,6 +581,20 @@ def finalize_report(
     ]
     if mock_failures:
         report_mock_failures(packages, BUILD_LOG_DIR)
+
+    # Analyze copr failures if present. Only meaningful in synchronous mode --
+    # async submissions are still "unknown"/pending here and only reach a
+    # terminal "failed" state later, when gen-report.py polls (see
+    # lib.copr.poll_copr_status, which fetches the failed chroots' logs at
+    # that point; `make stage-log-analyze` picks them up once they land).
+    if synchronous_copr:
+        copr_failures = [
+            pkg
+            for pkg in packages
+            if (stages.get("copr", {}).get(pkg) or {}).get("state") == "failed"
+        ]
+        if copr_failures:
+            report_copr_failures(packages, BUILD_LOG_DIR)
 
     if any_failed:
         sys.exit(1)
