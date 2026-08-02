@@ -63,3 +63,7 @@ History before this file's introduction is not backfilled - see `git log`.
   `lib/readme_content.py` so both scripts use the same code
 - Added: `.github/workflows/publish-readme.yml` runs `make readme-shell` on every push to
   `main` and on manual dispatch, auto-committing (`[skip ci]`) and pushing if anything changed
+- Fixed: stage cache now verifies the recorded artifact is still on disk before skipping a
+  stage (`lib/pipeline.py:artifacts_present()`, version-scoped against `artifacts` rows), and
+  `stage-mock.py`/`stage-copr.py` refuse a recorded-but-missing SRPM instead of handing it to
+  mock/copr-cli (closes BUG-0015, TODO-0016)

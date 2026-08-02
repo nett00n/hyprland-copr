@@ -18,6 +18,8 @@ from lib import build_db, paths
 
 stage_srpm = importlib.import_module("scripts.stage-srpm")
 stage_vendor = importlib.import_module("scripts.stage-vendor")
+stage_mock = importlib.import_module("scripts.stage-mock")
+stage_copr = importlib.import_module("scripts.stage-copr")
 
 TARGET = "fedora-44-x86_64"
 
@@ -133,3 +135,93 @@ class TestVendorArtifactRecording:
 
         assert result is True
         assert build_db.artifacts(package=pkg) == []
+
+
+class TestMissingSrpmArtifactGuard:
+    """A "success" srpm row whose recorded file has vanished from disk (e.g. a
+    pruned rpmbuild-volume) must not be handed to mock or submitted to Copr --
+    see docs/bugs.md BUG-0015, the exact "Cannot find/open srpm" failure this
+    guards against.
+    """
+
+    def test_mock_skips_when_srpm_path_missing_on_disk(self, tmp_path, run_id):
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        missing_srpm = tmp_path / "test-pkg-1.0.0-1.fc44.src.rpm"  # never created
+        build_db.set_stage(
+            pkg, "srpm", TARGET, run_id, "success", path=str(missing_srpm)
+        )
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+        failed: dict = {}
+
+        with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir):
+            result = stage_mock.run_for_package(
+                pkg,
+                meta,
+                "44",
+                TARGET,
+                proceed=False,
+                failed=failed,
+                all_packages={pkg: meta},
+                run_id=run_id,
+            )
+
+        assert result is True  # skip, not a hard failure
+        assert failed[pkg] is True
+        mock_entry = build_db.get_stage(pkg, "mock", TARGET)
+        assert mock_entry["state"] == "skipped"
+        assert mock_entry["reason"] == "srpm artifact missing"
+
+    def test_mock_runs_when_srpm_path_present_on_disk(self, tmp_path, run_id):
+        """Sanity check: an existing SRPM is not blocked by the new guard."""
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        srpm_path = tmp_path / "test-pkg-1.0.0-1.fc44.src.rpm"
+        srpm_path.write_bytes(b"srpm")
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path=str(srpm_path))
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+        failed: dict = {}
+
+        with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
+             patch.object(stage_mock, "ROOT", tmp_path), \
+             patch.object(stage_mock, "run_cmd", return_value=(True, "", "")), \
+             patch.object(stage_mock, "copy_mock_results", return_value=[]), \
+             patch.object(stage_mock, "update_local_repo", return_value=[]):
+            result = stage_mock.run_for_package(
+                pkg,
+                meta,
+                "44",
+                TARGET,
+                proceed=False,
+                failed=failed,
+                all_packages={pkg: meta},
+                run_id=run_id,
+            )
+
+        assert result is True
+        assert failed[pkg] is False
+        mock_entry = build_db.get_stage(pkg, "mock", TARGET)
+        assert mock_entry["state"] == "success"
+
+    def test_copr_skips_when_srpm_path_missing_on_disk(self, tmp_path, run_id):
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        missing_srpm = tmp_path / "test-pkg-1.0.0-1.fc44.src.rpm"  # never created
+        build_db.set_stage(
+            pkg, "srpm", TARGET, run_id, "success", path=str(missing_srpm)
+        )
+        build_db.set_stage(pkg, "mock", TARGET, run_id, "success")
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+
+        with patch.object(stage_copr, "get_package_log_dir", return_value=log_dir):
+            result = stage_copr.run_for_package(
+                pkg, meta, "44", "nett00n/hyprland", False, TARGET, run_id
+            )
+
+        assert result is True  # skip, not a hard failure
+        copr_entry = build_db.get_stage(pkg, "copr", TARGET)
+        assert copr_entry["state"] == "skipped"
+        assert copr_entry["reason"] == "srpm artifact missing"

@@ -216,11 +216,17 @@ def run_for_package(
     srpm_entry = build_db.get_stage(pkg, "srpm", target)
     srpm_state = srpm_entry.get("state", "") if srpm_entry else ""
     srpm_path = srpm_entry.get("path") if srpm_entry else None
+    # A "success" srpm row whose recorded file has since vanished (e.g. a pruned
+    # rpmbuild-volume) must not be handed to `mock --rebuild` -- see docs/bugs.md
+    # BUG-0015, the exact "Cannot find/open srpm" failure this guards against.
+    srpm_missing = bool(srpm_path) and not Path(str(srpm_path)).exists()
 
-    if srpm_state in ("failed", "skipped") or blocker or not srpm_path:
+    if srpm_state in ("failed", "skipped") or blocker or not srpm_path or srpm_missing:
         detail = (
             f"local dep failed: {blocker}"
             if blocker and srpm_state not in ("failed", "skipped")
+            else "srpm artifact missing"
+            if srpm_missing
             else f"srpm {srpm_state}"
         )
         failed[pkg] = True

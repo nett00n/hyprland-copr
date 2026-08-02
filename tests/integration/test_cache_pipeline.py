@@ -31,6 +31,23 @@ def _seed(pkg: str, stage: str, hashes: dict | None = None, **fields) -> None:
         build_db.finalize_stage(pkg, stage, TARGET, started_at=1, hashes=hashes)
 
 
+# Maps a stage to the artifacts.kind it's expected to have on disk once
+# successful -- mirrors lib.pipeline._STAGE_ARTIFACT_KINDS. is_cached() now
+# checks this (docs/bugs.md BUG-0015), so tests asserting a "success" stage
+# is cached must seed a real, existing artifact for it, not just a DB row.
+_ARTIFACT_KIND_BY_STAGE = {"vendor": "vendor", "srpm": "srpm", "mock": "rpm"}
+
+
+def _seed_matching_artifact(tmp_path, pkg: str, stage: str, version: str | None) -> None:
+    """Write a real file and record it as this stage's artifact, if tracked."""
+    kind = _ARTIFACT_KIND_BY_STAGE.get(stage)
+    if kind is None:
+        return
+    artifact = tmp_path / f"{pkg}-{stage}-artifact"
+    artifact.write_text("fake artifact")
+    build_db.record_artifact(str(artifact), "repo", kind, pkg, TARGET, version)
+
+
 class TestCachePipeline:
     """Test cache validation and forced stage computation."""
 
@@ -84,11 +101,12 @@ class TestCachePipeline:
         forced = compute_forced_stages("pkg-a", deps, TARGET, set())
         assert forced == {"srpm", "mock", "copr"}
 
-    def test_no_force_and_matching_hashes_all_cached(self):
+    def test_no_force_and_matching_hashes_all_cached(self, tmp_path):
         """is_cached returns True for all stages with no force_run and matching hashes."""
         hashes = {"source_commit": "abc123", "templates": "def456"}
         for stage in STAGE_ORDER:
             _seed("pkg-a", stage, hashes=hashes, version="1.0-1.fc43")
+            _seed_matching_artifact(tmp_path, "pkg-a", stage, "1.0-1.fc43")
 
         deps = set()
         forced = compute_forced_stages("pkg-a", deps, TARGET, set())
@@ -173,12 +191,13 @@ class TestShowPlanMatchesExecution:
             result = is_cached(stage, "pkg-b", TARGET, hashes, forced_b)
             assert result is False, f"{stage} should not be cached when forced"
 
-    def test_plan_cache_logic_matches_execution_on_second_run(self):
+    def test_plan_cache_logic_matches_execution_on_second_run(self, tmp_path):
         """After successful first run, unchanged inputs should be cached."""
         # Simulate second run: nothing changed
         hashes = {"source_commit": "abc123", "templates": "def456"}
         for stage in STAGE_ORDER:
             _seed("pkg-a", stage, hashes=hashes)
+            _seed_matching_artifact(tmp_path, "pkg-a", stage, None)
 
         deps = set()
         forced = compute_forced_stages("pkg-a", deps, TARGET, set())

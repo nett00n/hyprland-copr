@@ -9,11 +9,45 @@ Stamping run metadata after a stage executes (the old `inject_stage_meta`) is
 now `lib.build_db.finalize_stage` -- it's a plain UPDATE, not orchestration.
 """
 
+from pathlib import Path
+
 from lib import build_db
 from lib.cache import hashes_match
 
 # Stage order for cascading force_run (all stages except validate, which has no cache).
 STAGE_ORDER = build_db.STAGES[1:]
+
+# Stages whose "success" means files must still be on disk, and the artifacts.kind
+# rows (see lib.build_db's `artifacts` table) that record them. spec/validate produce
+# no tracked artifact; copr's result lives on the COPR side, not locally.
+_STAGE_ARTIFACT_KINDS = {"vendor": "vendor", "srpm": "srpm", "mock": "rpm"}
+
+
+def artifacts_present(stage: str, pkg: str, target: str, version: str | None) -> bool:
+    """Check that every artifact recorded for this stage's success is still on disk.
+
+    Stages not in `_STAGE_ARTIFACT_KINDS` (spec, copr) always return True -- they
+    have no tracked artifact to verify. For the rest, at least one artifacts row
+    must exist for (pkg, target, kind) at the exact `version` (NVR) the stage row
+    recorded, and every matching row's path must still exist on disk.
+
+    Version-scoped deliberately: stage-mock.py's prune_local_repo() deletes
+    stale-NVR RPMs from local-repo/ without deleting their artifacts rows, so
+    dangling rows for older NVRs are normal and must not satisfy this check --
+    that's exactly the shape of the bug this guards against (see docs/bugs.md
+    BUG-0015: a stage stayed "cached" while the current version's file was gone).
+    """
+    kind = _STAGE_ARTIFACT_KINDS.get(stage)
+    if kind is None:
+        return True
+    rows = [
+        row
+        for row in build_db.artifacts(package=pkg, target=target, kind=kind)
+        if row.get("version") == version
+    ]
+    if not rows:
+        return False
+    return all(Path(row["path"]).exists() for row in rows)
 
 
 def compute_forced_stages(
@@ -75,7 +109,9 @@ def is_cached(
     entry = build_db.get_stage(pkg, stage, target)
     if entry is None:
         return False
-    return entry.get("state") == "success" and hashes_match(entry, new_hashes)
+    if not (entry.get("state") == "success" and hashes_match(entry, new_hashes)):
+        return False
+    return artifacts_present(stage, pkg, target, entry.get("version"))
 
 
 def cache_miss_reason(
@@ -111,6 +147,8 @@ def cache_miss_reason(
         - "forced (dep rebuilt: hyprutils)" — dependency was rebuilt
         - "forced (dep rebuilt: hyprutils, hyprlang)" — multiple deps rebuilt
         - "hash-mismatch" — stored hashes differ from computed
+        - "artifact-missing" — hashes match, but the artifact recorded for this
+          NVR is no longer on disk (see artifacts_present())
         - "prior-failed" — prior state was "failed"
         - "prior-skipped" — prior state was "skipped"
         - "first-run" — no prior entry exists
@@ -120,6 +158,8 @@ def cache_miss_reason(
         - "not-vendored" — vendor skipped, package is not Go/Rust (stage-vendor.py)
         - "spec failed" — spec stage failed (vendor/srpm downstream) (stage scripts)
         - "srpm {state}" — srpm upstream (mock/copr) (stage scripts)
+        - "srpm artifact missing" — srpm row is success but its recorded file is
+          gone from disk (stage-mock.py/stage-copr.py, see docs/bugs.md BUG-0015)
         - "mock {state}" — mock upstream (copr) (stage scripts)
         - "local dep failed: <name>" — local dep failed in mock (stage-mock.py)
 
@@ -150,5 +190,10 @@ def cache_miss_reason(
     state = entry.get("state")
     if state != "success":
         return f"prior-{state}"
+
+    if hashes_match(entry, new_hashes) and not artifacts_present(
+        stage, pkg, target, entry.get("version")
+    ):
+        return "artifact-missing"
 
     return "hash-mismatch"

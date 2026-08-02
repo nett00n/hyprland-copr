@@ -17,7 +17,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from lib import build_db, paths
-from lib.pipeline import compute_forced_stages, is_cached, cache_miss_reason
+from lib.pipeline import (
+    artifacts_present,
+    compute_forced_stages,
+    is_cached,
+    cache_miss_reason,
+)
 from lib.copr import parse_build_id, validate_copr_repo
 
 TARGET = "fedora-44-x86_64"
@@ -200,6 +205,106 @@ class TestIsCached:
         )
         # Should be True because state == "skipped"
         assert is_vendor_cached is True
+
+
+class TestArtifactAwareCaching:
+    """Test that is_cached()/cache_miss_reason() verify the recorded artifact is
+    still on disk before trusting a "success" DB row (docs/bugs.md BUG-0015).
+    """
+
+    def _seed_success(self, pkg: str, stage: str, version: str, hashes: dict) -> None:
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(pkg, stage, TARGET, run_id, "success", version=version)
+        build_db.finalize_stage(pkg, stage, TARGET, 1, hashes)
+
+    def test_spec_ignores_artifact_state(self):
+        """spec has no tracked artifact kind -- artifact state never matters."""
+        hashes = {"a": "hash1"}
+        self._seed_success("pkg", "spec", "1.0-1.fc44", hashes)
+        assert is_cached("spec", "pkg", TARGET, hashes, set()) is True
+
+    def test_mock_cached_when_rpm_present_on_disk(self, tmp_path):
+        """Cache hit: success + matching hashes + the recorded RPM still exists."""
+        hashes = {"a": "hash1"}
+        self._seed_success("pkg", "mock", "1.0-1.fc44", hashes)
+        rpm = tmp_path / "pkg-1.0-1.fc44.x86_64.rpm"
+        rpm.write_text("fake rpm")
+        build_db.record_artifact(str(rpm), "repo", "rpm", "pkg", TARGET, "1.0-1.fc44")
+        assert is_cached("mock", "pkg", TARGET, hashes, set()) is True
+
+    def test_mock_not_cached_when_rpm_row_exists_but_file_deleted(self, tmp_path):
+        """Recorded artifact row, but the file was unlinked from disk -> not cached."""
+        hashes = {"a": "hash1"}
+        self._seed_success("pkg", "mock", "1.0-1.fc44", hashes)
+        rpm = tmp_path / "pkg-1.0-1.fc44.x86_64.rpm"
+        rpm.write_text("fake rpm")
+        build_db.record_artifact(str(rpm), "repo", "rpm", "pkg", TARGET, "1.0-1.fc44")
+        rpm.unlink()
+        assert is_cached("mock", "pkg", TARGET, hashes, set()) is False
+        assert cache_miss_reason("mock", "pkg", TARGET, hashes, set()) == "artifact-missing"
+
+    def test_mock_not_cached_when_no_artifact_row_at_all(self):
+        """success row, matching hashes, but nothing was ever recorded in artifacts."""
+        hashes = {"a": "hash1"}
+        self._seed_success("pkg", "mock", "1.0-1.fc44", hashes)
+        assert is_cached("mock", "pkg", TARGET, hashes, set()) is False
+        assert cache_miss_reason("mock", "pkg", TARGET, hashes, set()) == "artifact-missing"
+
+    def test_mock_not_cached_when_artifact_is_for_an_older_nvr(self, tmp_path):
+        """Dangling row for a stale NVR must not satisfy the current version's check.
+
+        Regression shape for issue #8 / BUG-0015: prune_local_repo() deletes
+        stale-NVR RPMs from local-repo/ without deleting their artifacts rows, so
+        an artifacts row can exist for an old NVR while the current NVR has none.
+        """
+        hashes = {"a": "hash1"}
+        self._seed_success("pkg", "mock", "2.0-1.fc44", hashes)
+        old_rpm = tmp_path / "pkg-1.0-1.fc44.x86_64.rpm"
+        old_rpm.write_text("stale rpm")
+        build_db.record_artifact(
+            str(old_rpm), "repo", "rpm", "pkg", TARGET, "1.0-1.fc44"
+        )
+        assert is_cached("mock", "pkg", TARGET, hashes, set()) is False
+
+    def test_mock_not_cached_when_devel_subpackage_missing(self, tmp_path):
+        """Both the main and -devel RPM rows must exist on disk, not just one."""
+        hashes = {"a": "hash1"}
+        self._seed_success("pkg", "mock", "1.0-1.fc44", hashes)
+        main_rpm = tmp_path / "pkg-1.0-1.fc44.x86_64.rpm"
+        main_rpm.write_text("main rpm")
+        devel_rpm = tmp_path / "pkg-devel-1.0-1.fc44.x86_64.rpm"
+        # devel_rpm intentionally never written to disk
+        build_db.record_artifact(
+            str(main_rpm), "repo", "rpm", "pkg", TARGET, "1.0-1.fc44"
+        )
+        build_db.record_artifact(
+            str(devel_rpm), "repo", "rpm", "pkg", TARGET, "1.0-1.fc44"
+        )
+        assert artifacts_present("mock", "pkg", TARGET, "1.0-1.fc44") is False
+        assert is_cached("mock", "pkg", TARGET, hashes, set()) is False
+
+    def test_vendor_and_srpm_also_require_artifact(self, tmp_path):
+        """The same artifact-presence rule applies to vendor and srpm, not just mock."""
+        hashes = {"a": "hash1"}
+        for stage, kind in (("vendor", "vendor"), ("srpm", "srpm")):
+            self._seed_success(f"pkg-{stage}", stage, "1.0-1.fc44", hashes)
+            assert is_cached(stage, f"pkg-{stage}", TARGET, hashes, set()) is False
+            tarball = tmp_path / f"{stage}.tar.gz"
+            tarball.write_text("artifact")
+            build_db.record_artifact(
+                str(tarball), "rpmbuild-volume", kind, f"pkg-{stage}", TARGET, "1.0-1.fc44"
+            )
+            assert is_cached(stage, f"pkg-{stage}", TARGET, hashes, set()) is True
+
+    def test_forced_stage_still_takes_priority_over_artifact_check(self, tmp_path):
+        """forced_stages short-circuits before artifact state is even considered."""
+        hashes = {"a": "hash1"}
+        self._seed_success("pkg", "mock", "1.0-1.fc44", hashes)
+        rpm = tmp_path / "pkg-1.0-1.fc44.x86_64.rpm"
+        rpm.write_text("fake rpm")
+        build_db.record_artifact(str(rpm), "repo", "rpm", "pkg", TARGET, "1.0-1.fc44")
+        assert is_cached("mock", "pkg", TARGET, hashes, {"mock"}) is False
+        assert cache_miss_reason("mock", "pkg", TARGET, hashes, {"mock"}) == "forced"
 
 
 class TestCacheMissReason:

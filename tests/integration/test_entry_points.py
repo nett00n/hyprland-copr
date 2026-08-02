@@ -363,11 +363,15 @@ class TestStageCoprBlocking:
         """
         pkg = "test-pkg"
         meta = {"version": "1.0.0", "release": 1}
-        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path="/some/path.src.rpm")
+        # Must exist on disk: stage-copr.py now refuses a recorded-but-missing
+        # SRPM before ever calling copr-cli (docs/bugs.md BUG-0015).
+        srpm_path = tmp_path / "path.src.rpm"
+        srpm_path.write_bytes(b"srpm")
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path=str(srpm_path))
         build_db.set_stage(pkg, "mock", TARGET, run_id, "success")
 
         stdout = (
-            "Uploading package /some/path.src.rpm\n"
+            f"Uploading package {srpm_path}\n"
             "Build was added to hyprland:\n"
             "Created builds: 10798066\n"
             "Watching build(s): (this may be safely interrupted)\n"

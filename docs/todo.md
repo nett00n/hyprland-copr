@@ -71,7 +71,6 @@ row upserts instead of full-file rewrites, and an `artifacts` table tracks
 disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
 
 - **TODO-0015** only "last attempt" is stored per (package, stage, target), not "last success" -> a failed rebuild overwrites the previous known-good version/log/build_id, no `last_success` kept alongside `last_attempt`
-- **TODO-0016** see docs/bugs.md BUG-0015 (`is_cached()` doesn't check the artifact is still on disk)
 - **TODO-0017** export sqlite -> yaml/json snapshot for offline diffing (`make db-export`)
 - **TODO-0018** artifact sha256 to detect corrupted local-repo RPMs
 - **TODO-0019** see docs/bugs.md BUG-0017 (`db-prune` is newest-by-mtime only, no real NVR comparison)

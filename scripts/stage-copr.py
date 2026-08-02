@@ -21,6 +21,7 @@ Environment variables:
 import logging
 import os
 import sys
+from pathlib import Path
 from typing import Any
 
 from lib import build_db
@@ -81,15 +82,21 @@ def run_for_package(
     srpm_state = srpm_entry.get("state", "") if srpm_entry else ""
     srpm_path = srpm_entry.get("path") if srpm_entry else None
     mock_state = mock_entry.get("state", "") if mock_entry else ""
+    # A recorded-but-vanished SRPM must never be submitted to Copr as-is -- see
+    # docs/bugs.md BUG-0015 (this stage was the publish-a-stale-SRPM vector).
+    srpm_missing = bool(srpm_path) and not Path(str(srpm_path)).exists()
 
     if (
         srpm_state in ("failed", "skipped")
         or not srpm_path
+        or srpm_missing
         or mock_state in ("failed", "skipped")
     ):
         blocker = (
             f"mock {mock_state}"
             if mock_state in ("failed", "skipped")
+            else "srpm artifact missing"
+            if srpm_missing
             else f"srpm {srpm_state}"
         )
         status("copr", pkg, "skip", blocker)
