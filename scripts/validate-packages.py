@@ -5,6 +5,7 @@ Checks for:
 - Self-dependencies (package depends on itself)
 - Invalid dependency references (depends_on references non-existent packages)
 - Missing ignore=dirty in .gitmodules (all submodules must have it)
+- A package's url not matching any .gitmodules submodule url (warning only)
 """
 
 import sys
@@ -47,6 +48,40 @@ def validate_gitmodules() -> list[str]:
     return errors
 
 
+def collect_gitmodules_urls() -> set[str]:
+    """Return the set of submodule urls declared in .gitmodules."""
+    config = ConfigParser()
+    config.read(".gitmodules")
+    return {
+        config.get(section, "url")
+        for section in config.sections()
+        if config.has_option(section, "url")
+    }
+
+
+def validate_submodule_urls(packages: dict, gitmodules_urls: set[str]) -> list[str]:
+    """Warn when a package's url won't resolve to any .gitmodules submodule.
+
+    update-versions.py resolves each package's submodule via an EXACT string
+    match against .gitmodules urls -- a stray or missing trailing `.git`
+    means the package's auto_update silently never fires, with no error or
+    warning at update time (see docs/bugs.md BUG-0013: two packages went
+    weeks with no update before this was noticed by hand). Warning only,
+    since not every packages.yaml entry necessarily tracks a live submodule.
+
+    Returns:
+        List of warning messages (empty if all urls resolve)
+    """
+    warnings = []
+    for pkg, meta in packages.items():
+        url = (meta or {}).get("url", "")
+        if url and url not in gitmodules_urls:
+            warnings.append(
+                f"  {pkg}: url '{url}' does not match any .gitmodules submodule url"
+            )
+    return warnings
+
+
 def main() -> None:
     """Validate packages.yaml and .gitmodules."""
     with open("packages.yaml") as f:
@@ -76,6 +111,8 @@ def main() -> None:
 
     # Validate .gitmodules
     gitmodules_errors = validate_gitmodules()
+    gitmodules_urls = collect_gitmodules_urls()
+    url_warnings = validate_submodule_urls(packages, gitmodules_urls)
 
     if errors:
         print("error: packages.yaml validation failed:", file=sys.stderr)
@@ -88,6 +125,11 @@ def main() -> None:
         for err in gitmodules_errors:
             print(err, file=sys.stderr)
         sys.exit(1)
+
+    if url_warnings:
+        print("warning: package url(s) don't match .gitmodules:", file=sys.stderr)
+        for warn in url_warnings:
+            print(warn, file=sys.stderr)
 
     print("✓ packages.yaml validation passed")
     print("✓ .gitmodules validation passed")

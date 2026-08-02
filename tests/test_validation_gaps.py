@@ -11,6 +11,7 @@ import pytest
 from lib.validation import (
     validate_package,
     validate_no_duplicate_urls,
+    validate_submodule_url_resolution,
     REQUIRED_FIELDS,
     VALID_BUILD_SYSTEMS,
 )
@@ -368,3 +369,104 @@ class TestValidateNoDuplicateUrls:
 
         assert errors == []
         assert warnings == []
+
+
+class TestValidateSubmoduleUrlResolution:
+    """Test validate_submodule_url_resolution function.
+
+    Regression coverage for docs/bugs.md BUG-0013: Waybar-git's and
+    hyprland-plugins-git's packages.yaml url didn't exactly match their
+    .gitmodules submodule's url (one missing a trailing ".git", the other
+    with a stray one), so update-versions.py's exact-match `url_to_module`
+    lookup silently skipped them every run -- no error, no warning, just
+    permanent version drift. This check mirrors that exact lookup.
+    """
+
+    def test_matching_url_is_clean(self):
+        """A package url that exactly matches a .gitmodules url is fine."""
+        all_packages = {"pkg-a": {"url": "https://github.com/org/a"}}
+        modules = [{"name": "submodules/org/a", "path": "submodules/org/a",
+                    "url": "https://github.com/org/a"}]
+
+        errors, warnings = validate_submodule_url_resolution(all_packages, modules)
+
+        assert errors == []
+        assert warnings == []
+
+    def test_missing_git_suffix_warns(self):
+        """packages.yaml url missing the .git suffix .gitmodules has."""
+        all_packages = {"Waybar-git": {"url": "https://github.com/Alexays/Waybar"}}
+        modules = [{"name": "submodules/Alexays/Waybar",
+                    "path": "submodules/Alexays/Waybar",
+                    "url": "https://github.com/Alexays/Waybar.git"}]
+
+        errors, warnings = validate_submodule_url_resolution(all_packages, modules)
+
+        assert errors == []
+        assert len(warnings) == 1
+        assert "Waybar-git" in warnings[0]
+        assert "https://github.com/Alexays/Waybar" in warnings[0]
+
+    def test_stray_git_suffix_warns(self):
+        """packages.yaml url has a .git suffix .gitmodules doesn't."""
+        all_packages = {
+            "hyprland-plugins-git": {
+                "url": "https://github.com/hyprwm/hyprland-plugins.git"
+            }
+        }
+        modules = [{"name": "submodules/hyprwm/hyprland-plugins",
+                    "path": "submodules/hyprwm/hyprland-plugins",
+                    "url": "https://github.com/hyprwm/hyprland-plugins"}]
+
+        errors, warnings = validate_submodule_url_resolution(all_packages, modules)
+
+        assert errors == []
+        assert len(warnings) == 1
+        assert "hyprland-plugins-git" in warnings[0]
+
+    def test_missing_url_ignored(self):
+        """Packages without a url produce no warning (nothing to resolve)."""
+        all_packages = {"pkg-a": {}}
+        modules = [{"name": "submodules/org/a", "path": "submodules/org/a",
+                    "url": "https://github.com/org/a"}]
+
+        errors, warnings = validate_submodule_url_resolution(all_packages, modules)
+
+        assert errors == []
+        assert warnings == []
+
+    def test_no_modules_at_all_warns_for_every_url(self):
+        """Empty .gitmodules means no package url can resolve."""
+        all_packages = {"pkg-a": {"url": "https://github.com/org/a"}}
+
+        errors, warnings = validate_submodule_url_resolution(all_packages, [])
+
+        assert errors == []
+        assert len(warnings) == 1
+
+    def test_multiple_mismatches_each_warn_independently(self):
+        """Two independently mismatched packages each produce their own warning."""
+        all_packages = {
+            "Waybar-git": {"url": "https://github.com/Alexays/Waybar"},
+            "hyprland-plugins-git": {
+                "url": "https://github.com/hyprwm/hyprland-plugins.git"
+            },
+            "ok-pkg": {"url": "https://github.com/org/ok"},
+        }
+        modules = [
+            {"name": "submodules/Alexays/Waybar", "path": "submodules/Alexays/Waybar",
+             "url": "https://github.com/Alexays/Waybar.git"},
+            {"name": "submodules/hyprwm/hyprland-plugins",
+             "path": "submodules/hyprwm/hyprland-plugins",
+             "url": "https://github.com/hyprwm/hyprland-plugins"},
+            {"name": "submodules/org/ok", "path": "submodules/org/ok",
+             "url": "https://github.com/org/ok"},
+        ]
+
+        errors, warnings = validate_submodule_url_resolution(all_packages, modules)
+
+        assert errors == []
+        assert len(warnings) == 2
+        assert any("Waybar-git" in w for w in warnings)
+        assert any("hyprland-plugins-git" in w for w in warnings)
+        assert not any("ok-pkg" in w for w in warnings)

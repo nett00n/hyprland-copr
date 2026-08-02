@@ -19,13 +19,15 @@ import sys
 
 from lib import build_db
 from lib.config import setup_logging
-from lib.paths import ARCH, DISTRO, ROOT, resolve_target
+from lib.gitmodules import parse_gitmodules
+from lib.paths import ARCH, DISTRO, GITMODULES, ROOT, resolve_target
 from lib.reporting import status
 from lib.validation import (
     validate_gitmodules,
     validate_group_membership,
     validate_no_duplicate_urls,
     validate_package,
+    validate_submodule_url_resolution,
 )
 from lib.yaml_utils import apply_os_overrides, prepare_stage
 
@@ -104,6 +106,17 @@ def run_global_checks(all_packages: dict) -> bool:
         print(f"    warn: {w}")
     total_errors += len(dup_errors)
     total_warnings += len(dup_warnings)
+
+    # Warn when a package's url doesn't resolve to any .gitmodules submodule
+    # (see validate_submodule_url_resolution docstring, docs/bugs.md BUG-0013)
+    modules = parse_gitmodules(GITMODULES) if GITMODULES.exists() else []
+    url_errors, url_warnings = validate_submodule_url_resolution(
+        all_packages, modules
+    )
+    for w in url_warnings:
+        print(f"    warn: {w}")
+    total_errors += len(url_errors)
+    total_warnings += len(url_warnings)
 
     # Validate .gitmodules
     gm_errors, gm_warnings = validate_gitmodules(ROOT)

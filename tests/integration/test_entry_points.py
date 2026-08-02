@@ -146,6 +146,30 @@ class TestStageValidate:
         captured = capsys.readouterr()
         assert "2 warning(s) total" in captured.out
 
+    def test_run_global_checks_warns_on_unresolvable_submodule_url(self, capsys):
+        """Regression test for BUG-0013: a package url that doesn't match any
+        .gitmodules submodule url warns (doesn't fail the build), surfacing
+        the exact drift that let Waybar-git's auto_update silently never fire.
+        """
+        all_packages = {"Waybar-git": {"url": "https://github.com/Alexays/Waybar"}}
+
+        with patch.object(stage_validate, "validate_group_membership") as mock_group, \
+             patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules, \
+             patch.object(stage_validate, "parse_gitmodules") as mock_parse:
+            mock_group.return_value = ([], [])
+            mock_gitmodules.return_value = ([], [])
+            mock_parse.return_value = [
+                {"name": "submodules/Alexays/Waybar",
+                 "path": "submodules/Alexays/Waybar",
+                 "url": "https://github.com/Alexays/Waybar.git"}
+            ]
+
+            result = run_global_checks(all_packages)
+
+        assert result is True  # warning, not an error -- build still proceeds
+        captured = capsys.readouterr()
+        assert "Waybar-git" in captured.out
+
     def test_run_global_checks_with_both_group_and_gitmodules_errors(self):
         """Test global checks fail when both group and gitmodules have errors."""
         all_packages = {}

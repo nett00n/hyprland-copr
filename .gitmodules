@@ -112,27 +112,27 @@
 	ignore = dirty
 [submodule "submodules/Gustash/Hyprshot"]
 	path = submodules/Gustash/Hyprshot
-	url = https://github.com/Gustash/Hyprshot.git
+	url = https://github.com/Gustash/Hyprshot
 	ignore = dirty
 [submodule "submodules/wmww/gtk4-layer-shell"]
 	path = submodules/wmww/gtk4-layer-shell
-	url = https://github.com/wmww/gtk4-layer-shell.git
+	url = https://github.com/wmww/gtk4-layer-shell
 	ignore = dirty
 [submodule "submodules/stephenberry/glaze"]
 	path = submodules/stephenberry/glaze
-	url = https://github.com/stephenberry/glaze.git
+	url = https://github.com/stephenberry/glaze
 	ignore = dirty
 [submodule "submodules/Aylur/ags"]
 	path = submodules/Aylur/ags
-	url = https://github.com/Aylur/ags.git
+	url = https://github.com/Aylur/ags
 	ignore = dirty
 [submodule "submodules/hyprland-community/pyprland"]
 	path = submodules/hyprland-community/pyprland
-	url = https://github.com/hyprland-community/pyprland.git
+	url = https://github.com/hyprland-community/pyprland
 	ignore = dirty
 [submodule "submodules/Alexays/Waybar"]
 	path = submodules/Alexays/Waybar
-	url = https://github.com/Alexays/Waybar.git
+	url = https://github.com/Alexays/Waybar
 	ignore = dirty
 [submodule "submodules/git/sndio"]
 	path = submodules/git/sndio
@@ -140,11 +140,11 @@
 	ignore = dirty
 [submodule "submodules/karlstav/cava"]
 	path = submodules/karlstav/cava
-	url = https://github.com/karlstav/cava.git
+	url = https://github.com/karlstav/cava
 	ignore = dirty
 [submodule "submodules/sentriz/cliphist"]
 	path = submodules/sentriz/cliphist
-	url = https://github.com/sentriz/cliphist.git
+	url = https://github.com/sentriz/cliphist
 	ignore = dirty
 [submodule "submodules/Vladimir-csp/uwsm"]
 	path = submodules/Vladimir-csp/uwsm
@@ -160,21 +160,21 @@
 	ignore = dirty
 [submodule "submodules/jeremy-rifkin/cpptrace"]
 	path = submodules/jeremy-rifkin/cpptrace
-	url = https://github.com/jeremy-rifkin/cpptrace.git
+	url = https://github.com/jeremy-rifkin/cpptrace
 	ignore = dirty
 [submodule "submodules/davea42/libdwarf-code"]
 	path = submodules/davea42/libdwarf-code
-	url = https://github.com/davea42/libdwarf-code.git
+	url = https://github.com/davea42/libdwarf-code
 	ignore = dirty
 [submodule "submodules/elkowar/eww"]
 	path = submodules/elkowar/eww
-	url = https://github.com/elkowar/eww.git
+	url = https://github.com/elkowar/eww
 	ignore = dirty
 [submodule "submodules/OpalAayan/snappy-switcher"]
 	path = submodules/OpalAayan/snappy-switcher
-	url = https://github.com/OpalAayan/snappy-switcher.git
+	url = https://github.com/OpalAayan/snappy-switcher
 	ignore = dirty
 [submodule "submodules/GhostNaN/mpvpaper"]
 	path = submodules/GhostNaN/mpvpaper
-	url = https://github.com/GhostNaN/mpvpaper.git
+	url = https://github.com/GhostNaN/mpvpaper
 	ignore = dirty

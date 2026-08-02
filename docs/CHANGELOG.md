@@ -67,3 +67,24 @@ History before this file's introduction is not backfilled - see `git log`.
   stage (`lib/pipeline.py:artifacts_present()`, version-scoped against `artifacts` rows), and
   `stage-mock.py`/`stage-copr.py` refuse a recorded-but-missing SRPM instead of handing it to
   mock/copr-cli (closes BUG-0015, TODO-0016)
+- Fixed: `Waybar-git`/`hyprland-plugins-git` `packages.yaml` `url` didn't exactly match their
+  `.gitmodules` submodule url (a stray/missing trailing `.git`), so `update-versions.py`'s
+  exact-match lookup silently skipped their `auto_update` every run; also found and fixed 5 more
+  packages hitting the same class of drift (`cpptrace`, `libdwarf-code`, `eww`,
+  `snappy-switcher`, `mpvpaper`) plus a `Waybar` (stable) regression this fix would otherwise
+  have introduced via the shared submodule url (closes BUG-0013). Added
+  `validate_submodule_url_resolution()` (`lib/validation.py`, wired into `stage-validate.py`)
+  and an equivalent check in `validate-packages.py` (the pre-commit gate) so this can't recur
+  silently again
+- Removed: dead `scripts/validate-package-urls.py` (closes TODO-0037) -- unreferenced outside
+  its own test, and its url-matching logic normalized away the exact `.git`-suffix difference
+  that causes BUG-0013's failure mode, so it would not have caught it even if wired in
+- Fixed: `aylurs-gtk-shell`/`cava`/`glaze`/`gtk4-layer-shell`/`Hyprshot`/`pyprland`/`cliphist`
+  `url` had a stray trailing `.git` while their `source.archives` template uses `%{url}/archive/...`
+  directly -> the generated Source0 404s on GitHub (confirmed live via `curl -I` before and after
+  for all 7); masked until now only because each package's srpm stage was cached from before the
+  `.git` was added. Dropped `.git` from both `packages.yaml` and the matching `.gitmodules`
+  submodule url for all 7, keeping url-resolution and archive-fetch correctness in sync (closes
+  BUG-0033). `quickshell`'s url was investigated too but left unchanged: its git host
+  (`git.outfoxxed.me`, Gitea) serves an identical archive either way, confirmed by byte-identical
+  `content-length` with and without `.git`

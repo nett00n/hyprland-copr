@@ -107,7 +107,6 @@ disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
 # Scripts
 
 - **TODO-0036** `scripts/gen-spec.py` (~440 lines) duplicates `lib/github.py` (release cache, changelog) and `lib/config.get_packager` almost verbatim, has no Makefile target, unused except by its own test -> looks like a dead pre-pipeline prototype, remove or replace with lib calls
-- **TODO-0037** `scripts/validate-package-urls.py` is dead code, zero references outside its own test -> remove
 - **TODO-0038** `tests/conftest.py` and `tests/integration/conftest.py` are ~95% identical (fake_repo/minimal_package fixtures copy-pasted), even though tests/integration/ already inherits the parent conftest -> dedupe
 - **TODO-0039** `scripts/full-cycle.py:run_build_pipeline` has ~320 lines of repeated per-stage orchestration (spec/vendor/srpm/mock/copr all same shape: cache check -> run_for_package -> build_db.finalize_stage) -> candidate for a small stage-runner abstraction
 - **TODO-0040** each `stage-*.py` (validate/spec/vendor/srpm/mock/copr) copy-pastes its own "config: skip" result dict (~6-8 lines x6) -> extract to a small helper (the old `lib/stage_utils.py` was removed in the sqlite migration, its one function unused; a new home is needed for this)

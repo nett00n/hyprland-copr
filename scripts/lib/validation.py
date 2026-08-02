@@ -189,6 +189,45 @@ def validate_no_duplicate_urls(all_packages: dict) -> tuple[list[str], list[str]
     return errors, warnings
 
 
+def validate_submodule_url_resolution(
+    all_packages: dict, modules: list[dict]
+) -> tuple[list[str], list[str]]:
+    """Warn when a package's url won't resolve to any .gitmodules submodule.
+
+    update-versions.py resolves each package's submodule via an EXACT string
+    match against .gitmodules urls (`url_to_module = {mod["url"]: mod}`), not
+    a normalized one. A mismatch -- commonly a stray or missing trailing
+    `.git` -- means the package is silently skipped every run: no error, no
+    warning at update time, auto_update simply never fires again. See
+    docs/bugs.md BUG-0013: two packages went weeks with no update before this
+    was noticed by hand. (Distinct from validate_no_duplicate_urls, which
+    catches two *packages* colliding on the same url -- this catches one
+    package's url failing to match its own submodule at all.)
+
+    Args:
+        all_packages: Dict of all packages
+        modules: Parsed .gitmodules entries (see lib.gitmodules.parse_gitmodules)
+
+    Returns:
+        Tuple of (errors, warnings) as lists of strings -- always empty errors
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    gitmodules_urls = {mod["url"] for mod in modules}
+
+    for pkg, meta in sorted(all_packages.items()):
+        url = meta.get("url", "")
+        if url and url not in gitmodules_urls:
+            warnings.append(
+                f"package '{pkg}' url '{url}' does not match any .gitmodules"
+                " submodule url -- update-versions.py will silently skip its"
+                " auto_update every run (check for a .git-suffix mismatch)"
+            )
+
+    return errors, warnings
+
+
 def validate_gitmodules(root_path=ROOT) -> tuple[list[str], list[str]]:
     """Validate .gitmodules conventions.
 
