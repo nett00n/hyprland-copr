@@ -15,6 +15,9 @@ Environment variables:
   SKIP_PACKAGES        Skip these packages (optional, comma-separated)
   PROCEED_BUILD        Skip packages where copr stage already succeeded
   SYNCHRONOUS_COPR_BUILD  If 'true', wait for build completion (default: async with --nowait)
+  REQUIRE_CHROOT_COVERAGE  If 'true', abort instead of warning when a Copr chroot has no
+                          verified local mock build for a package being submitted (see
+                          docs/bugs.md BUG-0018). Default: warn and submit anyway.
   LOG_LEVEL       Logging level: DEBUG, INFO (default), WARNING, ERROR
 """
 
@@ -30,6 +33,7 @@ from lib.copr import (
     check_copr_credentials,
     fetch_failed_chroot_logs,
     parse_build_id,
+    print_chroot_coverage,
     validate_copr_repo,
 )
 from lib.paths import ARCH, DISTRO, ROOT, get_package_log_dir, resolve_target
@@ -189,6 +193,17 @@ def main() -> None:
     )
 
     packages = prepare_stage("copr", target, proceed)
+
+    require_coverage = os.environ.get("REQUIRE_CHROOT_COVERAGE", "").lower() == "true"
+    covered = print_chroot_coverage(copr_repo, packages)
+    if not covered and require_coverage:
+        print(
+            "error: REQUIRE_CHROOT_COVERAGE=true and some chroots lack a "
+            "verified local mock build -- aborting (see docs/bugs.md BUG-0018)",
+            file=sys.stderr,
+        )
+        build_db.finish_run(run_id, "failed")
+        sys.exit(2)
 
     failed = False
     print("\n=== copr ===")

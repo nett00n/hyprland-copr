@@ -14,13 +14,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 from lib import build_db, paths
 from lib.copr import (
     COPR_BUILD_URL,
+    COVERAGE_FAILED,
+    COVERAGE_UNBUILT,
+    COVERAGE_UNVERIFIABLE,
+    COVERAGE_VERIFIED,
     TERMINAL_STATES,
     check_copr_credentials,
+    chroot_coverage,
     download_chroot_log,
     fetch_failed_chroot_logs,
     get_build_chroots,
+    get_project_chroots,
     parse_build_id,
     poll_copr_status,
+    print_chroot_coverage,
     validate_copr_repo,
 )
 
@@ -329,6 +336,143 @@ class TestGetBuildChroots:
         mock_resp.read.return_value = b"not json"
         mock_urlopen.return_value.__enter__.return_value = mock_resp
         assert get_build_chroots(123) == []
+
+
+PROJECT_RESPONSE_CHROOT_REPOS = {
+    "chroot_repos": {
+        "fedora-43-x86_64": "https://example.com/results/fedora-43-x86_64/",
+        "fedora-43-aarch64": "https://example.com/results/fedora-43-aarch64/",
+        "fedora-44-x86_64": "https://example.com/results/fedora-44-x86_64/",
+        "fedora-44-aarch64": "https://example.com/results/fedora-44-aarch64/",
+        "fedora-rawhide-x86_64": "https://example.com/results/fedora-rawhide-x86_64/",
+        "fedora-rawhide-aarch64": "https://example.com/results/fedora-rawhide-aarch64/",
+    }
+}
+
+
+class TestGetProjectChroots:
+    """Tests for get_project_chroots function."""
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_parses_chroot_repos_dict(self, mock_urlopen):
+        """Parses the live API shape: chroot_repos is a dict keyed by chroot name."""
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps(
+            PROJECT_RESPONSE_CHROOT_REPOS
+        ).encode()
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+        chroots = get_project_chroots("nett00n/hyprland")
+
+        assert chroots == sorted(PROJECT_RESPONSE_CHROOT_REPOS["chroot_repos"])
+        called_url = mock_urlopen.call_args[0][0]
+        assert "ownername=nett00n" in called_url
+        assert "projectname=hyprland" in called_url
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_parses_chroots_list_fallback_shape(self, mock_urlopen):
+        """Tolerates a hypothetical {"chroots": [...]} list shape too."""
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps(
+            {"chroots": ["fedora-44-x86_64", "fedora-43-x86_64"]}
+        ).encode()
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+        assert get_project_chroots("nett00n/hyprland") == [
+            "fedora-43-x86_64",
+            "fedora-44-x86_64",
+        ]
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_url_error_returns_empty(self, mock_urlopen):
+        """Network failure returns an empty list instead of raising."""
+        mock_urlopen.side_effect = urllib.error.URLError("no network")
+        assert get_project_chroots("nett00n/hyprland") == []
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_malformed_json_returns_empty(self, mock_urlopen):
+        """Malformed JSON returns an empty list instead of raising."""
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = b"not json"
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
+        assert get_project_chroots("nett00n/hyprland") == []
+
+    def test_invalid_slug_returns_empty_without_network(self):
+        """Invalid owner/project slug is rejected before any request is made."""
+        assert get_project_chroots("not-a-valid-slug") == []
+
+
+class TestChrootCoverage:
+    """Tests for chroot_coverage function."""
+
+    def _set_mock(self, pkg: str, chroot: str, state: str) -> None:
+        run_id = build_db.start_run(chroot, "fedora", "44", "x86_64")
+        build_db.set_stage(pkg, "mock", chroot, run_id, state)
+
+    def test_verified_when_mock_succeeded(self):
+        self._set_mock("hyprutils", "fedora-44-x86_64", "success")
+        result = chroot_coverage("hyprutils", ["fedora-44-x86_64"])
+        assert result == {"fedora-44-x86_64": COVERAGE_VERIFIED}
+
+    def test_failed_when_mock_failed(self):
+        self._set_mock("hyprutils", "fedora-43-x86_64", "failed")
+        result = chroot_coverage("hyprutils", ["fedora-43-x86_64"])
+        assert result == {"fedora-43-x86_64": COVERAGE_FAILED}
+
+    def test_unbuilt_when_no_mock_row(self):
+        result = chroot_coverage("hyprutils", ["fedora-44-x86_64"])
+        assert result == {"fedora-44-x86_64": COVERAGE_UNBUILT}
+
+    def test_unverifiable_for_different_arch(self):
+        """aarch64 chroots are never locally buildable -- see TODO-0024."""
+        result = chroot_coverage("hyprutils", ["fedora-44-aarch64"])
+        assert result == {"fedora-44-aarch64": COVERAGE_UNVERIFIABLE}
+
+    def test_mixed_chroots(self):
+        self._set_mock("hyprutils", "fedora-44-x86_64", "success")
+        self._set_mock("hyprutils", "fedora-43-x86_64", "failed")
+        result = chroot_coverage(
+            "hyprutils",
+            ["fedora-44-x86_64", "fedora-43-x86_64", "fedora-rawhide-x86_64", "fedora-44-aarch64"],
+        )
+        assert result == {
+            "fedora-44-x86_64": COVERAGE_VERIFIED,
+            "fedora-43-x86_64": COVERAGE_FAILED,
+            "fedora-rawhide-x86_64": COVERAGE_UNBUILT,
+            "fedora-44-aarch64": COVERAGE_UNVERIFIABLE,
+        }
+
+
+class TestPrintChrootCoverage:
+    """Tests for print_chroot_coverage function."""
+
+    @patch("lib.copr.get_project_chroots")
+    def test_all_verified_returns_true(self, mock_chroots):
+        mock_chroots.return_value = ["fedora-44-x86_64"]
+        run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "mock", "fedora-44-x86_64", run_id, "success")
+
+        assert print_chroot_coverage("nett00n/hyprland", {"hyprutils": {}}) is True
+
+    @patch("lib.copr.get_project_chroots")
+    def test_unbuilt_same_arch_returns_false(self, mock_chroots):
+        """A same-arch chroot nobody has built locally yet should block strict mode."""
+        mock_chroots.return_value = ["fedora-44-x86_64"]
+        assert print_chroot_coverage("nett00n/hyprland", {"hyprutils": {}}) is False
+
+    @patch("lib.copr.get_project_chroots")
+    def test_aarch64_only_gap_returns_true(self, mock_chroots):
+        """An aarch64-only gap must never flip the return to False -- there is no
+        local way to close it (TODO-0024), so it can't gate a submission."""
+        mock_chroots.return_value = ["fedora-44-aarch64"]
+        assert print_chroot_coverage("nett00n/hyprland", {"hyprutils": {}}) is True
+
+    @patch("lib.copr.get_project_chroots")
+    def test_api_failure_falls_back_to_supported_versions(self, mock_chroots):
+        """When the Copr API is unreachable, falls back to x86_64 chroots derived
+        from SUPPORTED_FEDORA_VERSIONS rather than reporting no coverage gap at all."""
+        mock_chroots.return_value = []
+        assert print_chroot_coverage("nett00n/hyprland", {"hyprutils": {}}) is False
 
 
 class TestDownloadChrootLog:

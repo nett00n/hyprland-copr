@@ -157,6 +157,8 @@ def cache_miss_reason(
         - "config: skip" — fedora:<ver>: skip: true in packages.yaml (stage scripts)
         - "not-vendored" — vendor skipped, package is not Go/Rust (stage-vendor.py)
         - "spec failed" — spec stage failed (vendor/srpm downstream) (stage scripts)
+        - "source verify failed" — downloaded source file has no entry in, or
+          doesn't match, sources.lock.yaml (stage-srpm.py, see docs/bugs.md BUG-0025)
         - "srpm {state}" — srpm upstream (mock/copr) (stage scripts)
         - "srpm artifact missing" — srpm row is success but its recorded file is
           gone from disk (stage-mock.py/stage-copr.py, see docs/bugs.md BUG-0015)

@@ -336,6 +336,61 @@ def test_get_submodule_commit_with_base_success(mock_run, mock_get_commit):
 
 
 @patch("scripts.lib.gitmodules.subprocess.run")
+def test_get_submodule_commit_accepts_ref(mock_run):
+    """A ref other than HEAD (e.g. origin/<branch>) must reach `git log`, so
+    version resolution doesn't depend on the working tree's checked-out
+    commit (see docs/bugs.md BUG-0033)."""
+    result_mock = MagicMock()
+    result_mock.returncode = 0
+    result_mock.stdout = "abc123def456 20240101\n"
+    mock_run.return_value = result_mock
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        get_submodule_commit(Path(tmpdir), ref="origin/main")
+
+    argv = mock_run.call_args[0][0]
+    assert argv[-1] == "origin/main"
+
+
+@patch("scripts.lib.gitmodules.subprocess.run")
+def test_get_submodule_commit_defaults_to_head(mock_run):
+    result_mock = MagicMock()
+    result_mock.returncode = 0
+    result_mock.stdout = "abc123def456 20240101\n"
+    mock_run.return_value = result_mock
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        get_submodule_commit(Path(tmpdir))
+
+    argv = mock_run.call_args[0][0]
+    assert argv[-1] == "HEAD"
+
+
+@patch("scripts.lib.gitmodules.get_submodule_commit")
+@patch("scripts.lib.gitmodules.subprocess.run")
+def test_get_submodule_commit_with_base_threads_ref(mock_run, mock_get_commit):
+    """get_submodule_commit_with_base must pass `ref` through to
+    get_submodule_commit, and describe the nearest semver tag from the
+    *resolved commit hash* rather than the literal ref -- so it can't
+    disagree with get_submodule_commit if a remote-tracking ref moves
+    between the two subprocess calls."""
+    mock_get_commit.return_value = ("abc123def456", "abc123d", "20240101")
+
+    describe = MagicMock()
+    describe.returncode = 0
+    describe.stdout = "v1.5.0\n"
+    mock_run.return_value = describe
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result = get_submodule_commit_with_base(Path(tmpdir), ref="origin/main")
+
+    mock_get_commit.assert_called_once_with(Path(tmpdir), "origin/main")
+    describe_argv = mock_run.call_args[0][0]
+    assert describe_argv[-1] == "abc123def456"
+    assert result[3] == "1.5.0"
+
+
+@patch("scripts.lib.gitmodules.subprocess.run")
 def test_get_tag_commit_success(mock_run):
     """Test get_tag_commit with valid tag."""
     rev = MagicMock()

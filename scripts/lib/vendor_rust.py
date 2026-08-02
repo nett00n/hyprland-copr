@@ -11,7 +11,14 @@ import tempfile
 from pathlib import Path
 
 from lib.paths import SOURCES_DIR
-from lib.vendor import VendorError, _download, _extract, _log_fn, resolve_source_url
+from lib.vendor import (
+    VendorError,
+    _download,
+    _extract,
+    _log_fn,
+    resolve_source_url,
+    verify_download,
+)
 
 
 def generate(
@@ -66,6 +73,7 @@ def generate(
             _log(f"downloading {source_url}")
             archive = tmpdir / "source.tar.gz"
             _download(source_url, archive)
+            verify_download(pkg_name, pkg_meta, source_url, archive)
             src_dir = _extract(archive, tmpdir)
         except Exception:
             shutil.rmtree(tmpdir, ignore_errors=True)

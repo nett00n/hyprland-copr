@@ -8,6 +8,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import pytest
 
+from lib import paths
+from lib.source_lock import save_lock
 from lib.validation import (
     validate_package,
     validate_no_duplicate_urls,
@@ -15,6 +17,7 @@ from lib.validation import (
     REQUIRED_FIELDS,
     VALID_BUILD_SYSTEMS,
 )
+from lib.version import RELEASE_TYPES
 
 
 class TestValidatePackage:
@@ -144,6 +147,43 @@ class TestValidatePackage:
 
         # Should not have errors about invalid build system
         assert not any("invalid" in e.lower() and "build" in e.lower() for e in errors)
+
+    def test_detects_unknown_release_type(self):
+        """BUG-0014: an unrecognized auto_update.release_type must error,
+        not silently match no dispatch branch in update-versions.py.
+        """
+        meta = self.get_minimal_package()
+        meta["auto_update"] = {"release_type": "latest-tagg"}
+        all_packages = {"test-pkg": meta}
+
+        errors, warnings = validate_package("test-pkg", meta, all_packages)
+
+        assert any(
+            "release_type" in e.lower() and "latest-tagg" in e for e in errors
+        )
+
+    def test_allows_all_valid_release_types(self):
+        """Should accept every type in RELEASE_TYPES, including latest-tag."""
+        all_packages = {}
+
+        for release_type in RELEASE_TYPES:
+            meta = self.get_minimal_package()
+            meta["auto_update"] = {"release_type": release_type}
+            all_packages["test-" + release_type] = meta
+
+            errors, warnings = validate_package(
+                "test-" + release_type, meta, all_packages
+            )
+            assert not any("release_type" in e.lower() for e in errors)
+
+    def test_allows_missing_auto_update(self):
+        """No auto_update block at all is fine (moving, default resolution)."""
+        meta = self.get_minimal_package()
+        all_packages = {"test-pkg": meta}
+
+        errors, warnings = validate_package("test-pkg", meta, all_packages)
+
+        assert not any("release_type" in e.lower() for e in errors)
 
     def test_warns_devel_files_in_main(self):
         """Should warn when devel files are in main files section."""
@@ -309,6 +349,55 @@ class TestValidatePackage:
 
         # Should have error about unknown override key
         assert any("invalid_key" in e or "unknown" in e.lower() for e in errors)
+
+
+class TestValidatePackageSourceLock:
+    """validate_package() warns (never errors -- must not break a fresh
+    checkout) when a package's remote sources have no sources.lock.yaml
+    entry yet (see docs/bugs.md BUG-0025)."""
+
+    def get_minimal_package(self):
+        return {
+            "version": "1.0",
+            "license": "MIT",
+            "summary": "Test package",
+            "description": "A test package",
+            "url": "https://example.com",
+            "source": {"archives": ["https://example.com/pkg-1.0.tar.gz"]},
+            "build": {"system": "cmake"},
+        }
+
+    @pytest.fixture(autouse=True)
+    def lock_path(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(paths, "SOURCES_LOCK", tmp_path / "sources.lock.yaml")
+
+    def test_warns_when_no_lock_entry(self):
+        meta = self.get_minimal_package()
+        errors, warnings = validate_package("test-pkg", meta, {"test-pkg": meta})
+
+        assert errors == []
+        assert any("sources.lock.yaml" in w for w in warnings)
+        assert any("refresh-checksums PACKAGE=test-pkg" in w for w in warnings)
+
+    def test_no_warning_when_lock_entry_present(self):
+        meta = self.get_minimal_package()
+        save_lock({"test-pkg": {"pkg-1.0.tar.gz": {"sha256": "abc", "url": "x"}}})
+
+        errors, warnings = validate_package("test-pkg", meta, {"test-pkg": meta})
+
+        assert errors == []
+        assert not any("sources.lock.yaml" in w for w in warnings)
+
+    def test_no_warning_when_archives_missing(self):
+        """The 'missing required field' error already covers this case --
+        don't pile a second, redundant warning on top of it."""
+        meta = self.get_minimal_package()
+        meta["source"] = {}
+
+        errors, warnings = validate_package("test-pkg", meta, {"test-pkg": meta})
+
+        assert any("source.archives" in e for e in errors)
+        assert not any("sources.lock.yaml" in w for w in warnings)
 
 
 class TestValidateNoDuplicateUrls:

@@ -22,7 +22,8 @@
 # source_dir: override extracted source directory (at package level, for mismatched tarball structure)
 # files: RPM macros like %{_bindir} are passed through verbatim
 # build_requires / requires: use pkgconfig() form where possible
-# auto_update: enable auto-updates; release_type can be latest-commit, latest-release, etc.
+# auto_update: enable auto-updates; release_type is one of latest-version, latest-tag,
+#   latest-commit, pinned-version, pinned-commit, pinned-tag (see docs/packaging.md)
 #
 # RPM directory macro reference: docs/rpm-dir-prefixes.md
 # Macro converter: scripts/rpm-dir-prefixes-convert.py

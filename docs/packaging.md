@@ -29,7 +29,7 @@ share a `url`, as a nudge to double-check both have the config they need.
 ```yaml
 package-name:
   auto_update:
-    release_type: latest-commit  # or: latest-version, pinned-version, pinned-commit, pinned-tag
+    release_type: latest-commit  # or: latest-version, latest-tag, pinned-version, pinned-commit, pinned-tag
     branch: dev                   # optional: override default branch
   url: https://github.com/org/repo
   version: "0.53.0"
@@ -38,19 +38,58 @@ package-name:
 | Type | Behavior | Extra fields | Version format |
 |------|----------|--------------|---|
 | `latest-version` | Latest semver tag only, no commit fallback | `branch` | `1.2.3` |
-| `latest-commit` | Latest HEAD commit on branch | `branch` | `1.2.3^20240101gitabc1234` |
-| `pinned-version` | Skip updates entirely (manual control) | `version` | - |
-| `pinned-commit` | Skip updates entirely (manual control) | `commit` | - |
-| `pinned-tag` | Track a specific named non-semver tag | `tag` | `0.53.0^20240101gitabc1234` |
+| `latest-tag` | Latest version-like tag (any component count, e.g. `1.9`), no commit fallback | `branch` | `1.9` |
+| `latest-commit` | Latest commit on branch | `branch` | `1.2.3^20240101gitabc1234` |
+| `pinned-version` | Pins the checkout to tag `v<version>` (or bare `<version>`); no updates | `version` | - |
+| `pinned-commit` | Pins the checkout to `source.commit.full`; no updates | `commit` | - |
+| `pinned-tag` | Pins the checkout to a specific non-semver tag | `tag` | `0.53.0^20240101gitabc1234` |
 | *(absent)* | Default: try semver, fall back to commit | `branch` | `1.2.3` or `0^20240101gitabc1234` |
+
+`release_type` must match one of the types above (or be absent) -- `make validate-packages` and
+`make stage-validate` both reject anything else, rather than silently falling through to the
+default resolution path.
 
 For `latest-commit`/`pinned-tag`, versions use the nearest reachable semver tag as a prefix:
 `0.53.0^20240101gitabc1234` (commit after `v0.53.0`) or `0^20240101gitabc1234` (no semver tag
 reachable). When `source.commit` exists (archive-based sources), it's auto-populated with the
 full hash and date.
 
+`latest-tag` accepts an optional pre-release suffix (`2.0.0-rc1`), ranked below the same numeric
+tag without one. RPM `Version` can't contain `-`, so a winning pre-release is written as
+`2.0.0~rc1` -- which no longer matches the upstream tag string, breaking a `source.archives`
+entry templated on `%{version}`. `update-versions.py` warns when this happens.
+
 Run manually: `python3 scripts/update-versions.py`, then `git add packages.yaml && git commit`.
 `make update-daily` runs this as its first step.
+
+## Source verification
+
+`sources.lock.yaml` (repo root, committed) pins a sha256 for every remote file a package's
+`source.archives`/`source.bundled_deps` download — the tarball that ends up packed into the
+SRPM. `make stage-srpm` (and the Go/Rust vendor download path) fail closed on anything
+downloaded that has no entry, or whose hash no longer matches: a retagged upstream release, a
+tampered mirror, or a truncated download all get caught before they reach a published RPM
+(see `docs/bugs.md` BUG-0025).
+
+After a version bump (`make update-versions`), record the new hash:
+
+```console
+make refresh-checksums PACKAGE=<name>
+```
+
+This is the *only* thing that writes `sources.lock.yaml` — review the diff before committing,
+same as any other change. `make update-daily` runs it automatically between `update-versions`
+and the build. `make check-checksums` (also run by `make sources`) verifies without downloading
+or writing anything.
+
+An existing entry whose filename is unchanged but whose hash differs is refused by default —
+that's exactly the retag/tamper case this exists to catch. Only pass `FORCE_CHECKSUM=1` after
+manually verifying *why* the bytes changed (e.g. confirming with upstream that a tag was
+intentionally re-pushed); reflexively forcing defeats the point.
+
+This is TOFU (trust-on-first-use): the lock proves a file's bytes haven't changed since the
+hash was first recorded and reviewed in a diff, not that upstream was honest at record time.
+It does not check GPG signatures — see `docs/todo.md` for that.
 
 ## Go vendoring
 

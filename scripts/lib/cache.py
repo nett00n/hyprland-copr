@@ -4,8 +4,8 @@ import hashlib
 import json
 
 from lib.deps import effective_deps
-from lib.gitmodules import parse_gitmodules, resolve_module, get_submodule_commit
-from lib.paths import GITMODULES, ROOT, TEMPLATE_DIR
+from lib.paths import ROOT, TEMPLATE_DIR
+from lib.version import COMMIT_TRACKED_RELEASE_TYPES
 
 
 def _sha256(content: bytes) -> str:
@@ -36,22 +36,30 @@ def _content_hash(pkg_dict: dict) -> str:
 
 
 def _source_commit(pkg: str, meta: dict) -> str | None:
-    """Return full git commit hash of the package's submodule, or None if not found.
+    """Return the commit hash this package's build downloads, or None.
 
-    First tries to match by package name. If not found, falls back to the source.name
-    field (used for packages like Hyprland-git that track a different repo).
+    Read from packages.yaml `source.commit.full` -- the exact value the spec
+    expands into `%{commit}`, and therefore the only commit the build ever
+    sees. Deliberately NOT read from the submodule checkout: the checkout is
+    not a build input at all (spectool downloads the archive over the network),
+    so hashing it just made the cache depend on wherever update-versions.py
+    last left the working tree -- including a nightly submodule pull that
+    moves every submodule to upstream HEAD regardless of this package's own
+    release_type (see docs/bugs.md BUG-0033).
+
+    Only meaningful for packages in lib.version.COMMIT_TRACKED_RELEASE_TYPES
+    -- for everyone else, including a commit in the input hashes just forces
+    an unrelated full rebuild+resubmit with an unchanged version (see
+    docs/bugs.md BUG-0034). Returns None for a commit-tracked package with no
+    source.commit yet (e.g. a mis-shaped package whose archive URL is keyed on
+    %{version} instead of %{commit}) -- already covered by the
+    package_version input hash.
     """
-    modules = parse_gitmodules(GITMODULES)
-    mod = resolve_module(modules, pkg)
-    # Fallback: try source.name (e.g., Hyprland-git with source.name: Hyprland)
-    if mod is None:
-        source_name = meta.get("source", {}).get("name", "")
-        if source_name:
-            mod = resolve_module(modules, source_name)
-    if mod is None:
+    release_type = (meta.get("auto_update") or {}).get("release_type")
+    if release_type not in COMMIT_TRACKED_RELEASE_TYPES:
         return None
-    result = get_submodule_commit(ROOT / mod["path"])
-    return result[0] if result else None  # full hash
+    commit = ((meta.get("source") or {}).get("commit") or {}).get("full")
+    return str(commit) if commit else None
 
 
 def _templates_hash() -> str:

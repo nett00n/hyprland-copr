@@ -110,9 +110,7 @@ def run_global_checks(all_packages: dict) -> bool:
     # Warn when a package's url doesn't resolve to any .gitmodules submodule
     # (see validate_submodule_url_resolution docstring, docs/bugs.md BUG-0013)
     modules = parse_gitmodules(GITMODULES) if GITMODULES.exists() else []
-    url_errors, url_warnings = validate_submodule_url_resolution(
-        all_packages, modules
-    )
+    url_errors, url_warnings = validate_submodule_url_resolution(all_packages, modules)
     for w in url_warnings:
         print(f"    warn: {w}")
     total_errors += len(url_errors)

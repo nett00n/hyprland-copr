@@ -14,6 +14,75 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-02
 
+- Fixed: `update-daily` now runs `make stage-log-analyze` after `readme` (tolerant of its
+  non-zero "issues found" exit code) so that night's mock and Copr build failures get analyzed
+  while the logs still exist. Previously nothing called `stage-log-analyze` from the nightly
+  flow, and the next night's `full-cycle.py:main()` `rmtree`s `logs/build/<pkg>` before building
+  -- destroying unread failure evidence, including async Copr failures only discovered by that
+  same `readme` step's Copr poll (`lib.copr.poll_copr_status`) -- closes BUG-0041
+- Added: `sources.lock.yaml` (committed) pins a sha256 for every remote file a package's
+  `source.archives`/`source.bundled_deps` download (`lib/source_lock.py`). `make
+  refresh-checksums` (new target, also run automatically by `update-daily` after
+  `update-versions`) is the only thing that writes it; `stage-srpm.py` now verifies every
+  downloaded source against it between `spectool -g` and `rpmbuild -bs`, and the Go/Rust vendor
+  download path (`lib/vendor.py:verify_download`, called from both `lib/vendor.py`'s Go branch and
+  `lib/vendor_rust.py`'s download branch) does the same for the tarball it fetches directly --
+  both fail closed (no entry, or a hash that no longer matches) instead of silently packing
+  whatever was downloaded into the SRPM pushed to Copr. `make check-checksums` (also run by
+  `make sources`) verifies without downloading or writing. `make stage-validate` now warns (not
+  errors, so a fresh checkout isn't blocked) when a package's remote sources have no lock entry
+  yet. TOFU trust model, no signature verification (tracked as a TODO) -- closes BUG-0025
+- Changed: `make update-daily` no longer runs the full `pre-commit` gate (test+lint+fmt) before
+  building -- just the new `validate-packages` target (packages.yaml/.gitmodules structure
+  checks, extracted from `pre-commit`'s first line so both can reuse it) plus `fmt`. `scripts/`
+  lint/test health is already CI's job on every push/PR; an unrelated regression there no longer
+  blocks a nightly Copr publish (closes TODO-0064). Also: a package build failure inside
+  `full-cycle` no longer aborts the rest of the run -- `readme`/`copr-description`/`git commit`
+  still happen (so the night's version bumps aren't lost), and `update-daily` reports the
+  failure and exits non-zero only at the end, after everything else has run (closes TODO-0061)
+- Changed: `PACKAGE` env var semantics on the Makefile, closing TODO-0029 -- `gather-requires`
+  (the one target where it was a filesystem path to a built `.rpm`, not a packages.yaml key)
+  now takes `RPM=` instead; `list-tags`/`scaffold-package`/`add-submodule`/`delete-package`
+  (single-package-only targets) now reject a comma-separated `PACKAGE` with a clear error
+  instead of a confusing downstream one (`KeyError`, wrong path, silent no-op); `sources`/
+  `stage-log-analyze` now accept the same comma-separated-list shape every other multi-package
+  target already does, instead of silently treating `PACKAGE=a,b` as one bogus package name
+- Added: `make full-cycle-matrix` builds every `MATRIX_VERSIONS` (default: all `SUPPORTED`)
+  Fedora version's x86_64 chroot locally via mock, then submits to Copr once; and
+  `stage-copr`/`full-cycle` now print a per-chroot local-mock coverage table (verified/failed/
+  unbuilt/not-locally-verifiable) before every Copr submission, warning by default and blocking
+  under `REQUIRE_CHROOT_COVERAGE=true`. Narrows BUG-0018 to its aarch64 residual (blocked on
+  TODO-0024) -- x86_64 chroot-specific failures are now catchable before submission
+- Fixed: `update-versions.py:pull_submodule()` no longer force-moves every submodule to upstream
+  HEAD regardless of `auto_update.release_type` -- a `pinned-tag`/`pinned-commit`/`pinned-version`
+  package now gets its submodule checked out *detached* at `refs/tags/<tag>` /
+  `source.commit.full` / `refs/tags/v<version>` (falling back to the bare `<version>` tag for
+  upstreams that don't use a `v` prefix), and an unresolvable pin leaves the checkout exactly
+  where it is instead of falling back to branch HEAD, so `update-daily`'s `git add submodules/`
+  stops committing a moved gitlink under a package the operator believes is frozen (closes
+  BUG-0033 -- the `update-versions.py:pull_submodule()` one, not the unrelated `.git`-suffix entry
+  reusing that ID lower in this file). A pin also now wins over a moving sibling sharing the same
+  submodule url, safe because version resolution no longer reads the working tree:
+  `lib/gitmodules.py:get_submodule_commit_with_base()` takes a `ref`, so `latest-commit`/default
+  packages resolve `origin/<branch>` instead of whatever HEAD happens to be, and
+  `lib/cache.py:_source_commit()` reads `source.commit.full` from packages.yaml -- the hash the
+  build actually downloads via `%{commit}` -- instead of the live checkout. `git fetch` now passes
+  `--tags` so a pinned tag resolves even when unreachable from the tracked branch
+- Fixed: `lib/cache.py:_source_commit()` now returns `None` for every package except the 3 whose
+  `auto_update.release_type` is `latest-commit`/`pinned-commit` (the ones that actually build from
+  `%{url}/archive/%{commit}.tar.gz`) instead of hashing the submodule's live checkout for all 45 --
+  a nightly submodule pull no longer flips every release package's cache and forces an
+  unchanged-version rebuild+resubmit (closes BUG-0034, BUG-0001)
+- Fixed: `lib/yaml_utils.py:update_package_releases()` now decides "needs a release bump" from the
+  same full input-hash set (`source_commit`/`templates`/`package_config`/`dependencies`/`patches`)
+  that `lib/pipeline.py:is_cached()` uses to decide "needs an actual rebuild", instead of the
+  package's own content hash alone -- a rebuild triggered by an edited template/patch or a
+  dependency's config change now always gets a release bump, so a different RPM never ships under
+  an NVR already on Copr (closes BUG-0035)
+- Fixed: `make update-daily` no longer fails on a no-op night (nothing staged skips the commit
+  instead of `git commit`'s nonzero exit aborting the target), and `PUSH=1` now rebases onto
+  `origin/main` before pushing so it doesn't collide with `publish-readme.yml`'s own `[skip ci]`
+  push to `main` (closes BUG-0037, BUG-0038)
 - Added: this changelog and its ruleset (see docs/CONTRIBUTING.md)
 - Added: CI (GitHub Actions) runs lint+test on every push/PR, natively via `NO_CONTAINER=1`
 - Changed: `make update-daily` now runs the `pre-commit` quality gate (validate+test+lint+fmt)
@@ -88,3 +157,15 @@ History before this file's introduction is not backfilled - see `git log`.
   BUG-0033). `quickshell`'s url was investigated too but left unchanged: its git host
   (`git.outfoxxed.me`, Gitea) serves an identical archive either way, confirmed by byte-identical
   `content-length` with and without `.git`
+- Added: `auto_update.release_type: latest-tag` (`lib/version.py:latest_tag`) -- tracks the
+  highest version-like tag (any number of dot-separated components, e.g. mpvpaper's `1.9`) with
+  no commit fallback, for upstreams that don't tag strict three-component semver. `mpvpaper` had
+  declared this type since it was added (#9) even though it didn't exist yet, silently falling
+  through `update-versions.py`'s default path -- which resolves via the strict-semver
+  `SEMVER_RE`, matching only `1.2.1` out of mpvpaper's `1.0`..`1.9` tags, so the next
+  `make update-versions` would have downgraded it (closes BUG-0014)
+- Fixed: an `auto_update.release_type` outside the six valid values now fails both
+  `make validate-packages` and `make stage-validate` instead of silently matching no dispatch
+  branch in `update-versions.py` (the other half of BUG-0014). The valid-type set, previously
+  duplicated and drifting across `update-versions.py`, `lib/cache.py`, and `lib/yaml_utils.py`, is
+  now one constant (`lib/version.py:RELEASE_TYPES` and friends) all four call sites import

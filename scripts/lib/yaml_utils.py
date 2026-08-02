@@ -18,6 +18,7 @@ from .paths import (
     PACKAGES_YAML,
     REPO_YAML,
 )
+from .version import COMMIT_VERSION_RELEASE_TYPES
 from .yaml_config import DEFAULT as DEFAULT_YAML_CONFIG
 
 STAGES = build_db.STAGES
@@ -253,7 +254,7 @@ def write_yaml_preserving_comments(
             # Check if this is a latest-commit or pinned-tag release_type
             auto_update = pkg_data.get("auto_update", {})
             release_type = auto_update.get("release_type", "")
-            should_create_commit = release_type in ("latest-commit", "pinned-tag")
+            should_create_commit = release_type in COMMIT_VERSION_RELEASE_TYPES
 
             source = pkg_data.get("source", {})
             if source.get("commit") or should_create_commit:
@@ -297,7 +298,7 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
     Returns:
         Dict of {pkg_name: new_release} for packages that were updated
     """
-    from lib.cache import _content_hash
+    from lib.cache import compute_input_hashes, hashes_match
     from lib.deps import effective_deps
 
     dep_will_rebuild: set[str] = set()
@@ -307,13 +308,14 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
         # Skip auto-management if release_lock is set
         if pkg_dict.get("release_lock"):
             continue
-        # Compute content hash (excludes release)
-        content_hash = _content_hash(pkg_dict)
+        # Full input hash set -- same one lib.pipeline.is_cached() compares,
+        # so this decides "needs a release bump" from exactly the same inputs
+        # that decide "needs an actual rebuild" (see docs/bugs.md BUG-0035).
+        new_hashes = compute_input_hashes(pkg_name, pkg_dict, packages)
 
         # Read stored state
         last_entry = build_db.get_stage(pkg_name, "spec", target) or {}
         stored_hashes = last_entry.get("hashes", {})
-        last_content_hash = stored_hashes.get("content")
         last_version = stored_hashes.get("package_version")
 
         # Check for force_run in any stage
@@ -330,8 +332,7 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
 
         # Determine if this package needs rebuild
         needs_rebuild = (
-            last_content_hash is None  # first run or no stored content
-            or content_hash != last_content_hash
+            not hashes_match(last_entry, new_hashes)  # first run, or any input changed
             or force_run
             or dep_cascade
         )

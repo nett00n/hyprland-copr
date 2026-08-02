@@ -9,6 +9,7 @@ Usage:
 """
 
 import sys
+from typing import NamedTuple
 
 import yaml
 
@@ -20,31 +21,111 @@ from lib.gitmodules import (
 )
 from lib.paths import GITMODULES, PACKAGES_YAML, ROOT
 from lib.subprocess_utils import run_git
-from lib.version import latest_semver
+from lib.version import (
+    PINNED_RELEASE_TYPES,
+    RELEASE_TYPES,
+    latest_semver,
+    latest_tag,
+    rpm_version_from_tag,
+)
 from lib.yaml_utils import (
     get_packages,
     write_yaml_preserving_comments,
 )
 
+# PINNED_RELEASE_TYPES/RELEASE_TYPES live in lib/version.py -- the single
+# source of truth for every release_type, shared with the validators and
+# cache/yaml_utils. See docs/bugs.md BUG-0014 (mpvpaper's `latest-tag`);
+# docs/packaging.md holds the canonical release_type table.
 
-def pull_submodule(mod: dict, branch: str | None = None) -> None:
-    """Fetch and checkout branch, overriding any local state.
 
-    If branch is None, uses the default branch from origin's HEAD.
-    Otherwise, checks out the specified branch.
+class Pin(NamedTuple):
+    """A submodule checkout target derived from a package's pinned release_type.
+
+    kind:       "tag" | "commit" | "version" | "unresolved"
+    candidates: commit-ishes to try in order, first that resolves wins; empty
+                when kind == "unresolved"
+    owner:      package name the pin came from (for warnings)
+    detail:     why the pin is unresolved (only set when kind == "unresolved")
+    """
+
+    kind: str
+    candidates: tuple[str, ...]
+    owner: str
+    detail: str = ""
+
+
+def checkout_pin(pkg_name: str, pkg_data: dict) -> "Pin | None":
+    """Return the Pin this package imposes on its submodule checkout, or None.
+
+    None means "this package does not pin the checkout" -- the submodule
+    tracks its branch as before. A Pin with kind == "unresolved" means the
+    package IS pinned but the target can't be derived from packages.yaml; the
+    checkout is then left exactly where it is (never falls back to branch
+    HEAD -- see docs/bugs.md BUG-0033).
+    """
+    auto_update = pkg_data.get("auto_update") or {}
+    release_type = auto_update.get("release_type", "")
+    if release_type not in PINNED_RELEASE_TYPES:
+        return None
+
+    if release_type == "pinned-tag":
+        tag = auto_update.get("tag")
+        if not tag:
+            return Pin("unresolved", (), pkg_name, "pinned-tag with no auto_update.tag")
+        return Pin("tag", (f"refs/tags/{tag}",), pkg_name)
+
+    if release_type == "pinned-commit":
+        commit = ((pkg_data.get("source") or {}).get("commit") or {}).get("full")
+        if not commit:
+            return Pin(
+                "unresolved", (), pkg_name, "pinned-commit with no source.commit.full"
+            )
+        return Pin("commit", (str(commit),), pkg_name)
+
+    # pinned-version. Try the v-prefixed tag first (the common case: 34/45
+    # packages archive from a v-prefixed tag), then the bare version (6/45
+    # packages tag without a v prefix, e.g. Waybar) -- pinned-version skips
+    # the version-resolution loop entirely (see below), so nothing downstream
+    # would ever correct a miss.
+    version = str(pkg_data.get("version", "")).strip()
+    if not version:
+        return Pin("unresolved", (), pkg_name, "pinned-version with no version")
+    return Pin("version", (f"refs/tags/v{version}", f"refs/tags/{version}"), pkg_name)
+
+
+def pull_submodule(
+    mod: dict, branch: str | None = None, pin: "Pin | None" = None
+) -> str | None:
+    """Fetch origin and position the submodule working tree.
+
+    If pin is None, the submodule is force-switched to `origin/<branch>` as
+    before (branch defaults to origin's HEAD when not given). If pin is set,
+    the checkout is instead pinned *detached* at the resolved pin target and
+    is never moved to branch HEAD -- not even when the pin can't be resolved
+    (see docs/bugs.md, BUG-0033's fix).
+
+    Returns the remote-tracking ref ("origin/<branch>") that moving packages
+    sharing this submodule's url must resolve their versions against. This is
+    returned regardless of what was actually checked out (even on a pinned or
+    failed checkout), so a pin on a shared url can't freeze a sibling's
+    version resolution. Returns None only when the submodule couldn't be
+    prepared at all (missing directory, failed fetch, undeterminable default
+    branch).
     """
     repo = ROOT / mod["path"]
     if not repo.exists():
         print(f"  warning: {repo} does not exist, skipping pull", file=sys.stderr)
-        return
+        return None
 
-    # Fetch latest from origin
-    fetch_result = run_git("fetch", "origin", cwd=repo)
+    # --tags: a pinned tag need not be reachable from the tracked branch, and
+    # get_tag_commit() below resolves refs/tags/<tag> locally.
+    fetch_result = run_git("fetch", "--tags", "origin", cwd=repo)
     if fetch_result.returncode != 0:
         print(f"  warning: git fetch failed for {mod['name']}", file=sys.stderr)
         if fetch_result.stderr:
             print(f"  {fetch_result.stderr.strip()}", file=sys.stderr)
-        return
+        return None
 
     # Determine target branch
     target_branch = branch
@@ -56,20 +137,65 @@ def pull_submodule(mod: dict, branch: str | None = None) -> None:
                 f"  warning: could not determine default branch for {mod['name']}",
                 file=sys.stderr,
             )
-            return
+            return None
         # Extract branch name from "refs/remotes/origin/main" -> "main"
         target_branch = head_result.stdout.strip().split("/")[-1]
 
-    # Checkout and sync with origin
-    checkout_result = run_git(
-        "switch", "-C", target_branch, f"origin/{target_branch}", cwd=repo
-    )
+    moving_ref = f"origin/{target_branch}"
+
+    if pin is None:
+        # Checkout and sync with origin
+        checkout_result = run_git("switch", "-C", target_branch, moving_ref, cwd=repo)
+        if checkout_result.returncode != 0:
+            print(f"  warning: git switch failed for {mod['name']}", file=sys.stderr)
+            if checkout_result.stderr:
+                print(f"  {checkout_result.stderr.strip()}", file=sys.stderr)
+        else:
+            print(f"  updated {mod['name']} to {target_branch}", file=sys.stderr)
+        # Return moving_ref even on failure: version resolution reads the
+        # remote-tracking ref, which is valid whether or not the tree moved.
+        return moving_ref
+
+    if pin.kind == "unresolved":
+        print(
+            f"  warning: {mod['name']} is pinned by {pin.owner} ({pin.detail}); "
+            f"leaving the checkout untouched",
+            file=sys.stderr,
+        )
+        return moving_ref
+
+    resolved: str | None = None
+    for candidate in pin.candidates:
+        check = run_git(
+            "rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}", cwd=repo
+        )
+        if check.returncode == 0 and check.stdout.strip():
+            resolved = check.stdout.strip()
+            target = candidate
+            break
+    else:
+        tried = ", ".join(pin.candidates)
+        print(
+            f"  warning: {mod['name']} is pinned by {pin.owner} to {tried}, none of "
+            f"which exist in the fetched repo; leaving the checkout untouched",
+            file=sys.stderr,
+        )
+        return moving_ref
+
+    checkout_result = run_git("checkout", "--force", "--detach", target, cwd=repo)
     if checkout_result.returncode != 0:
-        print(f"  warning: git switch failed for {mod['name']}", file=sys.stderr)
+        print(
+            f"  warning: git checkout failed for {mod['name']} at pinned {target}",
+            file=sys.stderr,
+        )
         if checkout_result.stderr:
             print(f"  {checkout_result.stderr.strip()}", file=sys.stderr)
     else:
-        print(f"  updated {mod['name']} to {target_branch}", file=sys.stderr)
+        print(
+            f"  pinned {mod['name']} to {target} ({resolved[:7]}, from {pin.owner})",
+            file=sys.stderr,
+        )
+    return moving_ref
 
 
 def main() -> None:
@@ -93,18 +219,58 @@ def main() -> None:
             # get_packages exits on error; ignore and continue
             pass
 
-    # One physical checkout per submodule url: the branch to check it out to
-    # comes from whichever package(s) pointing at that url specify one.
+    # One physical checkout per submodule url. Three things are derived per
+    # url below:
+    #  - branch: which branch moving (non-pinned) packages track
+    #  - pin:    a pinned package's checkout target; a pin beats every moving
+    #            sibling on the same url, which is only safe because version
+    #            resolution further down reads origin/<branch>, never the
+    #            working tree (see docs/bugs.md BUG-0033)
+    #  - movers: packages on this url that do NOT pin (for the coexistence note)
     url_to_branch: dict[str, str | None] = {}
-    for pkg_data in packages.values():
+    url_to_pin: dict[str, Pin] = {}
+    url_to_movers: dict[str, list[str]] = {}
+    for pkg_name, pkg_data in packages.items():
         url = pkg_data.get("url", "")
+        if url not in url_to_module:
+            continue
         auto_update = pkg_data.get("auto_update") or {}
-        if url in url_to_module:
-            url_to_branch[url] = auto_update.get("branch")
+        branch = auto_update.get("branch")
+        if branch:
+            url_to_branch[url] = branch
+        else:
+            url_to_branch.setdefault(url, None)
+
+        pin = checkout_pin(pkg_name, pkg_data)
+        if pin is None:
+            url_to_movers.setdefault(url, []).append(pkg_name)
+            continue
+        existing = url_to_pin.get(url)
+        if existing is None:
+            url_to_pin[url] = pin
+        elif existing.candidates != pin.candidates or existing.kind != pin.kind:
+            print(
+                f"  warning: {url}: {pin.owner} pins this submodule to "
+                f"{pin.candidates or '(unresolved)'} but {existing.owner} already "
+                f"pinned it to {existing.candidates or '(unresolved)'}; keeping "
+                f"{existing.owner}'s (first in packages.yaml)",
+                file=sys.stderr,
+            )
 
     print("pulling submodules ...", file=sys.stderr)
+    url_to_ref: dict[str, str | None] = {}
     for mod in modules:
-        pull_submodule(mod, branch=url_to_branch.get(mod["url"]))
+        url = mod["url"]
+        pin = url_to_pin.get(url)
+        movers = url_to_movers.get(url, [])
+        if pin is not None and movers:
+            print(
+                f"  note: {mod['name']} is pinned by {pin.owner}; "
+                f"{', '.join(movers)} share this submodule and still resolve their "
+                f"versions from the remote branch, without moving the checkout",
+                file=sys.stderr,
+            )
+        url_to_ref[url] = pull_submodule(mod, branch=url_to_branch.get(url), pin=pin)
 
     pkg_to_latest: dict[str, str] = {}
     pkg_to_commit_info: dict[str, tuple[str, str, str, str | None]] = {}
@@ -117,6 +283,7 @@ def main() -> None:
         auto_update = pkg_data.get("auto_update") or {}
         release_type = auto_update.get("release_type", "")
         repo = ROOT / mod["path"]
+        ref = url_to_ref.get(url)
 
         # Handle pinned versions/commits - skip update
         if release_type == "pinned-version":
@@ -146,13 +313,56 @@ def main() -> None:
                 pkg_to_latest[pkg_name] = latest.lstrip("v")
             continue
 
+        # Handle latest-tag (loosest match: any version-like tag, no commit
+        # fallback) -- for upstreams that don't tag strict semver, e.g.
+        # mpvpaper's "1.9" (two components). See docs/bugs.md BUG-0014.
+        if release_type == "latest-tag":
+            print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
+            tags = fetch_tags(url)
+            latest = latest_tag(tags)
+            if latest:
+                rpm_version = rpm_version_from_tag(latest)
+                if rpm_version != latest.lstrip("v"):
+                    print(
+                        f"  warning: {pkg_name}: tag {latest!r} became version "
+                        f"{rpm_version!r} for RPM compatibility; a source.archives "
+                        f"entry templated on %{{version}} will not match the tag",
+                        file=sys.stderr,
+                    )
+                pkg_to_latest[pkg_name] = rpm_version
+            else:
+                print(
+                    f"  warning: {pkg_name}: no version-like tag found",
+                    file=sys.stderr,
+                )
+            continue
+
         # Handle latest-commit
         if release_type == "latest-commit":
-            print(f"fetching HEAD commit: {pkg_name} ...", file=sys.stderr)
-            commit_info = get_submodule_commit_with_base(repo)
+            if ref is None:
+                print(
+                    f"  warning: {pkg_name}: submodule not pulled, cannot resolve "
+                    f"latest commit",
+                    file=sys.stderr,
+                )
+                continue
+            print(f"fetching HEAD commit: {pkg_name} ({ref}) ...", file=sys.stderr)
+            commit_info = get_submodule_commit_with_base(repo, ref)
             if commit_info:
                 pkg_to_commit_info[pkg_name] = commit_info
             continue
+
+        # Unrecognized release_type: falls through to the default path below,
+        # same as before, but now says so -- `make validate-packages` rejects
+        # this before it gets here, but a stale/unvalidated run should still
+        # not fail silently. See docs/bugs.md BUG-0014.
+        if release_type and release_type not in RELEASE_TYPES:
+            print(
+                f"  warning: {pkg_name}: unknown auto_update.release_type "
+                f"{release_type!r}, falling back to default (semver-or-commit) "
+                f"resolution",
+                file=sys.stderr,
+            )
 
         # Default: try semver, fall back to commit
         print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
@@ -160,8 +370,14 @@ def main() -> None:
         latest = latest_semver(tags)
         if latest:
             pkg_to_latest[pkg_name] = latest.lstrip("v")
+        elif ref is None:
+            print(
+                f"  warning: {pkg_name}: no semver tag and submodule not pulled, "
+                f"nothing to resolve",
+                file=sys.stderr,
+            )
         else:
-            commit_info = get_submodule_commit_with_base(repo)
+            commit_info = get_submodule_commit_with_base(repo, ref)
             if commit_info:
                 pkg_to_commit_info[pkg_name] = commit_info
 

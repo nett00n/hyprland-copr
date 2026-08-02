@@ -13,6 +13,8 @@ import importlib
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 validate_packages = importlib.import_module("scripts.validate-packages")
@@ -66,6 +68,49 @@ class TestValidateSubmoduleUrls:
         warnings = validate_packages.validate_submodule_urls(packages, gitmodules_urls)
 
         assert warnings == []
+
+
+class TestReleaseTypeValidation:
+    """BUG-0014: an unknown auto_update.release_type must fail this gate,
+    not silently pass through and later match no dispatch branch in
+    update-versions.py.
+    """
+
+    def _write_repo(self, tmp_path, release_type):
+        (tmp_path / "packages.yaml").write_text(
+            "pkg-a:\n"
+            "  depends_on: []\n"
+            "  url: https://github.com/org/a\n"
+            "  auto_update:\n"
+            f"    release_type: {release_type}\n"
+        )
+        (tmp_path / ".gitmodules").write_text(
+            '[submodule "submodules/org/a"]\n'
+            "\tpath = submodules/org/a\n"
+            "\turl = https://github.com/org/a\n"
+            "\tignore = dirty\n"
+        )
+
+    def test_unknown_release_type_exits_nonzero(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        self._write_repo(tmp_path, "latest-tagg")
+
+        with pytest.raises(SystemExit) as exc_info:
+            validate_packages.main()
+
+        assert exc_info.value.code != 0
+        captured = capsys.readouterr()
+        assert "pkg-a" in captured.err
+        assert "latest-tagg" in captured.err
+
+    def test_latest_tag_is_valid(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        self._write_repo(tmp_path, "latest-tag")
+
+        validate_packages.main()  # must not raise SystemExit
+
+        captured = capsys.readouterr()
+        assert "✓ packages.yaml validation passed" in captured.out
 
 
 class TestMainWiring:

@@ -10,6 +10,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import pytest
 
+from lib import paths
+from lib.source_lock import save_lock, sha256_file
 from lib.vendor import (
     VendorError,
     _download,
@@ -19,6 +21,7 @@ from lib.vendor import (
     vendor_tarball_name,
     generate,
     vendor_tarball_path,
+    verify_download,
 )
 
 
@@ -252,5 +255,57 @@ class TestVendorTarballPath:
         """Should return correct tarball path."""
         path = vendor_tarball_path("mypackage", "1.0.0", tmp_path)
         assert path == tmp_path / "mypackage-1.0.0-vendor.tar.gz"
+
+
+class TestVerifyDownload:
+    """The Go/Rust vendor path downloads its own tarball (this module's
+    _download) rather than going through spectool, so stage-srpm.py's
+    verify-before-rpmbuild check never sees it -- verify_download() is the
+    equivalent fail-closed check for that path (BUG-0025).
+    """
+
+    META = {
+        "url": "https://example.com/pkg",
+        "version": "1.0",
+        "source": {
+            "archives": ["%{url}/archive/v%{version}.tar.gz#/pkg-1.0.tar.gz"]
+        },
+    }
+    URL = "https://example.com/pkg/archive/v1.0.tar.gz#/pkg-1.0.tar.gz"
+
+    @pytest.fixture(autouse=True)
+    def lock_path(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(paths, "SOURCES_LOCK", tmp_path / "sources.lock.yaml")
+
+    def test_passes_when_hash_matches(self, tmp_path):
+        archive = tmp_path / "downloaded.tar.gz"
+        archive.write_bytes(b"tarball contents")
+        save_lock(
+            {"pkg": {"pkg-1.0.tar.gz": {"sha256": sha256_file(archive), "url": "x"}}}
+        )
+        verify_download("pkg", self.META, self.URL, archive)  # must not raise
+
+    def test_raises_on_unrecorded_source(self, tmp_path):
+        archive = tmp_path / "downloaded.tar.gz"
+        archive.write_bytes(b"tarball contents")
+        with pytest.raises(VendorError, match="no entry in sources.lock.yaml"):
+            verify_download("pkg", self.META, self.URL, archive)
+
+    def test_raises_on_hash_mismatch(self, tmp_path):
+        archive = tmp_path / "downloaded.tar.gz"
+        archive.write_bytes(b"tampered contents")
+        save_lock({"pkg": {"pkg-1.0.tar.gz": {"sha256": "deadbeef", "url": "x"}}})
+        with pytest.raises(VendorError, match="sha256 mismatch"):
+            verify_download("pkg", self.META, self.URL, archive)
+
+    def test_raises_when_url_not_in_remote_sources(self, tmp_path):
+        """A URL that doesn't match this package's own source.archives at all
+        (e.g. a bug upstream in how the caller resolved it) has nothing in
+        the lock to check it against -- fail closed rather than skip silently.
+        """
+        archive = tmp_path / "downloaded.tar.gz"
+        archive.write_bytes(b"tarball contents")
+        with pytest.raises(VendorError, match="not a recognized remote source"):
+            verify_download("pkg", self.META, "https://evil.example.com/x.tar.gz", archive)
 
 

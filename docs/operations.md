@@ -36,6 +36,7 @@ make full-cycle PACKAGE=<name> PROCEED_BUILD=true                          # res
 make full-cycle PACKAGE=<name> SKIP_MOCK=true                              # stop after srpm
 make full-cycle PACKAGE=<name> SKIP_COPR=true                              # test locally, don't push
 make full-cycle PACKAGE=<name> COPR_REPO=nett00n/hyprland SYNCHRONOUS_COPR_BUILD=true  # wait for COPR
+make full-cycle PACKAGE=<name> COPR_REPO=nett00n/hyprland REQUIRE_CHROOT_COVERAGE=true # block submit on chroot gaps
 ```
 
 Copr submission runs as its own pass, only after every package in the run has gone through
@@ -43,14 +44,41 @@ Copr submission runs as its own pass, only after every package in the run has go
 never publishes while a sibling in the same dependency set is broken. By default COPR builds are
 submitted with `--nowait` (async); `SYNCHRONOUS_COPR_BUILD=true` waits for completion instead.
 
+Before submitting, `full-cycle`/`stage-copr` also print a per-chroot local-mock coverage table
+(queried from the Copr project's actual chroot list): each chroot is `verified` (this package's
+local mock succeeded for it), `failed`, `unbuilt` (same arch, never tried locally), or `not
+verifiable locally` (aarch64 — mock can't cross-build here, see `docs/todo.md` TODO-0024). By
+default this only warns and still submits; `REQUIRE_CHROOT_COVERAGE=true` blocks the submission
+instead whenever a same-arch chroot is `failed`/`unbuilt` (an aarch64 gap alone never blocks —
+there is no local way to close it yet).
+
+### Building every chroot locally before submitting
+
+A single `full-cycle` run only builds one `FEDORA_VERSION`'s x86_64 chroot, but Copr fans a
+submission out to every chroot configured on the project (fedora-43/44/rawhide x86_64/aarch64
+for `nett00n/hyprland`) — a chroot-specific failure (e.g. a newer libstdc++ needed than an older
+Fedora ships) can pass local mock and still fail on Copr (see `docs/bugs.md` BUG-0018). To catch
+that before submitting:
+
+```shell
+make container-all                                                    # build images for all SUPPORTED versions once
+make full-cycle-matrix PACKAGE=<name> COPR_REPO=nett00n/hyprland       # build every MATRIX_VERSIONS chroot locally, then submit once
+make full-cycle-matrix PACKAGE=<name> MATRIX_VERSIONS="43 44"          # limit to specific versions
+```
+
+This loops `full-cycle FEDORA_VERSION=<v> SKIP_COPR=true` per `MATRIX_VERSIONS` (default: every
+`SUPPORTED` version), then submits to Copr exactly once — Copr already fans one SRPM out to all
+its own chroots, so submitting per version would create duplicate builds. aarch64 chroots are
+still not covered by this (no cross-arch build path locally yet).
+
 ### Check build logs
 
 `logs/build/<name>/`: `00-spec`/`10-srpm`/`20-mock`/`21-mock-build`/`21-mock-root` are local
 stages. `30-copr` is the Copr submission (and, with `SYNCHRONOUS_COPR_BUILD=true`, the watched
 result). On a Copr failure, `30-copr-chroots.log` (per-chroot states) and
 `31-copr-<chroot>.log` (downloaded builder logs for the chroots that failed) are fetched
-automatically — local mock only builds one chroot and can't reproduce a chroot-specific Copr
-failure (see `docs/bugs.md` BUG-0018).
+automatically — useful for an aarch64-only failure, which `make full-cycle-matrix` still can't
+reproduce locally (see `docs/bugs.md` BUG-0018).
 
 On failure, analyze logs for actionable errors:
 
@@ -188,12 +216,24 @@ make update-daily COPR_REPO=nett00n/hyprland            # commit only
 make update-daily COPR_REPO=nett00n/hyprland PUSH=1      # commit and push
 ```
 
-Runs: bump versions → quality gate (`pre-commit`: validate + test + lint + fmt) → full build
+Runs: bump versions → `validate-packages` + `fmt` (packages.yaml sanity/formatting only —
+**not** the full `pre-commit` gate; `scripts/` lint/test health is already CI's job on every
+push/PR, an unrelated regression there shouldn't block tonight's Copr publish) → full build
 cycle → regenerate docs → push COPR description → `git commit`. Only stages
 `packages.yaml packages/ submodules/ README.md docs/README.copr.md docs/full-report.md` — the
 automation never touches `templates/`/`blog/`, so hand-edits there are never swept into a daily
 commit. Intended to run unattended from an external nightly cron (the repo itself has no
 scheduler); pass `PUSH=1` for that.
+
+A one-off package build failure (e.g. a chroot-specific mock failure) does **not** abort the
+run: it's recorded in `build-report.db` as usual, `readme`/`copr-description`/the docs commit
+still happen (so the night's version bumps and submodule moves aren't lost), and
+`update-daily` reports the failure and exits non-zero only at the very end, after everything
+else has run. Check `logs/build/<pkg>` or run `make stage-log-analyze` to see what failed.
+
+A no-op night (nothing staged) skips the commit instead of failing the target. With `PUSH=1`,
+the target rebases onto `origin/main` before pushing, so it doesn't collide with
+`publish-readme.yml`'s own `[skip ci]` push to `main`.
 
 ## Utility commands
 
@@ -204,7 +244,7 @@ make sources PACKAGE=<name>   # or omit PACKAGE for all
 
 **Suggest `requires:` entries** from a built RPM's SONAME dependencies:
 ```shell
-make gather-requires PACKAGE=path/to/package.rpm
+make gather-requires RPM=path/to/package.rpm
 ```
 
 **Remove a package** entirely (`packages.yaml`, build logs, spec files, submodules, container

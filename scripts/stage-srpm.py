@@ -32,6 +32,7 @@ from lib.paths import (
     resolve_target,
 )
 from lib.reporting import status, verbose_proceed_check
+from lib.source_lock import verify as verify_sources
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
 from lib.yaml_utils import apply_os_overrides, prepare_stage
@@ -124,6 +125,27 @@ def run_for_package(
             run_id,
             "failed",
             version=ver,
+            log=str(log.relative_to(ROOT)),
+            has_devel=has_devel,
+        )
+        return False
+
+    problems = verify_sources(pkg, meta, SOURCES_DIR)
+    if problems:
+        status("srpm", pkg, "fail", "source verify failed")
+        log.parent.mkdir(parents=True, exist_ok=True)
+        with open(log, "a") as fh:
+            fh.write("source verification failed:\n")
+            for p in problems:
+                fh.write(f"  {p}\n")
+        build_db.set_stage(
+            pkg,
+            "srpm",
+            target,
+            run_id,
+            "failed",
+            version=ver,
+            reason="source verify failed",
             log=str(log.relative_to(ROOT)),
             has_devel=has_devel,
         )

@@ -54,7 +54,7 @@ class TestUpdatePackageReleases:
 
     def test_content_unchanged_no_force(self):
         """Content unchanged, no force_run → no update."""
-        from lib.cache import _content_hash
+        from lib.cache import compute_input_hashes
 
         pkg_dict = {
             "version": "1.0",
@@ -66,13 +66,13 @@ class TestUpdatePackageReleases:
         }
         packages = {"test-pkg": pkg_dict}
 
-        # Compute the actual content hash for this package
-        actual_content = _content_hash(pkg_dict)
+        # Compute the actual full input hash set for this package
+        actual_hashes = compute_input_hashes("test-pkg", pkg_dict, packages)
 
         _seed(
             "test-pkg",
             "spec",
-            hashes={"content": actual_content, "package_version": "1.0"},  # <- matches computed
+            hashes=actual_hashes,  # <- matches computed
         )
 
         updates = update_package_releases(packages, TARGET)
@@ -282,7 +282,7 @@ class TestUpdatePackageReleases:
 
     def test_independent_pkg_not_cascaded(self):
         """pkg A rebuilt, pkg B has no depends_on A → B release unchanged."""
-        from lib.cache import _content_hash
+        from lib.cache import compute_input_hashes
 
         pkg_a = {
             "version": "1.0",
@@ -307,7 +307,7 @@ class TestUpdatePackageReleases:
         _seed(
             "pkg-b",
             "spec",
-            hashes={"content": _content_hash(pkg_b), "package_version": "1.0"},  # <- matches
+            hashes=compute_input_hashes("pkg-b", pkg_b, packages),  # <- matches
         )
 
         updates = update_package_releases(packages, TARGET)
@@ -350,7 +350,7 @@ class TestUpdatePackageReleases:
 
     def test_multiple_deps_one_changed(self):
         """pkg has multiple deps, only one changed → pkg release increments once."""
-        from lib.cache import _content_hash
+        from lib.cache import compute_input_hashes
 
         dep1 = {
             "version": "1.0",
@@ -383,9 +383,9 @@ class TestUpdatePackageReleases:
         _seed(
             "dep-2",
             "spec",
-            hashes={"content": _content_hash(dep2), "package_version": "1.0"},  # <- matches
+            hashes=compute_input_hashes("dep-2", dep2, packages),  # <- matches
         )
-        _seed("pkg", "spec", hashes={"content": _content_hash(pkg), "package_version": "1.0"})
+        _seed("pkg", "spec", hashes={"content": "old_hash_pkg", "package_version": "1.0"})
 
         updates = update_package_releases(packages, TARGET)
         assert updates["dep-1"] == 2

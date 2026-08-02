@@ -192,8 +192,14 @@ def get_changelog_info(
     return None
 
 
-def get_submodule_commit(repo: Path) -> tuple[str, str, str] | None:
-    """Return (full_hash, short_hash, date_YYYYMMDD) for HEAD of the submodule."""
+def get_submodule_commit(repo: Path, ref: str = "HEAD") -> tuple[str, str, str] | None:
+    """Return (full_hash, short_hash, date_YYYYMMDD) for `ref` in the submodule.
+
+    `ref` defaults to the checked-out HEAD; update-versions.py passes
+    "origin/<branch>" so a package's version never depends on where the working
+    tree happens to sit (a pinned sibling can share the same checkout without
+    its version resolution being affected -- see docs/bugs.md BUG-0033).
+    """
     try:
         result = subprocess.run(
             [
@@ -204,6 +210,7 @@ def get_submodule_commit(repo: Path) -> tuple[str, str, str] | None:
                 "-1",
                 "--format=%H %cd",
                 "--date=format:%Y%m%d",
+                ref,
             ],
             capture_output=True,
             text=True,
@@ -219,19 +226,21 @@ def get_submodule_commit(repo: Path) -> tuple[str, str, str] | None:
 
 
 def get_submodule_commit_with_base(
-    repo: Path,
+    repo: Path, ref: str = "HEAD"
 ) -> tuple[str, str, str, str | None] | None:
-    """Return (full_hash, short_hash, date_YYYYMMDD, base_semver | None) for HEAD.
+    """Return (full_hash, short_hash, date_YYYYMMDD, base_semver | None) for `ref`.
 
     base_semver is the nearest reachable semver tag (v-prefix stripped), or None.
     """
-    commit_info = get_submodule_commit(repo)
+    commit_info = get_submodule_commit(repo, ref)
     if not commit_info:
         return None
 
     full_hash, short_hash, date_str = commit_info
 
-    # Find nearest semver tag
+    # Find nearest semver tag. Describe from the resolved commit hash rather than
+    # `ref` itself, so this can't disagree with get_submodule_commit() above if
+    # a remote-tracking ref moves between the two subprocess calls.
     base_semver: str | None = None
     try:
         result = subprocess.run(
@@ -244,7 +253,7 @@ def get_submodule_commit_with_base(
                 "--match",
                 "v*.*.*",
                 "--abbrev=0",
-                "HEAD",
+                full_hash,
             ],
             capture_output=True,
             text=True,

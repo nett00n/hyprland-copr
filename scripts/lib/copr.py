@@ -17,15 +17,28 @@ import urllib.request
 from pathlib import Path
 
 from lib import build_db
-from lib.paths import get_package_log_dir
+from lib.paths import ARCH, get_package_log_dir
 from lib.subprocess_utils import run_cmd
+from lib.yaml_utils import SUPPORTED_FEDORA_VERSIONS
 
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{}/"
 COPR_API_CHROOTS = (
     "https://copr.fedorainfracloud.org/api_3/build-chroot/list?build_id={}"
 )
+COPR_API_PROJECT = (
+    "https://copr.fedorainfracloud.org/api_3/project?ownername={}&projectname={}"
+)
 TERMINAL_STATES = {"success", "failed"}
 CHROOT_LOG_CANDIDATES = ("builder-live.log.gz", "build.log.gz")
+
+# Verdicts for chroot_coverage(): "verified"/"failed" come from a real local mock
+# row; "unbuilt" is a same-arch chroot nobody has tried locally yet; "unverifiable"
+# is a different-arch chroot (aarch64) mock can never build here -- see
+# docs/todo.md TODO-0024. Only the first three should ever gate a submission.
+COVERAGE_VERIFIED = "verified"
+COVERAGE_FAILED = "failed"
+COVERAGE_UNBUILT = "unbuilt"
+COVERAGE_UNVERIFIABLE = "unverifiable"
 
 
 def parse_build_id(output: str) -> int | None:
@@ -82,6 +95,130 @@ def validate_copr_repo(copr_repo: str) -> bool:
         True if format is valid, False otherwise
     """
     return bool(re.match(r"^[\w-]+/[\w.-]+$", copr_repo))
+
+
+def get_project_chroots(copr_repo: str) -> list[str]:
+    """Fetch the list of chroot names a Copr project builds (e.g. every chroot
+    enabled for `nett00n/hyprland`: fedora-43/44/rawhide x x86_64/aarch64).
+
+    Args:
+        copr_repo: Repository slug "owner/project"
+
+    Returns:
+        Sorted list of chroot names, or [] on any network/parse failure or an
+        invalid slug -- callers must have their own fallback (see
+        chroot_coverage()'s caller in stage-copr.py, which falls back to the
+        x86_64 chroots derived from SUPPORTED_FEDORA_VERSIONS).
+    """
+    if not validate_copr_repo(copr_repo):
+        return []
+    ownername, projectname = copr_repo.split("/", 1)
+    url = COPR_API_PROJECT.format(ownername, projectname)
+    try:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            data = json.loads(resp.read())
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError, OSError):
+        return []
+    # Live API returns chroot_repos as a dict keyed by chroot name; tolerate a
+    # "chroots" list too in case that ever becomes the shape instead.
+    chroot_repos = data.get("chroot_repos")
+    if isinstance(chroot_repos, dict):
+        return sorted(chroot_repos)
+    chroots = data.get("chroots")
+    if isinstance(chroots, list):
+        return sorted(chroots)
+    return []
+
+
+def chroot_coverage(pkg: str, chroots: list[str]) -> dict[str, str]:
+    """Score each Copr chroot against this package's local mock history.
+
+    `build_db`'s `target` key IS the mock chroot name (see
+    lib.paths.resolve_target), so this is a direct per-chroot stage lookup --
+    no chroot-name translation needed.
+
+    Returns {chroot: verdict}, verdict one of COVERAGE_VERIFIED/_FAILED/
+    _UNBUILT/_UNVERIFIABLE (see the module-level constants' docstring).
+    """
+    coverage: dict[str, str] = {}
+    for chroot in chroots:
+        if not chroot.endswith(f"-{ARCH}"):
+            coverage[chroot] = COVERAGE_UNVERIFIABLE
+            continue
+        entry = build_db.get_stage(pkg, "mock", chroot)
+        state = entry.get("state") if entry else None
+        if state == "success":
+            coverage[chroot] = COVERAGE_VERIFIED
+        elif state == "failed":
+            coverage[chroot] = COVERAGE_FAILED
+        else:
+            coverage[chroot] = COVERAGE_UNBUILT
+    return coverage
+
+
+def print_chroot_coverage(copr_repo: str, packages: dict) -> bool:
+    """Print a per-chroot local-mock coverage table before a Copr submission.
+
+    For each Copr chroot, reports how many of `packages` are verified
+    (local mock succeeded), failed, unbuilt (same arch, never tried locally),
+    or unverifiable (different arch -- aarch64 can't be mock-built here, see
+    docs/todo.md TODO-0024).
+
+    Returns False only if some same-arch chroot has any package that is
+    failed or unbuilt -- i.e. something `make full-cycle-matrix` could still
+    catch locally before submission. An all-aarch64 gap never returns False:
+    there is currently no way to close it locally, so it can't be a gate.
+    """
+    chroots = get_project_chroots(copr_repo)
+    fallback_used = False
+    if not chroots:
+        fallback_used = True
+        chroots = sorted(f"fedora-{v}-{ARCH}" for v in SUPPORTED_FEDORA_VERSIONS)
+
+    print("\n=== Copr chroot coverage (local mock) ===")
+    if fallback_used:
+        print(
+            "  (could not reach Copr API for chroot list -- falling back to "
+            f"{ARCH} chroots derived from SUPPORTED_FEDORA_VERSIONS; "
+            "aarch64 chroots are not represented here)"
+        )
+
+    by_chroot: dict[str, dict[str, int]] = {
+        chroot: {
+            COVERAGE_VERIFIED: 0,
+            COVERAGE_FAILED: 0,
+            COVERAGE_UNBUILT: 0,
+            COVERAGE_UNVERIFIABLE: 0,
+        }
+        for chroot in chroots
+    }
+    for pkg in packages:
+        verdicts = chroot_coverage(pkg, chroots)
+        for chroot, verdict in verdicts.items():
+            by_chroot[chroot][verdict] += 1
+
+    ok = True
+    for chroot in chroots:
+        counts = by_chroot[chroot]
+        if counts[COVERAGE_UNVERIFIABLE]:
+            note = "not verifiable locally (aarch64, see TODO-0024)"
+        else:
+            note = (
+                f"{counts[COVERAGE_VERIFIED]} verified, "
+                f"{counts[COVERAGE_FAILED]} failed, "
+                f"{counts[COVERAGE_UNBUILT]} unbuilt"
+            )
+            if counts[COVERAGE_FAILED] or counts[COVERAGE_UNBUILT]:
+                ok = False
+        print(f"  {chroot}: {note}")
+
+    if not ok:
+        print(
+            "  -> some chroots have no verified local mock build. "
+            "Run `make full-cycle-matrix` to cover them before submitting, "
+            "or set REQUIRE_CHROOT_COVERAGE=true to block instead of warn."
+        )
+    return ok
 
 
 def get_build_chroots(build_id: int) -> list[dict]:
@@ -192,6 +329,10 @@ def poll_copr_status(target: str, packages_list: list[str]) -> bool:
         if not ok:
             continue
 
+        # FIXME(BUG-0040): only maps succeeded/failed -- any other terminal
+        # state (canceled, skipped, stuck import) never matches and the row
+        # stays "unknown" forever, re-polled and resubmitted nightly (see
+        # BUG-0002). See docs/bugs.md.
         # Parse output to get state (status command outputs "succeeded" or "failed" etc)
         new_state = None
         for line in stdout.splitlines():

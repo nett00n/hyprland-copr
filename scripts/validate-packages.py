@@ -4,6 +4,7 @@
 Checks for:
 - Self-dependencies (package depends on itself)
 - Invalid dependency references (depends_on references non-existent packages)
+- Unknown auto_update.release_type values
 - Missing ignore=dirty in .gitmodules (all submodules must have it)
 - A package's url not matching any .gitmodules submodule url (warning only)
 """
@@ -12,6 +13,8 @@ import sys
 from configparser import ConfigParser
 
 import yaml
+
+from lib.version import RELEASE_TYPES
 
 
 def validate_gitmodules() -> list[str]:
@@ -108,6 +111,17 @@ def main() -> None:
                 errors.append(
                     f"  {pkg}: invalid dependency '{dep}' (not found in packages.yaml)"
                 )
+
+        # Check auto_update.release_type -- an unrecognized type used to match
+        # no dispatch branch in update-versions.py and silently fall through
+        # to the default (semver-or-commit) path instead of erroring here
+        # (see docs/bugs.md BUG-0014, e.g. mpvpaper's `latest-tag`).
+        release_type = ((config or {}).get("auto_update") or {}).get("release_type")
+        if release_type and release_type not in RELEASE_TYPES:
+            errors.append(
+                f"  {pkg}: unknown auto_update.release_type '{release_type}' "
+                f"(valid: {', '.join(sorted(RELEASE_TYPES))})"
+            )
 
     # Validate .gitmodules
     gitmodules_errors = validate_gitmodules()
