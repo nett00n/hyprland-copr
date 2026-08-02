@@ -436,6 +436,9 @@ update-daily: ## Update versions, gate (validate+test+lint+fmt), build, generate
 	@test -n "$(COPR_REPO)" || (echo "$(HIGHLIGHT_PREFIX) Error: COPR_REPO is not set (e.g. export COPR_REPO=nett00n/hyprland)"; exit 1)
 	$(MAKE) update-versions pre-commit full-cycle readme copr-description || exit 1
 	git add packages.yaml packages/ submodules/ README.md docs/README.copr.md docs/full-report.md || exit 1
+	# FIXME(BUG-0038): fails the whole target on a no-op night (nothing to
+	# commit). FIXME(BUG-0037): PUSH=1 races the publish-readme workflow's own
+	# push to main -- next night's push is rejected non-fast-forward. See docs/bugs.md.
 	git commit -m "Daily update: $$(date --rfc-3339=seconds)" || exit 1
 	@if [ "$(PUSH)" = "1" ]; then git push || exit 1; fi
 

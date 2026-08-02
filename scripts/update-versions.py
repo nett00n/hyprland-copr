@@ -60,6 +60,9 @@ def pull_submodule(mod: dict, branch: str | None = None) -> None:
         # Extract branch name from "refs/remotes/origin/main" -> "main"
         target_branch = head_result.stdout.strip().split("/")[-1]
 
+    # FIXME(BUG-0033): moves the submodule to upstream HEAD regardless of
+    # auto_update.release_type -- pinned-* packages get their version pinned
+    # but not their checkout. See docs/bugs.md.
     # Checkout and sync with origin
     checkout_result = run_git(
         "switch", "-C", target_branch, f"origin/{target_branch}", cwd=repo

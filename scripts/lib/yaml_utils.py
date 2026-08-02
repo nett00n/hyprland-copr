@@ -329,6 +329,9 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
         )
 
         # Determine if this package needs rebuild
+        # FIXME(BUG-0035): narrower than lib/pipeline.py:is_cached()'s hash set
+        # (no source_commit/templates/patches) -- a rebuild triggered only by
+        # one of those inputs ships without a release bump. See docs/bugs.md.
         needs_rebuild = (
             last_content_hash is None  # first run or no stored content
             or content_hash != last_content_hash

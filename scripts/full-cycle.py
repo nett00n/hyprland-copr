@@ -221,6 +221,9 @@ def run_build_pipeline(
     _stage["stage-validate"].run_global_checks(all_packages)
 
     if copr_repo:
+        # FIXME(BUG-0036): return value is discarded, and validate_copr_repo()
+        # is never called here -- a bad COPR_REPO/token only fails after the
+        # full build. See docs/bugs.md.
         _stage["stage-copr"].check_copr_credentials()
 
     mock_failed: dict[str, bool] = {}

@@ -35,6 +35,10 @@ def _content_hash(pkg_dict: dict) -> str:
     return _sha256(json.dumps(normalized, sort_keys=True, default=str).encode())
 
 
+# FIXME(BUG-0034): included in every package's input hashes, but only -git
+# packages actually build from this checkout -- release packages build from a
+# tarball URL. A nightly submodule pull (update-versions.py) flips this for
+# every package and forces a full rebuild+resubmit. See docs/bugs.md.
 def _source_commit(pkg: str, meta: dict) -> str | None:
     """Return full git commit hash of the package's submodule, or None if not found.
 

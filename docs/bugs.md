@@ -9,6 +9,9 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
 
 - **BUG-0018** — local mock can't catch chroot-specific Copr failures before submitting
 - **BUG-0025** — upstream tarballs packed into SRPMs with no checksum/signature check
+- **BUG-0034** — nightly submodule pull invalidates every package's cache, forcing a full rebuild+resubmit
+- **BUG-0035** — release-bump predicate and cache-miss predicate disagree -> rebuilds ship without a release bump
+- **BUG-0037** — `update-daily PUSH=1` collides with the README-publish workflow's own push to `main`
 
 - **BUG-0001** `make update-daily` failed because of new dependency for hyprgraphics. deps updated, `make full-cycle PKG=hyprgrafics` was ok, yet `make update-daily` set hyprgraphics to be rebuilt again #low
 - **BUG-0002** make sure copr stage is runned only if rebuilt is really required. If status is still unknown - do not schedule new one
@@ -20,7 +23,7 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
 - **BUG-0008** `.env` `LOG_LEVEL=""` isn't quote-stripped like FEDORA_VERSION/PACKAGE/etc -> make's `$(if $(LOG_LEVEL),...)` sees non-empty `""` and injects `-e LOG_LEVEL=""` into container instead of leaving unset #low
 - **BUG-0009** Makefile `full-cycle` passes `FORCE_MOCK`/`DRY_RUN` env vars into the container but nothing in scripts/ reads them -> silent no-op flags, misleading
 - **BUG-0010** `scripts/lib/gitmodules.py` reimplements git subprocess calls 8x instead of using `lib/subprocess_utils.run_git` -> inconsistent timeouts (some unbounded) and error handling; `fetch_tags` doesn't catch `FileNotFoundError` unlike other git callers
-- **BUG-0011** `scripts/lib/yaml_utils.py:update_package_releases` mutates packages.yaml via regex string substitution on raw text instead of load/mutate/dump like the rest of the module -> fragile, depends on exact indentation matching
+- **BUG-0011** `scripts/lib/yaml_utils.py:update_package_releases` mutates packages.yaml via regex string substitution on raw text instead of load/mutate/dump like the rest of the module -> fragile, depends on exact indentation matching. Concretely: the pattern is `^({pkg}:.*?^  release: )\d+(\n)` compiled with `MULTILINE | DOTALL` -- if a package block has no `release:` key at exactly two-space indent, the non-greedy `.*?` runs straight past the end of that block and rewrites the *next* package's release instead; a `release:` with a trailing comment or different indentation is a silent no-op. Either way `full-cycle.py` still prints `Release updates: {...}` claiming the write happened, so the NVR stays put and Copr rejects the resubmission as a duplicate. Holds together today only because all 45 packages happen to match the pattern exactly
 - **BUG-0012** `scripts/validate-packages.py` (the pre-commit gate) and `scripts/lib/validation.py` (used by `stage-validate`, the actual build) are two independent, already-diverged validators for packages.yaml/.gitmodules -> a package can pass pre-commit and still fail build validation, or vice versa
 - **BUG-0014** `mpvpaper` declares `auto_update.release_type: latest-tag`, which isn't one of `update-versions.py`'s valid types (valid: `latest-version`, `latest-commit`, `pinned-version`, `pinned-commit`, `pinned-tag`) -> matches no branch, silently falls through to the default (semver-or-commit) path instead of erroring
 - **BUG-0016** individual `stage-*` Makefile targets (`stage-mock`, `stage-srpm`, etc.) don't forward `PROCEED_BUILD` into the container's `env` the way `full-cycle` does -> `make stage-mock PACKAGE=X PROCEED_BUILD=true` silently drops PROCEED_BUILD, so `prepare_stage()` runs in its default (non-proceed) mode and clears that stage's rows for the packages being built (scoped to PACKAGE since the sqlite migration, no longer whole-stage) even though the operator explicitly tried to opt out of it
@@ -67,3 +70,82 @@ See also docs/todo.md `# Vendor storage` (TODO-0001–TODO-0007, high priority d
   "ruff: command not found". Has gone unnoticed because every local `.venv` in practice already
   has the dev tools from a prior run (the CI workflow works around it by installing
   `requirements-dev.txt` explicitly before `make lint`)
+
+## update-daily
+
+`make update-daily` (Makefile) chains update-versions -> pre-commit -> full-cycle -> readme ->
+copr-description -> git commit -> optional push, and is documented (docs/operations.md) as the
+unattended nightly job. Audited end to end 2026-08:
+
+- **BUG-0033** `update-versions.py:pull_submodule()` force-checks-out *every* submodule to
+  upstream HEAD (`git switch -C <branch> origin/<branch>`) regardless of the package's
+  `auto_update.release_type`. `pinned-version`/`pinned-commit`/`pinned-tag` are honoured only in
+  the version-resolution loop further down; the working-tree checkout still moves, and
+  `update-daily`'s `git add submodules/` commits the moved gitlink. "Pinned" pins the version
+  string in packages.yaml, not the source the build actually sees. Latent today (no package uses
+  a `pinned-*` type -- only 4 of 45 declare `release_type` at all), which is exactly why it will
+  bite the first time someone pins something
+- **BUG-0034** the nightly submodule pull invalidates every package's cache.
+  `lib/cache.py:_source_commit()` puts the submodule's *checked-out* commit into
+  `compute_input_hashes()` for every package, but only `-git` packages build from the checkout --
+  release packages build from a versioned tarball URL and never read it. Since
+  `pull_submodule()` moves every submodule to upstream HEAD nightly, any upstream commit (a
+  README typo will do) flips `source_commit`, `hashes_match()` fails, and `pipeline.is_cached()`
+  returns False for spec/vendor/srpm/mock/copr -- the package is rebuilt and resubmitted with an
+  unchanged version. This is the mechanism behind BUG-0001
+- **BUG-0035** two different rebuild predicates disagree, and the loser is the NVR.
+  `lib/yaml_utils.py:update_package_releases()` decides "needs rebuild -> bump release" from the
+  `content` hash alone (the packages.yaml entry minus `release`), while `lib/pipeline.py:is_cached()`
+  decides "actually rebuild" from the full hash set (`source_commit` + `templates` +
+  `package_config` + `dependencies` + `patches`). Every input in the second set but not the first
+  -- a moved submodule (BUG-0034), an edited `templates/spec.j2`, an edited patch file, a rebuilt
+  dependency -- rebuilds the package *without* bumping `release`, so a different RPM ships under
+  an NVR that already exists on Copr. Combined with BUG-0034 this fires on essentially every run
+- **BUG-0036** Copr preflight is dropped on the `full-cycle` path: `full-cycle.py` calls
+  `check_copr_credentials()` and throws away the returned boolean (`stage-copr.py:main()` exits 2
+  on the same check), and `validate_copr_repo()` is never called on this path at all -- only in
+  `stage-copr.py:main()`. `make update-daily COPR_REPO=<typo>` or an expired token runs the whole
+  multi-hour build for 45 packages and only fails at the very end, once per package
+- **BUG-0037** `make update-daily PUSH=1` cannot succeed on consecutive nights. Its push to
+  `main` triggers `.github/workflows/publish-readme.yml`, which regenerates the README shell,
+  commits `Regenerate README shell [skip ci]`, and pushes to `main` itself (commits `8951cf1c`/
+  `4b2258b0` show this really happens). `update-daily` never pulls or rebases, so the next night's
+  `git push` is rejected non-fast-forward, `|| exit 1` fails the target, and that night's commit
+  is stranded locally while the branch keeps diverging. Both processes also write `README.md`, so
+  the conflict is guaranteed, not a race
+- **BUG-0038** `git commit -m "Daily update: ..." || exit 1` fails the whole target when there is
+  nothing to commit -- the normal quiet-night outcome (no new upstream versions, no doc drift).
+  An unattended cron job that reports failure on every uneventful night trains the operator to
+  ignore its exit status, which is the one signal BUG-0037 needs to be visible
+- **BUG-0039** the published docs always describe builds whose outcome isn't known yet.
+  `full-cycle` submits with `--nowait` (async is the default; `update-daily` never sets
+  `SYNCHRONOUS_COPR_BUILD`), so a build lands in build-report.db as `state="unknown"`. `make
+  readme` runs seconds later, and `lib/copr.py:poll_copr_status()` is a single-shot poll with no
+  wait or retry -- every build is still non-terminal, so README.md, docs/full-report.md, and the
+  Copr project description pushed by `copr-description` are committed and published describing
+  pending builds. They're only corrected ~24h later by the next run
+- **BUG-0040** `poll_copr_status()` maps only `succeeded`/`failed`, by substring-matching lines of
+  the whole `copr-cli status` output. Any other terminal state (`canceled`, `skipped`, an import
+  that never completes) never reaches `TERMINAL_STATES`, so the row stays `unknown` forever --
+  re-polled every night, and (per BUG-0002) resubmitted every night
+- **BUG-0041** nightly failure evidence is destroyed before it's read: `full-cycle.py:main()`
+  `rmtree`s `logs/build/<pkg>` for every package in the run before building, and `update-daily`
+  never calls `make stage-log-analyze`. Last night's mock and Copr logs are deleted by tonight's
+  run with nothing having analyzed them
+- **BUG-0042** `CMD_TIMEOUT=""` in `.env` crashes every subprocess call. The Makefile's
+  quote-stripping covers only `FEDORA_VERSION`/`COPR_REPO`/`PACKAGE`/`SKIP_PACKAGES`, so
+  `CMD_TIMEOUT=""` survives as the literal two-character string `""`; make's
+  `$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),)` sees it as non-empty and emits
+  `CMD_TIMEOUT=""`, the shell strips the quotes, and `run_cmd` does
+  `int(os.environ.get("CMD_TIMEOUT", 3600))` on an empty string -> `ValueError`. Same root cause
+  as BUG-0008 but a hard crash, not a silent no-op flag (`.env.example` quotes every value it
+  ships, so the habit is established)
+- **BUG-0043** no concurrency guard on a job documented as cron-driven. Nothing takes a lock: 45
+  packages at up to `CMD_TIMEOUT=3600s` *per command* can easily outrun the cron interval, and two
+  overlapping runs write the same build-report.db, the same rpmbuild-*/local-repo-* podman
+  volumes, the same packages.yaml, and the same git index
+- **BUG-0044** the quality gate never sees the file that gets committed. Order is
+  `update-versions -> pre-commit (validate + lint + fmt) -> full-cycle`, but `full-cycle` calls
+  `update_package_releases()`, which rewrites packages.yaml in place *after* the gate has run (via
+  the regex of BUG-0011). The packages.yaml that lands in the daily commit is the post-regex one,
+  which validate-packages.py, yamllint, and format-yaml.py never inspected

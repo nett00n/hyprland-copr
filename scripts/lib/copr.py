@@ -192,6 +192,10 @@ def poll_copr_status(target: str, packages_list: list[str]) -> bool:
         if not ok:
             continue
 
+        # FIXME(BUG-0040): only maps succeeded/failed -- any other terminal
+        # state (canceled, skipped, stuck import) never matches and the row
+        # stays "unknown" forever, re-polled and resubmitted nightly (see
+        # BUG-0002). See docs/bugs.md.
         # Parse output to get state (status command outputs "succeeded" or "failed" etc)
         new_state = None
         for line in stdout.splitlines():

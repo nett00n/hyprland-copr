@@ -11,6 +11,10 @@ bullet); IDs are never reused or renumbered, so deletions leave gaps.
 - **TODO-0033** — package add/delete logic lives in untestable Makefile recipes instead of
   scripts/
 - **TODO-0029** — `PACKAGE` means three different things depending on target, no validation
+- **TODO-0061** — `update-daily` is all-or-nothing: one failed package aborts before docs/commit,
+  losing the night's version bumps
+- **TODO-0064** — nightly runs the full developer lint/test gate instead of just validating
+  packages.yaml, so an unrelated lint regression blocks all Copr publishing
 
 # Vendor storage #high
 
@@ -129,6 +133,51 @@ disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
 - **TODO-0058** vendor stage's `log` field is only recorded on the generate path, not the "tarball already exists" skip path -> inconsistent stage rows
 - **TODO-0059** `SOURCES_DIR.mkdir()` only happens in `stage-vendor.py:main()`, not in `run_for_package()` -> the `full-cycle.py` path (which calls `run_for_package` directly) relies on the dir already existing
 - **TODO-0060** no test covers `vendor_rust.py`'s submodule branch (the one that mutates the repo working tree, see docs/bugs.md BUG-0021) -> all existing vendor tests exercise the download path only
+
+# Daily update
+
+Design/complexity items found while auditing `make update-daily` end to end (2026-08). Automation
+actually misbehaving from these findings is logged in docs/bugs.md's `## update-daily` section
+instead.
+
+- **TODO-0061** `update-daily` is all-or-nothing: every step is chained `|| exit 1`, so one
+  package failing mock aborts before `readme`/`copr-description`/`git commit` and the night's
+  version bumps and submodule moves are left uncommitted in the working tree -- which the next
+  run then builds on top of. Want: record and report build failures, still produce docs and the
+  commit
+- **TODO-0062** `lib/cache.py:_content_hash()` and `_package_config_hash()` are byte-identical
+  implementations -- both drop `release`, normalize keys, then sha256 of
+  `json.dumps(..., sort_keys=True, default=str)` -- and `compute_input_hashes()` stores both
+  results, under `content` *and* `package_config`. Two names, one hash, stored twice in every
+  stage row. Collapse to one
+- **TODO-0063** `full-cycle.py` sleeps 5 seconds after printing the build plan "before
+  proceeding" -- an interactive abort window that only burns time in the unattended cron flow the
+  target is documented for. Gate on a TTY or an env flag
+- **TODO-0064** the nightly runs the full *developer* gate: `pre-commit` = `validate-packages` +
+  pytest + ruff + flake8 + mypy + rpmlint + yamllint + `fmt`. An unrelated lint regression in
+  scripts/ therefore blocks all package updates and the Copr publish. Repo health is already CI's
+  job (`.github/workflows/ci.yml` runs lint+test on every push); the nightly only needs "is
+  packages.yaml valid". Split the two (this also makes the fresh-venv ordering trap of BUG-0032 a
+  nightly-blocking issue, not just a local annoyance)
+- **TODO-0065** the nightly builds one `FEDORA_VERSION` (default 43) while `SUPPORTED := 43 44
+  rawhide`. There is no loop over versions and no way to express "the nightly covers the matrix",
+  so two thirds of the supported set are only ever exercised by Copr's own fan-out. Compounds
+  BUG-0018
+- **TODO-0066** nothing in the daily flow reports what happened. `make stage-log-analyze` exists
+  and is never called by `update-daily`; the only durable output is a commit message containing a
+  timestamp. Want a nightly summary artifact -- or at minimum, run log-analyze on failure *before*
+  BUG-0041 deletes the logs
+- **TODO-0067** `make readme` starts three separate containers to render three templates from the
+  same build-report.db, and only the first (`github`) polls Copr -- the other two pass
+  `--skip-copr-poll` and read whatever the first left behind. One invocation rendering all three
+  would be cheaper and could not drift
+- **TODO-0068** `update-versions.py` force-pulls 45 submodules and fetches tags for 45 packages
+  serially on every run, with no concurrency, no offline mode, and no aggregate failure report: an
+  individual `git fetch` failure prints a warning and is then invisible in the stdout summary, so
+  a package can silently sit on a stale version indefinitely
+- **TODO-0069** `lib/yaml_utils.write_yaml_preserving_comments()` does not preserve comments --
+  its own docstring says so ("accepted trade-off for simpler code"). Misleading name on the
+  function that rewrites packages.yaml on every nightly run. Rename
 
 # Packages
 
