@@ -49,10 +49,10 @@ class TestGetPackageLogDir:
 class TestMockChroot:
     """Test mock_chroot function."""
 
-    def test_returns_fedora_42_chroot(self):
-        """Should return correct chroot for Fedora 42."""
-        result = mock_chroot("42")
-        assert "fedora-42" in result
+    def test_returns_fedora_45_chroot(self):
+        """Should return correct chroot for an arbitrary version string."""
+        result = mock_chroot("45")
+        assert "fedora-45" in result
         assert "x86_64" in result
 
     def test_returns_fedora_43_chroot(self):

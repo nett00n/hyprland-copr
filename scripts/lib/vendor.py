@@ -129,6 +129,10 @@ def generate(
             src_dir = _extract(archive, tmpdir)
             return generate_go(pkg_name, pkg_meta, tmpdir, src_dir, output, log_path)
         except Exception:
+            # NOTE: tmpdir is removed here unconditionally, even if keep_tmpdir
+            # is set -- the `finally` below then either double-removes it or
+            # logs "tmpdir kept" for a dir that's already gone. keep_tmpdir is
+            # effectively a no-op on the failure path. See docs/todo.md TODO-0055.
             shutil.rmtree(tmpdir, ignore_errors=True)
             raise
         finally:

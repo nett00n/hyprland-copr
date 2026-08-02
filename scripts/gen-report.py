@@ -11,7 +11,7 @@ from lib import build_db
 from lib.copr import COPR_BUILD_URL, poll_copr_status
 from lib.jinja_utils import create_jinja_env
 from lib.paths import GROUPS_YAML, PACKAGES_YAML, REPO_YAML, ROOT, resolve_target
-from lib.subprocess_utils import run_git
+from lib.readme_content import collect_contributors, get_recent_news, get_sections
 from lib.version import clean_version
 from lib.yaml_utils import (
     get_packages,
@@ -206,37 +206,6 @@ def collect_groups(groups_cfg: dict, pkg_by_name: dict) -> list[dict]:
     return groups
 
 
-def collect_contributors(repo_root: Path) -> list[dict]:
-    result = run_git("log", "--format=%an|%ae", cwd=repo_root)
-    seen: set[str] = set()
-    contributors: list[dict] = []
-    if result.returncode != 0:
-        return contributors
-    for line in result.stdout.splitlines():
-        name, _, email = line.partition("|")
-        if name in seen:
-            continue
-        seen.add(name)
-        github_user = None
-        if email.endswith("@users.noreply.github.com"):
-            github_user = email.split("@")[0].split("+")[-1]
-        contributors.append({"name": name, "github_user": github_user})
-    return contributors
-
-
-def get_latest_blog(repo_root: Path) -> str:
-    """Get the latest blog post from ./blog/ directory."""
-    blog_dir = repo_root / "blog"
-    if not blog_dir.exists():
-        return ""
-
-    blog_files = sorted(blog_dir.glob("*.md"), reverse=True)
-    if not blog_files:
-        return ""
-
-    return blog_files[0].read_text()
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -304,7 +273,9 @@ def main() -> None:
     pkg_by_name = {p["name"]: p for p in packages}
     groups = collect_groups(groups_cfg, pkg_by_name)
     contributors = collect_contributors(ROOT)
-    latest_blog = get_latest_blog(ROOT)
+    news_limit = repo.get("documents", {}).get("news_limit", 8)
+    news_entries = get_recent_news(ROOT, limit=news_limit)
+    sections = get_sections(repo)
 
     env = create_jinja_env()
     template = env.get_template(template_name)
@@ -315,7 +286,8 @@ def main() -> None:
         groups=groups,
         contributors=contributors,
         badge_style=badge_style,
-        latest_blog=latest_blog,
+        news_entries=news_entries,
+        sections=sections,
     )
 
     if args.output:

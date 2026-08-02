@@ -1,5 +1,7 @@
-{% if latest_blog %}
-{{ latest_blog }}
+{% for entry in news_entries %}
+### {{ entry.date }}
 
-[📝 More posts on GitHub]({{ repo.source_url }}/tree/main/blog)
-{% endif %}
+{{ entry.body }}
+
+{% endfor %}
+[📝 More posts on GitHub]({{ repo.source_url }}/blob/main/blog/NEWS.md)

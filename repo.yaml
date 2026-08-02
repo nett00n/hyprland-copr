@@ -24,6 +24,16 @@ description: |
   - [📎 Check my hyprland repo on GitHub](https://Github.com/nett00n/hyprland-copr/)
 documents:
   badge_style: for-the-badge
+  news_limit: 8
+  sections:
+    news: true
+    docs: true
+    support: true
+    license: true
+    authors: true
+    maintainers: true
+    contributors: true
+    additional_info: true
 license: GPLv3
 license_tldr: |
   **TL;DR** — You are free to use, modify, and distribute this software

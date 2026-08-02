@@ -48,6 +48,11 @@ def generate(
         raise VendorError("'cargo' not found in PATH")
 
     # Determine source directory
+    # WARNING: submodule_path here is the live checkout under submodules/ (the
+    # repo's own working tree, mounted from the host). The rmtree calls and the
+    # .cargo/config.toml write below happen directly inside it, as root in the
+    # container -> root-owned files on the host and a permanently dirty
+    # submodule. See docs/bugs.md BUG-0021 / docs/todo.md TODO-0001.
     if submodule_path and submodule_path.exists():
         _log(f"using local submodule: {submodule_path}")
         src_dir = submodule_path

@@ -7,7 +7,7 @@ PACKAGE         := $(subst ",,$(PACKAGE))
 SKIP_PACKAGES   := $(subst ",,$(SKIP_PACKAGES))
 # Fallback defaults if not set after stripping
 FEDORA_VERSION  ?= 43
-SUPPORTED        := 42 43 44 rawhide
+SUPPORTED        := 43 44 rawhide
 IMAGE_NAME       := rpm-toolbox
 HIGHLIGHT_PREFIX ?= "█▓▒░"
 
@@ -35,6 +35,13 @@ endif
 CONTAINER_RUNTIME ?= $(shell command -v podman >/dev/null 2>&1 && echo podman || echo docker)
 CONTAINER_SUDO    := $(if $(filter docker,$(CONTAINER_RUNTIME)),sudo,)
 
+# NO_CONTAINER=1 runs lint/test natively (no podman/docker) -- for CI, which is
+# already a disposable container with no privilege for nested --privileged runs.
+# Only lint/test targets are guaranteed to work this way; build/mock/copr stages
+# still require the containerized toolchain (mock, cargo, golang) and are
+# untouched by this flag.
+NO_CONTAINER ?=
+
 # User ID/GID detection for rootless containers
 USER_ID      := $(shell id -u)
 GROUP_ID     := $(shell id -g)
@@ -55,6 +62,12 @@ COPR_CONFIG_MOUNT := $(if $(COPR_REPO),-v $(HOME_DIR)/.config/copr:/root/.config
 # Container execution with volume mounts
 # Note: Containerfile already sets USER, so don't override it here
 # --privileged flag is required for mock to work (namespace support)
+ifeq ($(NO_CONTAINER),1)
+CONTAINER_RUN    :=
+CONTAINER_PYTHON := .venv/bin/python3
+RPMLINT          := .venv/bin/rpmlint
+WORK             := .
+else
 CONTAINER_RUN := $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm --privileged \
 	-v $(RPMBUILD_MOUNT) \
 	-v $(LOCALREPO_MOUNT) \
@@ -68,6 +81,9 @@ CONTAINER_RUN := $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm --privileged \
 
 # Python in container using mounted .venv
 CONTAINER_PYTHON := $(CONTAINER_RUN) /work/.venv/bin/python3
+RPMLINT          := rpmlint
+WORK             := /work
+endif
 
 ALL_PACKAGES := $(shell grep -oP '^[a-zA-Z][a-zA-Z0-9_-]+(?=:)' packages.yaml)
 _PKGS        := $(if $(PACKAGE),$(PACKAGE),$(ALL_PACKAGES))
@@ -84,7 +100,7 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all db-usage db-prune db-shell db-nuke
+.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all db-usage db-prune db-shell db-nuke
 
 save-last-build: ## Save last built RPMs and build-report.db to local-repo/ before clean
 	@mkdir -p local-repo
@@ -109,10 +125,14 @@ clean-all: clean-logs clean-localrepo ## Clean logs and local repo; build-report
 clean: save-last-build clean-logs ## Remove build logs (saves last build first)
 
 # Prerequisite checks - fail fast on missing dependencies
-check-image: ## Verify container image exists for FEDORA_VERSION
+check-image: ## Verify container image exists for FEDORA_VERSION (no-op under NO_CONTAINER=1)
+ifeq ($(NO_CONTAINER),1)
+	@true
+else
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) image inspect $(IMAGE_NAME):$(FEDORA_VERSION) >/dev/null 2>&1 || \
 		(echo "$(HIGHLIGHT_PREFIX) ✗ Container image not found: $(IMAGE_NAME):$(FEDORA_VERSION)"; \
 		 echo "$(HIGHLIGHT_PREFIX) Run: make container-build FEDORA_VERSION=$(FEDORA_VERSION)"; exit 1)
+endif
 
 check-venv: ## Verify .venv exists and has Python
 	@test -x .venv/bin/python3 || \
@@ -120,7 +140,10 @@ check-venv: ## Verify .venv exists and has Python
 		 echo "$(HIGHLIGHT_PREFIX) Run: make setup-venv"; exit 1)
 
 # Setup container volumes with correct permissions - required for rpmbuild and repo operations
-setup-volumes: check-image ## Initialize rpmbuild and local-repo volumes with correct UID/GID
+setup-volumes: check-image ## Initialize rpmbuild and local-repo volumes with correct UID/GID (no-op under NO_CONTAINER=1)
+ifeq ($(NO_CONTAINER),1)
+	@true
+else
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(RPMBUILD_VOLUME) >/dev/null 2>&1 || \
 		($(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume create $(RPMBUILD_VOLUME) || exit 1; \
 		 $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(RPMBUILD_MOUNT) $(IMAGE_NAME):$(FEDORA_VERSION) \
@@ -130,6 +153,7 @@ setup-volumes: check-image ## Initialize rpmbuild and local-repo volumes with co
 		 $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(LOCALREPO_MOUNT) $(IMAGE_NAME):$(FEDORA_VERSION) \
 		 	chown -R $(USER_ID):$(GROUP_ID) /local-repo || exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ Volumes ready"
+endif
 
 help: ## Show this help
 	@echo "Usage: make [TARGET] [PACKAGE=<name>] [FEDORA_VERSION=<version>] [LOG_LEVEL=<level>] [CMD_TIMEOUT=<seconds>]"
@@ -142,7 +166,7 @@ help: ## Show this help
 	@echo "  Common workflows:"
 	@echo "    make sources PACKAGE=hyprland"
 	@echo "    make stage-spec PACKAGE=hyprland"
-	@echo "    make stage-mock PACKAGE=hyprland FEDORA_VERSION=42"
+	@echo "    make stage-mock PACKAGE=hyprland FEDORA_VERSION=44"
 	@echo "    make stage-mock PACKAGE=hyprland CMD_TIMEOUT=7200  # 2 hours for large builds"
 	@echo "    make full-cycle PACKAGE=hyprland COPR_REPO=nett00n/hyprland"
 	@echo ""
@@ -189,7 +213,7 @@ lint-mypy: check-image check-venv setup-volumes ## Run mypy type checker on scri
 
 lint-rpm: check-image check-venv setup-volumes ## Run rpmlint on all generated spec files
 	$(CONTAINER_PYTHON) -m pip install -q rpmlint
-	$(call run_with_result,$(CONTAINER_RUN) rpmlint -r /work/.rpmlintrc --ignore-unused-rpmlintrc packages/*/[a-z]*.spec,Rpmlint check passed,Rpmlint check failed)
+	$(call run_with_result,$(CONTAINER_RUN) $(RPMLINT) -r $(WORK)/.rpmlintrc --ignore-unused-rpmlintrc packages/*/[a-z]*.spec,Rpmlint check passed,Rpmlint check failed)
 
 lint-yaml: check-image check-venv setup-volumes ## Run yamllint on YAML files
 	$(call run_with_result,$(CONTAINER_PYTHON) -m yamllint *.yaml,Yamllint check passed,Yamllint check failed)
@@ -292,6 +316,9 @@ readme: check-image check-venv setup-volumes ## Generate README.md, docs/README.
 		/work/.venv/bin/python3 scripts/gen-report.py --format full-report --output ./docs/full-report.md --skip-copr-poll \
 		2>"$(MAKE_LOGS_DIR)/readme/full-report.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ Full Report failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ Full Report generated"
+
+readme-shell: check-image check-venv ## Regenerate only the branding shell of README.md/docs/README.copr.md (no build-report.db needed; for CI)
+	$(call run_with_result,$(CONTAINER_PYTHON) scripts/gen-readme-shell.py,Readme shell updated,Readme shell update failed)
 
 db-usage: check-image check-venv setup-volumes ## Report disk usage of tracked build artifacts by package/target
 	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --usage
@@ -405,15 +432,12 @@ full-cycle: check-image check-venv setup-volumes ## Run full cycle with YAML rep
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/full-cycle.py,Full cycle completed,Full cycle failed)
 
-update-daily: ## Update versions, build, generate docs, push to COPR (requires COPR_REPO), git commit
+update-daily: ## Update versions, gate (validate+test+lint+fmt), build, generate docs, push to COPR (requires COPR_REPO), git commit (PUSH=1 to also git push)
 	@test -n "$(COPR_REPO)" || (echo "$(HIGHLIGHT_PREFIX) Error: COPR_REPO is not set (e.g. export COPR_REPO=nett00n/hyprland)"; exit 1)
-	$(MAKE) update-versions || exit 1
-	$(MAKE) fmt || exit 1
-	$(MAKE) full-cycle || exit 1
-	$(MAKE) readme || exit 1
-	$(MAKE) copr-description || exit 1
-	git add packages.yaml packages/ submodules/ templates/ blog/ README.md docs/README.copr.md docs/full-report.md || exit 1
-	git commit -m "Daily update: $$(date --rfc-3339=seconds)"
+	$(MAKE) update-versions pre-commit full-cycle readme copr-description || exit 1
+	git add packages.yaml packages/ submodules/ README.md docs/README.copr.md docs/full-report.md || exit 1
+	git commit -m "Daily update: $$(date --rfc-3339=seconds)" || exit 1
+	@if [ "$(PUSH)" = "1" ]; then git push || exit 1; fi
 
 build-pop: check-image check-venv setup-volumes ## Remove mock/copr build status for PKG=a,b (PKG="" removes all, requires confirmation)
 	@if [ -z "$(PACKAGE)" ]; then \
@@ -447,7 +471,7 @@ stage-spec: check-image check-venv setup-volumes ## Run spec generation stage (P
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-spec.py,Spec generation passed,Spec generation failed)
 
-stage-vendor: check-image check-venv setup-volumes ## Run vendor tarball generation stage (Go packages only, PACKAGE=<name>, CMD_TIMEOUT, runs in container)
+stage-vendor: check-image check-venv setup-volumes ## Run vendor tarball generation stage (Go/Rust packages, PACKAGE=<name>, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		PACKAGE=$(PACKAGE) \
