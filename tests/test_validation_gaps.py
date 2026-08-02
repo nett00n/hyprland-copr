@@ -17,6 +17,7 @@ from lib.validation import (
     REQUIRED_FIELDS,
     VALID_BUILD_SYSTEMS,
 )
+from lib.version import RELEASE_TYPES
 
 
 class TestValidatePackage:
@@ -146,6 +147,43 @@ class TestValidatePackage:
 
         # Should not have errors about invalid build system
         assert not any("invalid" in e.lower() and "build" in e.lower() for e in errors)
+
+    def test_detects_unknown_release_type(self):
+        """BUG-0014: an unrecognized auto_update.release_type must error,
+        not silently match no dispatch branch in update-versions.py.
+        """
+        meta = self.get_minimal_package()
+        meta["auto_update"] = {"release_type": "latest-tagg"}
+        all_packages = {"test-pkg": meta}
+
+        errors, warnings = validate_package("test-pkg", meta, all_packages)
+
+        assert any(
+            "release_type" in e.lower() and "latest-tagg" in e for e in errors
+        )
+
+    def test_allows_all_valid_release_types(self):
+        """Should accept every type in RELEASE_TYPES, including latest-tag."""
+        all_packages = {}
+
+        for release_type in RELEASE_TYPES:
+            meta = self.get_minimal_package()
+            meta["auto_update"] = {"release_type": release_type}
+            all_packages["test-" + release_type] = meta
+
+            errors, warnings = validate_package(
+                "test-" + release_type, meta, all_packages
+            )
+            assert not any("release_type" in e.lower() for e in errors)
+
+    def test_allows_missing_auto_update(self):
+        """No auto_update block at all is fine (moving, default resolution)."""
+        meta = self.get_minimal_package()
+        all_packages = {"test-pkg": meta}
+
+        errors, warnings = validate_package("test-pkg", meta, all_packages)
+
+        assert not any("release_type" in e.lower() for e in errors)
 
     def test_warns_devel_files_in_main(self):
         """Should warn when devel files are in main files section."""

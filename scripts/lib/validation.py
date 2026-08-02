@@ -5,6 +5,7 @@ Validates package.yaml entries, group membership, and .gitmodules conventions.
 
 from lib.gitmodules import parse_gitmodules
 from lib.paths import GITMODULES, ROOT
+from lib.version import RELEASE_TYPES
 from lib.yaml_utils import SUPPORTED_FEDORA_VERSIONS, load_groups_yaml
 
 REQUIRED_FIELDS = ["version", "license", "summary", "description", "url"]
@@ -82,6 +83,18 @@ def validate_package(
     if bs and bs != "FIXME" and bs not in VALID_BUILD_SYSTEMS:
         errors.append(
             f"invalid build_system '{bs}' (must be one of: {', '.join(sorted(VALID_BUILD_SYSTEMS))})"
+        )
+
+    # auto_update.release_type validity -- an unrecognized type used to match
+    # no dispatch branch in update-versions.py and silently fall through to
+    # the default (semver-or-commit) resolution instead of erroring here (see
+    # docs/bugs.md BUG-0014, e.g. mpvpaper's `latest-tag` before it was added
+    # as a real type).
+    release_type = (meta.get("auto_update") or {}).get("release_type")
+    if release_type and release_type not in RELEASE_TYPES:
+        errors.append(
+            f"unknown auto_update.release_type '{release_type}' "
+            f"(valid: {', '.join(sorted(RELEASE_TYPES))})"
         )
 
     # Devel files in wrong place (main files section)

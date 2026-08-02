@@ -26,6 +26,7 @@ class TestCheckoutPin:
             {"auto_update": {}},
             {"auto_update": {"release_type": ""}},
             {"auto_update": {"release_type": "latest-version"}},
+            {"auto_update": {"release_type": "latest-tag"}},
             {"auto_update": {"release_type": "latest-commit"}},
         ],
     )
@@ -34,14 +35,20 @@ class TestCheckoutPin:
         assert uv.checkout_pin("pkg", pkg_data) is None
 
     def test_latest_tag_is_not_treated_as_a_pin(self):
-        """BUG-0014 guard: mpvpaper's invalid `latest-tag` must keep falling
-        through to the default (moving) path, not be treated as a pin. Uses
-        exact membership, not startswith("pinned-"), specifically so a typo'd
-        release_type degrades the same way here as in the version-resolution
-        loop (falls through to default) instead of freezing the checkout.
+        """`latest-tag` (BUG-0014) is a real, valid, *moving* type -- it must
+        not be treated as a pin, same as latest-version/latest-commit.
         """
         pkg_data = {"auto_update": {"release_type": "latest-tag"}}
         assert uv.checkout_pin("mpvpaper", pkg_data) is None
+
+    def test_unknown_release_type_is_not_treated_as_a_pin(self):
+        """Exact membership, not startswith("pinned-"): a genuinely unknown/
+        typo'd release_type must degrade the same way here as in the
+        version-resolution loop (falls through to default) instead of
+        freezing the checkout. See docs/bugs.md BUG-0014.
+        """
+        pkg_data = {"auto_update": {"release_type": "bogus-type"}}
+        assert uv.checkout_pin("pkg", pkg_data) is None
 
     def test_pinned_tag(self):
         pkg_data = {"auto_update": {"release_type": "pinned-tag", "tag": "1.2.3"}}
@@ -613,6 +620,146 @@ class TestMain:
 
         captured = capsys.readouterr()
         assert "latest: 1.2.3" in captured.out
+
+    def test_latest_tag(self, tmp_path, monkeypatch, capsys):
+        """latest-tag resolves the highest version-like tag (BUG-0014):
+        mpvpaper's real tag list has only one strict-semver entry (1.2.1),
+        which latest-version/default would pick -- latest-tag must pick 1.9.
+        """
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test.git\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+
+        packages = {
+            "mpvpaper": {
+                "url": "https://github.com/test/test.git",
+                "auto_update": {"release_type": "latest-tag"},
+            }
+        }
+
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule"):
+                    with patch.object(uv, "fetch_tags") as mock_fetch:
+                        with patch.object(
+                            uv, "write_yaml_preserving_comments", return_value={}
+                        ):
+                            mock_parse.return_value = [
+                                {
+                                    "name": "test",
+                                    "path": "submodules/test",
+                                    "url": "https://github.com/test/test.git",
+                                }
+                            ]
+                            mock_fetch.return_value = [
+                                "1.0",
+                                "1.1",
+                                "1.2",
+                                "1.2.1",
+                                "1.3",
+                                "1.9",
+                            ]
+                            uv.main()
+
+        captured = capsys.readouterr()
+        assert "latest: '1.9'" in captured.out
+
+    def test_latest_tag_no_match_warns_and_skips(self, tmp_path, monkeypatch, capsys):
+        """No version-like tag found: warn, leave the version unresolved."""
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test.git\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+
+        packages = {
+            "test": {
+                "url": "https://github.com/test/test.git",
+                "auto_update": {"release_type": "latest-tag"},
+            }
+        }
+
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule"):
+                    with patch.object(uv, "fetch_tags") as mock_fetch:
+                        with patch.object(
+                            uv, "write_yaml_preserving_comments", return_value={}
+                        ):
+                            mock_parse.return_value = [
+                                {
+                                    "name": "test",
+                                    "path": "submodules/test",
+                                    "url": "https://github.com/test/test.git",
+                                }
+                            ]
+                            mock_fetch.return_value = ["nightly", "latest"]
+                            uv.main()
+
+        captured = capsys.readouterr()
+        assert "no version-like tag found" in captured.err
+        assert "latest: null" in captured.out or "latest:\n" in captured.out
+
+    def test_unknown_release_type_warns_and_falls_through(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """A release_type outside RELEASE_TYPES still resolves via the
+        default semver-or-commit path (unchanged behavior), but now warns.
+        `make validate-packages`/`stage-validate` reject this before it gets
+        here in the normal flow -- this covers a stale/unvalidated run.
+        """
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test.git\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+
+        packages = {
+            "test": {
+                "url": "https://github.com/test/test.git",
+                "auto_update": {"release_type": "bogus-type"},
+            }
+        }
+
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule"):
+                    with patch.object(uv, "fetch_tags") as mock_fetch:
+                        with patch.object(uv, "latest_semver") as mock_semver:
+                            with patch.object(
+                                uv, "write_yaml_preserving_comments", return_value={}
+                            ):
+                                mock_parse.return_value = [
+                                    {
+                                        "name": "test",
+                                        "path": "submodules/test",
+                                        "url": "https://github.com/test/test.git",
+                                    }
+                                ]
+                                mock_fetch.return_value = ["v2.0.0"]
+                                mock_semver.return_value = "v2.0.0"
+                                uv.main()
+
+        captured = capsys.readouterr()
+        assert "unknown auto_update.release_type 'bogus-type'" in captured.err
+        assert "latest: 2.0.0" in captured.out
 
     def test_latest_commit(self, tmp_path, monkeypatch, capsys):
         """Test latest-commit release type fetches HEAD commit."""

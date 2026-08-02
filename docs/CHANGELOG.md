@@ -151,3 +151,15 @@ History before this file's introduction is not backfilled - see `git log`.
   BUG-0033). `quickshell`'s url was investigated too but left unchanged: its git host
   (`git.outfoxxed.me`, Gitea) serves an identical archive either way, confirmed by byte-identical
   `content-length` with and without `.git`
+- Added: `auto_update.release_type: latest-tag` (`lib/version.py:latest_tag`) -- tracks the
+  highest version-like tag (any number of dot-separated components, e.g. mpvpaper's `1.9`) with
+  no commit fallback, for upstreams that don't tag strict three-component semver. `mpvpaper` had
+  declared this type since it was added (#9) even though it didn't exist yet, silently falling
+  through `update-versions.py`'s default path -- which resolves via the strict-semver
+  `SEMVER_RE`, matching only `1.2.1` out of mpvpaper's `1.0`..`1.9` tags, so the next
+  `make update-versions` would have downgraded it (closes BUG-0014)
+- Fixed: an `auto_update.release_type` outside the six valid values now fails both
+  `make validate-packages` and `make stage-validate` instead of silently matching no dispatch
+  branch in `update-versions.py` (the other half of BUG-0014). The valid-type set, previously
+  duplicated and drifting across `update-versions.py`, `lib/cache.py`, and `lib/yaml_utils.py`, is
+  now one constant (`lib/version.py:RELEASE_TYPES` and friends) all four call sites import

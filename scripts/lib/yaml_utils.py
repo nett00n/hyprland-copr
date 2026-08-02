@@ -18,6 +18,7 @@ from .paths import (
     PACKAGES_YAML,
     REPO_YAML,
 )
+from .version import COMMIT_VERSION_RELEASE_TYPES
 from .yaml_config import DEFAULT as DEFAULT_YAML_CONFIG
 
 STAGES = build_db.STAGES
@@ -253,7 +254,7 @@ def write_yaml_preserving_comments(
             # Check if this is a latest-commit or pinned-tag release_type
             auto_update = pkg_data.get("auto_update", {})
             release_type = auto_update.get("release_type", "")
-            should_create_commit = release_type in ("latest-commit", "pinned-tag")
+            should_create_commit = release_type in COMMIT_VERSION_RELEASE_TYPES
 
             source = pkg_data.get("source", {})
             if source.get("commit") or should_create_commit:

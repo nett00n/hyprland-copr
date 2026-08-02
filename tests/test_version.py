@@ -7,7 +7,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from lib.version import latest_semver, nvr, clean_version
+from lib.version import (
+    RELEASE_TYPES,
+    latest_semver,
+    latest_tag,
+    nvr,
+    clean_version,
+    rpm_version_from_tag,
+)
 
 
 class TestLatestSemver:
@@ -67,6 +74,84 @@ class TestLatestSemver:
         """Large version numbers work."""
         tags = ["v10.20.30", "v10.20.31", "v10.21.0"]
         assert latest_semver(tags) == "v10.21.0"
+
+
+class TestLatestTag:
+    """Test loose version-like tag selection (BUG-0014's latest-tag)."""
+
+    def test_mpvpaper_real_tags(self):
+        """Real upstream tag list: two-component tags beat the lone semver one.
+
+        latest_semver on this same list returns 1.2.1 (the only strict
+        three-component tag) -- latest_tag must not make that mistake.
+        """
+        tags = ["1.0", "1.1", "1.2", "1.2.1", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9"]
+        assert latest_tag(tags) == "1.9"
+
+    def test_two_component_ordering(self):
+        """1.2 < 1.2.1 < 1.3 by tuple comparison, not string comparison."""
+        assert latest_tag(["1.2", "1.2.1", "1.3"]) == "1.3"
+        assert latest_tag(["1.2", "1.2.1"]) == "1.2.1"
+
+    def test_v_prefix_stripped_for_comparison_but_kept_verbatim(self):
+        """v-prefixed and bare tags compare together; the winner is returned as-is."""
+        assert latest_tag(["v1.5.0", "2.0.0", "v1.9.0"]) == "2.0.0"
+        assert latest_tag(["v1.0", "v2.0"]) == "v2.0"
+
+    def test_prerelease_ranks_below_same_numbered_release(self):
+        assert latest_tag(["2.0.0-rc1", "2.0.0"]) == "2.0.0"
+
+    def test_prerelease_ranks_above_older_release(self):
+        assert latest_tag(["1.9", "2.0.0-rc1"]) == "2.0.0-rc1"
+
+    def test_prerelease_ordering_alpha_beta_rc(self):
+        tags = ["1.0.0-alpha", "1.0.0-rc", "1.0.0-beta"]
+        assert latest_tag(tags) == "1.0.0-rc"
+
+    def test_prerelease_numeric_suffix_ordering(self):
+        assert latest_tag(["1.0.0-rc1", "1.0.0-rc2"]) == "1.0.0-rc2"
+
+    def test_junk_tags_skipped(self):
+        assert latest_tag(["nightly", "latest", "master"]) is None
+
+    def test_junk_tags_ignored_alongside_real_ones(self):
+        assert latest_tag(["nightly", "1.9", "latest"]) == "1.9"
+
+    def test_empty_list(self):
+        assert latest_tag([]) is None
+
+    def test_single_component_tag(self):
+        assert latest_tag(["5", "3", "10"]) == "10"
+
+
+class TestRpmVersionFromTag:
+    """Test tag -> RPM-legal Version conversion."""
+
+    def test_plain_tag_is_noop(self):
+        assert rpm_version_from_tag("1.9") == "1.9"
+
+    def test_v_prefix_stripped(self):
+        assert rpm_version_from_tag("v1.9.0") == "1.9.0"
+
+    def test_prerelease_hyphen_becomes_tilde(self):
+        assert rpm_version_from_tag("2.0.0-rc1") == "2.0.0~rc1"
+
+    def test_v_prefix_and_prerelease(self):
+        assert rpm_version_from_tag("v2.0.0-rc1") == "2.0.0~rc1"
+
+
+class TestReleaseTypes:
+    """RELEASE_TYPES is the single source of truth used by the validators."""
+
+    def test_contains_all_six_types(self):
+        assert RELEASE_TYPES == {
+            "latest-version",
+            "latest-tag",
+            "latest-commit",
+            "pinned-version",
+            "pinned-commit",
+            "pinned-tag",
+        }
 
 
 class TestNvr:

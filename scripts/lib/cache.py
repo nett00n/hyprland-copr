@@ -5,6 +5,7 @@ import json
 
 from lib.deps import effective_deps
 from lib.paths import ROOT, TEMPLATE_DIR
+from lib.version import COMMIT_TRACKED_RELEASE_TYPES
 
 
 def _sha256(content: bytes) -> str:
@@ -34,13 +35,6 @@ def _content_hash(pkg_dict: dict) -> str:
     return _sha256(json.dumps(normalized, sort_keys=True, default=str).encode())
 
 
-# release_types whose build actually downloads a specific commit's tarball (the
-# archive URL is templated as `%{url}/archive/%{commit}.tar.gz`, with
-# source.commit.full written by update-versions.py). Every other release_type
-# builds from a fixed version/tag tarball URL that has no commit in it at all.
-_COMMIT_TRACKED_RELEASE_TYPES = {"latest-commit", "pinned-commit"}
-
-
 def _source_commit(pkg: str, meta: dict) -> str | None:
     """Return the commit hash this package's build downloads, or None.
 
@@ -53,7 +47,7 @@ def _source_commit(pkg: str, meta: dict) -> str | None:
     moves every submodule to upstream HEAD regardless of this package's own
     release_type (see docs/bugs.md BUG-0033).
 
-    Only meaningful for packages in _COMMIT_TRACKED_RELEASE_TYPES (see above)
+    Only meaningful for packages in lib.version.COMMIT_TRACKED_RELEASE_TYPES
     -- for everyone else, including a commit in the input hashes just forces
     an unrelated full rebuild+resubmit with an unchanged version (see
     docs/bugs.md BUG-0034). Returns None for a commit-tracked package with no
@@ -62,7 +56,7 @@ def _source_commit(pkg: str, meta: dict) -> str | None:
     package_version input hash.
     """
     release_type = (meta.get("auto_update") or {}).get("release_type")
-    if release_type not in _COMMIT_TRACKED_RELEASE_TYPES:
+    if release_type not in COMMIT_TRACKED_RELEASE_TYPES:
         return None
     commit = ((meta.get("source") or {}).get("commit") or {}).get("full")
     return str(commit) if commit else None

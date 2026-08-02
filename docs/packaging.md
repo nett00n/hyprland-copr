@@ -29,7 +29,7 @@ share a `url`, as a nudge to double-check both have the config they need.
 ```yaml
 package-name:
   auto_update:
-    release_type: latest-commit  # or: latest-version, pinned-version, pinned-commit, pinned-tag
+    release_type: latest-commit  # or: latest-version, latest-tag, pinned-version, pinned-commit, pinned-tag
     branch: dev                   # optional: override default branch
   url: https://github.com/org/repo
   version: "0.53.0"
@@ -38,16 +38,26 @@ package-name:
 | Type | Behavior | Extra fields | Version format |
 |------|----------|--------------|---|
 | `latest-version` | Latest semver tag only, no commit fallback | `branch` | `1.2.3` |
+| `latest-tag` | Latest version-like tag (any component count, e.g. `1.9`), no commit fallback | `branch` | `1.9` |
 | `latest-commit` | Latest commit on branch | `branch` | `1.2.3^20240101gitabc1234` |
 | `pinned-version` | Pins the checkout to tag `v<version>` (or bare `<version>`); no updates | `version` | - |
 | `pinned-commit` | Pins the checkout to `source.commit.full`; no updates | `commit` | - |
 | `pinned-tag` | Pins the checkout to a specific non-semver tag | `tag` | `0.53.0^20240101gitabc1234` |
 | *(absent)* | Default: try semver, fall back to commit | `branch` | `1.2.3` or `0^20240101gitabc1234` |
 
+`release_type` must match one of the types above (or be absent) -- `make validate-packages` and
+`make stage-validate` both reject anything else, rather than silently falling through to the
+default resolution path.
+
 For `latest-commit`/`pinned-tag`, versions use the nearest reachable semver tag as a prefix:
 `0.53.0^20240101gitabc1234` (commit after `v0.53.0`) or `0^20240101gitabc1234` (no semver tag
 reachable). When `source.commit` exists (archive-based sources), it's auto-populated with the
 full hash and date.
+
+`latest-tag` accepts an optional pre-release suffix (`2.0.0-rc1`), ranked below the same numeric
+tag without one. RPM `Version` can't contain `-`, so a winning pre-release is written as
+`2.0.0~rc1` -- which no longer matches the upstream tag string, breaking a `source.archives`
+entry templated on `%{version}`. `update-versions.py` warns when this happens.
 
 Run manually: `python3 scripts/update-versions.py`, then `git add packages.yaml && git commit`.
 `make update-daily` runs this as its first step.

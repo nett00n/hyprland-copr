@@ -21,18 +21,22 @@ from lib.gitmodules import (
 )
 from lib.paths import GITMODULES, PACKAGES_YAML, ROOT
 from lib.subprocess_utils import run_git
-from lib.version import latest_semver
+from lib.version import (
+    PINNED_RELEASE_TYPES,
+    RELEASE_TYPES,
+    latest_semver,
+    latest_tag,
+    rpm_version_from_tag,
+)
 from lib.yaml_utils import (
     get_packages,
     write_yaml_preserving_comments,
 )
 
-# Types that pin the *checkout*, not just the version string. Exact membership
-# on purpose, never startswith("pinned-"): an unknown/misspelled type must
-# behave identically here and in the version-resolution loop below, which
-# falls through to the default path. See docs/bugs.md BUG-0014 (mpvpaper's
-# `latest-tag`); docs/packaging.md holds the canonical release_type table.
-PINNED_RELEASE_TYPES = frozenset({"pinned-version", "pinned-commit", "pinned-tag"})
+# PINNED_RELEASE_TYPES/RELEASE_TYPES live in lib/version.py -- the single
+# source of truth for every release_type, shared with the validators and
+# cache/yaml_utils. See docs/bugs.md BUG-0014 (mpvpaper's `latest-tag`);
+# docs/packaging.md holds the canonical release_type table.
 
 
 class Pin(NamedTuple):
@@ -309,6 +313,30 @@ def main() -> None:
                 pkg_to_latest[pkg_name] = latest.lstrip("v")
             continue
 
+        # Handle latest-tag (loosest match: any version-like tag, no commit
+        # fallback) -- for upstreams that don't tag strict semver, e.g.
+        # mpvpaper's "1.9" (two components). See docs/bugs.md BUG-0014.
+        if release_type == "latest-tag":
+            print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
+            tags = fetch_tags(url)
+            latest = latest_tag(tags)
+            if latest:
+                rpm_version = rpm_version_from_tag(latest)
+                if rpm_version != latest.lstrip("v"):
+                    print(
+                        f"  warning: {pkg_name}: tag {latest!r} became version "
+                        f"{rpm_version!r} for RPM compatibility; a source.archives "
+                        f"entry templated on %{{version}} will not match the tag",
+                        file=sys.stderr,
+                    )
+                pkg_to_latest[pkg_name] = rpm_version
+            else:
+                print(
+                    f"  warning: {pkg_name}: no version-like tag found",
+                    file=sys.stderr,
+                )
+            continue
+
         # Handle latest-commit
         if release_type == "latest-commit":
             if ref is None:
@@ -323,6 +351,18 @@ def main() -> None:
             if commit_info:
                 pkg_to_commit_info[pkg_name] = commit_info
             continue
+
+        # Unrecognized release_type: falls through to the default path below,
+        # same as before, but now says so -- `make validate-packages` rejects
+        # this before it gets here, but a stale/unvalidated run should still
+        # not fail silently. See docs/bugs.md BUG-0014.
+        if release_type and release_type not in RELEASE_TYPES:
+            print(
+                f"  warning: {pkg_name}: unknown auto_update.release_type "
+                f"{release_type!r}, falling back to default (semver-or-commit) "
+                f"resolution",
+                file=sys.stderr,
+            )
 
         # Default: try semver, fall back to commit
         print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
