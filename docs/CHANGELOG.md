@@ -14,6 +14,18 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-02
 
+- Added: `sources.lock.yaml` (committed) pins a sha256 for every remote file a package's
+  `source.archives`/`source.bundled_deps` download (`lib/source_lock.py`). `make
+  refresh-checksums` (new target, also run automatically by `update-daily` after
+  `update-versions`) is the only thing that writes it; `stage-srpm.py` now verifies every
+  downloaded source against it between `spectool -g` and `rpmbuild -bs`, and the Go/Rust vendor
+  download path (`lib/vendor.py:verify_download`, called from both `lib/vendor.py`'s Go branch and
+  `lib/vendor_rust.py`'s download branch) does the same for the tarball it fetches directly --
+  both fail closed (no entry, or a hash that no longer matches) instead of silently packing
+  whatever was downloaded into the SRPM pushed to Copr. `make check-checksums` (also run by
+  `make sources`) verifies without downloading or writing. `make stage-validate` now warns (not
+  errors, so a fresh checkout isn't blocked) when a package's remote sources have no lock entry
+  yet. TOFU trust model, no signature verification (tracked as a TODO) -- closes BUG-0025
 - Changed: `make update-daily` no longer runs the full `pre-commit` gate (test+lint+fmt) before
   building -- just the new `validate-packages` target (packages.yaml/.gitmodules structure
   checks, extracted from `pre-commit`'s first line so both can reuse it) plus `fmt`. `scripts/`

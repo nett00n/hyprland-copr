@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 PACKAGES_YAML = ROOT / "packages.yaml"
 REPO_YAML = ROOT / "repo.yaml"
 GROUPS_YAML = ROOT / "groups.yaml"
+SOURCES_LOCK = ROOT / "sources.lock.yaml"
 GITMODULES = ROOT / ".gitmodules"
 LOG_DIR = ROOT / "logs"
 BUILD_LOG_DIR = LOG_DIR / "build"

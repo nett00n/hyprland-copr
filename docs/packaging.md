@@ -52,6 +52,35 @@ full hash and date.
 Run manually: `python3 scripts/update-versions.py`, then `git add packages.yaml && git commit`.
 `make update-daily` runs this as its first step.
 
+## Source verification
+
+`sources.lock.yaml` (repo root, committed) pins a sha256 for every remote file a package's
+`source.archives`/`source.bundled_deps` download — the tarball that ends up packed into the
+SRPM. `make stage-srpm` (and the Go/Rust vendor download path) fail closed on anything
+downloaded that has no entry, or whose hash no longer matches: a retagged upstream release, a
+tampered mirror, or a truncated download all get caught before they reach a published RPM
+(see `docs/bugs.md` BUG-0025).
+
+After a version bump (`make update-versions`), record the new hash:
+
+```console
+make refresh-checksums PACKAGE=<name>
+```
+
+This is the *only* thing that writes `sources.lock.yaml` — review the diff before committing,
+same as any other change. `make update-daily` runs it automatically between `update-versions`
+and the build. `make check-checksums` (also run by `make sources`) verifies without downloading
+or writing anything.
+
+An existing entry whose filename is unchanged but whose hash differs is refused by default —
+that's exactly the retag/tamper case this exists to catch. Only pass `FORCE_CHECKSUM=1` after
+manually verifying *why* the bytes changed (e.g. confirming with upstream that a tag was
+intentionally re-pushed); reflexively forcing defeats the point.
+
+This is TOFU (trust-on-first-use): the lock proves a file's bytes haven't changed since the
+hash was first recorded and reviewed in a diff, not that upstream was honest at record time.
+It does not check GPG signatures — see `docs/todo.md` for that.
+
 ## Go vendoring
 
 Add `golang` to `build_requires`. The vendor stage auto-generates

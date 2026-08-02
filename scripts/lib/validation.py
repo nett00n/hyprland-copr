@@ -56,6 +56,20 @@ def validate_package(
     # source.archives required
     if not meta.get("source", {}).get("archives"):
         errors.append("missing required field: source.archives")
+    else:
+        from lib.source_lock import load_lock, remote_sources
+
+        pkg_lock = load_lock().get(name, {})
+        missing = [
+            filename
+            for filename, _url in remote_sources(name, meta)
+            if filename not in pkg_lock
+        ]
+        if missing:
+            warnings.append(
+                f"no sources.lock.yaml entry for: {', '.join(missing)} -- "
+                f"run: make refresh-checksums PACKAGE={name} (see docs/bugs.md BUG-0025)"
+            )
 
     # Deprecated debuginfo section
     if "debuginfo" in meta:

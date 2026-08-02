@@ -8,7 +8,6 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
 ## Next
 
 - **BUG-0018** — aarch64 Copr chroots still can't be verified locally before submitting (x86_64 now can, via `make full-cycle-matrix`)
-- **BUG-0025** — upstream tarballs packed into SRPMs with no checksum/signature check
 
 - **BUG-0002** make sure copr stage is runned only if rebuilt is really required. If status is still unknown - do not schedule new one
 - **BUG-0003** `lib/github.py:save_release_cache` never evicts old `(url, version)` entries from `cache/github-releases.json`, only TTL-gates read freshness -> file grows forever, one entry per version ever seen for every package
@@ -36,7 +35,6 @@ See also docs/todo.md `# Vendor storage` (TODO-0001–TODO-0007, high priority d
 - **BUG-0022** same function's source-tarball side effect: `if not source_tarball.exists()` never refreshes a stale tarball once created; the file walk skips any path component named `vendor`/`.cargo`/`.git`/`__pycache__` (drops legit upstream dirs with those names) but not `target/`; only regular files are added, so symlinks/permissions/empty dirs are lost; and it packs whatever commit the submodule happens to be on, unverified against the `version` field in packages.yaml
 - **BUG-0023** vendor idempotence is "output tarball exists on disk" only -- no input hashing like every other stage. Editing `go_subdir`, the source url, or patches without bumping `version` reuses a stale tarball forever
 - **BUG-0024** `go mod vendor` / `cargo vendor` run with no timeout at all; the Makefile forwards `CMD_TIMEOUT` and nothing on the vendor path reads it -> a hung vendor invocation blocks `update-daily` indefinitely
-- **BUG-0025** upstream source tarballs are downloaded with no checksum/signature check and packed straight into the SRPM pushed to COPR
 - **BUG-0026** `hyprland-per-window-layout`'s `source.archives[0]` is a bare filename (`%{name}-%{version}.tar.gz`), not a URL -- it only resolves because the Rust submodule vendor path produces that tarball as an undocumented side effect; without the submodule present, `_download()` would be handed a non-URL
 - **BUG-0027** `stage-vendor.py:run_for_package` records a missing spec row (`spec_entry is None`) with reason "spec failed" (misleading -- there was no spec run at all), and doesn't special-case spec `state == "skipped"`
 - **BUG-0028** `eww` extracts its vendor tarball twice: an explicit `tar xf %{SOURCE1}` in `build.prep` in packages.yaml *and* `stage-spec.py`'s auto-inject for any cargo package whose `archives[1]` contains "vendor"

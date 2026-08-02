@@ -162,6 +162,24 @@ instead.
   its own docstring says so ("accepted trade-off for simpler code"). Misleading name on the
   function that rewrites packages.yaml on every nightly run. Rename
 
+# Source verification
+
+`sources.lock.yaml` (docs/packaging.md "Source verification", closes docs/bugs.md BUG-0025)
+pins a sha256 per remote source but does not check any signature. Deliberately deferred, not
+designed here:
+
+- **TODO-0070** no GPG/detached-signature verification. Would need a per-package
+  `source.gpg_key` (key ID or fingerprint) plus fetching the matching `.asc`/`.sig` next to the
+  archive, and a repo-local keyring to import trusted keys into (out of scope: which keyserver,
+  TOFU-vs-pinned key trust, and revocation are all separate design questions). Moot for the
+  current package set today -- 43/45 sources are GitHub auto-generated tag archives, which GitHub
+  does not sign; only worth building once a package with a real upstream-signed release shows up
+- **TODO-0071** for upstreams that sign git tags (not the same thing as a signed release
+  tarball), `git tag -v <tag>` inside the submodule checkout would verify the tag itself before
+  `update-versions.py` records its commit -- but every submodule in this checkout is
+  uninitialized by default (`git submodule update --init` is not part of any Makefile target
+  today), so this can't run unconditionally without also deciding whether to add that init step
+
 # Packages
 
 Moved to `docs/package-requests.md`.

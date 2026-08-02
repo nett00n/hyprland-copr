@@ -79,6 +79,42 @@ def _download(url: str, dest: Path) -> None:
         raise VendorError(f"failed to download {url}: {e}") from e
 
 
+def verify_download(
+    pkg_name: str, pkg_meta: dict, source_url: str, archive: Path
+) -> None:
+    """Check a vendor-path download against the committed sources.lock.yaml.
+
+    The Go/Rust vendor path downloads the upstream tarball itself (this
+    module's `_download`, above) rather than going through spectool, so
+    stage-srpm.py's own verify-before-rpmbuild check never sees this file.
+    Raises VendorError, fail-closed, on the same two cases stage-srpm checks:
+    no lock entry yet, or a hash that doesn't match what was recorded (BUG-0025).
+    """
+    from lib.source_lock import load_lock, remote_sources, sha256_file
+
+    match = next(
+        (fn for fn, url in remote_sources(pkg_name, pkg_meta) if url == source_url),
+        None,
+    )
+    if match is None:
+        raise VendorError(
+            f"{source_url}: not a recognized remote source for '{pkg_name}' "
+            "(sources.lock.yaml has nothing to check it against)"
+        )
+    entry = load_lock().get(pkg_name, {}).get(match)
+    if entry is None:
+        raise VendorError(
+            f"{match}: no entry in sources.lock.yaml -- "
+            f"run: make refresh-checksums PACKAGE={pkg_name}"
+        )
+    actual = sha256_file(archive)
+    expected = entry.get("sha256")
+    if actual != expected:
+        raise VendorError(
+            f"{match}: sha256 mismatch (expected {expected}, got {actual})"
+        )
+
+
 def _extract(archive: Path, target_dir: Path) -> Path:
     with tarfile.open(archive) as tf:
         top_dirs = {m.name.split("/")[0] for m in tf.getmembers() if m.name}
@@ -126,6 +162,7 @@ def generate(
             _log(f"downloading {source_url}")
             archive = tmpdir / "source.tar.gz"
             _download(source_url, archive)
+            verify_download(pkg_name, pkg_meta, source_url, archive)
             src_dir = _extract(archive, tmpdir)
             return generate_go(pkg_name, pkg_meta, tmpdir, src_dir, output, log_path)
         except Exception:

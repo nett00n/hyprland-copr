@@ -106,7 +106,7 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all db-usage db-prune db-shell db-nuke
+.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all db-usage db-prune db-shell db-nuke
 
 save-last-build: ## Save last built RPMs and build-report.db to local-repo/ before clean
 	@mkdir -p local-repo
@@ -412,7 +412,7 @@ container-all: ## Build images for all supported Fedora versions
 		$(MAKE) container-build FEDORA_VERSION=$$v; \
 	done
 
-sources: check-image setup-volumes ## Download sources for PACKAGE (or all) using spectool (runs in container)
+sources: check-image check-venv setup-volumes ## Download sources for PACKAGE (or all) using spectool, then verify against sources.lock.yaml (runs in container)
 	@for pkg in $(_PKGS); do \
 		_spec="packages/$$pkg/$$pkg.spec"; \
 		if [ ! -f "$$_spec" ]; then \
@@ -421,6 +421,7 @@ sources: check-image setup-volumes ## Download sources for PACKAGE (or all) usin
 		echo "$(HIGHLIGHT_PREFIX) sources: $$pkg"; \
 		$(CONTAINER_RUN) spectool -g -R $$_spec || exit 1; \
 	done
+	$(MAKE) check-checksums PACKAGE=$(PACKAGE)
 
 FORCE_MOCK ?=
 PROCEED_BUILD ?=
@@ -465,9 +466,10 @@ update-daily: ## Update versions, validate+format packages.yaml, build (package 
 	@mkdir -p logs && rm -f logs/.update-daily-failed
 	$(MAKE) update-versions || exit 1
 	$(MAKE) validate-packages fmt || exit 1
+	$(MAKE) refresh-checksums || exit 1
 	$(MAKE) full-cycle || touch logs/.update-daily-failed
 	$(MAKE) readme copr-description || exit 1
-	git add packages.yaml packages/ submodules/ README.md docs/README.copr.md docs/full-report.md || exit 1
+	git add packages.yaml packages/ submodules/ sources.lock.yaml README.md docs/README.copr.md docs/full-report.md || exit 1
 	@if git diff --cached --quiet; then \
 		echo "$(HIGHLIGHT_PREFIX) Nothing to commit (no version/doc changes tonight)."; \
 	else \
@@ -521,6 +523,22 @@ stage-vendor: check-image check-venv setup-volumes ## Run vendor tarball generat
 		PACKAGE=$(PACKAGE) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-vendor.py,Vendor stage passed,Vendor stage failed)
+
+FORCE_CHECKSUM ?=
+
+refresh-checksums: check-image check-venv setup-volumes ## Download+pin sha256 for remote sources into sources.lock.yaml (PACKAGE, SKIP_PACKAGES, FORCE_CHECKSUM, CMD_TIMEOUT)
+	$(call run_with_result,$(CONTAINER_RUN) env \
+		PACKAGE=$(PACKAGE) \
+		SKIP_PACKAGES=$(SKIP_PACKAGES) \
+		FORCE_CHECKSUM=$(FORCE_CHECKSUM) \
+		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
+		/work/.venv/bin/python3 scripts/refresh-checksums.py,Checksums refreshed,Checksum refresh failed)
+
+check-checksums: check-image check-venv setup-volumes ## Verify downloaded sources against sources.lock.yaml, no download/write (PACKAGE, SKIP_PACKAGES)
+	$(call run_with_result,$(CONTAINER_RUN) env \
+		PACKAGE=$(PACKAGE) \
+		SKIP_PACKAGES=$(SKIP_PACKAGES) \
+		/work/.venv/bin/python3 scripts/refresh-checksums.py --check,Checksums verified,Checksum verification failed)
 
 stage-srpm: check-image check-venv setup-volumes ## Run SRPM build stage (PACKAGE=<name>, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
