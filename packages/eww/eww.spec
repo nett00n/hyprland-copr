@@ -1,7 +1,7 @@
 
 Name:           eww
 Version:        0.6.0
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
 License:        MIT
 URL:            https://github.com/elkowar/eww
@@ -61,6 +61,6 @@ Development files for eww.
 %files devel
 
 %changelog
-* Sun Apr 21 2024 nett00n <copr@nett00n.org> - 0.6.0-7
+* Sun Apr 21 2024 nett00n <copr@nett00n.org> - 0.6.0-8
 
 - Release version 0.6.0

@@ -4,7 +4,7 @@
 
 Name:           hyprland-plugins
 Version:        0.56.0
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
@@ -68,7 +68,7 @@ Commit:            7644cecdb947060682891a0db2a0cdc5c0b9e704
 %{_prefix}/lib/libhypr*.so
 
 %changelog
-* Mon Jul 20 2026 nett00n <copr@nett00n.org> - 0.56.0-4
+* Mon Jul 20 2026 nett00n <copr@nett00n.org> - 0.56.0-5
 
 - v0.56.0
 - -----BEGIN SSH SIGNATURE-----

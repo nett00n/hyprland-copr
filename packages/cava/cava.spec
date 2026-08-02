@@ -3,10 +3,10 @@
 
 Name:           cava
 Version:        1.0.0
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Cross-platform Audio Visualizer
 License:        MIT
-URL:            https://github.com/karlstav/cava.git
+URL:            https://github.com/karlstav/cava
 Source0:        https://github.com/karlstav/cava/archive/refs/tags/1.0.0.tar.gz#/cava-1.0.0.tar.gz
 
 BuildRequires:  alsa-lib-devel
@@ -52,6 +52,6 @@ Package info:
 %license LICENSE
 
 %changelog
-* Sun Aug 02 2026 nett00n <copr@nett00n.org> - 1.0.0-4
+* Sun Aug 02 2026 nett00n <copr@nett00n.org> - 1.0.0-5
 
 - Update to 1.0.0

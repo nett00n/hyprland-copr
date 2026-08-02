@@ -1,14 +1,14 @@
-%global commit b3247839c94ceb76506730841f0b3735feccf37c
+%global commit f2aa5984d58df44872c81e6c2d997670a38ff236
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260517
+%global commitdate 20260802
 
 Name:           hyprland-plugins-git
-Version:        0.55.0^20260517gitb324783
-Release:        19%{?dist}
+Version:        0.56.0^20260802gitf2aa598
+Release:        1%{?dist}
 Summary:        Official plugins for Hyprland [Built from latest commit, unstable]
 License:        BSD-3-Clause
-URL:            https://github.com/hyprwm/hyprland-plugins.git
-Source0:        https://github.com/hyprwm/hyprland-plugins/archive/b3247839c94ceb76506730841f0b3735feccf37c/hyprland-plugins-git-b324783.tar.gz
+URL:            https://github.com/hyprwm/hyprland-plugins
+Source0:        https://github.com/hyprwm/hyprland-plugins/archive/f2aa5984d58df44872c81e6c2d997670a38ff236/hyprland-plugins-git-f2aa598.tar.gz
 Patch0:         hyprland-0.54-exclude-incompatible-plugins.patch
 
 BuildRequires:  cmake
@@ -70,6 +70,6 @@ Package info:
 %{_prefix}/lib/libhypr*.so
 
 %changelog
-* Sun Aug 02 2026 nett00n <copr@nett00n.org> - 0.55.0^20260517gitb324783-19
+* Sun Aug 02 2026 nett00n <copr@nett00n.org> - 0.56.0^20260802gitf2aa598-1
 
-- Update to 0.55.0^20260517gitb324783
+- Update to 0.56.0^20260802gitf2aa598

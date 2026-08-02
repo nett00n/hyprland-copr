@@ -1,7 +1,7 @@
 
 Name:           hyprlang
 Version:        0.6.8
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        The hypr configuration language library
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprlang
@@ -54,6 +54,6 @@ Development files for hyprlang.
 %{_libdir}/pkgconfig/hyprlang.pc
 
 %changelog
-* Mon Jan 05 2026 nett00n <copr@nett00n.org> - 0.6.8-6
+* Mon Jan 05 2026 nett00n <copr@nett00n.org> - 0.6.8-7
 
 - version: bump to 0.6.8

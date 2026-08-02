@@ -1,10 +1,10 @@
 
 Name:           aylurs-gtk-shell
 Version:        3.1.2
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        Scaffolding CLI for Astal+Gnim
 License:        GPL-3.0-or-later
-URL:            https://github.com/Aylur/ags.git
+URL:            https://github.com/Aylur/ags
 Source0:        https://github.com/Aylur/ags/archive/refs/tags/v3.1.2.tar.gz#/aylurs-gtk-shell-3.1.2.tar.gz
 Source1:        aylurs-gtk-shell-3.1.2-vendor.tar.gz
 
@@ -53,6 +53,6 @@ popd
 %{_prefix}/share/ags/
 
 %changelog
-* Thu Jul 30 2026 nett00n <copr@nett00n.org> - 3.1.2-6
+* Sun Aug 02 2026 nett00n <copr@nett00n.org> - 3.1.2-7
 
 - Update to 3.1.2
