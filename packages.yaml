@@ -490,17 +490,17 @@ Hyprland-git:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 2
+  release: 1
   source:
     archives:
     - '%{url}/archive/%{commit}.tar.gz#/%{name}-%{version}.tar.gz'
     commit:
-      date: '20260730'
-      full: 8668a5392179f99fb9ab3699ede233484bee0b51
+      date: '20260801'
+      full: 88c6386994c960006e14c7bfa4ccfee873252882
     name: Hyprland
   summary: A Modern C++ Wayland Compositor [Built from latest commit, unstable]
   url: https://github.com/hyprwm/Hyprland
-  version: 0.56.0^20260730git8668a53
+  version: 0.56.0^20260801git88c6386
 hyprland-guiutils:
   build:
     system: cmake
