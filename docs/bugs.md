@@ -11,7 +11,6 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
 - **BUG-0025** — upstream tarballs packed into SRPMs with no checksum/signature check
 - **BUG-0034** — nightly submodule pull invalidates every package's cache, forcing a full rebuild+resubmit
 - **BUG-0035** — release-bump predicate and cache-miss predicate disagree -> rebuilds ship without a release bump
-- **BUG-0037** — `update-daily PUSH=1` collides with the README-publish workflow's own push to `main`
 
 - **BUG-0001** `make update-daily` failed because of new dependency for hyprgraphics. deps updated, `make full-cycle PKG=hyprgrafics` was ok, yet `make update-daily` set hyprgraphics to be rebuilt again #low
 - **BUG-0002** make sure copr stage is runned only if rebuilt is really required. If status is still unknown - do not schedule new one
@@ -106,17 +105,6 @@ unattended nightly job. Audited end to end 2026-08:
   on the same check), and `validate_copr_repo()` is never called on this path at all -- only in
   `stage-copr.py:main()`. `make update-daily COPR_REPO=<typo>` or an expired token runs the whole
   multi-hour build for 45 packages and only fails at the very end, once per package
-- **BUG-0037** `make update-daily PUSH=1` cannot succeed on consecutive nights. Its push to
-  `main` triggers `.github/workflows/publish-readme.yml`, which regenerates the README shell,
-  commits `Regenerate README shell [skip ci]`, and pushes to `main` itself (commits `8951cf1c`/
-  `4b2258b0` show this really happens). `update-daily` never pulls or rebases, so the next night's
-  `git push` is rejected non-fast-forward, `|| exit 1` fails the target, and that night's commit
-  is stranded locally while the branch keeps diverging. Both processes also write `README.md`, so
-  the conflict is guaranteed, not a race
-- **BUG-0038** `git commit -m "Daily update: ..." || exit 1` fails the whole target when there is
-  nothing to commit -- the normal quiet-night outcome (no new upstream versions, no doc drift).
-  An unattended cron job that reports failure on every uneventful night trains the operator to
-  ignore its exit status, which is the one signal BUG-0037 needs to be visible
 - **BUG-0039** the published docs always describe builds whose outcome isn't known yet.
   `full-cycle` submits with `--nowait` (async is the default; `update-daily` never sets
   `SYNCHRONOUS_COPR_BUILD`), so a build lands in build-report.db as `state="unknown"`. `make

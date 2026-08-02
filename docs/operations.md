@@ -195,6 +195,10 @@ automation never touches `templates/`/`blog/`, so hand-edits there are never swe
 commit. Intended to run unattended from an external nightly cron (the repo itself has no
 scheduler); pass `PUSH=1` for that.
 
+A no-op night (nothing staged) skips the commit instead of failing the target. With `PUSH=1`,
+the target rebases onto `origin/main` before pushing, so it doesn't collide with
+`publish-readme.yml`'s own `[skip ci]` push to `main`.
+
 ## Utility commands
 
 **Download sources** (offline/debug):

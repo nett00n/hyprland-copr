@@ -14,6 +14,10 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-02
 
+- Fixed: `make update-daily` no longer fails on a no-op night (nothing staged skips the commit
+  instead of `git commit`'s nonzero exit aborting the target), and `PUSH=1` now rebases onto
+  `origin/main` before pushing so it doesn't collide with `publish-readme.yml`'s own `[skip ci]`
+  push to `main` (closes BUG-0037, BUG-0038)
 - Added: this changelog and its ruleset (see docs/CONTRIBUTING.md)
 - Added: CI (GitHub Actions) runs lint+test on every push/PR, natively via `NO_CONTAINER=1`
 - Changed: `make update-daily` now runs the `pre-commit` quality gate (validate+test+lint+fmt)
