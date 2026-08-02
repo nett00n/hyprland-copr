@@ -1,8 +1,8 @@
 -r requirements.txt
-flake8>=7.0.0
-mypy>=1.19.1
-pytest-cov>=5.0.0
-rpmlint>=2.6.0
-ruff>=0.15.4
-types-PyYAML>=6.0.12.20250915
-yamllint>=1.26.0
+flake8~=7.3.0
+mypy~=1.19.1
+pytest-cov~=7.1.0
+rpmlint~=2.9.0
+ruff~=0.15.4
+types-PyYAML~=6.0.12.20250915
+yamllint~=1.38.0

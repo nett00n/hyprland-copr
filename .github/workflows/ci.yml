@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-test:
+    name: Lint + test
+    runs-on: ubuntu-latest
+    container:
+      image: registry.fedoraproject.org/fedora:44
+    steps:
+      - name: Install toolchain
+        # cargo + rpmdevtools (rpmdev-vercmp) are needed by unit tests, not just real builds
+        run: dnf install -y -q make python3 python3-pip rpmlint rpmdevtools cargo git
+
+      - uses: actions/checkout@v4
+
+      - name: Mark workspace as safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Set up venv
+        run: make setup-venv
+
+      # Dev tools (ruff/mypy/yamllint/rpmlint) are installed as a side effect of
+      # `lint-flake`, which runs after `lint-ruff` in the `lint` target -- see
+      # docs/bugs.md for the ordering gap. Install them up front so CI doesn't
+      # depend on that ordering.
+      - name: Install dev dependencies
+        run: .venv/bin/pip install -q -r requirements-dev.txt
+
+      - name: Lint + test (no container -- already running in one)
+        run: make lint test NO_CONTAINER=1

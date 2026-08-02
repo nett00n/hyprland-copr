@@ -1,4 +1,4 @@
-Jinja2>=3.1.6
-pytest>=7.4.0
-PyYAML>=6.0.3
-ruamel.yaml>=0.18.0
+Jinja2~=3.1.6
+pytest~=9.0.2
+PyYAML~=6.0.3
+ruamel.yaml~=0.19.1

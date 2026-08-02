@@ -1,11 +1,22 @@
 <!-- BEGIN: Footer -->
 
+{% if sections.docs %}
+---
+
+## Docs
+
+{% include "_docs.j2" %}
+
+{% endif %}
+{% if sections.support %}
 ---
 
 ## Support
 
 {% include "_support.j2" %}
 
+{% endif %}
+{% if sections.license %}
 ---
 
 ## License
@@ -14,24 +25,32 @@
 
 {% include "_license_tldr.j2" %}
 
+{% endif %}
+{% if sections.authors or sections.maintainers or sections.contributors %}
 ---
 
 ## People
 
+{% if sections.authors %}
 ### Authors
 
 {% include "_authors.j2" %}
 
+{% endif %}
+{% if sections.maintainers %}
 ### Maintainers
 
 {% include "_maintainers.j2" %}
 
+{% endif %}
+{% if sections.contributors %}
 ### Contributors
 
 {% include "_contributors.j2" %}
 
-{% if repo.bottom_info %}
-
+{% endif %}
+{% endif %}
+{% if sections.additional_info and repo.bottom_info %}
 ---
 
 ## Additional Information
