@@ -564,6 +564,21 @@ class TestUpdateDailyResilience:
         stdout = self._dry_run()
         assert "mkdir -p logs && rm -f logs/.update-daily-failed" in stdout
 
+    def test_stage_log_analyze_runs_after_readme_before_commit(self):
+        """Coverage for docs/bugs.md BUG-0041: full-cycle.py's next run rmtree's
+        logs/build/<pkg> before building, so any night's mock/Copr failure logs
+        must be analyzed *this* night or they're destroyed unread. Must run after
+        readme (whose gen-report.py poll fetches newly-failed Copr chroot logs)
+        and must not abort the chain -- pkg-log-analysis.py exits non-zero to mean
+        "issues found", not "this recipe failed".
+        """
+        stdout = self._dry_run()
+        assert "make stage-log-analyze || true" in stdout
+        readme_pos = stdout.index("make readme copr-description")
+        analyze_pos = stdout.index("make stage-log-analyze || true")
+        commit_pos = stdout.index('git commit -m "Daily update:')
+        assert readme_pos < analyze_pos < commit_pos
+
 
 class TestInfoTargets:
     """Test informational make targets."""

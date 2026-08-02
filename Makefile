@@ -469,6 +469,13 @@ update-daily: ## Update versions, validate+format packages.yaml, build (package 
 	$(MAKE) refresh-checksums || exit 1
 	$(MAKE) full-cycle || touch logs/.update-daily-failed
 	$(MAKE) readme copr-description || exit 1
+	@# stage-log-analyze must run here, after readme's gen-report.py has polled Copr
+	@# and fetched any newly-failed chroot logs (see lib.copr.poll_copr_status) --
+	@# and before tomorrow's full-cycle.py rmtree's logs/build/<pkg> at the start of
+	@# its run. Otherwise last night's mock/Copr failure evidence is destroyed
+	@# unread (see docs/bugs.md BUG-0041). pkg-log-analysis.py exits non-zero when
+	@# it finds issues (not an error), so this must not abort the recipe.
+	$(MAKE) stage-log-analyze || true
 	git add packages.yaml packages/ submodules/ sources.lock.yaml README.md docs/README.copr.md docs/full-report.md || exit 1
 	@if git diff --cached --quiet; then \
 		echo "$(HIGHLIGHT_PREFIX) Nothing to commit (no version/doc changes tonight)."; \
@@ -481,7 +488,7 @@ update-daily: ## Update versions, validate+format packages.yaml, build (package 
 	fi
 	@if [ -f logs/.update-daily-failed ]; then \
 		rm -f logs/.update-daily-failed; \
-		echo "$(HIGHLIGHT_PREFIX) ✗ Some packages failed to build tonight (docs and commit were still produced) -- run 'make stage-log-analyze' or check logs/build/<pkg>"; \
+		echo "$(HIGHLIGHT_PREFIX) ✗ Some packages failed to build tonight (docs and commit were still produced; see stage-log-analyze output above, or check logs/build/<pkg>)"; \
 		exit 1; \
 	fi
 

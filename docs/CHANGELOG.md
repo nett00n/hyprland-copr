@@ -14,6 +14,12 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-02
 
+- Fixed: `update-daily` now runs `make stage-log-analyze` after `readme` (tolerant of its
+  non-zero "issues found" exit code) so that night's mock and Copr build failures get analyzed
+  while the logs still exist. Previously nothing called `stage-log-analyze` from the nightly
+  flow, and the next night's `full-cycle.py:main()` `rmtree`s `logs/build/<pkg>` before building
+  -- destroying unread failure evidence, including async Copr failures only discovered by that
+  same `readme` step's Copr poll (`lib.copr.poll_copr_status`) -- closes BUG-0041
 - Added: `sources.lock.yaml` (committed) pins a sha256 for every remote file a package's
   `source.archives`/`source.bundled_deps` download (`lib/source_lock.py`). `make
   refresh-checksums` (new target, also run automatically by `update-daily` after

@@ -88,10 +88,6 @@ unattended nightly job. Audited end to end 2026-08:
   the whole `copr-cli status` output. Any other terminal state (`canceled`, `skipped`, an import
   that never completes) never reaches `TERMINAL_STATES`, so the row stays `unknown` forever --
   re-polled every night, and (per BUG-0002) resubmitted every night #medium
-- **BUG-0041** nightly failure evidence is destroyed before it's read: `full-cycle.py:main()`
-  `rmtree`s `logs/build/<pkg>` for every package in the run before building, and `update-daily`
-  never calls `make stage-log-analyze`. Last night's mock and Copr logs are deleted by tonight's
-  run with nothing having analyzed them #high
 - **BUG-0042** `CMD_TIMEOUT=""` in `.env` crashes every subprocess call. The Makefile's
   quote-stripping covers only `FEDORA_VERSION`/`COPR_REPO`/`PACKAGE`/`SKIP_PACKAGES`, so
   `CMD_TIMEOUT=""` survives as the literal two-character string `""`; make's
