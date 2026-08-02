@@ -160,9 +160,9 @@ instead.
   packages.yaml valid". Split the two (this also makes the fresh-venv ordering trap of BUG-0032 a
   nightly-blocking issue, not just a local annoyance)
 - **TODO-0065** the nightly builds one `FEDORA_VERSION` (default 43) while `SUPPORTED := 43 44
-  rawhide`. There is no loop over versions and no way to express "the nightly covers the matrix",
-  so two thirds of the supported set are only ever exercised by Copr's own fan-out. Compounds
-  BUG-0018
+  rawhide`. `make full-cycle-matrix` now exists as the mechanism to cover the whole x86_64 matrix
+  locally (see docs/bugs.md BUG-0018), but `update-daily` doesn't call it -- switching would
+  roughly triple nightly build time, so that's a separate decision, not made here
 - **TODO-0066** nothing in the daily flow reports what happened. `make stage-log-analyze` exists
   and is never called by `update-daily`; the only durable output is a commit message containing a
   timestamp. Want a nightly summary artifact -- or at minimum, run log-analyze on failure *before*

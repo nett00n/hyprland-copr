@@ -14,6 +14,23 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-02
 
+- Added: `make full-cycle-matrix` builds every `MATRIX_VERSIONS` (default: all `SUPPORTED`)
+  Fedora version's x86_64 chroot locally via mock, then submits to Copr once; and
+  `stage-copr`/`full-cycle` now print a per-chroot local-mock coverage table (verified/failed/
+  unbuilt/not-locally-verifiable) before every Copr submission, warning by default and blocking
+  under `REQUIRE_CHROOT_COVERAGE=true`. Narrows BUG-0018 to its aarch64 residual (blocked on
+  TODO-0024) -- x86_64 chroot-specific failures are now catchable before submission
+- Fixed: `lib/cache.py:_source_commit()` now returns `None` for every package except the 3 whose
+  `auto_update.release_type` is `latest-commit`/`pinned-commit` (the ones that actually build from
+  `%{url}/archive/%{commit}.tar.gz`) instead of hashing the submodule's live checkout for all 45 --
+  a nightly submodule pull no longer flips every release package's cache and forces an
+  unchanged-version rebuild+resubmit (closes BUG-0034, BUG-0001)
+- Fixed: `lib/yaml_utils.py:update_package_releases()` now decides "needs a release bump" from the
+  same full input-hash set (`source_commit`/`templates`/`package_config`/`dependencies`/`patches`)
+  that `lib/pipeline.py:is_cached()` uses to decide "needs an actual rebuild", instead of the
+  package's own content hash alone -- a rebuild triggered by an edited template/patch or a
+  dependency's config change now always gets a release bump, so a different RPM never ships under
+  an NVR already on Copr (closes BUG-0035)
 - Fixed: `make update-daily` no longer fails on a no-op night (nothing staged skips the commit
   instead of `git commit`'s nonzero exit aborting the target), and `PUSH=1` now rebases onto
   `origin/main` before pushing so it doesn't collide with `publish-readme.yml`'s own `[skip ci]`

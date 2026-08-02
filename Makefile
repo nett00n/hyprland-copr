@@ -100,7 +100,7 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all db-usage db-prune db-shell db-nuke
+.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all db-usage db-prune db-shell db-nuke
 
 save-last-build: ## Save last built RPMs and build-report.db to local-repo/ before clean
 	@mkdir -p local-repo
@@ -416,6 +416,7 @@ SKIP_MOCK ?=
 SKIP_COPR ?=
 DRY_RUN ?=
 SYNCHRONOUS_COPR_BUILD ?=
+REQUIRE_CHROOT_COVERAGE ?=
 
 full-cycle: check-image check-venv setup-volumes ## Run full cycle with YAML report: spec → srpm → mock → copr (PACKAGE, COPR_REPO, env vars)
 	$(call run_with_result,$(CONTAINER_RUN) env \
@@ -429,8 +430,23 @@ full-cycle: check-image check-venv setup-volumes ## Run full cycle with YAML rep
 		SKIP_COPR=$(SKIP_COPR) \
 		DRY_RUN=$(DRY_RUN) \
 		SYNCHRONOUS_COPR_BUILD=$(SYNCHRONOUS_COPR_BUILD) \
+		REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/full-cycle.py,Full cycle completed,Full cycle failed)
+
+MATRIX_VERSIONS ?= $(SUPPORTED)
+
+full-cycle-matrix: ## Build every MATRIX_VERSIONS chroot locally (default: all SUPPORTED, x86_64 only), then submit to Copr once (PACKAGE, COPR_REPO, requires 'make container-all' first)
+	@for v in $(MATRIX_VERSIONS); do \
+		echo $(HIGHLIGHT_PREFIX) "Fedora $$v"; \
+		$(MAKE) full-cycle FEDORA_VERSION=$$v PACKAGE=$(PACKAGE) SKIP_COPR=true || exit 1; \
+	done
+	@if [ -n "$(COPR_REPO)" ]; then \
+		$(MAKE) stage-copr FEDORA_VERSION=$(FEDORA_VERSION) PACKAGE=$(PACKAGE) COPR_REPO=$(COPR_REPO) \
+			REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE); \
+	else \
+		echo $(HIGHLIGHT_PREFIX) "COPR_REPO not set -- skipping Copr submission (local matrix build only)"; \
+	fi
 
 update-daily: ## Update versions, gate (validate+test+lint+fmt), build, generate docs, push to COPR (requires COPR_REPO), git commit (PUSH=1 to also git push)
 	@test -n "$(COPR_REPO)" || (echo "$(HIGHLIGHT_PREFIX) Error: COPR_REPO is not set (e.g. export COPR_REPO=nett00n/hyprland)"; exit 1)
@@ -500,11 +516,12 @@ stage-mock: check-image check-venv setup-volumes ## Run mock build stage (PACKAG
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-mock.py,Mock build stage passed,Mock build stage failed)
 
-stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, CMD_TIMEOUT, runs in container)
+stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, REQUIRE_CHROOT_COVERAGE, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		PACKAGE=$(PACKAGE) \
 		COPR_REPO=$(COPR_REPO) \
+		REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-copr.py,Copr submission stage passed,Copr submission stage failed)
 

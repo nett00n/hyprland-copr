@@ -1,5 +1,6 @@
 """Integration tests for make targets and pipeline components."""
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -297,6 +298,143 @@ class TestCoprGatedByMockFailure:
         copr_mock.assert_not_called()
         entry = build_db.get_stage("hyprutils", "copr", TARGET)
         assert entry["reason"] == "SKIP_COPR"
+
+
+class TestCoprGatedByChrootCoverage:
+    """Coverage for docs/bugs.md BUG-0018's pre-submit gate: REQUIRE_CHROOT_COVERAGE=true
+    must block Copr submission the same way a mock failure already does, while the
+    default (unset) behavior only warns and still submits.
+    """
+
+    def _run(self, coverage_ok, require_coverage=False):
+        packages = {"hyprutils": {}, "Hyprland": {}}
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+
+        def fake_mock_run_for_package(
+            pkg, meta, fedora_version, target, proceed, mock_failed, all_pkgs, run_id_
+        ):
+            build_db.set_stage(pkg, "mock", target, run_id_, "success")
+            mock_failed[pkg] = False
+            return True
+
+        def fake_is_cached(stage, pkg, target, new_hashes, forced_stages):
+            return stage not in ("mock", "copr")
+
+        with patch.object(
+            full_cycle, "get_packages", return_value=packages
+        ), patch.object(
+            full_cycle, "compute_input_hashes", return_value={}
+        ), patch.object(
+            full_cycle, "effective_deps", return_value=set()
+        ), patch.object(
+            full_cycle, "is_cached", side_effect=fake_is_cached
+        ), patch.object(
+            full_cycle, "cache_miss_reason", return_value="test"
+        ), patch.object(
+            full_cycle.time, "sleep"
+        ), patch.object(
+            full_cycle._stage["stage-show-plan"], "show_plan"
+        ), patch.object(
+            full_cycle._stage["stage-validate"], "run_global_checks"
+        ), patch.object(
+            full_cycle._stage["stage-validate"], "run_for_package", return_value=True
+        ), patch.object(
+            full_cycle._stage["stage-copr"], "check_copr_credentials"
+        ), patch.object(
+            full_cycle._stage["stage-mock"],
+            "run_for_package",
+            side_effect=fake_mock_run_for_package,
+        ), patch.object(
+            full_cycle._stage["stage-copr"], "run_for_package", return_value=True
+        ) as copr_mock, patch.object(
+            full_cycle, "print_chroot_coverage", return_value=coverage_ok
+        ), patch.dict(
+            os.environ, {"REQUIRE_CHROOT_COVERAGE": "true" if require_coverage else ""}
+        ):
+            full_cycle.run_build_pipeline(
+                packages,
+                TARGET,
+                run_id,
+                fedora_version="44",
+                copr_repo="nett00n/hyprland",
+                proceed=False,
+                skip_copr=False,
+            )
+
+        return copr_mock
+
+    def test_require_coverage_blocks_on_gap(self):
+        copr_mock = self._run(coverage_ok=False, require_coverage=True)
+
+        copr_mock.assert_not_called()
+        entry = build_db.get_stage("hyprutils", "copr", TARGET)
+        assert entry["reason"] == "blocked: chroot coverage"
+
+    def test_default_warns_but_still_submits(self):
+        copr_mock = self._run(coverage_ok=False, require_coverage=False)
+
+        assert copr_mock.call_count == 2
+
+    def test_require_coverage_does_not_block_when_covered(self):
+        copr_mock = self._run(coverage_ok=True, require_coverage=True)
+
+        assert copr_mock.call_count == 2
+
+
+class TestFullCycleMatrixTarget:
+    """`make -n` dry-run coverage for the full-cycle-matrix target added for
+    docs/bugs.md BUG-0018: it must loop per-version full-cycle with SKIP_COPR=true,
+    then submit to Copr exactly once (only when COPR_REPO is set).
+    """
+
+    def test_loops_versions_with_skip_copr(self):
+        # -n on the outer invocation propagates to the recursive $(MAKE) calls
+        # via MAKEFLAGS (GNU make special-cases lines referencing $(MAKE): the
+        # `for` loop itself runs for real -- hence the two real "Fedora NN"
+        # echoes below -- but each nested `make full-cycle` still inherits -n
+        # and only prints what it would do).
+        result = subprocess.run(
+            ["make", "-n", "full-cycle-matrix", "MATRIX_VERSIONS=43 44", "COPR_REPO="],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0
+        assert "Fedora 43" in result.stdout
+        assert "Fedora 44" in result.stdout
+        assert "FEDORA_VERSION=43" in result.stdout
+        assert "FEDORA_VERSION=44" in result.stdout
+        # >=2: one per real per-version dry-run submake, plus the literal (unexpanded
+        # "$v") text of the for-loop recipe line itself that -n always echoes first.
+        assert result.stdout.count("SKIP_COPR=true") >= 2
+        # The `if [ -n "$(COPR_REPO)" ]; then make stage-copr ...` line also contains
+        # $(MAKE), so -n echoes its raw source text (which mentions "stage-copr")
+        # regardless of which branch runs -- that's not a reliable signal. Whether
+        # `make stage-copr` was actually invoked is: did its own recipe body (which
+        # names the script path) get dry-run-printed in turn.
+        assert "COPR_REPO not set -- skipping Copr submission" in result.stdout
+        assert "scripts/stage-copr.py" not in result.stdout
+
+    def test_submits_to_copr_once_when_repo_set(self):
+        result = subprocess.run(
+            [
+                "make",
+                "-n",
+                "full-cycle-matrix",
+                "MATRIX_VERSIONS=43",
+                "COPR_REPO=nett00n/hyprland",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0
+        assert result.stdout.count("Fedora 43") == 1
+        # Real invocation this time (COPR_REPO set) -- its own recipe body,
+        # naming the script, gets dry-run-printed in turn.
+        assert "scripts/stage-copr.py" in result.stdout
 
 
 class TestInfoTargets:

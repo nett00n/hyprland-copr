@@ -7,12 +7,9 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
 
 ## Next
 
-- **BUG-0018** — local mock can't catch chroot-specific Copr failures before submitting
+- **BUG-0018** — aarch64 Copr chroots still can't be verified locally before submitting (x86_64 now can, via `make full-cycle-matrix`)
 - **BUG-0025** — upstream tarballs packed into SRPMs with no checksum/signature check
-- **BUG-0034** — nightly submodule pull invalidates every package's cache, forcing a full rebuild+resubmit
-- **BUG-0035** — release-bump predicate and cache-miss predicate disagree -> rebuilds ship without a release bump
 
-- **BUG-0001** `make update-daily` failed because of new dependency for hyprgraphics. deps updated, `make full-cycle PKG=hyprgrafics` was ok, yet `make update-daily` set hyprgraphics to be rebuilt again #low
 - **BUG-0002** make sure copr stage is runned only if rebuilt is really required. If status is still unknown - do not schedule new one
 - **BUG-0003** `lib/github.py:save_release_cache` never evicts old `(url, version)` entries from `cache/github-releases.json`, only TTL-gates read freshness -> file grows forever, one entry per version ever seen for every package
 - **BUG-0004** does hyprpolkit increment release on rebuild, when dependency is updated
@@ -27,7 +24,7 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
 - **BUG-0014** `mpvpaper` declares `auto_update.release_type: latest-tag`, which isn't one of `update-versions.py`'s valid types (valid: `latest-version`, `latest-commit`, `pinned-version`, `pinned-commit`, `pinned-tag`) -> matches no branch, silently falls through to the default (semver-or-commit) path instead of erroring
 - **BUG-0016** individual `stage-*` Makefile targets (`stage-mock`, `stage-srpm`, etc.) don't forward `PROCEED_BUILD` into the container's `env` the way `full-cycle` does -> `make stage-mock PACKAGE=X PROCEED_BUILD=true` silently drops PROCEED_BUILD, so `prepare_stage()` runs in its default (non-proceed) mode and clears that stage's rows for the packages being built (scoped to PACKAGE since the sqlite migration, no longer whole-stage) even though the operator explicitly tried to opt out of it
 - **BUG-0017** `db-artifacts.py --prune` keeps the newest artifact per (package, target, kind) by recorded mtime, not a real NVR comparison (same limitation `stage-srpm.py:find_srpm` already has) -> a rebuild that produces an older version could be kept over a newer one if it happens to be written later in wall-clock time
-- **BUG-0018** local mock only ever builds one `FEDORA_VERSION`/chroot, but a `COPR_REPO` project builds every chroot configured on Copr (fedora-43/44/rawhide x86_64/aarch64, 6 total for `nett00n/hyprland`) -> a build that passes local mock can still fail on Copr for a chroot-specific reason (e.g. `Hyprland-git` 0.56.0^20260730git8668a53: local mock built fedora-44 clean, Copr's fedora-43-x86_64/aarch64 failed on `std::ranges::starts_with` needing a newer libstdc++ than F43 ships). `lib.copr.fetch_failed_chroot_logs` now downloads the failed chroots' builder logs so `make stage-log-analyze` can at least report it after the fact, but there's still no way to catch this before submitting to Copr short of running mock once per chroot locally
+- **BUG-0018** local mock used to only ever build one `FEDORA_VERSION`/chroot, but a `COPR_REPO` project builds every chroot configured on Copr (fedora-43/44/rawhide x86_64/aarch64, 6 total for `nett00n/hyprland`) -> a build that passes local mock could still fail on Copr for a chroot-specific reason (the recorded case: `Hyprland-git` 0.56.0^20260730git8668a53, local mock built fedora-44 clean, Copr's fedora-43-x86_64/aarch64 failed on `std::ranges::starts_with` needing a newer libstdc++ than F43 ships). `make full-cycle-matrix` now runs the local pipeline across every `MATRIX_VERSIONS` (default: `SUPPORTED`) x86_64 chroot before a single Copr submission, and `stage-copr`/`full-cycle` print a per-chroot local-mock coverage table before submitting (warn by default, `REQUIRE_CHROOT_COVERAGE=true` blocks) -- see `lib.copr.print_chroot_coverage`/`chroot_coverage`/`get_project_chroots`. What remains: aarch64 chroots have no local build path at all (mock can't cross-build without qemu-user-static or a native runner, see docs/todo.md TODO-0024), so they always report "not verifiable locally" and can never satisfy the coverage gate -- that residual is the only way this bug can still bite. `lib.copr.fetch_failed_chroot_logs` still downloads failed chroots' builder logs after the fact for `make stage-log-analyze`, which remains the only diagnostic for an aarch64-only failure
 
 ## stage-vendor
 
@@ -84,22 +81,6 @@ unattended nightly job. Audited end to end 2026-08:
   string in packages.yaml, not the source the build actually sees. Latent today (no package uses
   a `pinned-*` type -- only 4 of 45 declare `release_type` at all), which is exactly why it will
   bite the first time someone pins something
-- **BUG-0034** the nightly submodule pull invalidates every package's cache.
-  `lib/cache.py:_source_commit()` puts the submodule's *checked-out* commit into
-  `compute_input_hashes()` for every package, but only `-git` packages build from the checkout --
-  release packages build from a versioned tarball URL and never read it. Since
-  `pull_submodule()` moves every submodule to upstream HEAD nightly, any upstream commit (a
-  README typo will do) flips `source_commit`, `hashes_match()` fails, and `pipeline.is_cached()`
-  returns False for spec/vendor/srpm/mock/copr -- the package is rebuilt and resubmitted with an
-  unchanged version. This is the mechanism behind BUG-0001
-- **BUG-0035** two different rebuild predicates disagree, and the loser is the NVR.
-  `lib/yaml_utils.py:update_package_releases()` decides "needs rebuild -> bump release" from the
-  `content` hash alone (the packages.yaml entry minus `release`), while `lib/pipeline.py:is_cached()`
-  decides "actually rebuild" from the full hash set (`source_commit` + `templates` +
-  `package_config` + `dependencies` + `patches`). Every input in the second set but not the first
-  -- a moved submodule (BUG-0034), an edited `templates/spec.j2`, an edited patch file, a rebuilt
-  dependency -- rebuilds the package *without* bumping `release`, so a different RPM ships under
-  an NVR that already exists on Copr. Combined with BUG-0034 this fires on essentially every run
 - **BUG-0036** Copr preflight is dropped on the `full-cycle` path: `full-cycle.py` calls
   `check_copr_credentials()` and throws away the returned boolean (`stage-copr.py:main()` exits 2
   on the same check), and `validate_copr_repo()` is never called on this path at all -- only in

@@ -297,7 +297,7 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
     Returns:
         Dict of {pkg_name: new_release} for packages that were updated
     """
-    from lib.cache import _content_hash
+    from lib.cache import compute_input_hashes, hashes_match
     from lib.deps import effective_deps
 
     dep_will_rebuild: set[str] = set()
@@ -307,13 +307,14 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
         # Skip auto-management if release_lock is set
         if pkg_dict.get("release_lock"):
             continue
-        # Compute content hash (excludes release)
-        content_hash = _content_hash(pkg_dict)
+        # Full input hash set -- same one lib.pipeline.is_cached() compares,
+        # so this decides "needs a release bump" from exactly the same inputs
+        # that decide "needs an actual rebuild" (see docs/bugs.md BUG-0035).
+        new_hashes = compute_input_hashes(pkg_name, pkg_dict, packages)
 
         # Read stored state
         last_entry = build_db.get_stage(pkg_name, "spec", target) or {}
         stored_hashes = last_entry.get("hashes", {})
-        last_content_hash = stored_hashes.get("content")
         last_version = stored_hashes.get("package_version")
 
         # Check for force_run in any stage
@@ -329,12 +330,8 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
         )
 
         # Determine if this package needs rebuild
-        # FIXME(BUG-0035): narrower than lib/pipeline.py:is_cached()'s hash set
-        # (no source_commit/templates/patches) -- a rebuild triggered only by
-        # one of those inputs ships without a release bump. See docs/bugs.md.
         needs_rebuild = (
-            last_content_hash is None  # first run or no stored content
-            or content_hash != last_content_hash
+            not hashes_match(last_entry, new_hashes)  # first run, or any input changed
             or force_run
             or dep_cascade
         )

@@ -35,16 +35,28 @@ def _content_hash(pkg_dict: dict) -> str:
     return _sha256(json.dumps(normalized, sort_keys=True, default=str).encode())
 
 
-# FIXME(BUG-0034): included in every package's input hashes, but only -git
-# packages actually build from this checkout -- release packages build from a
-# tarball URL. A nightly submodule pull (update-versions.py) flips this for
-# every package and forces a full rebuild+resubmit. See docs/bugs.md.
+# release_types whose build actually tracks the submodule's live commit (the
+# archive URL is templated as `%{url}/archive/%{commit}.tar.gz`, refreshed
+# from the checkout by update-versions.py each run). Every other release_type
+# builds from a fixed version/tag tarball URL that never reads the checkout.
+_COMMIT_TRACKED_RELEASE_TYPES = {"latest-commit", "pinned-commit"}
+
+
 def _source_commit(pkg: str, meta: dict) -> str | None:
-    """Return full git commit hash of the package's submodule, or None if not found.
+    """Return full git commit hash of the package's submodule, or None.
+
+    Only meaningful for packages in _COMMIT_TRACKED_RELEASE_TYPES (see above)
+    -- for everyone else, including this in the input hashes just means a
+    nightly submodule pull (which moves every submodule to upstream HEAD,
+    regardless of this package's own release_type) forces an unrelated full
+    rebuild+resubmit with an unchanged version (see docs/bugs.md BUG-0034).
 
     First tries to match by package name. If not found, falls back to the source.name
     field (used for packages like Hyprland-git that track a different repo).
     """
+    release_type = meta.get("auto_update", {}).get("release_type")
+    if release_type not in _COMMIT_TRACKED_RELEASE_TYPES:
+        return None
     modules = parse_gitmodules(GITMODULES)
     mod = resolve_module(modules, pkg)
     # Fallback: try source.name (e.g., Hyprland-git with source.name: Hyprland)

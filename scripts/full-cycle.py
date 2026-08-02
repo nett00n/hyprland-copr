@@ -16,6 +16,9 @@ Environment variables:
   SKIP_MOCK                  If 'true', skip mock build stage
   SKIP_COPR                  If 'true', skip copr submission stage
   SYNCHRONOUS_COPR_BUILD     If 'true', wait for COPR builds; default is async (--nowait)
+  REQUIRE_CHROOT_COVERAGE    If 'true', block Copr submission instead of warning when a
+                             chroot has no verified local mock build (see docs/bugs.md
+                             BUG-0018). Default: warn and submit anyway.
   LOG_LEVEL                  Logging level: DEBUG, INFO (default), WARNING, ERROR
 """
 
@@ -27,6 +30,7 @@ import time
 
 from lib import build_db
 from lib.cache import compute_input_hashes
+from lib.copr import print_chroot_coverage
 from lib.deps import build_dep_graph, effective_deps, topological_sort, transitive_deps
 from lib.log_analysis import report_mock_failures, report_copr_failures
 from lib.pipeline import (
@@ -472,6 +476,24 @@ def run_build_pipeline(
             file=sys.stderr,
         )
 
+    # Pre-submission chroot coverage gate (docs/bugs.md BUG-0018): warns by
+    # default, blocks (like the mock-failure `blockers` case above) only under
+    # REQUIRE_CHROOT_COVERAGE=true.
+    coverage_blocked = False
+    if not skip_copr and copr_repo and not blockers:
+        require_coverage = (
+            os.environ.get("REQUIRE_CHROOT_COVERAGE", "").lower() == "true"
+        )
+        covered = print_chroot_coverage(copr_repo, packages)
+        if not covered and require_coverage:
+            coverage_blocked = True
+            print(
+                "\n  ✗ REQUIRE_CHROOT_COVERAGE=true and some chroots lack a "
+                "verified local mock build -- skipping Copr submission for "
+                "all packages this run (see docs/bugs.md BUG-0018)",
+                file=sys.stderr,
+            )
+
     print("\n=== Full Cycle (Per-Package): Copr ===")
     for pkg, meta in packages.items():
         print(f"\n  {pkg}:")
@@ -495,6 +517,18 @@ def run_build_pipeline(
                 run_id,
                 "skipped",
                 reason=f"blocked: mock failed for {', '.join(blockers)}",
+            )
+            continue
+
+        if coverage_blocked:
+            print("    copr: blocked (chroot coverage)")
+            build_db.set_stage(
+                pkg,
+                "copr",
+                target,
+                run_id,
+                "skipped",
+                reason="blocked: chroot coverage",
             )
             continue
 
