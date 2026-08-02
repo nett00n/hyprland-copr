@@ -65,7 +65,9 @@ See also docs/todo.md `# Vendor storage` (TODO-0001–TODO-0007, high priority d
   installs `requirements.txt`) fails `make lint`/`make pre-commit` at the first sub-target with
   "ruff: command not found". Has gone unnoticed because every local `.venv` in practice already
   has the dev tools from a prior run (the CI workflow works around it by installing
-  `requirements-dev.txt` explicitly before `make lint`)
+  `requirements-dev.txt` explicitly before `make lint`). `make update-daily` no longer runs
+  `lint` (or `pre-commit`) at all -- it only needs `validate-packages`/`fmt` -- so this is back
+  to a local annoyance, not a nightly-blocking one (see docs/CHANGELOG.md 2026-08-02)
 
 ## update-daily
 

@@ -216,12 +216,20 @@ make update-daily COPR_REPO=nett00n/hyprland            # commit only
 make update-daily COPR_REPO=nett00n/hyprland PUSH=1      # commit and push
 ```
 
-Runs: bump versions → quality gate (`pre-commit`: validate + test + lint + fmt) → full build
+Runs: bump versions → `validate-packages` + `fmt` (packages.yaml sanity/formatting only —
+**not** the full `pre-commit` gate; `scripts/` lint/test health is already CI's job on every
+push/PR, an unrelated regression there shouldn't block tonight's Copr publish) → full build
 cycle → regenerate docs → push COPR description → `git commit`. Only stages
 `packages.yaml packages/ submodules/ README.md docs/README.copr.md docs/full-report.md` — the
 automation never touches `templates/`/`blog/`, so hand-edits there are never swept into a daily
 commit. Intended to run unattended from an external nightly cron (the repo itself has no
 scheduler); pass `PUSH=1` for that.
+
+A one-off package build failure (e.g. a chroot-specific mock failure) does **not** abort the
+run: it's recorded in `build-report.db` as usual, `readme`/`copr-description`/the docs commit
+still happen (so the night's version bumps and submodule moves aren't lost), and
+`update-daily` reports the failure and exits non-zero only at the very end, after everything
+else has run. Check `logs/build/<pkg>` or run `make stage-log-analyze` to see what failed.
 
 A no-op night (nothing staged) skips the commit instead of failing the target. With `PUSH=1`,
 the target rebases onto `origin/main` before pushing, so it doesn't collide with
@@ -236,7 +244,7 @@ make sources PACKAGE=<name>   # or omit PACKAGE for all
 
 **Suggest `requires:` entries** from a built RPM's SONAME dependencies:
 ```shell
-make gather-requires PACKAGE=path/to/package.rpm
+make gather-requires RPM=path/to/package.rpm
 ```
 
 **Remove a package** entirely (`packages.yaml`, build logs, spec files, submodules, container

@@ -10,11 +10,6 @@ bullet); IDs are never reused or renumbered, so deletions leave gaps.
   project's own TDD rule
 - **TODO-0033** — package add/delete logic lives in untestable Makefile recipes instead of
   scripts/
-- **TODO-0029** — `PACKAGE` means three different things depending on target, no validation
-- **TODO-0061** — `update-daily` is all-or-nothing: one failed package aborts before docs/commit,
-  losing the night's version bumps
-- **TODO-0064** — nightly runs the full developer lint/test gate instead of just validating
-  packages.yaml, so an unrelated lint regression blocks all Copr publishing
 
 # Vendor storage #high
 
@@ -101,7 +96,6 @@ disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
 
 # Makefile
 
-- **TODO-0029** PACKAGE var means 3 different things (single name / comma-list in set-release / rpm path in gather-requires) with no validation -> split into separate vars or document+enforce per-target
 - **TODO-0030** two different multi-package loop strategies coexist: Makefile-side `_PKGS` loop (sources, stage-log-analyze) vs pass-PACKAGE-to-python (all stage-* targets) -> pick one
 - **TODO-0031** HIGHLIGHT_PREFIX default bakes literal quote chars into value as a hack so unquoted `echo $(HIGHLIGHT_PREFIX) "text"` works; check-image/check-venv/setup-volumes instead embed it inside a quoted string -> fragile, one edit away from breaking output. simplify to plain value + consistent quoting everywhere
 - **TODO-0032** ALL_PACKAGES parses packages.yaml with a grep regex instead of the yaml lib used everywhere else (scripts/*.py, inline python in delete-package/add-submodule) -> fragile, switch to yaml
@@ -140,11 +134,6 @@ Design/complexity items found while auditing `make update-daily` end to end (202
 actually misbehaving from these findings is logged in docs/bugs.md's `## update-daily` section
 instead.
 
-- **TODO-0061** `update-daily` is all-or-nothing: every step is chained `|| exit 1`, so one
-  package failing mock aborts before `readme`/`copr-description`/`git commit` and the night's
-  version bumps and submodule moves are left uncommitted in the working tree -- which the next
-  run then builds on top of. Want: record and report build failures, still produce docs and the
-  commit
 - **TODO-0062** `lib/cache.py:_content_hash()` and `_package_config_hash()` are byte-identical
   implementations -- both drop `release`, normalize keys, then sha256 of
   `json.dumps(..., sort_keys=True, default=str)` -- and `compute_input_hashes()` stores both
@@ -153,12 +142,6 @@ instead.
 - **TODO-0063** `full-cycle.py` sleeps 5 seconds after printing the build plan "before
   proceeding" -- an interactive abort window that only burns time in the unattended cron flow the
   target is documented for. Gate on a TTY or an env flag
-- **TODO-0064** the nightly runs the full *developer* gate: `pre-commit` = `validate-packages` +
-  pytest + ruff + flake8 + mypy + rpmlint + yamllint + `fmt`. An unrelated lint regression in
-  scripts/ therefore blocks all package updates and the Copr publish. Repo health is already CI's
-  job (`.github/workflows/ci.yml` runs lint+test on every push); the nightly only needs "is
-  packages.yaml valid". Split the two (this also makes the fresh-venv ordering trap of BUG-0032 a
-  nightly-blocking issue, not just a local annoyance)
 - **TODO-0065** the nightly builds one `FEDORA_VERSION` (default 43) while `SUPPORTED := 43 44
   rawhide`. `make full-cycle-matrix` now exists as the mechanism to cover the whole x86_64 matrix
   locally (see docs/bugs.md BUG-0018), but `update-daily` doesn't call it -- switching would

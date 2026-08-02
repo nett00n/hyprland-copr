@@ -14,6 +14,21 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-02
 
+- Changed: `make update-daily` no longer runs the full `pre-commit` gate (test+lint+fmt) before
+  building -- just the new `validate-packages` target (packages.yaml/.gitmodules structure
+  checks, extracted from `pre-commit`'s first line so both can reuse it) plus `fmt`. `scripts/`
+  lint/test health is already CI's job on every push/PR; an unrelated regression there no longer
+  blocks a nightly Copr publish (closes TODO-0064). Also: a package build failure inside
+  `full-cycle` no longer aborts the rest of the run -- `readme`/`copr-description`/`git commit`
+  still happen (so the night's version bumps aren't lost), and `update-daily` reports the
+  failure and exits non-zero only at the end, after everything else has run (closes TODO-0061)
+- Changed: `PACKAGE` env var semantics on the Makefile, closing TODO-0029 -- `gather-requires`
+  (the one target where it was a filesystem path to a built `.rpm`, not a packages.yaml key)
+  now takes `RPM=` instead; `list-tags`/`scaffold-package`/`add-submodule`/`delete-package`
+  (single-package-only targets) now reject a comma-separated `PACKAGE` with a clear error
+  instead of a confusing downstream one (`KeyError`, wrong path, silent no-op); `sources`/
+  `stage-log-analyze` now accept the same comma-separated-list shape every other multi-package
+  target already does, instead of silently treating `PACKAGE=a,b` as one bogus package name
 - Added: `make full-cycle-matrix` builds every `MATRIX_VERSIONS` (default: all `SUPPORTED`)
   Fedora version's x86_64 chroot locally via mock, then submits to Copr once; and
   `stage-copr`/`full-cycle` now print a per-chroot local-mock coverage table (verified/failed/

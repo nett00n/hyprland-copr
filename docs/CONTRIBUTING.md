@@ -88,9 +88,11 @@ make fmt            # fmt-ruff + fmt-yaml + normalize-paths + sort-lists
 make pre-commit     # validate-packages + test + lint + fmt (COVERAGE=1 for a coverage report)
 ```
 
-Run `make pre-commit` before and after any change. It's also what gates `make update-daily` and
-what CI runs on every push/PR (lint + test, natively via `NO_CONTAINER=1` — CI can't nest
-privileged containers).
+Run `make pre-commit` before and after any change. It's also what CI runs on every push/PR
+(lint + test, natively via `NO_CONTAINER=1` — CI can't nest privileged containers).
+`make update-daily` (the nightly automation) does **not** run the full `pre-commit` gate —
+just `validate-packages` + `fmt`, so an unrelated `scripts/` lint regression never blocks a
+Copr publish; see `docs/operations.md` "`update-daily`".
 
 ## Checklist before opening a PR
 

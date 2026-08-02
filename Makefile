@@ -86,7 +86,13 @@ WORK             := /work
 endif
 
 ALL_PACKAGES := $(shell grep -oP '^[a-zA-Z][a-zA-Z0-9_-]+(?=:)' packages.yaml)
-_PKGS        := $(if $(PACKAGE),$(PACKAGE),$(ALL_PACKAGES))
+# PACKAGE is comma-separated everywhere else (stage-*, full-cycle, build-pop, set-release);
+# normalize commas to spaces here too so sources/stage-log-analyze's shell `for` loop accepts
+# the same shape instead of treating "a,b" as one bogus package name (see docs/todo.md TODO-0029).
+comma        := ,
+empty        :=
+space        := $(empty) $(empty)
+_PKGS        := $(if $(PACKAGE),$(subst $(comma),$(space),$(PACKAGE)),$(ALL_PACKAGES))
 
 PYTHON           := .venv/bin/python3
 README_COPR      := docs/README.copr.md
@@ -100,7 +106,7 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all db-usage db-prune db-shell db-nuke
+.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all db-usage db-prune db-shell db-nuke
 
 save-last-build: ## Save last built RPMs and build-report.db to local-repo/ before clean
 	@mkdir -p local-repo
@@ -226,8 +232,10 @@ fmt-ruff: check-image check-venv setup-volumes ## Run ruff format on scripts
 fmt-yaml: check-image check-venv setup-volumes ## Format YAML files with consistent style
 	$(call run_with_result,$(CONTAINER_PYTHON) scripts/format-yaml.py '*.yaml',YAML format applied,YAML format failed)
 
-pre-commit: check-venv ## Run all checks and formatting (test + lint + fmt). Use COVERAGE=1 to include coverage report
-	@$(PYTHON) scripts/validate-packages.py || exit 1
+validate-packages: check-venv ## Validate packages.yaml and .gitmodules structure (fast, no container)
+	@$(PYTHON) scripts/validate-packages.py
+
+pre-commit: check-venv validate-packages ## Run all checks and formatting (test + lint + fmt). Use COVERAGE=1 to include coverage report
 	$(MAKE) test lint fmt || exit 1
 	@if [ "$(COVERAGE)" = "1" ]; then \
 		echo "$(HIGHLIGHT_PREFIX) Running coverage analysis..."; \
@@ -237,14 +245,17 @@ pre-commit: check-venv ## Run all checks and formatting (test + lint + fmt). Use
 update-versions: check-image check-venv setup-volumes ## Fetch latest semver tags from submodules and update packages.yaml
 	$(CONTAINER_PYTHON) scripts/update-versions.py
 
-list-tags: check-image check-venv setup-volumes ## List all tags for submodules, highlighting latest semver (PACKAGE=<name> for one)
+list-tags: check-image check-venv setup-volumes ## List all tags for submodules, highlighting latest semver (PACKAGE=<name>, single package only, for one)
+	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
 	$(CONTAINER_PYTHON) scripts/list-tags.py $(PACKAGE)
 
-scaffold-package: check-image check-venv setup-volumes ## Scaffold a new packages.yaml entry from a submodule (PACKAGE=<name> required)
+scaffold-package: check-image check-venv setup-volumes ## Scaffold a new packages.yaml entry from a submodule (PACKAGE=<name> required, single package only)
+	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
 	$(CONTAINER_PYTHON) scripts/scaffold-package.py $(PACKAGE)
 
-add-submodule: check-image check-venv setup-volumes ## Register git submodule for an existing package (PACKAGE=<name> required)
+add-submodule: check-image check-venv setup-volumes ## Register git submodule for an existing package (PACKAGE=<name> required, single package only)
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE is required"; exit 1)
+	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
 	@_url=$$($(CONTAINER_PYTHON) -c "import yaml; d=yaml.safe_load(open('packages.yaml')); print(d['$(PACKAGE)']['url'])" 2>&1) || \
 		(echo "$(HIGHLIGHT_PREFIX) Error: Failed to read URL for $(PACKAGE) from packages.yaml"; exit 1); \
 	 _name=$$(basename $$_url); \
@@ -263,8 +274,9 @@ add-new: check-image check-venv setup-volumes ## Add submodule from URL and scaf
 	 git config -f .gitmodules submodule.submodules/$$_org/$$_name.ignore dirty || exit 1; \
 	 $(CONTAINER_PYTHON) scripts/scaffold-package.py $$_name || exit 1
 
-delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, logs/build, packages/, submodules, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required)
+delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, logs/build, packages/, submodules, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required, single package only)
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PKG or PACKAGE is required (e.g. PKG=hyprpicker)"; exit 1)
+	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
 	@echo "$(HIGHLIGHT_PREFIX) Removing package '$(PACKAGE)'..."
 	@$(CONTAINER_PYTHON) -c "import yaml; d = yaml.safe_load(open('packages.yaml')); d.pop('$(PACKAGE)', None); open('packages.yaml', 'w').write(yaml.dump(d, sort_keys=False))"
 	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --forget $(PACKAGE)
@@ -294,9 +306,9 @@ set-release: check-image check-venv setup-volumes ## Set package release value (
 	@test -n "$(RELEASE)" || (echo "$(HIGHLIGHT_PREFIX) Error: RELEASE is required (e.g. RELEASE=5)"; exit 1)
 	$(CONTAINER_PYTHON) scripts/set-package-release.py $(PACKAGE) $(RELEASE) $(if $(filter 1,$(LOCK)),--lock,)
 
-gather-requires: check-image check-venv setup-volumes ## Suggest requires entries from built RPMs (PACKAGE=path/to/pkg.rpm required)
-	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE is required"; exit 1)
-	$(CONTAINER_PYTHON) scripts/gather-requires.py $(PACKAGE)
+gather-requires: check-image check-venv setup-volumes ## Suggest requires entries from built RPMs (RPM=path/to/pkg.rpm [path/to/other.rpm ...] required -- a filesystem path, not a packages.yaml name)
+	@test -n "$(RPM)" || (echo "$(HIGHLIGHT_PREFIX) Error: RPM is required (e.g. RPM=local-repo/hyprutils-0.14.0.fc44.x86_64.rpm)"; exit 1)
+	$(CONTAINER_PYTHON) scripts/gather-requires.py $(RPM)
 
 gen-report: check-image check-venv setup-volumes ## Render build-report.db to stdout for FEDORA_VERSION (--format github|copr)
 	$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) \
@@ -448,9 +460,13 @@ full-cycle-matrix: ## Build every MATRIX_VERSIONS chroot locally (default: all S
 		echo $(HIGHLIGHT_PREFIX) "COPR_REPO not set -- skipping Copr submission (local matrix build only)"; \
 	fi
 
-update-daily: ## Update versions, gate (validate+test+lint+fmt), build, generate docs, push to COPR (requires COPR_REPO), git commit (PUSH=1 to also git push)
+update-daily: ## Update versions, validate+format packages.yaml, build (package failures reported but don't block docs/commit), generate docs, push to COPR (requires COPR_REPO), git commit (PUSH=1 to also git push)
 	@test -n "$(COPR_REPO)" || (echo "$(HIGHLIGHT_PREFIX) Error: COPR_REPO is not set (e.g. export COPR_REPO=nett00n/hyprland)"; exit 1)
-	$(MAKE) update-versions pre-commit full-cycle readme copr-description || exit 1
+	@mkdir -p logs && rm -f logs/.update-daily-failed
+	$(MAKE) update-versions || exit 1
+	$(MAKE) validate-packages fmt || exit 1
+	$(MAKE) full-cycle || touch logs/.update-daily-failed
+	$(MAKE) readme copr-description || exit 1
 	git add packages.yaml packages/ submodules/ README.md docs/README.copr.md docs/full-report.md || exit 1
 	@if git diff --cached --quiet; then \
 		echo "$(HIGHLIGHT_PREFIX) Nothing to commit (no version/doc changes tonight)."; \
@@ -460,6 +476,11 @@ update-daily: ## Update versions, gate (validate+test+lint+fmt), build, generate
 			git pull --rebase origin main || exit 1; \
 			git push || exit 1; \
 		fi; \
+	fi
+	@if [ -f logs/.update-daily-failed ]; then \
+		rm -f logs/.update-daily-failed; \
+		echo "$(HIGHLIGHT_PREFIX) ✗ Some packages failed to build tonight (docs and commit were still produced) -- run 'make stage-log-analyze' or check logs/build/<pkg>"; \
+		exit 1; \
 	fi
 
 build-pop: check-image check-venv setup-volumes ## Remove mock/copr build status for PKG=a,b (PKG="" removes all, requires confirmation)
