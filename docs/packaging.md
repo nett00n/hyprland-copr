@@ -38,10 +38,10 @@ package-name:
 | Type | Behavior | Extra fields | Version format |
 |------|----------|--------------|---|
 | `latest-version` | Latest semver tag only, no commit fallback | `branch` | `1.2.3` |
-| `latest-commit` | Latest HEAD commit on branch | `branch` | `1.2.3^20240101gitabc1234` |
-| `pinned-version` | Skip updates entirely (manual control) | `version` | - |
-| `pinned-commit` | Skip updates entirely (manual control) | `commit` | - |
-| `pinned-tag` | Track a specific named non-semver tag | `tag` | `0.53.0^20240101gitabc1234` |
+| `latest-commit` | Latest commit on branch | `branch` | `1.2.3^20240101gitabc1234` |
+| `pinned-version` | Pins the checkout to tag `v<version>` (or bare `<version>`); no updates | `version` | - |
+| `pinned-commit` | Pins the checkout to `source.commit.full`; no updates | `commit` | - |
+| `pinned-tag` | Pins the checkout to a specific non-semver tag | `tag` | `0.53.0^20240101gitabc1234` |
 | *(absent)* | Default: try semver, fall back to commit | `branch` | `1.2.3` or `0^20240101gitabc1234` |
 
 For `latest-commit`/`pinned-tag`, versions use the nearest reachable semver tag as a prefix:

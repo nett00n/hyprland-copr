@@ -16,6 +16,83 @@ uv = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(uv)
 
 
+class TestCheckoutPin:
+    """Tests for checkout_pin (pure function, no mocks needed)."""
+
+    @pytest.mark.parametrize(
+        "pkg_data",
+        [
+            {},
+            {"auto_update": {}},
+            {"auto_update": {"release_type": ""}},
+            {"auto_update": {"release_type": "latest-version"}},
+            {"auto_update": {"release_type": "latest-commit"}},
+        ],
+    )
+    def test_no_pin_for_default_and_moving_types(self, pkg_data):
+        """Types that move the checkout must not be treated as pins."""
+        assert uv.checkout_pin("pkg", pkg_data) is None
+
+    def test_latest_tag_is_not_treated_as_a_pin(self):
+        """BUG-0014 guard: mpvpaper's invalid `latest-tag` must keep falling
+        through to the default (moving) path, not be treated as a pin. Uses
+        exact membership, not startswith("pinned-"), specifically so a typo'd
+        release_type degrades the same way here as in the version-resolution
+        loop (falls through to default) instead of freezing the checkout.
+        """
+        pkg_data = {"auto_update": {"release_type": "latest-tag"}}
+        assert uv.checkout_pin("mpvpaper", pkg_data) is None
+
+    def test_pinned_tag(self):
+        pkg_data = {"auto_update": {"release_type": "pinned-tag", "tag": "1.2.3"}}
+        pin = uv.checkout_pin("pkg", pkg_data)
+        assert pin == uv.Pin("tag", ("refs/tags/1.2.3",), "pkg")
+
+    def test_pinned_tag_without_tag_is_unresolved(self):
+        pkg_data = {"auto_update": {"release_type": "pinned-tag"}}
+        pin = uv.checkout_pin("pkg", pkg_data)
+        assert pin.kind == "unresolved"
+        assert pin.candidates == ()
+        assert pin.owner == "pkg"
+        assert pin.detail
+
+    def test_pinned_commit(self):
+        pkg_data = {
+            "auto_update": {"release_type": "pinned-commit"},
+            "source": {"commit": {"full": "abc123"}},
+        }
+        pin = uv.checkout_pin("pkg", pkg_data)
+        assert pin == uv.Pin("commit", ("abc123",), "pkg")
+
+    def test_pinned_commit_without_source_commit_is_unresolved(self):
+        pkg_data = {"auto_update": {"release_type": "pinned-commit"}}
+        pin = uv.checkout_pin("pkg", pkg_data)
+        assert pin.kind == "unresolved"
+        assert pin.detail
+
+    def test_pinned_commit_with_empty_source_commit_dict_is_unresolved(self):
+        pkg_data = {
+            "auto_update": {"release_type": "pinned-commit"},
+            "source": {"commit": {}},
+        }
+        pin = uv.checkout_pin("pkg", pkg_data)
+        assert pin.kind == "unresolved"
+
+    def test_pinned_version(self):
+        pkg_data = {
+            "auto_update": {"release_type": "pinned-version"},
+            "version": "1.2.3",
+        }
+        pin = uv.checkout_pin("pkg", pkg_data)
+        assert pin == uv.Pin("version", ("refs/tags/v1.2.3", "refs/tags/1.2.3"), "pkg")
+
+    def test_pinned_version_without_version_is_unresolved(self):
+        pkg_data = {"auto_update": {"release_type": "pinned-version"}}
+        pin = uv.checkout_pin("pkg", pkg_data)
+        assert pin.kind == "unresolved"
+        assert pin.detail
+
+
 class TestPullSubmodule:
     """Tests for pull_submodule function."""
 
@@ -150,6 +227,212 @@ class TestPullSubmodule:
         captured = capsys.readouterr()
         assert "git switch failed" in captured.err
         assert "Branch not found" in captured.err
+
+    def test_fetches_with_tags_flag(self, tmp_path, monkeypatch):
+        """--tags: a pinned tag need not be reachable from the tracked branch."""
+        repo_dir = tmp_path / "submodules" / "test"
+        repo_dir.mkdir(parents=True)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+        mod = {"name": "test-pkg", "path": "submodules/test"}
+
+        fetch_result = MagicMock(returncode=0)
+        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
+        switch_result = MagicMock(returncode=0)
+
+        with patch.object(
+            uv, "run_git", side_effect=[fetch_result, head_result, switch_result]
+        ) as mock_run:
+            uv.pull_submodule(mod)
+
+        assert mock_run.call_args_list[0].args[:3] == ("fetch", "--tags", "origin")
+
+    def test_moving_returns_ref_even_when_switch_fails(self, tmp_path, monkeypatch):
+        """Version resolution reads the remote-tracking ref, so it must still
+        get one back even when the working-tree switch itself failed."""
+        repo_dir = tmp_path / "submodules" / "test"
+        repo_dir.mkdir(parents=True)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+        mod = {"name": "test-pkg", "path": "submodules/test"}
+
+        fetch_result = MagicMock(returncode=0)
+        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
+        switch_result = MagicMock(returncode=1, stderr="boom")
+
+        with patch.object(
+            uv, "run_git", side_effect=[fetch_result, head_result, switch_result]
+        ):
+            ref = uv.pull_submodule(mod)
+
+        assert ref == "origin/main"
+
+    def test_pinned_tag_checks_out_detached(self, tmp_path, monkeypatch, capsys):
+        """A pinned-tag package is checked out detached, never via `switch`."""
+        repo_dir = tmp_path / "submodules" / "test"
+        repo_dir.mkdir(parents=True)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+        mod = {"name": "test-pkg", "path": "submodules/test"}
+        pin = uv.Pin("tag", ("refs/tags/v1.2.3",), "pinned-pkg")
+
+        fetch_result = MagicMock(returncode=0)
+        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
+        rev_parse_result = MagicMock(returncode=0, stdout="deadbeef" * 5)
+        checkout_result = MagicMock(returncode=0)
+
+        with patch.object(
+            uv,
+            "run_git",
+            side_effect=[fetch_result, head_result, rev_parse_result, checkout_result],
+        ) as mock_run:
+            ref = uv.pull_submodule(mod, pin=pin)
+
+        calls = [c.args for c in mock_run.call_args_list]
+        assert ("checkout", "--force", "--detach", "refs/tags/v1.2.3") in calls
+        assert not any(c[0] == "switch" for c in calls)
+        assert ref == "origin/main"
+        captured = capsys.readouterr()
+        assert "pinned test-pkg to refs/tags/v1.2.3" in captured.err
+        assert "pinned-pkg" in captured.err
+
+    def test_pinned_commit_checks_out_sha(self, tmp_path, monkeypatch):
+        repo_dir = tmp_path / "submodules" / "test"
+        repo_dir.mkdir(parents=True)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+        mod = {"name": "test-pkg", "path": "submodules/test"}
+        pin = uv.Pin("commit", ("abc123def456",), "pinned-pkg")
+
+        fetch_result = MagicMock(returncode=0)
+        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
+        rev_parse_result = MagicMock(returncode=0, stdout="abc123def456")
+        checkout_result = MagicMock(returncode=0)
+
+        with patch.object(
+            uv,
+            "run_git",
+            side_effect=[fetch_result, head_result, rev_parse_result, checkout_result],
+        ) as mock_run:
+            uv.pull_submodule(mod, pin=pin)
+
+        calls = [c.args for c in mock_run.call_args_list]
+        assert ("checkout", "--force", "--detach", "abc123def456") in calls
+
+    def test_pinned_version_falls_through_to_bare_tag(self, tmp_path, monkeypatch):
+        """34/45 packages tag `v<version>`, 6/45 tag bare `<version>` -- the
+        v-prefixed candidate is tried first, the bare one second."""
+        repo_dir = tmp_path / "submodules" / "test"
+        repo_dir.mkdir(parents=True)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+        mod = {"name": "test-pkg", "path": "submodules/test"}
+        pin = uv.Pin("version", ("refs/tags/v1.2.3", "refs/tags/1.2.3"), "pinned-pkg")
+
+        fetch_result = MagicMock(returncode=0)
+        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
+        v_miss = MagicMock(returncode=1, stdout="")
+        bare_hit = MagicMock(returncode=0, stdout="cafebabe" * 5)
+        checkout_result = MagicMock(returncode=0)
+
+        with patch.object(
+            uv,
+            "run_git",
+            side_effect=[fetch_result, head_result, v_miss, bare_hit, checkout_result],
+        ) as mock_run:
+            uv.pull_submodule(mod, pin=pin)
+
+        calls = [c.args for c in mock_run.call_args_list]
+        assert ("checkout", "--force", "--detach", "refs/tags/1.2.3") in calls
+
+    def test_pinned_ref_missing_leaves_tree_untouched(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        repo_dir = tmp_path / "submodules" / "test"
+        repo_dir.mkdir(parents=True)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+        mod = {"name": "test-pkg", "path": "submodules/test"}
+        pin = uv.Pin("tag", ("refs/tags/v99.99.99",), "pinned-pkg")
+
+        fetch_result = MagicMock(returncode=0)
+        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
+        rev_parse_miss = MagicMock(returncode=1, stdout="")
+
+        with patch.object(
+            uv, "run_git", side_effect=[fetch_result, head_result, rev_parse_miss]
+        ) as mock_run:
+            ref = uv.pull_submodule(mod, pin=pin)
+
+        assert mock_run.call_count == 3
+        assert not any(c.args[0] == "checkout" for c in mock_run.call_args_list)
+        assert ref == "origin/main"
+        captured = capsys.readouterr()
+        assert "none of which exist in the fetched repo" in captured.err
+        assert "pinned-pkg" in captured.err
+
+    def test_unresolved_pin_leaves_tree_untouched(self, tmp_path, monkeypatch, capsys):
+        repo_dir = tmp_path / "submodules" / "test"
+        repo_dir.mkdir(parents=True)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+        mod = {"name": "test-pkg", "path": "submodules/test"}
+        pin = uv.Pin(
+            "unresolved", (), "pinned-pkg", "pinned-commit with no source.commit.full"
+        )
+
+        fetch_result = MagicMock(returncode=0)
+        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
+
+        with patch.object(
+            uv, "run_git", side_effect=[fetch_result, head_result]
+        ) as mock_run:
+            ref = uv.pull_submodule(mod, pin=pin)
+
+        assert mock_run.call_count == 2
+        assert ref == "origin/main"
+        captured = capsys.readouterr()
+        assert "pinned-pkg" in captured.err
+        assert "pinned-commit with no source.commit.full" in captured.err
+
+    def test_pinned_checkout_failure_warns(self, tmp_path, monkeypatch, capsys):
+        repo_dir = tmp_path / "submodules" / "test"
+        repo_dir.mkdir(parents=True)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+        mod = {"name": "test-pkg", "path": "submodules/test"}
+        pin = uv.Pin("tag", ("refs/tags/v1.2.3",), "pinned-pkg")
+
+        fetch_result = MagicMock(returncode=0)
+        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
+        rev_parse_result = MagicMock(returncode=0, stdout="deadbeef" * 5)
+        checkout_result = MagicMock(returncode=1, stderr="fatal: bad object")
+
+        with patch.object(
+            uv,
+            "run_git",
+            side_effect=[fetch_result, head_result, rev_parse_result, checkout_result],
+        ):
+            uv.pull_submodule(mod, pin=pin)
+
+        captured = capsys.readouterr()
+        assert "git checkout failed" in captured.err
+        assert "fatal: bad object" in captured.err
+
+    def test_pinned_with_explicit_branch_skips_symbolic_ref(
+        self, tmp_path, monkeypatch
+    ):
+        repo_dir = tmp_path / "submodules" / "test"
+        repo_dir.mkdir(parents=True)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+        mod = {"name": "test-pkg", "path": "submodules/test"}
+        pin = uv.Pin("tag", ("refs/tags/v1.2.3",), "pinned-pkg")
+
+        fetch_result = MagicMock(returncode=0)
+        rev_parse_result = MagicMock(returncode=0, stdout="deadbeef" * 5)
+        checkout_result = MagicMock(returncode=0)
+
+        with patch.object(
+            uv,
+            "run_git",
+            side_effect=[fetch_result, rev_parse_result, checkout_result],
+        ) as mock_run:
+            ref = uv.pull_submodule(mod, branch="dev", pin=pin)
+
+        assert mock_run.call_count == 3
+        assert ref == "origin/dev"
 
 
 class TestMain:
@@ -626,3 +909,315 @@ class TestMain:
         captured = capsys.readouterr()
         assert "latest: 0.56.1" in captured.out
         assert "0.56.0^20260728git924a357" in captured.out
+
+    def test_pin_wins_over_moving_sibling_on_shared_url(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """Regression for the fix's core claim: a pinned package must win the
+        submodule checkout over a moving sibling sharing the same url, and the
+        sibling must still get its own version resolved -- against the remote
+        branch, not the (now pinned) working tree.
+        """
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+
+        packages = {
+            "Pinned": {
+                "url": "https://github.com/test/test",
+                "auto_update": {"release_type": "pinned-tag", "tag": "v1.0.0"},
+            },
+            "Sibling-git": {
+                "url": "https://github.com/test/test",
+                "auto_update": {"release_type": "latest-commit"},
+            },
+        }
+
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(
+                    uv, "pull_submodule", return_value="origin/main"
+                ) as mock_pull:
+                    with patch.object(uv, "get_tag_commit") as mock_tag_commit:
+                        with patch.object(
+                            uv, "get_submodule_commit_with_base"
+                        ) as mock_commit:
+                            with patch.object(
+                                uv, "write_yaml_preserving_comments", return_value={}
+                            ):
+                                mock_parse.return_value = [
+                                    {
+                                        "name": "test",
+                                        "path": "submodules/test",
+                                        "url": "https://github.com/test/test",
+                                    }
+                                ]
+                                mock_tag_commit.return_value = (
+                                    "aaa111",
+                                    "aaa111",
+                                    "20260101",
+                                    "1.0.0",
+                                )
+                                mock_commit.return_value = (
+                                    "bbb222",
+                                    "bbb222",
+                                    "20260728",
+                                    "0.56.0",
+                                )
+                                uv.main()
+
+        # pull_submodule ran once (one physical checkout) and got the pin
+        # from "Pinned", not from "Sibling-git".
+        mock_pull.assert_called_once()
+        assert mock_pull.call_args.kwargs["pin"].owner == "Pinned"
+
+        # Sibling-git resolved its version against the remote-tracking ref
+        # returned by pull_submodule, not the working tree.
+        repo = tmp_path / "submodules" / "test"
+        mock_commit.assert_called_once_with(repo, "origin/main")
+
+        captured = capsys.readouterr()
+        assert "note:" in captured.err
+        assert "Pinned" in captured.err
+        assert "Sibling-git" in captured.err
+
+    def test_conflicting_pins_first_in_file_wins(self, tmp_path, monkeypatch, capsys):
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+
+        packages = {
+            "First": {
+                "url": "https://github.com/test/test",
+                "auto_update": {"release_type": "pinned-tag", "tag": "v1.0.0"},
+            },
+            "Second": {
+                "url": "https://github.com/test/test",
+                "auto_update": {"release_type": "pinned-tag", "tag": "v2.0.0"},
+            },
+        }
+
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(
+                    uv, "pull_submodule", return_value="origin/main"
+                ) as mock_pull:
+                    with patch.object(uv, "get_tag_commit", return_value=None):
+                        with patch.object(
+                            uv, "write_yaml_preserving_comments", return_value={}
+                        ):
+                            mock_parse.return_value = [
+                                {
+                                    "name": "test",
+                                    "path": "submodules/test",
+                                    "url": "https://github.com/test/test",
+                                }
+                            ]
+                            uv.main()
+
+        assert mock_pull.call_args.kwargs["pin"].owner == "First"
+        captured = capsys.readouterr()
+        assert "warning:" in captured.err
+        assert "First" in captured.err
+        assert "Second" in captured.err
+
+    def test_identical_pins_do_not_warn(self, tmp_path, monkeypatch, capsys):
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+
+        packages = {
+            "First": {
+                "url": "https://github.com/test/test",
+                "auto_update": {"release_type": "pinned-tag", "tag": "v1.0.0"},
+            },
+            "Second": {
+                "url": "https://github.com/test/test",
+                "auto_update": {"release_type": "pinned-tag", "tag": "v1.0.0"},
+            },
+        }
+
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                    with patch.object(uv, "get_tag_commit", return_value=None):
+                        with patch.object(
+                            uv, "write_yaml_preserving_comments", return_value={}
+                        ):
+                            mock_parse.return_value = [
+                                {
+                                    "name": "test",
+                                    "path": "submodules/test",
+                                    "url": "https://github.com/test/test",
+                                }
+                            ]
+                            uv.main()
+
+        captured = capsys.readouterr()
+        assert "warning:" not in captured.err
+
+    def test_latest_commit_resolves_remote_ref_not_head(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test.git\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+
+        packages = {
+            "test": {
+                "url": "https://github.com/test/test.git",
+                "auto_update": {"release_type": "latest-commit"},
+            }
+        }
+
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                    with patch.object(
+                        uv, "get_submodule_commit_with_base"
+                    ) as mock_commit:
+                        with patch.object(
+                            uv, "write_yaml_preserving_comments", return_value={}
+                        ):
+                            mock_parse.return_value = [
+                                {
+                                    "name": "test",
+                                    "path": "submodules/test",
+                                    "url": "https://github.com/test/test.git",
+                                }
+                            ]
+                            mock_commit.return_value = (
+                                "abcdef123456",
+                                "abcdef1",
+                                "20260327",
+                                "1.0.0",
+                            )
+                            uv.main()
+
+        repo = tmp_path / "submodules" / "test"
+        mock_commit.assert_called_once_with(repo, "origin/main")
+
+    def test_default_fallback_resolves_remote_ref(self, tmp_path, monkeypatch):
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test.git\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+        monkeypatch.setattr(uv, "ROOT", tmp_path)
+
+        packages = {
+            "test": {
+                "url": "https://github.com/test/test.git",
+                "auto_update": {},
+            }
+        }
+
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                    with patch.object(uv, "fetch_tags", return_value=[]):
+                        with patch.object(uv, "latest_semver", return_value=None):
+                            with patch.object(
+                                uv, "get_submodule_commit_with_base"
+                            ) as mock_commit:
+                                with patch.object(
+                                    uv,
+                                    "write_yaml_preserving_comments",
+                                    return_value={},
+                                ):
+                                    mock_parse.return_value = [
+                                        {
+                                            "name": "test",
+                                            "path": "submodules/test",
+                                            "url": "https://github.com/test/test.git",
+                                        }
+                                    ]
+                                    mock_commit.return_value = (
+                                        "aaa",
+                                        "aaa",
+                                        "20260101",
+                                        None,
+                                    )
+                                    uv.main()
+
+        repo = tmp_path / "submodules" / "test"
+        mock_commit.assert_called_once_with(repo, "origin/main")
+
+    def test_skips_commit_resolution_when_pull_failed(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test.git\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+
+        packages = {
+            "test": {
+                "url": "https://github.com/test/test.git",
+                "auto_update": {"release_type": "latest-commit"},
+            }
+        }
+
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule", return_value=None):
+                    with patch.object(
+                        uv, "get_submodule_commit_with_base"
+                    ) as mock_commit:
+                        with patch.object(
+                            uv, "write_yaml_preserving_comments", return_value={}
+                        ):
+                            mock_parse.return_value = [
+                                {
+                                    "name": "test",
+                                    "path": "submodules/test",
+                                    "url": "https://github.com/test/test.git",
+                                }
+                            ]
+                            uv.main()
+
+        mock_commit.assert_not_called()
+        captured = capsys.readouterr()
+        assert "submodule not pulled" in captured.err
+        assert "latest: null" in captured.out

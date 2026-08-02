@@ -281,3 +281,108 @@ class TestComputeInputHashesNewFields:
 
         result = compute_input_hashes("test-pkg", meta, all_packages)
         assert result["package_version"] == "2.5.3"
+
+
+class TestSourceCommit:
+    """Tests for _source_commit -- reads packages.yaml, never the live
+    submodule checkout (see docs/bugs.md BUG-0033)."""
+
+    @pytest.mark.parametrize(
+        "auto_update",
+        [
+            None,
+            {},
+            {"release_type": ""},
+            {"release_type": "latest-version"},
+            {"release_type": "pinned-tag"},
+            {"release_type": "pinned-version"},
+            {"release_type": "latest-tag"},
+        ],
+    )
+    def test_returns_none_for_non_commit_tracked_types(self, auto_update):
+        from lib.cache import _source_commit
+
+        meta = {"auto_update": auto_update} if auto_update is not None else {}
+        assert _source_commit("pkg", meta) is None
+
+    def test_returns_source_commit_full_for_latest_commit(self):
+        from lib.cache import _source_commit
+
+        meta = {
+            "auto_update": {"release_type": "latest-commit"},
+            "source": {"commit": {"full": "abc123def456", "date": "20260101"}},
+        }
+        assert _source_commit("pkg", meta) == "abc123def456"
+
+    def test_returns_source_commit_full_for_pinned_commit(self):
+        from lib.cache import _source_commit
+
+        meta = {
+            "auto_update": {"release_type": "pinned-commit"},
+            "source": {"commit": {"full": "deadbeef"}},
+        }
+        assert _source_commit("pkg", meta) == "deadbeef"
+
+    def test_returns_none_when_commit_tracked_but_source_commit_missing(self):
+        """The Waybar-git shape: latest-commit but no source.commit at all
+        (its archive URL is %{version}-keyed) -- already covered by the
+        package_version input hash."""
+        from lib.cache import _source_commit
+
+        meta = {"auto_update": {"release_type": "latest-commit"}}
+        assert _source_commit("pkg", meta) is None
+
+    def test_returns_none_when_source_commit_has_no_full(self):
+        from lib.cache import _source_commit
+
+        meta = {
+            "auto_update": {"release_type": "latest-commit"},
+            "source": {"commit": {}},
+        }
+        assert _source_commit("pkg", meta) is None
+
+    def test_does_not_shell_out_to_git(self):
+        """Regression guard: _source_commit must never touch the submodule
+        checkout, so a nightly submodule pull (which may move every
+        submodule to upstream HEAD) can't change a commit-tracked package's
+        cache key out from under it (see docs/bugs.md BUG-0033)."""
+        meta = {
+            "version": "1.0",
+            "license": "GPLv3",
+            "summary": "Test",
+            "description": "Test pkg",
+            "url": "https://example.com",
+            "source": {
+                "archives": ["https://example.com/test-1.0.tar.gz"],
+                "commit": {"full": "abc123def456"},
+            },
+            "build": {"system": "cmake"},
+            "auto_update": {"release_type": "latest-commit"},
+        }
+        all_packages = {"test-pkg": meta}
+
+        with patch(
+            "subprocess.run", side_effect=AssertionError("no subprocess allowed")
+        ):
+            result = compute_input_hashes("test-pkg", meta, all_packages)
+
+        assert result["source_commit"] == "abc123def456"
+
+    def test_source_commit_key_still_present_for_non_tracked_package(self):
+        """Guards against someone "cleaning up" the now-redundant key --
+        removing it from the hash dict would invalidate every stored
+        `hashes` blob in build-report.db (hashes_match compares whole dicts)."""
+        meta = {
+            "version": "1.0",
+            "license": "GPLv3",
+            "summary": "Test",
+            "description": "Test pkg",
+            "url": "https://example.com",
+            "source": {"archives": ["https://example.com/test-1.0.tar.gz"]},
+            "build": {"system": "cmake"},
+        }
+        all_packages = {"test-pkg": meta}
+
+        result = compute_input_hashes("test-pkg", meta, all_packages)
+        assert "source_commit" in result
+        assert result["source_commit"] is None

@@ -75,14 +75,6 @@ See also docs/todo.md `# Vendor storage` (TODO-0001–TODO-0007, high priority d
 copr-description -> git commit -> optional push, and is documented (docs/operations.md) as the
 unattended nightly job. Audited end to end 2026-08:
 
-- **BUG-0033** `update-versions.py:pull_submodule()` force-checks-out *every* submodule to
-  upstream HEAD (`git switch -C <branch> origin/<branch>`) regardless of the package's
-  `auto_update.release_type`. `pinned-version`/`pinned-commit`/`pinned-tag` are honoured only in
-  the version-resolution loop further down; the working-tree checkout still moves, and
-  `update-daily`'s `git add submodules/` commits the moved gitlink. "Pinned" pins the version
-  string in packages.yaml, not the source the build actually sees. Latent today (no package uses
-  a `pinned-*` type -- only 4 of 45 declare `release_type` at all), which is exactly why it will
-  bite the first time someone pins something
 - **BUG-0036** Copr preflight is dropped on the `full-cycle` path: `full-cycle.py` calls
   `check_copr_credentials()` and throws away the returned boolean (`stage-copr.py:main()` exits 2
   on the same check), and `validate_copr_repo()` is never called on this path at all -- only in

@@ -35,6 +35,21 @@ History before this file's introduction is not backfilled - see `git log`.
   unbuilt/not-locally-verifiable) before every Copr submission, warning by default and blocking
   under `REQUIRE_CHROOT_COVERAGE=true`. Narrows BUG-0018 to its aarch64 residual (blocked on
   TODO-0024) -- x86_64 chroot-specific failures are now catchable before submission
+- Fixed: `update-versions.py:pull_submodule()` no longer force-moves every submodule to upstream
+  HEAD regardless of `auto_update.release_type` -- a `pinned-tag`/`pinned-commit`/`pinned-version`
+  package now gets its submodule checked out *detached* at `refs/tags/<tag>` /
+  `source.commit.full` / `refs/tags/v<version>` (falling back to the bare `<version>` tag for
+  upstreams that don't use a `v` prefix), and an unresolvable pin leaves the checkout exactly
+  where it is instead of falling back to branch HEAD, so `update-daily`'s `git add submodules/`
+  stops committing a moved gitlink under a package the operator believes is frozen (closes
+  BUG-0033 -- the `update-versions.py:pull_submodule()` one, not the unrelated `.git`-suffix entry
+  reusing that ID lower in this file). A pin also now wins over a moving sibling sharing the same
+  submodule url, safe because version resolution no longer reads the working tree:
+  `lib/gitmodules.py:get_submodule_commit_with_base()` takes a `ref`, so `latest-commit`/default
+  packages resolve `origin/<branch>` instead of whatever HEAD happens to be, and
+  `lib/cache.py:_source_commit()` reads `source.commit.full` from packages.yaml -- the hash the
+  build actually downloads via `%{commit}` -- instead of the live checkout. `git fetch` now passes
+  `--tags` so a pinned tag resolves even when unreachable from the tracked branch
 - Fixed: `lib/cache.py:_source_commit()` now returns `None` for every package except the 3 whose
   `auto_update.release_type` is `latest-commit`/`pinned-commit` (the ones that actually build from
   `%{url}/archive/%{commit}.tar.gz`) instead of hashing the submodule's live checkout for all 45 --
