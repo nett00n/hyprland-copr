@@ -194,7 +194,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- Vladimir nett00n Budylnikov- [github-actions[bot]](https://github.com/github-actions[bot])- Vladimir Budylnikov
+- Vladimir nett00n Budylnikov
 ---
 
 ## Additional Information
