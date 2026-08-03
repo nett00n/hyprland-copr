@@ -66,6 +66,11 @@ _CMAKE_NO_CMAKELISTS_RE = re.compile(
     r'CMake Error: The source directory "([^"]+)" does not appear to contain CMakeLists\.txt'
 )
 
+# ERROR: Neither source directory '.' nor build directory 'redhat-linux-build' contain a build file meson.build.
+_MESON_NO_BUILD_FILE_RE = re.compile(
+    r"ERROR: Neither source directory '([^']*)' nor build directory '([^']*)' contain a build file meson\.build"
+)
+
 # make[1]: gcc: No such file or directory
 _MAKE_MISSING_TOOL_RE = re.compile(
     r"^make\[?\d*\]?:\s+(\S+): No such file or directory"
@@ -386,6 +391,18 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                     lineno,
                     line.strip(),
                     'wrong build_system: "cmake" set but no CMakeLists.txt found — fix build_system in packages.yaml',
+                    "",
+                    "none",
+                )
+            )
+            continue
+        m = _MESON_NO_BUILD_FILE_RE.search(line)
+        if m:
+            issues.append(
+                (
+                    lineno,
+                    line.strip(),
+                    "meson.build not found in extracted source tree — source_dir in packages.yaml does not match the archive's top-level directory, or the tarball/version/fork is wrong (e.g. source predates meson support)",
                     "",
                     "none",
                 )

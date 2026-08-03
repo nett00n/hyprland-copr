@@ -262,6 +262,17 @@ class TestAnalyzeMockBuildLog:
         assert len(issues) == 1
         assert "wrong build_system" in issues[0][2]
 
+    def test_meson_no_build_file(self, tmp_path):
+        """Detect meson error when meson.build is missing from the extracted source tree."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "ERROR: Neither source directory '.' nor build directory "
+            "'redhat-linux-build' contain a build file meson.build.\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        assert len(issues) == 1
+        assert "meson.build not found" in issues[0][2]
+
     def test_cmake_missing_pkgconfig(self, tmp_path):
         """Detect CMake missing package configuration error."""
         log_file = tmp_path / "21-mock-build.log"
