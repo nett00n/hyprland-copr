@@ -24,6 +24,14 @@ History before this file's introduction is not backfilled - see `git log`.
   now rejects any package whose `source.archives[0]` doesn't resolve to an `https://` URL --
   closes docs/todo.md TODO-0001/TODO-0003/TODO-0044/TODO-0055/TODO-0060 and docs/bugs.md
   BUG-0021/BUG-0022/BUG-0026
+- Added: `stage-vendor.py` now checks a content-addressed vendor tarball store
+  (`lib/vendor_store.py`, `.cache/vendor/<pkg>/<input-hash>/`) before running `cargo
+  vendor`/`go mod vendor`, keyed by the same `lib.cache.compute_input_hashes` every other
+  stage's cache uses. Unlike the per-`FEDORA_VERSION` `~/rpmbuild/SOURCES` volume, this store is
+  shared across every target, so `make full-cycle-matrix` vendors a given tree once instead of
+  once per Fedora version. Store entries are recorded in the `artifacts` table under
+  `realm="vendor-store"` and reclaimed by `make db-prune` -- closes docs/todo.md
+  TODO-0002/TODO-0006 and docs/bugs.md BUG-0023
 
 ## 2026-08-02
 

@@ -98,6 +98,15 @@ Add `golang` to `build_requires`. The vendor stage auto-generates
 vendor` pulls in all dependencies (including git sources), and Go checks `vendor/` first with no
 extra config needed.
 
+Before running `go mod vendor`/`cargo vendor`, the stage checks a content-addressed store at
+`.cache/vendor/<pkg>/<input-hash>/` (`lib/vendor_store.py`). The hash covers the same inputs
+every other stage's cache does (source URL, `go_subdir`/`rust_subdir`, patches, dependency
+config) via `lib.cache.compute_input_hashes`, so a hit is reused verbatim and a miss rebuilds and
+re-populates the store. Unlike `~/rpmbuild/SOURCES` (one podman volume per `FEDORA_VERSION`),
+this store is shared across every target, so `make full-cycle-matrix` builds a given vendor tree
+once instead of once per Fedora version. Entries are recorded in the `artifacts` table under
+`realm="vendor-store"` and reclaimed by `make db-prune` like any other artifact.
+
 If `go.mod` isn't at the tarball root (e.g. lives in `cli/`):
 
 ```yaml

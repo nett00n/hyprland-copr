@@ -17,6 +17,11 @@ GITHUB_RELEASE_CACHE = ROOT / "cache" / "github-releases.json"
 BUILD_DB = ROOT / "build-report.db"
 SOURCES_DIR = Path.home() / "rpmbuild" / "SOURCES"
 
+# Content-addressed vendor tarball store (lib/vendor_store.py). Distro/arch-independent
+# by construction -- unlike SOURCES_DIR (one podman volume per FEDORA_VERSION), this
+# lives on the repo's own /work mount, so one entry serves every target.
+VENDOR_STORE_DIR = ROOT / ".cache" / "vendor"
+
 # The build matrix is fedora+x86_64-only today; see docs/todo.md "Build matrix"
 # for what else needs to change before that's not true.
 DISTRO = "fedora"

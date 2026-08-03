@@ -143,6 +143,39 @@ class TestPrune:
 
         assert "Nothing to prune." in capsys.readouterr().out
 
+    def test_vendor_store_entry_removes_whole_directory(self, tmp_path):
+        """A vendor-store row's path is the tarball inside a <pkg>/<hash>/
+        entry dir that also holds meta.json (lib.vendor_store) -- pruning it
+        must reclaim the whole entry, not leave meta.json/an empty dir behind.
+        """
+        import os
+
+        old_dir = tmp_path / "vendor-store" / "pkg" / "hash-old"
+        new_dir = tmp_path / "vendor-store" / "pkg" / "hash-new"
+        old_dir.mkdir(parents=True)
+        new_dir.mkdir(parents=True)
+        (old_dir / "vendor.tar.gz").write_bytes(b"x" * 100)
+        (old_dir / "meta.json").write_text("{}")
+        (new_dir / "vendor.tar.gz").write_bytes(b"x" * 100)
+        (new_dir / "meta.json").write_text("{}")
+        os.utime(old_dir / "vendor.tar.gz", (1, 1))
+        os.utime(new_dir / "vendor.tar.gz", (2, 2))
+        build_db.record_artifact(
+            str(old_dir / "vendor.tar.gz"), "vendor-store", "vendor", "pkg", "vendor-store", "1.0.0"
+        )
+        build_db.record_artifact(
+            str(new_dir / "vendor.tar.gz"), "vendor-store", "vendor", "pkg", "vendor-store", "1.0.0"
+        )
+
+        db_artifacts.prune(confirm=True)
+
+        assert not old_dir.exists()
+        assert new_dir.exists()
+        assert (new_dir / "meta.json").exists()
+        remaining = build_db.artifacts(package="pkg", kind="vendor")
+        assert len(remaining) == 1
+        assert remaining[0]["path"] == str(new_dir / "vendor.tar.gz")
+
 
 class TestReset:
     def test_preserves_artifacts(self, tmp_path, capsys):
