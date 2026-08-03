@@ -4,8 +4,8 @@ bullet); IDs are never reused or renumbered, so deletions leave gaps.
 
 ## Next
 
-- **Vendor storage redesign** (TODO-0001–TODO-0007, below) — corrupts the submodule checkout on
-  the host today, tagged `#high` by design
+- **Vendor storage redesign** (TODO-0002/0004/0005/0006/0007, below) — deferred phases 2/3 of the
+  vendoring refactor; phase 1 (the submodule host-corruption fix) has landed
 - **TODO-0041** — 9 scripts (incl. the pre-commit gate itself) have zero tests, violates the
   project's own TDD rule
 - **TODO-0033** — package add/delete logic lives in untestable Makefile recipes instead of
@@ -15,21 +15,12 @@ bullet); IDs are never reused or renumbered, so deletions leave gaps.
 
 Design flaws in `make stage-vendor`; needs a proper design pass, not a patch:
 
-- **TODO-0001** vendoring must never write inside `submodules/` -> `vendor_rust.py`'s submodule
-  path rmtrees `vendor/`/`.cargo/` in the live checkout and writes `.cargo/config.toml`
-  back into it, as root -> repo working tree trashed, root-owned files, submodule
-  permanently dirty (see docs/bugs.md BUG-0021). Needs a scratch
-  workspace (copy/`git archive` the submodule out first); the submodule must stay
-  read-only input
 - **TODO-0002** no stable vendor artifact store -> today storage is just "a file happens to exist in
   `~/rpmbuild/SOURCES`": no input hashing, no invalidation, no ownership, stale tarballs
   win forever (see docs/bugs.md BUG-0023). Want: one documented location
   keyed by (package, version, target/lang), recorded in the `artifacts` table like
   SRPMs/RPMs, invalidated by the same input hashes the other stages use, GC-able via
   `db-prune`
-- **TODO-0003** Rust source-tarball generation is a hidden second job of the vendor stage
-  (`hyprland-per-window-layout` gets its `%{name}-%{version}.tar.gz` only as this side
-  effect, see docs/bugs.md BUG-0022) -> split out or make explicit in the design above
 - **TODO-0004** nothing verifies vendoring actually worked -> local mock has network (no
   `rpmbuild_networking = False` in `mock-local-repo.conf`), so an incomplete vendor
   tree builds fine locally and only fails on COPR where network is off;
@@ -111,7 +102,6 @@ disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
 - **TODO-0041** 9 top-level scripts have zero tests: format-yaml, gather-requires, list-tags, pkg-build-pop, pkg-log-analysis, rpm-dir-prefixes-convert, set-package-release, sort-yaml-lists, validate-packages -> violates project's own TDD rule; worst offenders are the two regex-based YAML block parsers (sort-yaml-lists.py, rpm-dir-prefixes-convert.py) and validate-packages.py itself (the pre-commit gate) #high
 - **TODO-0042** `scripts/lib/log_analysis.py` (944 lines) is ~30 copy-pasted `if m: issues.append(...); continue` blocks from hand-written regexes -> a data table of (regex, formatter) pairs would cut it by half+ #low
 - **TODO-0043** `vendor_golang.py`/`vendor_rust.py` hand-roll subprocess+log-writing instead of using `lib/subprocess_utils.run_cmd`, which already does exactly that #low
-- **TODO-0044** `vendor.py`/`vendor_golang.py`/`vendor_rust.py` have asymmetric interfaces (Go: dispatcher downloads+extracts then calls generate(src_dir); Rust: generate() does its own download/extract/tarball internally) -> no shared per-language template, drifted independently #low
 - **TODO-0045** 3 YAML modules (`yaml_config.py`, `yaml_utils.py`, `yaml_format.py`) mix PyYAML-load + ruamel-dump inconsistently with no doc on which to use when -> confusing for newcomers #low
 - **TODO-0046** dead code: `lib/reporting.badge()` (only `badge_short()` is used), `lib/yaml_utils.load_packages` alias (only `get_packages` is used) -> remove #low
 - **TODO-0047** `scripts/set-package-release.py` has a redundant manual `sys.path.insert` that no other script needs -> remove #low
@@ -121,12 +111,10 @@ disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
 - **TODO-0052** vendoring is triggered by `build_requires` containing `golang`/`cargo` (two sources of truth with packages.yaml's Source1 + `tar xf %{SOURCE1}`, which must be hand-added and isn't cross-validated) -> silent breakage if the pair drifts #medium
 - **TODO-0053** language selection in `lib/vendor.py` is substring matching on `build_requires` while `lib/detection.py` already detects build systems properly -> a package listing both `golang` and `cargo` silently takes the Rust path (Go is checked first only because of call order) #medium
 - **TODO-0054** dead `except TypeError` Python<3.12 tarfile-filter fallback in `vendor._extract()` #low
-- **TODO-0055** Go vendor path cleans `tmpdir` twice (in the `except` handler and again in `finally`) and can still log "tmpdir kept" after the dir was already deleted -> `keep_tmpdir` doesn't do what it says #low
 - **TODO-0056** `_log_fn`/`_download`/`_extract` in `lib/vendor.py` are underscore-private but imported directly by `vendor_golang.py`/`vendor_rust.py` -> same smell already noted for `pkg-log-analysis.py` above #low
 - **TODO-0057** `_download()` in `lib/vendor.py` reads the whole archive into memory instead of streaming to disk #low
 - **TODO-0058** vendor stage's `log` field is only recorded on the generate path, not the "tarball already exists" skip path -> inconsistent stage rows #low
 - **TODO-0059** `SOURCES_DIR.mkdir()` only happens in `stage-vendor.py:main()`, not in `run_for_package()` -> the `full-cycle.py` path (which calls `run_for_package` directly) relies on the dir already existing #medium
-- **TODO-0060** no test covers `vendor_rust.py`'s submodule branch (the one that mutates the repo working tree, see docs/bugs.md BUG-0021) -> all existing vendor tests exercise the download path only #high
 
 # Daily update
 

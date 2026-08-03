@@ -89,13 +89,12 @@ class TestVendorArtifactRecording:
         sources_dir = tmp_path / "SOURCES"
         sources_dir.mkdir()
 
-        def fake_generate(pkg_name, meta, tarball, log_path=None, submodule_path=None):
+        def fake_generate(pkg_name, meta, tarball, log_path=None):
             tarball.write_bytes(b"vendor-tarball-contents")
 
         with patch.object(stage_vendor, "ROOT", tmp_path), \
              patch.object(stage_vendor, "SOURCES_DIR", sources_dir), \
-             patch.object(stage_vendor, "generate", side_effect=fake_generate), \
-             patch.object(stage_vendor, "parse_gitmodules", return_value=[]):
+             patch.object(stage_vendor, "generate", side_effect=fake_generate):
             result = stage_vendor.run_for_package(pkg, meta, "44", TARGET, run_id)
 
         assert result is True

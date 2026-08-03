@@ -224,8 +224,8 @@ libdwarf-code:
 eww:
   eww-0.6.0.tar.gz:
     url: https://github.com/elkowar/eww/archive/refs/tags/v0.6.0.tar.gz#/eww-0.6.0.tar.gz
-    sha256: d320b9a00ecb92f27d802040cc4165750d8524ae7bf799ba65f709053d9e26ff
-    size: 374098
+    sha256: cef361946946c566b79f8ddc6208d1a3f16b4ff9961439a3f86935e1cfa174a1
+    size: 353440
     recorded: '2026-08-03'
 snappy-switcher:
   snappy-switcher-4.0.0.tar.gz:
@@ -256,4 +256,10 @@ satty:
     url: https://github.com/gabm/satty/archive/refs/tags/v0.22.0.tar.gz#/satty-0.22.0.tar.gz
     sha256: eee18b5f9eabf164da69c7e6e916c98afb78dd296d83e28bb96d9f9636a5fe36
     size: 1054125
+    recorded: '2026-08-03'
+hyprland-per-window-layout:
+  hyprland-per-window-layout-2.8.1.tar.gz:
+    url: https://github.com/coffebar/hyprland-per-window-layout/archive/refs/tags/2.8.1.tar.gz#/hyprland-per-window-layout-2.8.1.tar.gz
+    sha256: 16c32c4189092901a8d4bc140bbf64c93aa0091da76cdda3644d8fa37119ca6b
+    size: 15016
     recorded: '2026-08-03'

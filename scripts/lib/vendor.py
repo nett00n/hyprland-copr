@@ -138,47 +138,39 @@ def generate(
     output: Path,
     log_path: Path | None = None,
     keep_tmpdir: bool = False,
-    submodule_path: Path | None = None,
 ) -> None:
-    """Download source (or use local submodule), run vendor tool, write vendor tarball.
+    """Download source, run the language-specific vendor tool, write vendor tarball.
 
     Dispatches to language-specific vendor implementation.
     Raises VendorError on failure.
     """
-    if is_rust_package(pkg_meta):
-        from lib.vendor_rust import generate as generate_rust
-
-        return generate_rust(
-            pkg_name, pkg_meta, output, log_path, keep_tmpdir, submodule_path
+    rust, go = is_rust_package(pkg_meta), is_go_package(pkg_meta)
+    if rust and go:
+        raise VendorError(
+            f"'{pkg_name}' lists both 'cargo' and 'golang' in build_requires; "
+            "the vendor language is ambiguous"
+        )
+    if rust:
+        from lib.vendor_rust import generate as lang_generate
+    elif go:
+        from lib.vendor_golang import generate as lang_generate
+    else:
+        raise VendorError(
+            f"'{pkg_name}' is not a Go or Rust package (no 'golang' or 'cargo' in build_requires)"
         )
 
-    if is_go_package(pkg_meta):
-        from lib.vendor_golang import generate as generate_go
-
-        source_url = resolve_source_url(pkg_meta, pkg_name)
-        tmpdir = Path(tempfile.mkdtemp(prefix=f"govendor-{pkg_name}-"))
-        try:
-            _log = _log_fn(log_path)
-            _log(f"downloading {source_url}")
-            archive = tmpdir / "source.tar.gz"
-            _download(source_url, archive)
-            verify_download(pkg_name, pkg_meta, source_url, archive)
-            src_dir = _extract(archive, tmpdir)
-            return generate_go(pkg_name, pkg_meta, tmpdir, src_dir, output, log_path)
-        except Exception:
-            # NOTE: tmpdir is removed here unconditionally, even if keep_tmpdir
-            # is set -- the `finally` below then either double-removes it or
-            # logs "tmpdir kept" for a dir that's already gone. keep_tmpdir is
-            # effectively a no-op on the failure path. See docs/todo.md TODO-0055.
+    source_url = resolve_source_url(pkg_meta, pkg_name)
+    tmpdir = Path(tempfile.mkdtemp(prefix=f"vendor-{pkg_name}-"))
+    try:
+        _log = _log_fn(log_path)
+        _log(f"downloading {source_url}")
+        archive = tmpdir / "source.tar.gz"
+        _download(source_url, archive)
+        verify_download(pkg_name, pkg_meta, source_url, archive)
+        src_dir = _extract(archive, tmpdir)
+        return lang_generate(pkg_name, pkg_meta, tmpdir, src_dir, output, log_path)
+    finally:
+        if keep_tmpdir:
+            _log_fn(log_path)(f"tmpdir kept: {tmpdir}")
+        else:
             shutil.rmtree(tmpdir, ignore_errors=True)
-            raise
-        finally:
-            if keep_tmpdir:
-                _log = _log_fn(log_path)
-                _log(f"tmpdir kept: {tmpdir}")
-            elif tmpdir.exists():
-                shutil.rmtree(tmpdir, ignore_errors=True)
-
-    raise VendorError(
-        f"'{pkg_name}' is not a Go or Rust package (no 'golang' or 'cargo' in build_requires)"
-    )

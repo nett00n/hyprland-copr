@@ -123,8 +123,10 @@ Manual generation: `make stage-vendor PACKAGE=<name>`.
 Add `cargo` to `build_requires` for pure crates.io dependencies — `stage-vendor` runs `cargo
 vendor` the same way as Go. Packages with **git** crate dependencies (not resolvable offline)
 instead build those dependencies as separate RPM packages and use system-installed crates, per
-Fedora/COPR convention — see `docs/bugs.md` BUG-0021/BUG-0022 for the known rough edges in the
-current implementation (submodule-path vendoring mutates the live checkout).
+Fedora/COPR convention.
+
+Vendoring always runs against a downloaded, hash-pinned tarball in a scratch tmpdir — it never
+touches `submodules/`, for either language.
 
 ## Release auto-increment
 

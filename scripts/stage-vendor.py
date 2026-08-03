@@ -28,7 +28,7 @@ import sys
 
 from lib import build_db
 from lib.config import setup_logging
-from lib.paths import ARCH, DISTRO, GITMODULES, ROOT, SOURCES_DIR, resolve_target
+from lib.paths import ARCH, DISTRO, ROOT, SOURCES_DIR, resolve_target
 from lib.reporting import status
 from lib.vendor import (
     VendorError,
@@ -38,7 +38,6 @@ from lib.vendor import (
     vendor_tarball_path,
 )
 from lib.version import nvr
-from lib.gitmodules import parse_gitmodules
 from lib.yaml_utils import apply_os_overrides, prepare_stage
 
 
@@ -86,15 +85,7 @@ def run_for_package(
 
     version = str(meta["version"])
     tarball = vendor_tarball_path(pkg, version, SOURCES_DIR)
-
-    # For Rust packages, also check if the source tarball exists
-    is_rust = is_rust_package(meta)
-    source_tarball = None
-    if is_rust:
-        source_tarball = SOURCES_DIR / f"{pkg}-{version}.tar.gz"
-        tarballs_exist = tarball.exists() and source_tarball.exists()
-    else:
-        tarballs_exist = tarball.exists()
+    tarballs_exist = tarball.exists()
 
     def _record_tarballs() -> None:
         # Absolute container paths: SOURCES_DIR is /root/rpmbuild/SOURCES, a
@@ -102,10 +93,6 @@ def run_for_package(
         build_db.record_artifact(
             str(tarball), "rpmbuild-volume", "vendor", pkg, target, ver
         )
-        if source_tarball is not None:
-            build_db.record_artifact(
-                str(source_tarball), "rpmbuild-volume", "vendor", pkg, target, ver
-            )
 
     if tarballs_exist:
         status("vendor", pkg, "ok")
@@ -117,16 +104,7 @@ def run_for_package(
 
     try:
         print(f"  [RUN]  vendor: {pkg}", flush=True)
-        pkg_url = meta.get("url", "").rstrip("/")
-        submodule_path = None
-        submodules = parse_gitmodules(ROOT / GITMODULES)
-        if submodules:
-            for mod in submodules:
-                mod_url = mod.get("url", "").rstrip("/")
-                if pkg_url.removesuffix(".git") == mod_url.removesuffix(".git"):
-                    submodule_path = ROOT / mod.get("path", "")
-                    break
-        generate(pkg, meta, tarball, log_path=log, submodule_path=submodule_path)
+        generate(pkg, meta, tarball, log_path=log)
         status("vendor", pkg, "ok")
         build_db.set_stage(
             pkg,
