@@ -94,7 +94,6 @@ other-deps:
   label: Other dependencies
   packages:
   - aylurs-gtk-shell
-  - cava
   - cpptrace
   - glaze
   - gtk4-layer-shell

@@ -8,6 +8,12 @@ paragraph each. README shows the most recent entries - see
 
 I understood that i've added `*-git` packages just to match solopasha's repo and i did not understand how hard it would really be. `*-git` packages are now removed from repo for now. Maybe i would get back to it in future, bit that's not a promise.
 
+Removed packages:
+- waybar-git
+- hyprland-git
+- hyprland-plugins-git
+- cava - already present in fedora 43, 44, 45
+
 ## 2026-08-01
 
 Big automation update. SQLite is now used to store build-related info instead of plain yaml file.

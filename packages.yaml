@@ -84,43 +84,6 @@ aylurs-gtk-shell:
   summary: Scaffolding CLI for Astal+Gnim
   url: https://github.com/Aylur/ags
   version: 3.1.2
-cava:
-  build:
-    no_lto: true
-    subdir: ''
-    system: cmake
-  build_requires:
-  - alsa-lib-devel
-  - cmake
-  - fftw-devel
-  - gcc-c++
-  - iniparser-devel
-  - jack-audio-connection-kit-devel
-  - make
-  - ncurses-devel
-  - ninja-build
-  - pipewire-devel
-  - portaudio-devel
-  - pulseaudio-libs-devel
-  - sdl2-compat-devel
-  - sndio-devel
-  depends_on:
-  - sndio
-  description: Cross-platform Audio Visualizer E
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  license: MIT
-  release: 5
-  rpm:
-    no_debug_package: true
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    name: ''
-  summary: Cross-platform Audio Visualizer
-  url: https://github.com/karlstav/cava
-  version: 1.0.0
 glaze:
   build:
     commands:

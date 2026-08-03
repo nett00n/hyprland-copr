@@ -11,12 +11,6 @@ aylurs-gtk-shell:
     sha256: 7c9bf38cddfa9661ca3bc70268df0f3124174dad0d6ff85433445816471690f4
     size: 105084
     recorded: '2026-08-02'
-cava:
-  cava-1.0.0.tar.gz:
-    url: https://github.com/karlstav/cava/archive/refs/tags/1.0.0.tar.gz#/cava-1.0.0.tar.gz
-    sha256: 2866cea11d0bd38406924ab2b47d5577f14909a7321ee928b6836391f375af7e
-    size: 3353259
-    recorded: '2026-08-02'
 glaze:
   glaze-7.9.1.tar.gz:
     url: https://github.com/stephenberry/glaze/archive/refs/tags/v7.9.1.tar.gz#/glaze-7.9.1.tar.gz
