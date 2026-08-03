@@ -436,6 +436,14 @@ def forget_package(package: str) -> None:
     conn.commit()
 
 
+def known_packages() -> set[str]:
+    """Return every distinct package name recorded in stage_results or artifacts."""
+    conn = connect()
+    names = {r[0] for r in conn.execute("SELECT DISTINCT package FROM stage_results")}
+    names |= {r[0] for r in conn.execute("SELECT DISTINCT package FROM artifacts")}
+    return names
+
+
 # --- artifacts --------------------------------------------------------------
 
 

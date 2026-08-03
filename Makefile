@@ -274,13 +274,12 @@ add-new: check-image check-venv setup-volumes ## Add submodule from URL and scaf
 	 git config -f .gitmodules submodule.submodules/$$_org/$$_name.ignore dirty || exit 1; \
 	 $(CONTAINER_PYTHON) scripts/scaffold-package.py $$_name || exit 1
 
-delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, logs/build, packages/, submodules, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required, single package only)
+delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, groups.yaml, sources.lock.yaml, build-report.db, logs/build, packages/, submodules, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required, single package only)
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PKG or PACKAGE is required (e.g. PKG=hyprpicker)"; exit 1)
 	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
 	@echo "$(HIGHLIGHT_PREFIX) Removing package '$(PACKAGE)'..."
-	@$(CONTAINER_PYTHON) -c "import yaml; d = yaml.safe_load(open('packages.yaml')); d.pop('$(PACKAGE)', None); open('packages.yaml', 'w').write(yaml.dump(d, sort_keys=False))"
-	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --forget $(PACKAGE)
-	@rm -rf logs/build/$(PACKAGE) packages/$(PACKAGE)
+	@$(CONTAINER_PYTHON) scripts/delete-package.py $(PACKAGE)
+	@rm -rf packages/$(PACKAGE)
 	@_path=$$(git config -f .gitmodules --get-regexp '^submodule\.' | grep -E 'path\s' | grep '/$(PACKAGE)$$' | cut -d' ' -f2); \
 	 if [ -n "$$_path" ]; then \
 	   _sec=$$(git config -f .gitmodules --get-regexp '^submodule\.' | grep -E 'path\s' | grep '/$(PACKAGE)$$' | sed 's/submodule\.\(.*\)\.path.*/\1/'); \
@@ -295,9 +294,10 @@ delete-package: check-image check-venv setup-volumes ## Remove package from pack
 	 fi
 	@for ver in $(SUPPORTED); do \
 	  vol=rpmbuild-$$ver; \
-	  $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $$vol >/dev/null 2>&1 && \
+	  if $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $$vol >/dev/null 2>&1; then \
 	    $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $$vol:/root/rpmbuild:z $(IMAGE_NAME):$$ver \
 	      rm -rf /root/rpmbuild/SOURCES/$(PACKAGE)-* /root/rpmbuild/SRPMS/$(PACKAGE)-* /root/rpmbuild/RPMS/*/$(PACKAGE)-* || exit 1; \
+	  fi; \
 	done
 	@echo "$(HIGHLIGHT_PREFIX) ✓ Removed $(PACKAGE)"
 

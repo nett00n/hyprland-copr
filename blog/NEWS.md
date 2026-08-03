@@ -4,11 +4,15 @@ Maintainer's microblog, informal. Newest first, dated `## YYYY-MM-DD` entries, o
 paragraph each. README shows the most recent entries - see
 `scripts/gen-report.py:get_recent_news()`.
 
+## 2026-08-02
+
+I understood that i've added `*-git` packages just to match solopasha's repo and i did not understand how hard it would really be. `*-git` packages are now removed from repo for now. Maybe i would get back to it in future, bit that's not a promise.
+
 ## 2026-08-01
 
-Big automation update. New packages: snappy switcher, mpvpaper. Switched build-state storage
-instead of using yaml for storing build-related data, the sqlite is now used.
+Big automation update. SQLite is now used to store build-related info instead of plain yaml file.
 Not so simple, but yaml was really messed up and limits architechture.
+New packages: snappy switcher, mpvpaper.
 
 ## 2026-06-30
 

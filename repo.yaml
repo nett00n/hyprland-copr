@@ -14,7 +14,7 @@ description: |
   `nett00n/hyprland` COPR repo provides both official and non-official
   but useful packages to running Hyprland on your Fedora system
 
-  [📎 Officially recommended](https://wiki.hypr.land/Getting-Started/Installation/#packages) repo `solopasha/hyprland` ([📎 Git](https://github.com/solopasha/hyprlandRPM/tree/master), [📎 solopasha/hyprland COPR](https://copr.fedorainfracloud.org/coprs/solopasha/hyprland/)) seems to be abandoned: it has no commits in last 4+ month now
+  [📎 Officially recommended](https://wiki.hypr.land/Getting-Started/Installation/#packages) repo `solopasha/hyprland` ([📎 Git](https://github.com/solopasha/hyprlandRPM/tree/master), [📎 solopasha/hyprland COPR](https://copr.fedorainfracloud.org/coprs/solopasha/hyprland/)) seems to be abandoned
 
   This repository is created with reproduced builds and future support convenience in mind
 
@@ -24,7 +24,7 @@ description: |
   - [📎 Check my hyprland repo on GitHub](https://Github.com/nett00n/hyprland-copr/)
 documents:
   badge_style: for-the-badge
-  news_limit: 8
+  news_limit: 5
   sections:
     news: true
     docs: true

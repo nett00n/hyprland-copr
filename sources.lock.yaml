@@ -1,3 +1,4 @@
+---
 aquamarine:
   aquamarine-0.14.0.tar.gz:
     url: https://github.com/hyprwm/aquamarine/archive/refs/tags/v0.14.0.tar.gz#/aquamarine-0.14.0.tar.gz
@@ -52,12 +53,6 @@ Hyprland:
     sha256: 5beaf05a449328e73a1e93c79042908aeee0fd660ff249bc4a7ef0a91ea5dfac
     size: 50807099
     recorded: '2026-08-02'
-Hyprland-git:
-  hyprland-git-0.56.0^20260802git4d26628.tar.gz:
-    url: https://github.com/hyprwm/Hyprland/archive/4d26628276de580c69be89e734ea89931b121f02.tar.gz#/hyprland-git-0.56.0^20260802git4d26628.tar.gz
-    sha256: 4d5c6411e2b393b2b5e37fc227b7b1cc90c591c4d5d4ed1b43a5b5e800f40e96
-    size: 50806644
-    recorded: '2026-08-02'
 hyprland-guiutils:
   hyprland-guiutils-0.2.2.tar.gz:
     url: https://github.com/hyprwm/hyprland-guiutils/archive/refs/tags/v0.2.2.tar.gz#/hyprland-guiutils-0.2.2.tar.gz
@@ -69,12 +64,6 @@ hyprland-plugins:
     url: https://github.com/hyprwm/hyprland-plugins/archive/b3247839c94ceb76506730841f0b3735feccf37c/hyprland-plugins-b324783.tar.gz
     sha256: e5bd21314eec77173070340b83b867788a106e45b234c02bf86bc1bce65569f2
     size: 32158
-    recorded: '2026-08-02'
-hyprland-plugins-git:
-  hyprland-plugins-git-f2aa598.tar.gz:
-    url: https://github.com/hyprwm/hyprland-plugins/archive/f2aa5984d58df44872c81e6c2d997670a38ff236/hyprland-plugins-git-f2aa598.tar.gz
-    sha256: a87128c4338cf59e94b715781333664c1abd8959dd5d932a9e33430affe7e57a
-    size: 32153
     recorded: '2026-08-02'
 hyprland-protocols:
   hyprland-protocols-0.7.0.tar.gz:
@@ -255,10 +244,4 @@ mpvpaper:
     url: https://github.com/GhostNaN/mpvpaper/archive/refs/tags/1.9.tar.gz#/mpvpaper-1.9.tar.gz
     sha256: 6de941b54941cfd5d00bac62d10ef47c1338f237dac4c78a7185d0f8d30cd4d1
     size: 98030
-    recorded: '2026-08-02'
-Waybar-git:
-  waybar-git-0^20260730gitd44a27a.tar.gz:
-    url: https://github.com/Alexays/Waybar/archive/d44a27af1023b5c68f6f61435ba550bf03f69938.tar.gz#/waybar-git-0^20260730gitd44a27a.tar.gz
-    sha256: 72f36eae212ddd5e79a20a676e9e6503627f42b8a9dd3cb9291474b707aebe94
-    size: 505427
     recorded: '2026-08-02'

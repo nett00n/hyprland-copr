@@ -14,7 +14,7 @@ This repo provides automations for managing COPR repo `nett00n/hyprland`
 `nett00n/hyprland` COPR repo provides both official and non-official
 but useful packages to running Hyprland on your Fedora system
 
-[📎 Officially recommended](https://wiki.hypr.land/Getting-Started/Installation/#packages) repo `solopasha/hyprland` ([📎 Git](https://github.com/solopasha/hyprlandRPM/tree/master), [📎 solopasha/hyprland COPR](https://copr.fedorainfracloud.org/coprs/solopasha/hyprland/)) seems to be abandoned: it has no commits in last 4+ month now
+[📎 Officially recommended](https://wiki.hypr.land/Getting-Started/Installation/#packages) repo `solopasha/hyprland` ([📎 Git](https://github.com/solopasha/hyprlandRPM/tree/master), [📎 solopasha/hyprland COPR](https://copr.fedorainfracloud.org/coprs/solopasha/hyprland/)) seems to be abandoned
 
 This repository is created with reproduced builds and future support convenience in mind
 
@@ -26,11 +26,15 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-08-02
+
+I understood that i've added `*-git` packages just to match solopasha's repo and i did not understand how hard it would really be. `*-git` packages are now removed from repo for now. Maybe i would get back to it in future, bit that's not a promise.
+
 ### 2026-08-01
 
-Big automation update. New packages: snappy switcher, mpvpaper. Switched build-state storage
-instead of using yaml for storing build-related data, the sqlite is now used.
+Big automation update. SQLite is now used to store build-related info instead of plain yaml file.
 Not so simple, but yaml was really messed up and limits architechture.
+New packages: snappy switcher, mpvpaper.
 
 ### 2026-06-30
 
@@ -51,31 +55,6 @@ I think i can plan a cronjob to really check for updates nightly. I started this
 Cool, i guess
 
 PS. Spec file now contains versions of build requirements for better debugging
-
-### 2026-04-05
-
-Added Waybar, cliphist, uwsm, quickshell. Refactored the main script, added log levels and
-tests, more automatic error detection. Cargo vendoring is still a mess - not tackling it yet.
-
-### 2026-03-21
-
-Moved the build report to its own page with more detail and COPR's native build badge. Added
-build-signature caching to drastically cut rebuild counts, sped up scheduled builds with
-detached COPR submissions, more errors auto-highlighted now.
-
-### 2026-03-15
-
-Switched from toolbox to Podman/Docker for better isolation. Merged the split YAML report into
-one, made it update gradually, improved the version-update submodule, made vendoring
-conditional, added `SKIP_PACKAGES`.
-
-### 2026-03-10
-
-I have decided not to support Fedora 42 in this repository.
-Compilation of Hyprland and some of it's componens needs to increase C++ compiler version.
-Also Fedora would not provide security updates for this versions after May.
-I don't think it worth it to spend time on this support.
-I would recommend to update to Fedora 43 in this case.
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/blog/NEWS.md)
 
@@ -103,10 +82,8 @@ I would recommend to update to Fedora 43 in this case.
 
 - `hypridle` — An idle management daemon for Hyprland
 - `hyprland` — A Modern C++ Wayland Compositor
-- `hyprland-git` — A Modern C++ Wayland Compositor [Built from latest commit, unstable]
 - `hyprland-guiutils` — Hyprland GUI utilities
 - `hyprland-plugins` — Official plugins for Hyprland
-- `hyprland-plugins-git` — Official plugins for Hyprland [Built from latest commit, unstable]
 - `hyprland-qt-support` — A qml style provider for hypr* qt apps
 - `hyprlauncher` — A multipurpose and versatile launcher / picker for Hyprland
 - `hyprlock` — A gpu-accelerated screen lock for Hyprland
@@ -157,7 +134,6 @@ I would recommend to update to Fedora 43 in this case.
 - `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
 - `uwsm` — Universal Wayland Session Manager
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
-- `waybar-git` — Highly customizable Wayland bar for Sway and Wlroots based compositors [Built from latest commit, unstable]
 
 ### Other dependencies
 
@@ -172,7 +148,7 @@ I would recommend to update to Fedora 43 in this case.
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-08-02
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-08-03
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->
@@ -218,7 +194,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- [github-actions[bot]](https://github.com/github-actions[bot])- Vladimir Budylnikov- Vladimir nett00n Budylnikov
+- Vladimir nett00n Budylnikov- [github-actions[bot]](https://github.com/github-actions[bot])- Vladimir Budylnikov
 ---
 
 ## Additional Information
