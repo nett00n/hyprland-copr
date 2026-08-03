@@ -178,3 +178,7 @@
 	path = submodules/LukashonakV/cava
 	url = https://github.com/LukashonakV/cava
 	ignore = dirty
+[submodule "submodules/gabm/satty"]
+	path = submodules/gabm/satty
+	url = https://github.com/gabm/satty
+	ignore = dirty

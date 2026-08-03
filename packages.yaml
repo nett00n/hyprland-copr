@@ -1816,3 +1816,52 @@ libcava-v0:
   summary: cava built as a shared library
   url: https://github.com/LukashonakV/cava
   version: 0.10.7
+satty:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
+  build_requires:
+  - cargo
+  - cargo-rpm-macros
+  - desktop-file-utils
+  - pkgconfig(cairo-gobject)
+  - pkgconfig(epoxy)
+  - pkgconfig(fontconfig)
+  - pkgconfig(gtk4)
+  - pkgconfig(libadwaita-1)
+  - rustc
+  depends_on: []
+  description: |
+    Satty is a screenshot annotation tool inspired by Swappy and Flameshot.
+
+    Satty has been created to provide the following improvements over existing screenshot annotation tools:
+
+        - very simple and easy to understand toolset (like Swappy)
+        - fullscreen annotation mode and post shot cropping (like Flameshot)
+        - extremely smooth rendering thanks to HW acceleration (OpenGL)
+        - working on wlroots based compositors (Sway, Hyprland, River, ...)
+        - minimal, modern looking UI, thanks to GTK and Adwaita
+        - be a playground for new features (post window selection, post paint editing, ...)
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - "%{_bindir}/satty"
+  license: MPL-2.0
+  release: 4
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+    name: Satty
+  summary: Satty - Modern Screenshot Annotation
+  url: https://github.com/gabm/satty
+  version: 0.22.0

@@ -251,3 +251,9 @@ libcava-v0:
     sha256: 50cc6413e9c96c503657f814744a2baf429a24ff9fed31a8343e0ed285269eff
     size: 3341992
     recorded: '2026-08-03'
+satty:
+  satty-0.22.0.tar.gz:
+    url: https://github.com/gabm/satty/archive/refs/tags/v0.22.0.tar.gz#/satty-0.22.0.tar.gz
+    sha256: eee18b5f9eabf164da69c7e6e916c98afb78dd296d83e28bb96d9f9636a5fe36
+    size: 1054125
+    recorded: '2026-08-03'
