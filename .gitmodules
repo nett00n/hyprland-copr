@@ -174,3 +174,7 @@
 	path = submodules/GhostNaN/mpvpaper
 	url = https://github.com/GhostNaN/mpvpaper
 	ignore = dirty
+[submodule "submodules/LukashonakV/cava"]
+	path = submodules/LukashonakV/cava
+	url = https://github.com/LukashonakV/cava
+	ignore = dirty

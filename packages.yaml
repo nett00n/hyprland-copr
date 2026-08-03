@@ -1170,7 +1170,7 @@ sndio:
   - '%{_prefix}/lib64/libsndio.so*'
   - '%{_prefix}/share/man/*/*.gz'
   license: ISC
-  release: 6
+  release: 8
   rpm:
     no_debug_package: false
   source:
@@ -1182,7 +1182,7 @@ sndio:
 Waybar:
   build:
     commands:
-    - '%meson -Dcava=disabled'
+    - '%meson'
     - '%meson_build'
     system: meson
   build_requires:
@@ -1190,6 +1190,7 @@ Waybar:
   - gcc-c++
   - gpsd-devel
   - jack-audio-connection-kit-devel
+  - libcava-v0-devel
   - libdbusmenu-gtk3-devel
   - libevdev-devel
   - libinput-devel
@@ -1217,11 +1218,10 @@ Waybar:
   - upower-devel
   - wireplumber-devel
   depends_on:
+  - libcava-v0
   - sndio
   description: |
     Highly customizable Wayland bar for Sway and Wlroots based compositors
-
-    Note: cava integration is disabled temporary. I am stuck with trying to fix it
   devel:
     files: []
   files:
@@ -1232,7 +1232,7 @@ Waybar:
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 7
+  release: 13
   rpm:
     buildarch: ''
     no_debug_package: false
@@ -1715,3 +1715,104 @@ mpvpaper:
   summary: A video wallpaper program for wlroots based wayland compositors.
   url: https://github.com/GhostNaN/mpvpaper
   version: 1.9
+libcava:
+  build:
+    commands:
+    - '%meson -Dbuild_target=lib -Dcava_font=false'
+    - '%meson_build'
+    no_lto: true
+    system: meson
+  build_requires:
+  - alsa-lib-devel
+  - cmake
+  - fftw-devel
+  - gcc-c++
+  - iniparser-devel
+  - jack-audio-connection-kit-devel
+  - libglvnd-devel
+  - make
+  - meson
+  - ncurses-devel
+  - ninja-build
+  - pipewire-devel
+  - portaudio-devel
+  - pulseaudio-libs-devel
+  - sdl2-compat-devel
+  - sndio-devel
+  depends_on:
+  - sndio
+  description: |
+    Fork of cava providing it as a shared library, e.g. used by waybar.
+    Cava is not provided as an executable.
+  devel:
+    files:
+    - '%{_includedir}/cava/'
+    - '%{_libdir}/libcava.so'
+    - '%{_libdir}/pkgconfig/libcava.pc'
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_libdir}/libcava.so.*'
+  license: MIT
+  release: 3
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  source_dir: cava-%{version}
+  summary: Fork of cava providing it as a shared library
+  url: https://github.com/LukashonakV/cava
+  version: 1.0.0
+libcava-v0:
+  auto_update:
+    release_type: pinned-tag
+  build:
+    commands:
+    - '%meson -Dbuild_target=lib -Dcava_font=false'
+    - '%meson_build'
+    no_lto: true
+    system: meson
+  build_requires:
+  - alsa-lib-devel
+  - cmake
+  - fftw-devel
+  - gcc-c++
+  - iniparser-devel
+  - jack-audio-connection-kit-devel
+  - libglvnd-devel
+  - make
+  - meson
+  - ncurses-devel
+  - ninja-build
+  - pipewire-devel
+  - portaudio-devel
+  - pulseaudio-libs-devel
+  - sdl2-compat-devel
+  - sndio-devel
+  depends_on:
+  - sndio
+  description: |
+    cava built as a shared library, e.g. used by waybar.
+    Cava is not provided as an executable.
+  devel:
+    files:
+    - '%{_includedir}/cava/'
+    - '%{_libdir}/libcava.so'
+    - '%{_libdir}/pkgconfig/libcava.pc'
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_libdir}/libcava.so.*'
+  license: MIT
+  release: 5
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  source_dir: cava-%{version}
+  source_name: cava
+  summary: cava built as a shared library
+  url: https://github.com/LukashonakV/cava
+  version: 0.10.7

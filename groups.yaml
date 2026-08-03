@@ -97,5 +97,7 @@ other-deps:
   - cpptrace
   - glaze
   - gtk4-layer-shell
+  - libcava
+  - libcava-v0
   - libdwarf-code
   - sndio
