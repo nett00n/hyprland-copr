@@ -12,6 +12,39 @@ entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
 
 History before this file's introduction is not backfilled - see `git log`.
 
+## 2026-08-03
+
+- Fixed: vendoring (`make stage-vendor`) can no longer write inside `submodules/`. The
+  `hyprland-per-window-layout` submodule-vendor path (the only package that used it) is deleted;
+  the package now points `source.archives[0]` at a real tag-archive URL, hash-pinned in
+  `sources.lock.yaml` like every other package. Go and Rust vendoring now share one
+  download/verify/extract path in `lib/vendor.py`, dispatching to `lib/vendor_golang.py`/
+  `lib/vendor_rust.py` from a scratch tmpdir; a package listing both `golang` and `cargo` in
+  `build_requires` now fails loudly instead of silently taking the Rust path. `lib/validation.py`
+  now rejects any package whose `source.archives[0]` doesn't resolve to an `https://` URL --
+  closes docs/todo.md TODO-0001/TODO-0003/TODO-0044/TODO-0055/TODO-0060 and docs/bugs.md
+  BUG-0021/BUG-0022/BUG-0026
+- Added: `stage-vendor.py` now checks a content-addressed vendor tarball store
+  (`lib/vendor_store.py`, `.cache/vendor/<pkg>/<input-hash>/`) before running `cargo
+  vendor`/`go mod vendor`, keyed by the same `lib.cache.compute_input_hashes` every other
+  stage's cache uses. Unlike the per-`FEDORA_VERSION` `~/rpmbuild/SOURCES` volume, this store is
+  shared across every target, so `make full-cycle-matrix` vendors a given tree once instead of
+  once per Fedora version. Store entries are recorded in the `artifacts` table under
+  `realm="vendor-store"` and reclaimed by `make db-prune` -- closes docs/todo.md
+  TODO-0002/TODO-0006 and docs/bugs.md BUG-0023
+- Added: `make stage-mock` now runs mock with `rpmbuild_networking=False`/`use_host_resolv=False`,
+  reproducing COPR's offline `%build` step locally, so an incomplete vendor tree fails locally
+  instead of only on COPR -- closes docs/todo.md TODO-0004
+- Added: `stage-vendor` now fails a Rust package's vendor stage if `cargo vendor` produces any
+  crate without a registry checksum (`.cargo-checksum.json`'s `"package": null`, the signature of
+  a git/path source unresolvable offline) instead of reporting success and letting the build fail
+  two stages later -- closes docs/todo.md TODO-0005
+- Added: `lib/toolchain.py` compares a vendored package's `go.mod` `toolchain` directive or
+  `Cargo.toml` `rust-version` (vendoring runs against the container's own `go`/`cargo`) against
+  what the target Fedora release's repos would install into the mock chroot, via `dnf repoquery`,
+  and fails the vendor stage loud on skew instead of letting the chroot build fail offline later
+  -- closes docs/todo.md TODO-0007
+
 ## 2026-08-02
 
 - Fixed: `update-daily` now runs `make stage-log-analyze` after `readme` (tolerant of its

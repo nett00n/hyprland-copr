@@ -4,244 +4,262 @@ aquamarine:
     url: https://github.com/hyprwm/aquamarine/archive/refs/tags/v0.14.0.tar.gz#/aquamarine-0.14.0.tar.gz
     sha256: 5dcf0b17f7dd51539fd7e79d68484f04240b3b63cf9f5f21d5b6dea0088168f9
     size: 100795
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 aylurs-gtk-shell:
   aylurs-gtk-shell-3.1.2.tar.gz:
     url: https://github.com/Aylur/ags/archive/refs/tags/v3.1.2.tar.gz#/aylurs-gtk-shell-3.1.2.tar.gz
     sha256: 7c9bf38cddfa9661ca3bc70268df0f3124174dad0d6ff85433445816471690f4
     size: 105084
-    recorded: '2026-08-02'
-cava:
-  cava-1.0.0.tar.gz:
-    url: https://github.com/karlstav/cava/archive/refs/tags/1.0.0.tar.gz#/cava-1.0.0.tar.gz
-    sha256: 2866cea11d0bd38406924ab2b47d5577f14909a7321ee928b6836391f375af7e
-    size: 3353259
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 glaze:
   glaze-7.9.1.tar.gz:
     url: https://github.com/stephenberry/glaze/archive/refs/tags/v7.9.1.tar.gz#/glaze-7.9.1.tar.gz
     sha256: d6dee391276f5375672c35d06058e4fd8f1f30f62bae163a004b3bd13a4e2ae3
     size: 1840415
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 gtk4-layer-shell:
   gtk4-layer-shell-1.3.0.tar.gz:
     url: https://github.com/wmww/gtk4-layer-shell/archive/refs/tags/v1.3.0.tar.gz#/gtk4-layer-shell-1.3.0.tar.gz
     sha256: 1ebb01ab14e98afd1727f68f64981c37bd23305b1f131f5667c02b94cf593192
     size: 79405
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprcursor:
   hyprcursor-0.1.13.tar.gz:
     url: https://github.com/hyprwm/hyprcursor/archive/refs/tags/v0.1.13.tar.gz#/hyprcursor-0.1.13.tar.gz
     sha256: 82af8b2ce27242ffdd6baebaa71b3f6c8665dc25c52bfcfccc16912622896af8
     size: 28681
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprgraphics:
   hyprgraphics-0.5.1.tar.gz:
     url: https://github.com/hyprwm/hyprgraphics/archive/refs/tags/v0.5.1.tar.gz#/hyprgraphics-0.5.1.tar.gz
     sha256: 861ecaad872835922dd5745a612d7a4cc7bfc4babb1d06bc92bc63c2ac013b74
     size: 459969
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hypridle:
   hypridle-0.1.8.tar.gz:
     url: https://github.com/hyprwm/hypridle/archive/refs/tags/v0.1.8.tar.gz#/hypridle-0.1.8.tar.gz
     sha256: 08703613cc33cc796c2179bcaa6076e8618113f67b938daaf7535f90c7d39595
     size: 19972
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 Hyprland:
   hyprland-0.56.1.tar.gz:
     url: https://github.com/hyprwm/Hyprland/archive/refs/tags/v0.56.1.tar.gz#/hyprland-0.56.1.tar.gz
     sha256: 5beaf05a449328e73a1e93c79042908aeee0fd660ff249bc4a7ef0a91ea5dfac
     size: 50807099
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprland-guiutils:
   hyprland-guiutils-0.2.2.tar.gz:
     url: https://github.com/hyprwm/hyprland-guiutils/archive/refs/tags/v0.2.2.tar.gz#/hyprland-guiutils-0.2.2.tar.gz
     sha256: 16f92a6c5a22ac58e1fc313f6b202c188da45e804e1f21ff57dfd0da5c1a01b7
     size: 18083
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprland-plugins:
   hyprland-plugins-b324783.tar.gz:
     url: https://github.com/hyprwm/hyprland-plugins/archive/b3247839c94ceb76506730841f0b3735feccf37c/hyprland-plugins-b324783.tar.gz
     sha256: e5bd21314eec77173070340b83b867788a106e45b234c02bf86bc1bce65569f2
     size: 32158
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprland-protocols:
   hyprland-protocols-0.7.0.tar.gz:
     url: https://github.com/hyprwm/hyprland-protocols/archive/refs/tags/v0.7.0.tar.gz#/hyprland-protocols-0.7.0.tar.gz
     sha256: ee419006d7cd20927b9b7c8b5fc430571c151b0385d600508de1a7957294498c
     size: 11543
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprland-qt-support:
   hyprland-qt-support-0.1.0.tar.gz:
     url: https://github.com/hyprwm/hyprland-qt-support/archive/refs/tags/v0.1.0.tar.gz#/hyprland-qt-support-0.1.0.tar.gz
     sha256: cac1f980bd088b890097f3f999cfdf03e73ee94c53f3c92d0b3bc23baa9e7b2c
     size: 12955
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprlang:
   hyprlang-0.6.8.tar.gz:
     url: https://github.com/hyprwm/hyprlang/archive/refs/tags/v0.6.8.tar.gz#/hyprlang-0.6.8.tar.gz
     sha256: d10a0778b646e04d83e8b90cc0f764fb96958c01a15c3c0678d95a40fc647ed5
     size: 63562
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprlauncher:
   hyprlauncher-0.1.6.tar.gz:
     url: https://github.com/hyprwm/hyprlauncher/archive/refs/tags/v0.1.6.tar.gz#/hyprlauncher-0.1.6.tar.gz
     sha256: f02f93584e1017d7a466d0cafed910f630be39eba6b433922e645c834c4abf59
     size: 45754
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprlock:
   hyprlock-0.9.6.tar.gz:
     url: https://github.com/hyprwm/hyprlock/archive/refs/tags/v0.9.6.tar.gz#/hyprlock-0.9.6.tar.gz
     sha256: 7f653b87765bcfff7c1f8e04af326a7e73bbcacd1fb7d4436f6a16624a2247bb
     size: 85275
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprpaper:
   hyprpaper-0.8.4.tar.gz:
     url: https://github.com/hyprwm/hyprpaper/archive/refs/tags/v0.8.4.tar.gz#/hyprpaper-0.8.4.tar.gz
     sha256: 4912c7aede303918f38a3fc6b294429e2d541b639ebba67bcab58d1d367ea360
     size: 23340
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprpicker:
   hyprpicker-0.4.7.tar.gz:
     url: https://github.com/hyprwm/hyprpicker/archive/refs/tags/v0.4.7.tar.gz#/hyprpicker-0.4.7.tar.gz
     sha256: cde02b92abe372187c9d59a7cb2ca07ede5c3e1a8c81ed8b209dc0d3ac5f0339
     size: 28295
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprpolkitagent:
   hyprpolkitagent-0.1.3.tar.gz:
     url: https://github.com/hyprwm/hyprpolkitagent/archive/refs/tags/v0.1.3.tar.gz#/hyprpolkitagent-0.1.3.tar.gz
     sha256: a8fa714b92d47331f056b608cb731dd1f5cc3845a9109cb22c6e6eb55b4eac84
     size: 32857
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprpwcenter:
   hyprpwcenter-0.1.2.tar.gz:
     url: https://github.com/hyprwm/hyprpwcenter/archive/refs/tags/v0.1.2.tar.gz#/hyprpwcenter-0.1.2.tar.gz
     sha256: ab4cfd4710566b07e98973d6723c24802d95774aa9c02aca839ff03e3bf09659
     size: 167968
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprqt6engine:
   hyprqt6engine-0.1.0.tar.gz:
     url: https://github.com/hyprwm/hyprqt6engine/archive/refs/tags/v0.1.0.tar.gz#/hyprqt6engine-0.1.0.tar.gz
     sha256: e52692168faa51a53e6f05c12114e79ead76787045668c65d41225a13a318f62
     size: 11780
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 Hyprshot:
   1.3.0.tar.gz:
     url: https://github.com/Gustash/Hyprshot/archive/refs/tags/1.3.0.tar.gz
     sha256: 315bdbe66ee473d811b9af8447bd32124e84d873396ef8ab5ac3f040294f6739
     size: 16381
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprshutdown:
   hyprshutdown-0.1.1.tar.gz:
     url: https://github.com/hyprwm/hyprshutdown/archive/refs/tags/v0.1.1.tar.gz#/hyprshutdown-0.1.1.tar.gz
     sha256: 32adb385b7bfe22398d45cd5325416bf0ac3ae4a5bd89678353dae96f92ba638
     size: 148143
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprsunset:
   hyprsunset-0.4.0.tar.gz:
     url: https://github.com/hyprwm/hyprsunset/archive/refs/tags/v0.4.0.tar.gz#/hyprsunset-0.4.0.tar.gz
     sha256: 5980e65ec650010e36c52e5f5acc0df9fd2d20051c63b89305bdc13276f237a6
     size: 15401
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprsysteminfo:
   hyprsysteminfo-0.2.0.tar.gz:
     url: https://github.com/hyprwm/hyprsysteminfo/archive/refs/tags/v0.2.0.tar.gz#/hyprsysteminfo-0.2.0.tar.gz
     sha256: 4f875e7e986deeda35c05090b59f11f3b5802cac8863dafcc6e8251ea37530b1
     size: 107360
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprtoolkit:
   hyprtoolkit-0.5.4.tar.gz:
     url: https://github.com/hyprwm/hyprtoolkit/archive/refs/tags/v0.5.4.tar.gz#/hyprtoolkit-0.5.4.tar.gz
     sha256: 2fb59789f231c1c4e9154ceffc1e7524c0cae154807c0d57e6166806255b570f
     size: 577766
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprutils:
   hyprutils-0.14.0.tar.gz:
     url: https://github.com/hyprwm/hyprutils/archive/refs/tags/v0.14.0.tar.gz#/hyprutils-0.14.0.tar.gz
     sha256: b4af2177ede4ca3e1bb0ffff10348f82d776b911dd1e64fe693edd8ec9488101
     size: 63150
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprwayland-scanner:
   hyprwayland-scanner-0.4.6.tar.gz:
     url: https://github.com/hyprwm/hyprwayland-scanner/archive/refs/tags/v0.4.6.tar.gz#/hyprwayland-scanner-0.4.6.tar.gz
     sha256: 05f55fd1a20d8ca81b5030980fdb7c87147749230145bdb3745af2741d617f5c
     size: 11509
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 hyprwire:
   hyprwire-0.3.1.tar.gz:
     url: https://github.com/hyprwm/hyprwire/archive/refs/tags/v0.3.1.tar.gz#/hyprwire-0.3.1.tar.gz
     sha256: 92a673d40ae6a7d66fbcd0a34ec071e026e17eaeeb0040c3375e4b2a80dba737
     size: 53928
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 pyprland:
   pyprland-3.4.3.tar.gz:
     url: https://github.com/hyprland-community/pyprland/archive/refs/tags/3.4.3.tar.gz#/pyprland-3.4.3.tar.gz
     sha256: ebe3e2a31754719641327bd15ec6b1612abff2c8c6fc4d1fd34d85172217b096
     size: 1514655
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 sndio:
   sndio-1.10.0.tar.gz:
     url: https://sndio.org/sndio-1.10.0.tar.gz
     sha256: bebd3bfd01c50c9376cf3e7814b9379bed9e17d0393b5113b7eb7a3d0d038c54
     size: 162725
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 Waybar:
   waybar-0.15.0.tar.gz:
     url: https://github.com/Alexays/Waybar/archive/refs/tags/0.15.0.tar.gz#/waybar-0.15.0.tar.gz
     sha256: 21c2bbef88c40473c355003582f9331d2f9b8a01efdcce0935edfc5f6b023a3e
     size: 355671
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 xdg-desktop-portal-hyprland:
   xdg-desktop-portal-hyprland-1.4.1.tar.gz:
     url: https://github.com/hyprwm/xdg-desktop-portal-hyprland/archive/refs/tags/v1.4.1.tar.gz#/xdg-desktop-portal-hyprland-1.4.1.tar.gz
     sha256: 3652c14f63a9666acea2c841e196782dbc0f74ea5b4783622dd04a32f08b709f
     size: 60223
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 cliphist:
   cliphist-0.7.0.tar.gz:
     url: https://github.com/sentriz/cliphist/archive/refs/tags/v0.7.0.tar.gz#/cliphist-0.7.0.tar.gz
     sha256: 8d7dc7b4495e5812b5613274c250ba5d3900933d78888ce7921c01247f191cc8
     size: 27363
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 uwsm:
   uwsm-0.26.6.tar.gz:
     url: https://github.com/Vladimir-csp/uwsm/archive/refs/tags/v0.26.6.tar.gz#/uwsm-0.26.6.tar.gz
     sha256: 7e74f501c1eceeee19a7feb44a8294ba2e7ffdb93232fddfbfae73ba45fc9c6a
     size: 113245
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 quickshell:
   v0.3.0.tar.gz:
     url: https://git.outfoxxed.me/quickshell/quickshell/archive/refs/tags/v0.3.0.tar.gz
     sha256: f4821f9084cab04bd2b5384cc92b9726aecc4ce3eb27200dca24edc67da3b6e5
     size: 498069
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 cpptrace:
   cpptrace-1.0.4.tar.gz:
     url: https://github.com/jeremy-rifkin/cpptrace/archive/refs/tags/v1.0.4.tar.gz#/cpptrace-1.0.4.tar.gz
     sha256: 5c9f5b301e903714a4d01f1057b9543fa540f7bfcc5e3f8bd1748e652e24f9ea
     size: 494169
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 libdwarf-code:
   libdwarf-code-2.3.2.tar.gz:
     url: https://github.com/davea42/libdwarf-code/archive/refs/tags/v2.3.2.tar.gz#/libdwarf-code-2.3.2.tar.gz
     sha256: 7be0e6e17847b503317ed11ebf28668e6300b198cae3ec36cfe9126767c3be27
     size: 4406346
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 eww:
   eww-0.6.0.tar.gz:
     url: https://github.com/elkowar/eww/archive/refs/tags/v0.6.0.tar.gz#/eww-0.6.0.tar.gz
-    sha256: d320b9a00ecb92f27d802040cc4165750d8524ae7bf799ba65f709053d9e26ff
-    size: 374098
-    recorded: '2026-08-02'
+    sha256: cef361946946c566b79f8ddc6208d1a3f16b4ff9961439a3f86935e1cfa174a1
+    size: 353440
+    recorded: '2026-08-03'
 snappy-switcher:
   snappy-switcher-4.0.0.tar.gz:
     url: https://github.com/OpalAayan/snappy-switcher/archive/refs/tags/v4.0.0.tar.gz#/snappy-switcher-4.0.0.tar.gz
     sha256: 51e4d521057e1302e2c7f27f8f013c5fb91d99448a783aeea98aff4305d9d8fc
     size: 11002734
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
 mpvpaper:
   mpvpaper-1.9.tar.gz:
     url: https://github.com/GhostNaN/mpvpaper/archive/refs/tags/1.9.tar.gz#/mpvpaper-1.9.tar.gz
     sha256: 6de941b54941cfd5d00bac62d10ef47c1338f237dac4c78a7185d0f8d30cd4d1
     size: 98030
-    recorded: '2026-08-02'
+    recorded: '2026-08-03'
+libcava:
+  libcava-1.0.0.tar.gz:
+    url: https://github.com/LukashonakV/cava/archive/refs/tags/1.0.0.tar.gz#/libcava-1.0.0.tar.gz
+    sha256: 437df0a29e52e555357a06238f4c5cbe6d51b5dd4225700cb7adbb19d8bb9474
+    size: 3360785
+    recorded: '2026-08-03'
+libcava-v0:
+  libcava-v0-0.10.7.tar.gz:
+    url: https://github.com/LukashonakV/cava/archive/refs/tags/0.10.7.tar.gz#/libcava-v0-0.10.7.tar.gz
+    sha256: 50cc6413e9c96c503657f814744a2baf429a24ff9fed31a8343e0ed285269eff
+    size: 3341992
+    recorded: '2026-08-03'
+satty:
+  satty-0.22.0.tar.gz:
+    url: https://github.com/gabm/satty/archive/refs/tags/v0.22.0.tar.gz#/satty-0.22.0.tar.gz
+    sha256: eee18b5f9eabf164da69c7e6e916c98afb78dd296d83e28bb96d9f9636a5fe36
+    size: 1054125
+    recorded: '2026-08-03'
+hyprland-per-window-layout:
+  hyprland-per-window-layout-2.8.1.tar.gz:
+    url: https://github.com/coffebar/hyprland-per-window-layout/archive/refs/tags/2.8.1.tar.gz#/hyprland-per-window-layout-2.8.1.tar.gz
+    sha256: 16c32c4189092901a8d4bc140bbf64c93aa0091da76cdda3644d8fa37119ca6b
+    size: 15016
+    recorded: '2026-08-03'

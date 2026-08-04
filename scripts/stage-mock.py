@@ -243,10 +243,23 @@ def run_for_package(
         )
         return True
 
-    cmd = ["mock", "-r", target, "--rebuild", srpm_path]
+    # rpmbuild_networking/use_host_resolv off: reproduce COPR's offline %build
+    # step locally (docs/todo.md TODO-0004), so an incomplete vendor tree fails
+    # here instead of only on COPR. Dep resolution (dnf install of BuildRequires)
+    # happens before %build and is unaffected -- it uses --addrepo below plus
+    # the chroot's configured Fedora repos, not this networking flag.
+    cmd = [
+        "mock",
+        "-r",
+        target,
+        "--config-opts",
+        "rpmbuild_networking=False",
+        "--config-opts",
+        "use_host_resolv=False",
+    ]
     if (LOCAL_REPO / "repodata").exists():
-        cmd.insert(3, "--addrepo")
-        cmd.insert(4, f"file://{LOCAL_REPO}")
+        cmd += ["--addrepo", f"file://{LOCAL_REPO}"]
+    cmd += ["--rebuild", srpm_path]
     print(f"  [RUN]  mock: {pkg}", flush=True)
     ok, _, _ = run_cmd(cmd, log)
     # Copies build.log/root.log/state.log to logs/build/<pkg>/, then records

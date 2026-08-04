@@ -98,6 +98,15 @@ Add `golang` to `build_requires`. The vendor stage auto-generates
 vendor` pulls in all dependencies (including git sources), and Go checks `vendor/` first with no
 extra config needed.
 
+Before running `go mod vendor`/`cargo vendor`, the stage checks a content-addressed store at
+`.cache/vendor/<pkg>/<input-hash>/` (`lib/vendor_store.py`). The hash covers the same inputs
+every other stage's cache does (source URL, `go_subdir`/`rust_subdir`, patches, dependency
+config) via `lib.cache.compute_input_hashes`, so a hit is reused verbatim and a miss rebuilds and
+re-populates the store. Unlike `~/rpmbuild/SOURCES` (one podman volume per `FEDORA_VERSION`),
+this store is shared across every target, so `make full-cycle-matrix` builds a given vendor tree
+once instead of once per Fedora version. Entries are recorded in the `artifacts` table under
+`realm="vendor-store"` and reclaimed by `make db-prune` like any other artifact.
+
 If `go.mod` isn't at the tarball root (e.g. lives in `cli/`):
 
 ```yaml
@@ -123,8 +132,21 @@ Manual generation: `make stage-vendor PACKAGE=<name>`.
 Add `cargo` to `build_requires` for pure crates.io dependencies — `stage-vendor` runs `cargo
 vendor` the same way as Go. Packages with **git** crate dependencies (not resolvable offline)
 instead build those dependencies as separate RPM packages and use system-installed crates, per
-Fedora/COPR convention — see `docs/bugs.md` BUG-0021/BUG-0022 for the known rough edges in the
-current implementation (submodule-path vendoring mutates the live checkout).
+Fedora/COPR convention. `stage-vendor` fails the vendor stage itself if `cargo vendor` produces
+any crate without a registry checksum (`.cargo-checksum.json`'s `"package"` is `null`) — the
+signature of a git/path source — rather than letting the build fail two stages later in the
+offline mock chroot.
+
+Vendoring always runs against a downloaded, hash-pinned tarball in a scratch tmpdir — it never
+touches `submodules/`, for either language.
+
+`make stage-mock` disables `rpmbuild_networking`/`use_host_resolv` for the local chroot, so an
+incomplete vendor tree fails locally instead of only on COPR.
+
+`stage-vendor` also fails loud on toolchain skew: a `go.mod` `toolchain` directive or a
+`Cargo.toml` `rust-version` is compared (via `dnf repoquery`) against what the target Fedora
+release would actually install into the mock chroot, since vendoring runs against the
+container's own `go`/`cargo`, not the chroot's.
 
 ## Release auto-increment
 

@@ -84,43 +84,6 @@ aylurs-gtk-shell:
   summary: Scaffolding CLI for Astal+Gnim
   url: https://github.com/Aylur/ags
   version: 3.1.2
-cava:
-  build:
-    no_lto: true
-    subdir: ''
-    system: cmake
-  build_requires:
-  - alsa-lib-devel
-  - cmake
-  - fftw-devel
-  - gcc-c++
-  - iniparser-devel
-  - jack-audio-connection-kit-devel
-  - make
-  - ncurses-devel
-  - ninja-build
-  - pipewire-devel
-  - portaudio-devel
-  - pulseaudio-libs-devel
-  - sdl2-compat-devel
-  - sndio-devel
-  depends_on:
-  - sndio
-  description: Cross-platform Audio Visualizer E
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  license: MIT
-  release: 5
-  rpm:
-    no_debug_package: true
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    name: ''
-  summary: Cross-platform Audio Visualizer
-  url: https://github.com/karlstav/cava
-  version: 1.0.0
 glaze:
   build:
     commands:
@@ -1207,7 +1170,7 @@ sndio:
   - '%{_prefix}/lib64/libsndio.so*'
   - '%{_prefix}/share/man/*/*.gz'
   license: ISC
-  release: 6
+  release: 8
   rpm:
     no_debug_package: false
   source:
@@ -1219,7 +1182,7 @@ sndio:
 Waybar:
   build:
     commands:
-    - '%meson -Dcava=disabled'
+    - '%meson'
     - '%meson_build'
     system: meson
   build_requires:
@@ -1227,6 +1190,7 @@ Waybar:
   - gcc-c++
   - gpsd-devel
   - jack-audio-connection-kit-devel
+  - libcava-v0-devel
   - libdbusmenu-gtk3-devel
   - libevdev-devel
   - libinput-devel
@@ -1254,11 +1218,10 @@ Waybar:
   - upower-devel
   - wireplumber-devel
   depends_on:
+  - libcava-v0
   - sndio
   description: |
     Highly customizable Wayland bar for Sway and Wlroots based compositors
-
-    Note: cava integration is disabled temporary. I am stuck with trying to fix it
   devel:
     files: []
   files:
@@ -1269,7 +1232,7 @@ Waybar:
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 7
+  release: 13
   rpm:
     buildarch: ''
     no_debug_package: false
@@ -1518,7 +1481,7 @@ hyprland-per-window-layout:
     no_debug_package: false
   source:
     archives:
-    - '%{name}-%{version}.tar.gz'
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
     - '%{name}-%{version}-vendor.tar.gz'
     source_dir: '%{name}-%{version}'
   summary: Per-window keyboard layout daemon for Hyprland
@@ -1752,3 +1715,153 @@ mpvpaper:
   summary: A video wallpaper program for wlroots based wayland compositors.
   url: https://github.com/GhostNaN/mpvpaper
   version: 1.9
+libcava:
+  build:
+    commands:
+    - '%meson -Dbuild_target=lib -Dcava_font=false'
+    - '%meson_build'
+    no_lto: true
+    system: meson
+  build_requires:
+  - alsa-lib-devel
+  - cmake
+  - fftw-devel
+  - gcc-c++
+  - iniparser-devel
+  - jack-audio-connection-kit-devel
+  - libglvnd-devel
+  - make
+  - meson
+  - ncurses-devel
+  - ninja-build
+  - pipewire-devel
+  - portaudio-devel
+  - pulseaudio-libs-devel
+  - sdl2-compat-devel
+  - sndio-devel
+  depends_on:
+  - sndio
+  description: |
+    Fork of cava providing it as a shared library, e.g. used by waybar.
+    Cava is not provided as an executable.
+  devel:
+    files:
+    - '%{_includedir}/cava/'
+    - '%{_libdir}/libcava.so'
+    - '%{_libdir}/pkgconfig/libcava.pc'
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_libdir}/libcava.so.*'
+  license: MIT
+  release: 3
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  source_dir: cava-%{version}
+  summary: Fork of cava providing it as a shared library
+  url: https://github.com/LukashonakV/cava
+  version: 1.0.0
+libcava-v0:
+  auto_update:
+    release_type: pinned-tag
+  build:
+    commands:
+    - '%meson -Dbuild_target=lib -Dcava_font=false'
+    - '%meson_build'
+    no_lto: true
+    system: meson
+  build_requires:
+  - alsa-lib-devel
+  - cmake
+  - fftw-devel
+  - gcc-c++
+  - iniparser-devel
+  - jack-audio-connection-kit-devel
+  - libglvnd-devel
+  - make
+  - meson
+  - ncurses-devel
+  - ninja-build
+  - pipewire-devel
+  - portaudio-devel
+  - pulseaudio-libs-devel
+  - sdl2-compat-devel
+  - sndio-devel
+  depends_on:
+  - sndio
+  description: |
+    cava built as a shared library, e.g. used by waybar.
+    Cava is not provided as an executable.
+  devel:
+    files:
+    - '%{_includedir}/cava/'
+    - '%{_libdir}/libcava.so'
+    - '%{_libdir}/pkgconfig/libcava.pc'
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_libdir}/libcava.so.*'
+  license: MIT
+  release: 5
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  source_dir: cava-%{version}
+  source_name: cava
+  summary: cava built as a shared library
+  url: https://github.com/LukashonakV/cava
+  version: 0.10.7
+satty:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
+  build_requires:
+  - cargo
+  - cargo-rpm-macros
+  - desktop-file-utils
+  - pkgconfig(cairo-gobject)
+  - pkgconfig(epoxy)
+  - pkgconfig(fontconfig)
+  - pkgconfig(gtk4)
+  - pkgconfig(libadwaita-1)
+  - rustc
+  depends_on: []
+  description: |
+    Satty is a screenshot annotation tool inspired by Swappy and Flameshot.
+
+    Satty has been created to provide the following improvements over existing screenshot annotation tools:
+
+        - very simple and easy to understand toolset (like Swappy)
+        - fullscreen annotation mode and post shot cropping (like Flameshot)
+        - extremely smooth rendering thanks to HW acceleration (OpenGL)
+        - working on wlroots based compositors (Sway, Hyprland, River, ...)
+        - minimal, modern looking UI, thanks to GTK and Adwaita
+        - be a playground for new features (post window selection, post paint editing, ...)
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/satty'
+  license: MPL-2.0
+  release: 4
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+    name: Satty
+  summary: Satty - Modern Screenshot Annotation
+  url: https://github.com/gabm/satty
+  version: 0.22.0

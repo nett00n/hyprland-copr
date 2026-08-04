@@ -331,7 +331,7 @@ def run_build_pipeline(
                 )
             )
             result = _stage["stage-vendor"].run_for_package(
-                pkg, meta, fedora_version, target, run_id
+                pkg, meta, fedora_version, target, run_id, all_packages
             )
             if result is False:
                 build_db.finalize_stage(

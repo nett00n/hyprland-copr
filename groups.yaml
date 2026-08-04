@@ -58,7 +58,6 @@ hyprland-deps:
 other-apps:
   label: Useful apps
   packages:
-  - Waybar
   - ashell
   - cliphist
   - cliphist-git
@@ -67,8 +66,10 @@ other-apps:
   - mpvpaper
   - pyprland
   - quickshell
+  - satty
   - snappy-switcher
   - uwsm
+  - Waybar
   packages_from_global_repo:
   - name: swaybg
     summary: Great utility if all you want is one simple static wallpaper
@@ -94,9 +95,10 @@ other-deps:
   label: Other dependencies
   packages:
   - aylurs-gtk-shell
-  - cava
   - cpptrace
   - glaze
   - gtk4-layer-shell
+  - libcava
+  - libcava-v0
   - libdwarf-code
   - sndio

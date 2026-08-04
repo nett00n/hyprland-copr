@@ -309,3 +309,88 @@ class TestVerifyDownload:
             verify_download("pkg", self.META, "https://evil.example.com/x.tar.gz", archive)
 
 
+class TestGenerateDispatch:
+    """Dispatcher coverage: download -> verify_download -> extract -> language
+    module, tmpdir removed afterwards, for both languages -- plus the
+    both-languages-listed guard.
+    """
+
+    def _meta(self, build_requires):
+        return {
+            "build_requires": build_requires,
+            "url": "https://example.com/pkg",
+            "version": "1.0.0",
+            "source": {"archives": ["https://example.com/pkg-1.0.0.tar.gz"]},
+        }
+
+    def test_dispatches_go_package(self, tmp_path):
+        output = tmp_path / "out-vendor.tar.gz"
+        created_tmpdir = tmp_path / "vendor-tmp"
+        created_tmpdir.mkdir()
+        src_dir = created_tmpdir / "src"
+        meta = self._meta(["golang"])
+
+        with patch("lib.vendor.tempfile.mkdtemp", return_value=str(created_tmpdir)), \
+             patch("lib.vendor._download") as mock_download, \
+             patch("lib.vendor.verify_download") as mock_verify, \
+             patch("lib.vendor._extract", return_value=src_dir) as mock_extract, \
+             patch("lib.vendor_golang.generate") as mock_go_generate:
+            generate("test-pkg", meta, output)
+
+        mock_download.assert_called_once()
+        mock_verify.assert_called_once()
+        mock_extract.assert_called_once()
+        mock_go_generate.assert_called_once_with(
+            "test-pkg", meta, created_tmpdir, src_dir, output, None, fedora_version=None
+        )
+        assert not created_tmpdir.exists()
+
+    def test_dispatches_rust_package(self, tmp_path):
+        output = tmp_path / "out-vendor.tar.gz"
+        created_tmpdir = tmp_path / "vendor-tmp"
+        created_tmpdir.mkdir()
+        src_dir = created_tmpdir / "src"
+        meta = self._meta(["cargo"])
+
+        with patch("lib.vendor.tempfile.mkdtemp", return_value=str(created_tmpdir)), \
+             patch("lib.vendor._download") as mock_download, \
+             patch("lib.vendor.verify_download") as mock_verify, \
+             patch("lib.vendor._extract", return_value=src_dir) as mock_extract, \
+             patch("lib.vendor_rust.generate") as mock_rust_generate:
+            generate("test-pkg", meta, output)
+
+        mock_download.assert_called_once()
+        mock_verify.assert_called_once()
+        mock_extract.assert_called_once()
+        mock_rust_generate.assert_called_once_with(
+            "test-pkg", meta, created_tmpdir, src_dir, output, None, fedora_version=None
+        )
+        assert not created_tmpdir.exists()
+
+    def test_both_languages_raises(self, tmp_path):
+        meta = self._meta(["golang", "cargo"])
+        with pytest.raises(VendorError, match="ambiguous"):
+            generate("test-pkg", meta, tmp_path / "out.tar.gz")
+
+    def test_neither_language_raises(self, tmp_path):
+        meta = self._meta(["cmake"])
+        with pytest.raises(VendorError, match="not a Go or Rust package"):
+            generate("test-pkg", meta, tmp_path / "out.tar.gz")
+
+
+class TestNoSubmoduleAccess:
+    """Vendoring always downloads a hash-verified tarball into a scratch
+    tmpdir; nothing here may read or write the live submodules/ checkout
+    (see docs/todo.md TODO-0001, TODO-0060).
+    """
+
+    @pytest.mark.parametrize(
+        "relative_path",
+        ["lib/vendor.py", "lib/vendor_rust.py", "lib/vendor_golang.py", "stage-vendor.py"],
+    )
+    def test_module_never_mentions_submodule(self, relative_path):
+        module_path = Path(__file__).parent.parent / "scripts" / relative_path
+        text = module_path.read_text()
+        assert "submodule" not in text.lower()
+
+

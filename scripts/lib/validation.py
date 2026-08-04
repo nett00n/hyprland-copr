@@ -59,6 +59,7 @@ def validate_package(
         errors.append("missing required field: source.archives")
     else:
         from lib.source_lock import load_lock, remote_sources
+        from lib.spec_utils import process_archive_urls
 
         pkg_lock = load_lock().get(name, {})
         missing = [
@@ -70,6 +71,23 @@ def validate_package(
             warnings.append(
                 f"no sources.lock.yaml entry for: {', '.join(missing)} -- "
                 f"run: make refresh-checksums PACKAGE={name} (see docs/bugs.md BUG-0025)"
+            )
+
+        # archives[0] must resolve to a downloadable URL -- later entries may
+        # be bare filenames (that's how vendor tarballs are referenced), but
+        # a bare entry 0 silently defeats spectool (see docs/bugs.md BUG-0026).
+        source = meta.get("source", {}) or {}
+        processed = process_archive_urls(
+            source.get("archives", []),
+            meta.get("url", ""),
+            name,
+            source.get("commit") if isinstance(source.get("commit"), dict) else None,
+            str(meta.get("version", "")),
+        )
+        first = str(processed[0]).strip('"') if processed else ""
+        if not first.startswith("https://"):
+            errors.append(
+                f"source.archives[0] must be a downloadable URL (https://...), got: {first!r}"
             )
 
     # Deprecated debuginfo section

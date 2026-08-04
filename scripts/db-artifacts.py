@@ -2,9 +2,9 @@
 """Report and reclaim disk space tracked in build-report.db's artifacts table.
 
 Must be run inside the rpm toolbox container: recorded paths are the same
-absolute container paths used when the artifact was written (SRPMs/vendor
-tarballs under /root/rpmbuild, RPMs/logs under /work), and only resolve
-correctly with the same volumes mounted.
+absolute container paths used when the artifact was written (SRPMs/per-target
+vendor tarballs under /root/rpmbuild, RPMs/logs/the vendor store under /work),
+and only resolve correctly with the same volumes mounted.
 
 Usage:
   db-artifacts.py --usage
@@ -14,6 +14,7 @@ Usage:
 """
 
 import argparse
+import shutil
 from pathlib import Path
 
 from lib import build_db
@@ -94,7 +95,11 @@ def prune(confirm: bool) -> None:
             print(f"  {action}: {stale['path']} ({_human_size(size)})")
             if confirm:
                 path = Path(stale["path"])
-                if path.exists():
+                if stale["realm"] == "vendor-store":
+                    # The whole <pkg>/<input-hash>/ entry (tarball + meta.json)
+                    # is store-owned; nothing else references it.
+                    shutil.rmtree(path.parent, ignore_errors=True)
+                elif path.exists():
                     path.unlink()
                 build_db.delete_artifact(stale["realm"], stale["path"])
             reclaimed += size

@@ -138,10 +138,6 @@
 	path = submodules/git/sndio
 	url = https://sndio.org/git/sndio
 	ignore = dirty
-[submodule "submodules/karlstav/cava"]
-	path = submodules/karlstav/cava
-	url = https://github.com/karlstav/cava
-	ignore = dirty
 [submodule "submodules/sentriz/cliphist"]
 	path = submodules/sentriz/cliphist
 	url = https://github.com/sentriz/cliphist
@@ -177,4 +173,12 @@
 [submodule "submodules/GhostNaN/mpvpaper"]
 	path = submodules/GhostNaN/mpvpaper
 	url = https://github.com/GhostNaN/mpvpaper
+	ignore = dirty
+[submodule "submodules/LukashonakV/cava"]
+	path = submodules/LukashonakV/cava
+	url = https://github.com/LukashonakV/cava
+	ignore = dirty
+[submodule "submodules/gabm/satty"]
+	path = submodules/gabm/satty
+	url = https://github.com/gabm/satty
 	ignore = dirty

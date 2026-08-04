@@ -81,6 +81,13 @@ class TestSrpmArtifactRecording:
 
 
 class TestVendorArtifactRecording:
+    @pytest.fixture(autouse=True)
+    def vendor_store_dir(self, tmp_path, monkeypatch):
+        """Isolate lib.vendor_store's content-addressed cache under tmp_path --
+        otherwise these tests would read/write the real repo's .cache/vendor/.
+        """
+        monkeypatch.setattr(paths, "VENDOR_STORE_DIR", tmp_path / "vendor-store")
+
     def test_freshly_generated_tarball_recorded(self, tmp_path, run_id):
         pkg = "test-pkg"
         meta = {"version": "1.0.0", "build_requires": ["golang"], "url": "https://example.com/pkg"}
@@ -89,20 +96,20 @@ class TestVendorArtifactRecording:
         sources_dir = tmp_path / "SOURCES"
         sources_dir.mkdir()
 
-        def fake_generate(pkg_name, meta, tarball, log_path=None, submodule_path=None):
+        def fake_generate(pkg_name, meta, tarball, log_path=None, fedora_version=None):
             tarball.write_bytes(b"vendor-tarball-contents")
 
         with patch.object(stage_vendor, "ROOT", tmp_path), \
              patch.object(stage_vendor, "SOURCES_DIR", sources_dir), \
-             patch.object(stage_vendor, "generate", side_effect=fake_generate), \
-             patch.object(stage_vendor, "parse_gitmodules", return_value=[]):
+             patch.object(stage_vendor, "generate", side_effect=fake_generate):
             result = stage_vendor.run_for_package(pkg, meta, "44", TARGET, run_id)
 
         assert result is True
         artifacts = build_db.artifacts(package=pkg, kind="vendor")
-        assert len(artifacts) == 1
-        assert artifacts[0]["realm"] == "rpmbuild-volume"
-        assert artifacts[0]["size_bytes"] == len(b"vendor-tarball-contents")
+        by_realm = {a["realm"]: a for a in artifacts}
+        assert len(artifacts) == 2
+        assert by_realm["rpmbuild-volume"]["size_bytes"] == len(b"vendor-tarball-contents")
+        assert by_realm["vendor-store"]["size_bytes"] == len(b"vendor-tarball-contents")
 
     def test_cached_tarball_still_recorded(self, tmp_path, run_id):
         """Even when the tarball already exists (skip-regenerate path), it's recorded."""
@@ -124,6 +131,7 @@ class TestVendorArtifactRecording:
         assert result is True
         artifacts = build_db.artifacts(package=pkg, kind="vendor")
         assert len(artifacts) == 1
+        assert artifacts[0]["realm"] == "rpmbuild-volume"
         assert artifacts[0]["size_bytes"] == len(b"already-here")
 
     def test_not_vendored_package_records_nothing(self, tmp_path, run_id):
@@ -135,6 +143,43 @@ class TestVendorArtifactRecording:
 
         assert result is True
         assert build_db.artifacts(package=pkg) == []
+
+    def test_vendor_store_hit_skips_generate(self, tmp_path, run_id):
+        """A second target (e.g. fedora-43 after fedora-44 already vendored the
+        same content) must copy from the store instead of re-running
+        cargo/go mod vendor -- this is the whole point of TODO-0006.
+        """
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "build_requires": ["golang"], "url": "https://example.com/pkg"}
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+        sources_dir_44 = tmp_path / "SOURCES-44"
+        sources_dir_44.mkdir()
+        sources_dir_43 = tmp_path / "SOURCES-43"
+        sources_dir_43.mkdir()
+        build_db.set_stage(pkg, "spec", "fedora-43-x86_64", run_id, "success")
+
+        def fake_generate(pkg_name, meta, tarball, log_path=None, fedora_version=None):
+            tarball.write_bytes(b"vendor-tarball-contents")
+
+        with patch.object(stage_vendor, "ROOT", tmp_path), \
+             patch.object(stage_vendor, "SOURCES_DIR", sources_dir_44), \
+             patch.object(stage_vendor, "generate", side_effect=fake_generate):
+            stage_vendor.run_for_package(pkg, meta, "44", "fedora-44-x86_64", run_id)
+
+        with patch.object(stage_vendor, "ROOT", tmp_path), \
+             patch.object(stage_vendor, "SOURCES_DIR", sources_dir_43), \
+             patch.object(stage_vendor, "generate") as mock_generate:
+            result = stage_vendor.run_for_package(pkg, meta, "43", "fedora-43-x86_64", run_id)
+
+        assert result is True
+        mock_generate.assert_not_called()
+        from lib.vendor import vendor_tarball_path
+
+        copied = vendor_tarball_path(pkg, "1.0.0", sources_dir_43)
+        assert copied.read_bytes() == b"vendor-tarball-contents"
+        vendor_entry = build_db.get_stage(pkg, "vendor", "fedora-43-x86_64")
+        assert vendor_entry["reason"] == "vendor-store hit"
 
 
 class TestMissingSrpmArtifactGuard:

@@ -156,6 +156,8 @@ def cache_miss_reason(
         - "SKIP_MOCK" / "SKIP_COPR" — env var skip (full-cycle.py)
         - "config: skip" — fedora:<ver>: skip: true in packages.yaml (stage scripts)
         - "not-vendored" — vendor skipped, package is not Go/Rust (stage-vendor.py)
+        - "vendor-store hit" — vendor tarball copied from the content-addressed
+          store (lib/vendor_store.py) instead of rebuilt (stage-vendor.py)
         - "spec failed" — spec stage failed (vendor/srpm downstream) (stage scripts)
         - "source verify failed" — downloaded source file has no entry in, or
           doesn't match, sources.lock.yaml (stage-srpm.py, see docs/bugs.md BUG-0025)

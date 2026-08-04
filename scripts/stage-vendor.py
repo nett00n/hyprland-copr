@@ -11,6 +11,10 @@ Supports: Go (go mod vendor) and Rust (cargo vendor).
 Skips packages where the spec stage failed.
 Skips packages that don't require vendoring.
 Skips packages whose vendor tarball already exists at the expected path.
+Otherwise, checks the content-addressed vendor store (lib/vendor_store.py,
+.cache/vendor/) before running `cargo vendor`/`go mod vendor` -- a hit there
+is copied into place instead of rebuilt, since that store is shared across
+every FEDORA_VERSION target.
 
 Must be run with network access (before entering the mock chroot).
 
@@ -24,11 +28,12 @@ Environment variables:
 
 import logging
 import os
+import shutil
 import sys
 
-from lib import build_db
+from lib import build_db, vendor_store
 from lib.config import setup_logging
-from lib.paths import ARCH, DISTRO, GITMODULES, ROOT, SOURCES_DIR, resolve_target
+from lib.paths import ARCH, DISTRO, ROOT, SOURCES_DIR, resolve_target
 from lib.reporting import status
 from lib.vendor import (
     VendorError,
@@ -38,8 +43,12 @@ from lib.vendor import (
     vendor_tarball_path,
 )
 from lib.version import nvr
-from lib.gitmodules import parse_gitmodules
 from lib.yaml_utils import apply_os_overrides, prepare_stage
+
+# Sentinel target/realm for the content-addressed vendor store (lib/vendor_store.py):
+# one entry serves every real target, so it's recorded outside the per-target
+# rpmbuild-volume namespace those rows otherwise live in.
+_VENDOR_STORE_REALM = "vendor-store"
 
 
 def run_for_package(
@@ -48,11 +57,16 @@ def run_for_package(
     fedora_version: str,
     target: str,
     run_id: int,
+    all_packages: dict | None = None,
 ) -> bool:
     """Run vendoring for a single package. Return True on success/skip, False on failure.
 
-    Writes the vendor stage row for `pkg`.
+    Writes the vendor stage row for `pkg`. `all_packages` feeds the vendor
+    store's input hash (lib.cache.compute_input_hashes) the same package
+    universe every other stage's cache uses; defaults to just `{pkg: meta}`
+    for standalone callers/tests that don't have it handy.
     """
+    all_packages = all_packages if all_packages is not None else {pkg: meta}
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
         print(f"  [skip] {pkg} (fedora:{fedora_version} skip)")
@@ -86,15 +100,7 @@ def run_for_package(
 
     version = str(meta["version"])
     tarball = vendor_tarball_path(pkg, version, SOURCES_DIR)
-
-    # For Rust packages, also check if the source tarball exists
-    is_rust = is_rust_package(meta)
-    source_tarball = None
-    if is_rust:
-        source_tarball = SOURCES_DIR / f"{pkg}-{version}.tar.gz"
-        tarballs_exist = tarball.exists() and source_tarball.exists()
-    else:
-        tarballs_exist = tarball.exists()
+    tarballs_exist = tarball.exists()
 
     def _record_tarballs() -> None:
         # Absolute container paths: SOURCES_DIR is /root/rpmbuild/SOURCES, a
@@ -102,10 +108,18 @@ def run_for_package(
         build_db.record_artifact(
             str(tarball), "rpmbuild-volume", "vendor", pkg, target, ver
         )
-        if source_tarball is not None:
-            build_db.record_artifact(
-                str(source_tarball), "rpmbuild-volume", "vendor", pkg, target, ver
-            )
+
+    def _record_store(store_path) -> None:
+        # One row per (pkg, input-hash), shared across every target -- see
+        # lib/vendor_store.py.
+        build_db.record_artifact(
+            str(store_path),
+            _VENDOR_STORE_REALM,
+            "vendor",
+            pkg,
+            _VENDOR_STORE_REALM,
+            version,
+        )
 
     if tarballs_exist:
         status("vendor", pkg, "ok")
@@ -115,18 +129,30 @@ def run_for_package(
         _record_tarballs()
         return True
 
+    store_hit = vendor_store.find(pkg, meta, all_packages)
+    if store_hit is not None:
+        print(f"  [HIT]  vendor store: {pkg}", flush=True)
+        tarball.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(store_hit, tarball)
+        status("vendor", pkg, "ok")
+        build_db.set_stage(
+            pkg,
+            "vendor",
+            target,
+            run_id,
+            "success",
+            version=ver,
+            path=str(tarball),
+            reason="vendor-store hit",
+        )
+        _record_tarballs()
+        _record_store(store_hit)
+        return True
+
     try:
         print(f"  [RUN]  vendor: {pkg}", flush=True)
-        pkg_url = meta.get("url", "").rstrip("/")
-        submodule_path = None
-        submodules = parse_gitmodules(ROOT / GITMODULES)
-        if submodules:
-            for mod in submodules:
-                mod_url = mod.get("url", "").rstrip("/")
-                if pkg_url.removesuffix(".git") == mod_url.removesuffix(".git"):
-                    submodule_path = ROOT / mod.get("path", "")
-                    break
-        generate(pkg, meta, tarball, log_path=log, submodule_path=submodule_path)
+        generate(pkg, meta, tarball, log_path=log, fedora_version=fedora_version)
+        store_path = vendor_store.store(pkg, meta, all_packages, tarball)
         status("vendor", pkg, "ok")
         build_db.set_stage(
             pkg,
@@ -139,6 +165,7 @@ def run_for_package(
             log=str(log.relative_to(ROOT)),
         )
         _record_tarballs()
+        _record_store(store_path)
         return True
     except VendorError as exc:
         status("vendor", pkg, "fail")
@@ -176,7 +203,7 @@ def main() -> None:
     failed = False
     print("\n=== vendor ===")
     for pkg, meta in packages.items():
-        if not run_for_package(pkg, meta, fedora_version, target, run_id):
+        if not run_for_package(pkg, meta, fedora_version, target, run_id, packages):
             failed = True
 
     build_db.finish_run(run_id, "failed" if failed else "ok")

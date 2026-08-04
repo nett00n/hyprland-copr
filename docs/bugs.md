@@ -26,15 +26,9 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
 
 ## stage-vendor
 
-See also docs/todo.md `# Vendor storage` (TODO-0001–TODO-0007, high priority design item).
-
 - **BUG-0019** `make stage-vendor` doesn't forward `MOCK_CHROOT` (nor `SKIP_PACKAGES`) into the container, but `stage-vendor.py` reads both -> with a `MOCK_CHROOT` override, vendor rows land under a different `target` than `stage-mock`/`full-cycle` use #medium
 - **BUG-0020** `full-cycle.py` never calls `prepare_stage()` for the vendor stage, and its vendor branch treats a stored `state == "skipped"` as cached -> a vendor row skipped once with reason "spec failed" is permanent; after the spec is fixed the tarball is never generated and srpm later fails on the missing Source1 #high
-- **BUG-0021** `vendor_rust.generate()`'s submodule path mutates the checked-out submodule in the repo working tree: `rmtree`s `vendor/` and `.cargo/` under `submodules/...`, then writes `.cargo/config.toml` there. Container runs as root -> root-owned files on the host and a permanently dirty submodule #high
-- **BUG-0022** same function's source-tarball side effect: `if not source_tarball.exists()` never refreshes a stale tarball once created; the file walk skips any path component named `vendor`/`.cargo`/`.git`/`__pycache__` (drops legit upstream dirs with those names) but not `target/`; only regular files are added, so symlinks/permissions/empty dirs are lost; and it packs whatever commit the submodule happens to be on, unverified against the `version` field in packages.yaml #medium
-- **BUG-0023** vendor idempotence is "output tarball exists on disk" only -- no input hashing like every other stage. Editing `go_subdir`, the source url, or patches without bumping `version` reuses a stale tarball forever #medium
 - **BUG-0024** `go mod vendor` / `cargo vendor` run with no timeout at all; the Makefile forwards `CMD_TIMEOUT` and nothing on the vendor path reads it -> a hung vendor invocation blocks `update-daily` indefinitely #high
-- **BUG-0026** `hyprland-per-window-layout`'s `source.archives[0]` is a bare filename (`%{name}-%{version}.tar.gz`), not a URL -- it only resolves because the Rust submodule vendor path produces that tarball as an undocumented side effect; without the submodule present, `_download()` would be handed a non-URL #medium
 - **BUG-0027** `stage-vendor.py:run_for_package` records a missing spec row (`spec_entry is None`) with reason "spec failed" (misleading -- there was no spec run at all), and doesn't special-case spec `state == "skipped"` #low
 - **BUG-0028** `eww` extracts its vendor tarball twice: an explicit `tar xf %{SOURCE1}` in `build.prep` in packages.yaml *and* `stage-spec.py`'s auto-inject for any cargo package whose `archives[1]` contains "vendor" #low
 - **BUG-0029** that auto-inject (`stage-spec.py`) is cargo-only, positional (`archives[1]`), and substring-matched -> reordering sources, or a Go package with the same two-source layout, silently gets no extraction #low

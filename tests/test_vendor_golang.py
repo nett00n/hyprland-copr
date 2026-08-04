@@ -257,3 +257,48 @@ class TestGenerate:
 
             # Verify rmtree was called to remove the old vendor directory
             mock_rmtree.assert_called_once()
+
+
+class TestToolchainSkewIntegration:
+    """Test the TODO-0007 fedora_version wiring."""
+
+    @patch("lib.vendor_golang.subprocess.run")
+    def test_skew_blocks_before_go_mod_vendor(self, mock_run, tmp_path):
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "go.mod").write_text("module foo\n\ntoolchain go1.99.0\n")
+        version_result = MagicMock()
+        version_result.returncode = 0
+        mock_run.return_value = version_result
+
+        with patch("lib.vendor_golang.go_toolchain_skew", return_value="skew detected"):
+            with pytest.raises(VendorError, match="skew detected"):
+                generate(
+                    "pkg",
+                    {},
+                    tmp_path,
+                    src_dir,
+                    tmp_path / "out.tar.gz",
+                    fedora_version="43",
+                )
+        # go version only -- go mod vendor was never reached.
+        assert mock_run.call_count == 1
+
+    def test_no_fedora_version_skips_check(self, tmp_path):
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "go.mod").write_text("module foo")
+        with patch("lib.vendor_golang.go_toolchain_skew") as mock_skew:
+            with patch("lib.vendor_golang.subprocess.run") as mock_run, patch(
+                "lib.vendor_golang.tarfile.open"
+            ), patch("lib.vendor_golang.shutil.rmtree"):
+                version_result = MagicMock()
+                version_result.returncode = 0
+                vendor_result = MagicMock()
+                vendor_result.returncode = 0
+                vendor_result.stdout = ""
+                vendor_result.stderr = ""
+                mock_run.side_effect = [version_result, vendor_result]
+                (src_dir / "vendor").mkdir()
+                generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
+        mock_skew.assert_not_called()
