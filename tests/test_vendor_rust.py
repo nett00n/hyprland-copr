@@ -322,3 +322,108 @@ class TestGenerate:
         assert cargo_call[0][0][0] == "cargo"
         assert cargo_call[0][0][1] == "vendor"
         assert str(vendor_dir) in cargo_call[0][0]
+
+
+class TestGitSourceCrateScan:
+    """Test the TODO-0005 git-source-crate rejection."""
+
+    @patch("lib.vendor_rust.shutil.rmtree")
+    @patch("lib.vendor_rust.subprocess.run")
+    def test_git_source_crate_rejected(self, mock_run, mock_rmtree, tmp_path):
+        version_result = MagicMock()
+        version_result.returncode = 0
+        vendor_result = MagicMock()
+        vendor_result.returncode = 0
+        vendor_result.stdout = ""
+        vendor_result.stderr = ""
+        mock_run.side_effect = [version_result, vendor_result]
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "Cargo.toml").write_text("[package]")
+        vendor_dir = src_dir / "vendor"
+        vendor_dir.mkdir()
+        crate_dir = vendor_dir / "some-git-crate"
+        crate_dir.mkdir()
+        (crate_dir / ".cargo-checksum.json").write_text('{"files": {}, "package": null}')
+
+        with pytest.raises(VendorError, match="git-source crate"):
+            generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+    @patch("lib.vendor_rust.shutil.rmtree")
+    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.vendor_rust.tarfile.open")
+    def test_registry_crates_allowed(self, mock_tar, mock_run, mock_rmtree, tmp_path):
+        version_result = MagicMock()
+        version_result.returncode = 0
+        vendor_result = MagicMock()
+        vendor_result.returncode = 0
+        vendor_result.stdout = ""
+        vendor_result.stderr = ""
+        mock_run.side_effect = [version_result, vendor_result]
+        mock_tf = MagicMock()
+        mock_tar.return_value.__enter__.return_value = mock_tf
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "Cargo.toml").write_text("[package]")
+        vendor_dir = src_dir / "vendor"
+        vendor_dir.mkdir()
+        crate_dir = vendor_dir / "some-crate-1.0.0"
+        crate_dir.mkdir()
+        (crate_dir / ".cargo-checksum.json").write_text(
+            '{"files": {}, "package": "deadbeef"}'
+        )
+
+        # Should not raise.
+        generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+
+class TestToolchainSkewIntegration:
+    """Test the TODO-0007 fedora_version wiring."""
+
+    @patch("lib.vendor_rust.shutil.rmtree")
+    @patch("lib.vendor_rust.subprocess.run")
+    def test_skew_blocks_before_cargo_vendor(self, mock_run, mock_rmtree, tmp_path):
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "Cargo.toml").write_text(
+            '[package]\nname = "foo"\nrust-version = "1.90"\n'
+        )
+        version_result = MagicMock()
+        version_result.returncode = 0
+        mock_run.return_value = version_result
+
+        with patch(
+            "lib.vendor_rust.rust_toolchain_skew", return_value="skew detected"
+        ):
+            with pytest.raises(VendorError, match="skew detected"):
+                generate(
+                    "pkg",
+                    {},
+                    tmp_path,
+                    src_dir,
+                    tmp_path / "out.tar.gz",
+                    fedora_version="43",
+                )
+        # cargo --version only -- cargo vendor was never reached.
+        assert mock_run.call_count == 1
+
+    def test_no_fedora_version_skips_check(self, tmp_path):
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "Cargo.toml").write_text("[package]")
+        with patch("lib.vendor_rust.rust_toolchain_skew") as mock_skew:
+            with patch("lib.vendor_rust.subprocess.run") as mock_run, patch(
+                "lib.vendor_rust.shutil.rmtree"
+            ), patch("lib.vendor_rust.tarfile.open"):
+                version_result = MagicMock()
+                version_result.returncode = 0
+                vendor_result = MagicMock()
+                vendor_result.returncode = 0
+                vendor_result.stdout = ""
+                vendor_result.stderr = ""
+                mock_run.side_effect = [version_result, vendor_result]
+                (src_dir / "vendor").mkdir()
+                generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
+        mock_skew.assert_not_called()

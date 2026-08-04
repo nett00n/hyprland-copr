@@ -138,6 +138,7 @@ def generate(
     output: Path,
     log_path: Path | None = None,
     keep_tmpdir: bool = False,
+    fedora_version: str | None = None,
 ) -> None:
     """Download source, run the language-specific vendor tool, write vendor tarball.
 
@@ -168,7 +169,15 @@ def generate(
         _download(source_url, archive)
         verify_download(pkg_name, pkg_meta, source_url, archive)
         src_dir = _extract(archive, tmpdir)
-        return lang_generate(pkg_name, pkg_meta, tmpdir, src_dir, output, log_path)
+        return lang_generate(
+            pkg_name,
+            pkg_meta,
+            tmpdir,
+            src_dir,
+            output,
+            log_path,
+            fedora_version=fedora_version,
+        )
     finally:
         if keep_tmpdir:
             _log_fn(log_path)(f"tmpdir kept: {tmpdir}")

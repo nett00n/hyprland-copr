@@ -341,7 +341,7 @@ class TestGenerateDispatch:
         mock_verify.assert_called_once()
         mock_extract.assert_called_once()
         mock_go_generate.assert_called_once_with(
-            "test-pkg", meta, created_tmpdir, src_dir, output, None
+            "test-pkg", meta, created_tmpdir, src_dir, output, None, fedora_version=None
         )
         assert not created_tmpdir.exists()
 
@@ -363,7 +363,7 @@ class TestGenerateDispatch:
         mock_verify.assert_called_once()
         mock_extract.assert_called_once()
         mock_rust_generate.assert_called_once_with(
-            "test-pkg", meta, created_tmpdir, src_dir, output, None
+            "test-pkg", meta, created_tmpdir, src_dir, output, None, fedora_version=None
         )
         assert not created_tmpdir.exists()
 

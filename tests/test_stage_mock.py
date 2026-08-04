@@ -271,3 +271,76 @@ class TestUpdateLocalRepo:
                 stage_mock.update_local_repo("fedora-44-x86_64")
 
         mock_regen.assert_not_called()
+
+
+class TestOfflineGate:
+    """TODO-0004: mock invocations disable networking during %build."""
+
+    def test_run_for_package_disables_networking(self, tmp_path):
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        srpm_path = tmp_path / "test-pkg-1.0.0-1.fc44.src.rpm"
+        srpm_path.write_bytes(b"srpm")
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path=str(srpm_path))
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+        local_repo = tmp_path / "local-repo"
+        local_repo.mkdir()
+
+        with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
+             patch.object(stage_mock, "ROOT", tmp_path), \
+             patch.object(stage_mock, "LOCAL_REPO", local_repo), \
+             patch.object(stage_mock, "run_cmd", return_value=(True, "", "")) as mock_run_cmd, \
+             patch.object(stage_mock, "copy_mock_results", return_value=[]), \
+             patch.object(stage_mock, "update_local_repo", return_value=[]):
+            stage_mock.run_for_package(
+                pkg,
+                meta,
+                "44",
+                TARGET,
+                proceed=False,
+                failed={},
+                all_packages={pkg: meta},
+                run_id=run_id,
+            )
+
+        cmd = mock_run_cmd.call_args[0][0]
+        assert "--config-opts" in cmd
+        assert "rpmbuild_networking=False" in cmd
+        assert "use_host_resolv=False" in cmd
+        assert str(srpm_path) in cmd
+
+    def test_addrepo_still_added_when_local_repo_has_repodata(self, tmp_path):
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        srpm_path = tmp_path / "test-pkg-1.0.0-1.fc44.src.rpm"
+        srpm_path.write_bytes(b"srpm")
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path=str(srpm_path))
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+        local_repo = tmp_path / "local-repo"
+        (local_repo / "repodata").mkdir(parents=True)
+
+        with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
+             patch.object(stage_mock, "ROOT", tmp_path), \
+             patch.object(stage_mock, "LOCAL_REPO", local_repo), \
+             patch.object(stage_mock, "run_cmd", return_value=(True, "", "")) as mock_run_cmd, \
+             patch.object(stage_mock, "copy_mock_results", return_value=[]), \
+             patch.object(stage_mock, "update_local_repo", return_value=[]):
+            stage_mock.run_for_package(
+                pkg,
+                meta,
+                "44",
+                TARGET,
+                proceed=False,
+                failed={},
+                all_packages={pkg: meta},
+                run_id=run_id,
+            )
+
+        cmd = mock_run_cmd.call_args[0][0]
+        assert "--addrepo" in cmd
+        assert f"file://{local_repo}" in cmd
+        assert "--config-opts" in cmd

@@ -4,12 +4,38 @@ Generates vendor tarballs for Rust packages with pure crates.io dependencies
 (no git sources). Works with cargo vendor + offline build.
 """
 
+import json
 import shutil
 import subprocess
 import tarfile
 from pathlib import Path
 
+from lib.toolchain import rust_toolchain_skew
 from lib.vendor import VendorError, _log_fn
+
+
+def _find_git_source_crates(vendor_dir: Path) -> list[str]:
+    """Return the names of vendored crates whose source isn't crates.io.
+
+    `cargo vendor` writes a `.cargo-checksum.json` per crate; registry crates
+    carry a `"package"` checksum, git/path crates carry `"package": null`
+    since they were never published (docs/packaging.md TODO-0005) -- those
+    can't be re-resolved offline in the mock chroot.
+    """
+    found = []
+    for crate_dir in sorted(vendor_dir.iterdir()):
+        if not crate_dir.is_dir():
+            continue
+        checksum_file = crate_dir / ".cargo-checksum.json"
+        if not checksum_file.exists():
+            continue
+        try:
+            data = json.loads(checksum_file.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if data.get("package") is None:
+            found.append(crate_dir.name)
+    return found
 
 
 def generate(
@@ -19,6 +45,7 @@ def generate(
     src_dir: Path,
     output: Path,
     log_path: Path | None = None,
+    fedora_version: str | None = None,
 ) -> None:
     """Generate vendor tarball from a downloaded, already-extracted source tree.
 
@@ -51,6 +78,11 @@ def generate(
     if not (src_dir / "Cargo.toml").exists():
         raise VendorError(f"no Cargo.toml in extracted source at {src_dir}")
 
+    if fedora_version:
+        skew = rust_toolchain_skew(src_dir, fedora_version)
+        if skew:
+            raise VendorError(skew)
+
     vendor_dir = src_dir / "vendor"
     if vendor_dir.exists():
         shutil.rmtree(vendor_dir)
@@ -78,6 +110,13 @@ def generate(
 
     if not vendor_dir.exists():
         raise VendorError("cargo vendor produced no vendor/ directory")
+
+    git_crates = _find_git_source_crates(vendor_dir)
+    if git_crates:
+        raise VendorError(
+            "git-source crate(s) unresolvable offline: "
+            f"{', '.join(git_crates)} -- see docs/packaging.md 'Rust vendoring'"
+        )
 
     cargo_config_dir.mkdir(exist_ok=True)
     cargo_config = cargo_config_dir / "config.toml"

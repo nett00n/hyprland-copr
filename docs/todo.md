@@ -4,32 +4,10 @@ bullet); IDs are never reused or renumbered, so deletions leave gaps.
 
 ## Next
 
-- **Vendor storage redesign** (TODO-0004/0005/0007, below) — deferred phase 3 of the vendoring
-  refactor; phase 1 (the submodule host-corruption fix) and phase 2 (the content-addressed
-  vendor store) have landed
 - **TODO-0041** — 9 scripts (incl. the pre-commit gate itself) have zero tests, violates the
   project's own TDD rule
 - **TODO-0033** — package add/delete logic lives in untestable Makefile recipes instead of
   scripts/
-
-# Vendor storage #high
-
-Design flaws in `make stage-vendor`; needs a proper design pass, not a patch:
-
-- **TODO-0004** nothing verifies vendoring actually worked -> local mock has network (no
-  `rpmbuild_networking = False` in `mock-local-repo.conf`), so an incomplete vendor
-  tree builds fine locally and only fails on COPR where network is off;
-  `lib/log_analysis.py` already has a rule for "cargo failed to download crate —
-  network/DNS error", i.e. this has been hit in production. The one property vendoring
-  exists to provide is never tested before submitting. Options: force offline in the
-  local mock chroot, or smoke-test the vendor tree (`go build -mod=vendor`,
-  `cargo build --offline`) inside the vendor stage
-- **TODO-0005** no validation of the vendor tree's contents -> docs/packaging.md itself says
-  git-source crates are unresolvable offline, but `cargo vendor`'s output is never checked for
-  them; the stage reports success and the failure surfaces two stages later
-- **TODO-0007** toolchain skew: vendoring uses the container's `golang`/`cargo`, the build uses the
-  mock chroot's -> a `toolchain` directive in `go.mod` resolved at vendor time can't be
-  satisfied offline in the chroot
 
 # Features
 

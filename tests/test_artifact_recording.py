@@ -96,7 +96,7 @@ class TestVendorArtifactRecording:
         sources_dir = tmp_path / "SOURCES"
         sources_dir.mkdir()
 
-        def fake_generate(pkg_name, meta, tarball, log_path=None):
+        def fake_generate(pkg_name, meta, tarball, log_path=None, fedora_version=None):
             tarball.write_bytes(b"vendor-tarball-contents")
 
         with patch.object(stage_vendor, "ROOT", tmp_path), \
@@ -159,7 +159,7 @@ class TestVendorArtifactRecording:
         sources_dir_43.mkdir()
         build_db.set_stage(pkg, "spec", "fedora-43-x86_64", run_id, "success")
 
-        def fake_generate(pkg_name, meta, tarball, log_path=None):
+        def fake_generate(pkg_name, meta, tarball, log_path=None, fedora_version=None):
             tarball.write_bytes(b"vendor-tarball-contents")
 
         with patch.object(stage_vendor, "ROOT", tmp_path), \

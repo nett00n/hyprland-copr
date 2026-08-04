@@ -32,6 +32,18 @@ History before this file's introduction is not backfilled - see `git log`.
   once per Fedora version. Store entries are recorded in the `artifacts` table under
   `realm="vendor-store"` and reclaimed by `make db-prune` -- closes docs/todo.md
   TODO-0002/TODO-0006 and docs/bugs.md BUG-0023
+- Added: `make stage-mock` now runs mock with `rpmbuild_networking=False`/`use_host_resolv=False`,
+  reproducing COPR's offline `%build` step locally, so an incomplete vendor tree fails locally
+  instead of only on COPR -- closes docs/todo.md TODO-0004
+- Added: `stage-vendor` now fails a Rust package's vendor stage if `cargo vendor` produces any
+  crate without a registry checksum (`.cargo-checksum.json`'s `"package": null`, the signature of
+  a git/path source unresolvable offline) instead of reporting success and letting the build fail
+  two stages later -- closes docs/todo.md TODO-0005
+- Added: `lib/toolchain.py` compares a vendored package's `go.mod` `toolchain` directive or
+  `Cargo.toml` `rust-version` (vendoring runs against the container's own `go`/`cargo`) against
+  what the target Fedora release's repos would install into the mock chroot, via `dnf repoquery`,
+  and fails the vendor stage loud on skew instead of letting the chroot build fail offline later
+  -- closes docs/todo.md TODO-0007
 
 ## 2026-08-02
 

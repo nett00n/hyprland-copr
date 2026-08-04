@@ -8,6 +8,8 @@ paragraph each. README shows the most recent entries - see
 
 I understood that i've added `*-git` packages just to match solopasha's repo and i did not understand how hard it would really be. `*-git` packages are removed from repo for now. Maybe i would get back to it in future, bit that's not a promise.
 
+The vendoring process is reworked.
+
 Removed packages:
 - cava - already present in fedora 43, 44, 45
 - hyprland-git

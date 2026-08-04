@@ -28,7 +28,22 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ### 2026-08-02
 
-I understood that i've added `*-git` packages just to match solopasha's repo and i did not understand how hard it would really be. `*-git` packages are now removed from repo for now. Maybe i would get back to it in future, bit that's not a promise.
+I understood that i've added `*-git` packages just to match solopasha's repo and i did not understand how hard it would really be. `*-git` packages are removed from repo for now. Maybe i would get back to it in future, bit that's not a promise.
+
+The vendoring process is reworked.
+
+Removed packages:
+- cava - already present in fedora 43, 44, 45
+- hyprland-git
+- hyprland-plugins-git
+- waybar-git
+
+Added packages:
+- libcava - same cava, but built as shared library only
+- satty
+
+Updated packages:
+- Waybar - now built with cava support
 
 ### 2026-08-01
 
@@ -129,6 +144,7 @@ PS. Spec file now contains versions of build requirements for better debugging
 - `pyprland` — Scratchpads & many goodies for Hyprland
 - `quickshell` — Flexible QtQuick based desktop shell toolkit
 - `ranger` — A VIM-inspired filemanager for the console
+- `satty` — Satty - Modern Screenshot Annotation
 - `snappy-switcher` — alt-tab switch window for wayland compositor
 - `swaybg` — Great utility if all you want is one simple static wallpaper
 - `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
@@ -138,10 +154,11 @@ PS. Spec file now contains versions of build requirements for better debugging
 ### Other dependencies
 
 - `aylurs-gtk-shell` — Scaffolding CLI for Astal+Gnim
-- `cava` — Cross-platform Audio Visualizer
 - `cpptrace` — Simple, portable, and self-contained stacktrace library for C++11 and newer
 - `glaze` — Extremely fast, in memory, JSON and reflection library for modern C++.
 - `gtk4-layer-shell` — A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
+- `libcava` — Fork of cava providing it as a shared library
+- `libcava-v0` — cava built as a shared library
 - `libdwarf-code` — Library to access DWARF debugging information
 - `sndio` — Portable version of OpenBSD's lightweight audio & MIDI sub-system
 > *\** - not provided by this repo, exists in fedora's
@@ -194,7 +211,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- Vladimir nett00n Budylnikov
+- Vladimir nett00n Budylnikov- [github-actions[bot]](https://github.com/github-actions[bot])- Vladimir Budylnikov
 ---
 
 ## Additional Information

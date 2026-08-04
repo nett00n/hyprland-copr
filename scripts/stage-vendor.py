@@ -151,7 +151,7 @@ def run_for_package(
 
     try:
         print(f"  [RUN]  vendor: {pkg}", flush=True)
-        generate(pkg, meta, tarball, log_path=log)
+        generate(pkg, meta, tarball, log_path=log, fedora_version=fedora_version)
         store_path = vendor_store.store(pkg, meta, all_packages, tarball)
         status("vendor", pkg, "ok")
         build_db.set_stage(

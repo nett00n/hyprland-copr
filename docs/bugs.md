@@ -26,8 +26,6 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
 
 ## stage-vendor
 
-See also docs/todo.md `# Vendor storage` (TODO-0004/0005/0007).
-
 - **BUG-0019** `make stage-vendor` doesn't forward `MOCK_CHROOT` (nor `SKIP_PACKAGES`) into the container, but `stage-vendor.py` reads both -> with a `MOCK_CHROOT` override, vendor rows land under a different `target` than `stage-mock`/`full-cycle` use #medium
 - **BUG-0020** `full-cycle.py` never calls `prepare_stage()` for the vendor stage, and its vendor branch treats a stored `state == "skipped"` as cached -> a vendor row skipped once with reason "spec failed" is permanent; after the spec is fixed the tarball is never generated and srpm later fails on the missing Source1 #high
 - **BUG-0024** `go mod vendor` / `cargo vendor` run with no timeout at all; the Makefile forwards `CMD_TIMEOUT` and nothing on the vendor path reads it -> a hung vendor invocation blocks `update-daily` indefinitely #high

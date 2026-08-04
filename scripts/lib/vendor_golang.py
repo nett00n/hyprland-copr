@@ -5,6 +5,7 @@ import subprocess
 import tarfile
 from pathlib import Path
 
+from lib.toolchain import go_toolchain_skew
 from lib.vendor import VendorError, _log_fn
 
 
@@ -15,6 +16,7 @@ def generate(
     src_dir: Path,
     output: Path,
     log_path: Path | None = None,
+    fedora_version: str | None = None,
 ) -> None:
     """Generate vendor tarball for a Go package using go mod vendor.
 
@@ -41,6 +43,11 @@ def generate(
 
     if not (src_dir / "go.mod").exists():
         raise VendorError(f"no go.mod in extracted source at {src_dir}")
+
+    if fedora_version:
+        skew = go_toolchain_skew(src_dir, fedora_version)
+        if skew:
+            raise VendorError(skew)
 
     vendor_dir = src_dir / "vendor"
     if vendor_dir.exists():

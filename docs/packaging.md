@@ -132,10 +132,21 @@ Manual generation: `make stage-vendor PACKAGE=<name>`.
 Add `cargo` to `build_requires` for pure crates.io dependencies — `stage-vendor` runs `cargo
 vendor` the same way as Go. Packages with **git** crate dependencies (not resolvable offline)
 instead build those dependencies as separate RPM packages and use system-installed crates, per
-Fedora/COPR convention.
+Fedora/COPR convention. `stage-vendor` fails the vendor stage itself if `cargo vendor` produces
+any crate without a registry checksum (`.cargo-checksum.json`'s `"package"` is `null`) — the
+signature of a git/path source — rather than letting the build fail two stages later in the
+offline mock chroot.
 
 Vendoring always runs against a downloaded, hash-pinned tarball in a scratch tmpdir — it never
 touches `submodules/`, for either language.
+
+`make stage-mock` disables `rpmbuild_networking`/`use_host_resolv` for the local chroot, so an
+incomplete vendor tree fails locally instead of only on COPR.
+
+`stage-vendor` also fails loud on toolchain skew: a `go.mod` `toolchain` directive or a
+`Cargo.toml` `rust-version` is compared (via `dnf repoquery`) against what the target Fedora
+release would actually install into the mock chroot, since vendoring runs against the
+container's own `go`/`cargo`, not the chroot's.
 
 ## Release auto-increment
 
