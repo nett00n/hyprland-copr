@@ -12,6 +12,24 @@ entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
 
 History before this file's introduction is not backfilled - see `git log`.
 
+## 2026-08-05
+
+- Added: `build.system: python` now works. `lib/build_systems.py` pointed it at the
+  nonexistent `%pyproject_build` macro; it's now `%pyproject_wheel`/`%pyproject_install`. A new
+  `build.save_files: <module>` key drives `%pyproject_save_files -l -a <module>` and
+  `templates/spec.j2` renders `%files -f %{pyproject_files}` when it's set (`-a`/auto is
+  required -- without it, entry-point scripts under `%{_bindir}` and `data_files` like
+  `.desktop`/icon/man entries are silently dropped from the package). Both spec generators
+  (`stage-spec.py`, `gen-spec.py`) wire this through.
+- Added: `scaffold-package.py`/`lib/detection.py` now detect Python projects
+  (`pyproject.toml`/`setup.py`) instead of falling through to `build.system: FIXME`. Reads
+  PEP 621 `[project]` or Poetry `[tool.poetry]` metadata (summary, dist name, build-backend)
+  with a `setup.py` regex fallback, guesses the top-level importable module name for
+  `build.save_files`, and maps the PEP 517 backend (`setuptools.build_meta`,
+  `poetry.core.masonry.api`, `hatchling.build`, `flit_core.buildapi`, `pdm.backend`) to the
+  right `BuildRequires`. Scaffolded Python packages now also default to
+  `rpm.buildarch: noarch` and `rpm.no_debug_package: true`.
+
 ## 2026-08-03
 
 - Fixed: vendoring (`make stage-vendor`) can no longer write inside `submodules/`. The

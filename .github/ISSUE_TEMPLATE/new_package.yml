@@ -41,11 +41,14 @@ body:
     attributes:
       label: Build system
       options:
-        - cmake
-        - meson
         - autotools
+        - cargo
+        - cmake
+        - configure
+        - golang
         - make
-        - go
+        - meson
+        - python
         - unknown
     validations:
       required: false
@@ -59,4 +62,3 @@ body:
           required: true
         - label: Has a stable release/tag (not just a git HEAD)
           required: false
-

@@ -3,6 +3,11 @@
 import re
 from pathlib import Path
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.11
+    import tomli as tomllib  # type: ignore
+
 # Meson dependency() call — captures name and the rest of the argument list
 MESON_DEP_RE = re.compile(r"dependency\s*\(\s*'([^']+)'([^)]*)\)", re.DOTALL)
 
@@ -67,6 +72,8 @@ def detect_build_system(repo: Path) -> str | None:
         return "autotools"
     if (repo / "configure").exists() and (repo / "Makefile.in").exists():
         return "autotools"
+    if (repo / "pyproject.toml").exists() or (repo / "setup.py").exists():
+        return "python"
     if (repo / "Makefile").exists():
         return "make"
     return None
@@ -129,6 +136,84 @@ def extract_meson_info(meson_text: str) -> dict:
         info["pkg_deps"] = deps
 
     return info
+
+
+# PEP 517 build-backend -> extra BuildRequires needed to invoke %pyproject_wheel
+PYTHON_BACKEND_REQUIRES = {
+    "setuptools.build_meta": "python3-setuptools",
+    "poetry.core.masonry.api": "python3-poetry-core",
+    "hatchling.build": "python3-hatchling",
+    "flit_core.buildapi": "python3-flit-core",
+    "pdm.backend": "python3-pdm-backend",
+}
+
+
+def extract_python_info(repo: Path) -> dict:
+    """Extract summary, dist name, top-level module name, and build backend
+    from pyproject.toml (PEP 621 / Poetry) or a legacy setup.py.
+    """
+    info: dict = {}
+    dist_name: str | None = None
+
+    pyproject = repo / "pyproject.toml"
+    if pyproject.exists():
+        try:
+            data = tomllib.loads(pyproject.read_text(errors="replace"))
+        except tomllib.TOMLDecodeError:
+            data = {}
+        build_backend = data.get("build-system", {}).get("build-backend")
+        if build_backend:
+            info["build_backend"] = build_backend
+        project = data.get("project", {})
+        if project.get("description"):
+            info["summary"] = project["description"]
+        if project.get("name"):
+            dist_name = project["name"]
+        poetry = data.get("tool", {}).get("poetry", {})
+        if not info.get("summary") and poetry.get("description"):
+            info["summary"] = poetry["description"]
+        if not dist_name and poetry.get("name"):
+            dist_name = poetry["name"]
+
+    if not info.get("summary") or not dist_name:
+        setup_py = repo / "setup.py"
+        if setup_py.exists():
+            text = setup_py.read_text(errors="replace")
+            if not dist_name:
+                m = re.search(r"""name\s*=\s*['"]([^'"]+)['"]""", text)
+                if m:
+                    dist_name = m.group(1)
+            if not info.get("summary"):
+                m = re.search(r"""description\s*=\s*['"]([^'"]+)['"]""", text)
+                if m:
+                    info["summary"] = m.group(1)
+
+    module_name = _detect_python_module_name(repo, dist_name)
+    if module_name:
+        info["module_name"] = module_name
+
+    return info
+
+
+def _detect_python_module_name(repo: Path, dist_name: str | None) -> str | None:
+    """Best-effort top-level importable module/package name, for %pyproject_save_files."""
+    candidates = []
+    if dist_name:
+        candidates.append(dist_name.replace("-", "_"))
+    candidates.append(repo.name.replace("-", "_"))
+    for name in candidates:
+        if (repo / name / "__init__.py").exists() or (repo / f"{name}.py").exists():
+            return name
+    return candidates[0] if candidates else None
+
+
+def python_build_requires(build_backend: str | None) -> list[str]:
+    """BuildRequires needed to run %pyproject_wheel/%pyproject_install for a given backend."""
+    requires = ["python3-devel", "pyproject-rpm-macros", "python3-pip"]
+    requires.append(
+        PYTHON_BACKEND_REQUIRES.get(build_backend or "", "python3-setuptools")
+    )
+    return requires
 
 
 def extract_version(repo: Path) -> str | None:

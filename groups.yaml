@@ -70,6 +70,7 @@ other-apps:
   - snappy-switcher
   - uwsm
   - Waybar
+  - waypaper
   packages_from_global_repo:
   - name: swaybg
     summary: Great utility if all you want is one simple static wallpaper
@@ -98,7 +99,9 @@ other-deps:
   - cpptrace
   - glaze
   - gtk4-layer-shell
+  - imageio-ffmpeg
   - libcava
   - libcava-v0
   - libdwarf-code
+  - screeninfo
   - sndio

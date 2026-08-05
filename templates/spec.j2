@@ -118,7 +118,7 @@ Build dependencies:
 {{ install_cmd }}
 
 {# Main Package Files #}
-%files
+%files{% if files_from is defined and files_from %} -f {{ files_from }}{% endif +%}
 {% for f in files %}
 {{ f }}
 {% endfor %}

@@ -185,3 +185,12 @@
 [submodule "submodules/anufrievroman/waypaper"]
 	path = submodules/anufrievroman/waypaper
 	url = https://github.com/anufrievroman/waypaper
+	ignore = dirty
+[submodule "submodules/rr-/screeninfo"]
+	path = submodules/rr-/screeninfo
+	url = https://github.com/rr-/screeninfo
+	ignore = dirty
+[submodule "submodules/imageio/imageio-ffmpeg"]
+	path = submodules/imageio/imageio-ffmpeg
+	url = https://github.com/imageio/imageio-ffmpeg
+	ignore = dirty

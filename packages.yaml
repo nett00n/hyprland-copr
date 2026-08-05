@@ -1868,3 +1868,111 @@ satty:
   summary: Satty - Modern Screenshot Annotation
   url: https://github.com/gabm/satty
   version: 0.22.0
+waypaper:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: waypaper
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-pip
+  - python3-setuptools
+  - python3-wheel
+  depends_on:
+  - screeninfo
+  - imageio-ffmpeg
+  description: GUI wallpaper setter for Wayland, Xorg, and macOS. It works as a frontend for popular wallpaper backends like swaybg, swww, awww, wallutils, hyprpaper, mpvpaper, gslapper, xwallpaper, feh, linux-wallpaperengine, and macos
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  license: GPL-3.0-or-later
+  release: 5
+  requires:
+  - gtk3
+  - imageio-ffmpeg
+  - python3-gobject
+  - python3-imageio
+  - python3-pillow
+  - python3-platformdirs
+  - screeninfo
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: waypaper
+  summary: GUI wallpaper manager for Wayland and Xorg Linux systems
+  url: https://github.com/anufrievroman/waypaper
+  version: 2.8
+screeninfo:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: screeninfo
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-pip
+  - python3-poetry-core
+  depends_on: []
+  description: Python module for fetching location and size of physical screens, useful for placing GUI elements.
+  files:
+  - '%doc README.md'
+  - '%license LICENSE.md'
+  license: MIT
+  release: 5
+  requires: []
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: Fetch location and size of physical screens
+  url: https://github.com/rr-/screeninfo
+  version: 0.8.1
+imageio-ffmpeg:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: imageio_ffmpeg
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-pip
+  - python3-setuptools
+  depends_on: []
+  description: FFMPEG wrapper for Python. Uses the system ffmpeg binary rather than the platform-specific binary that upstream normally bundles into its wheels.
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  license: BSD-2-Clause
+  release: 4
+  requires:
+  - ffmpeg-free
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: FFMPEG wrapper for Python
+  url: https://github.com/imageio/imageio-ffmpeg
+  version: 0.6.0
