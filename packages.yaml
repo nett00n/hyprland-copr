@@ -1589,11 +1589,14 @@ libdwarf-code:
   version: 2.3.2
 eww:
   build:
+    cargo_update:
+    - time@0.3.34
     commands: []
     install: []
     no_lto: false
     prep:
     - tar xf %{SOURCE1}
+    - cargo update -p time@0.3.34 --offline
     system: cargo
   build_requires:
   - atk-devel
@@ -1616,7 +1619,7 @@ eww:
   - '%license LICENSE'
   - '%{_bindir}/eww'
   license: MIT
-  release: 8
+  release: 10
   requires: []
   rpm:
     no_debug_package: false

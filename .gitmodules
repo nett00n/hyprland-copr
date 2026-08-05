@@ -182,3 +182,6 @@
 	path = submodules/gabm/satty
 	url = https://github.com/gabm/satty
 	ignore = dirty
+[submodule "submodules/anufrievroman/waypaper"]
+	path = submodules/anufrievroman/waypaper
+	url = https://github.com/anufrievroman/waypaper

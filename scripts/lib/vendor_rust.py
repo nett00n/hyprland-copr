@@ -83,6 +83,28 @@ def generate(
         if skew:
             raise VendorError(skew)
 
+    # Bump specific crates past an upstream Cargo.lock pin that's broken
+    # against the vendoring toolchain (e.g. a `time` version rustc's type
+    # inference regressed against) -- semver-compatible only, no --precise,
+    # so this stays self-healing as crates.io publishes further fixes.
+    for spec in pkg_meta.get("build", {}).get("cargo_update", []):
+        _log(f"running: cargo update -p {spec}")
+        result = subprocess.run(
+            ["cargo", "update", "-p", spec],
+            cwd=src_dir,
+            capture_output=True,
+            text=True,
+        )
+        if log_path:
+            with open(log_path, "a") as fh:
+                if result.stdout:
+                    fh.write(result.stdout)
+                if result.stderr:
+                    fh.write(result.stderr)
+                fh.write(f"[exit: {result.returncode}]\n\n")
+        if result.returncode != 0:
+            raise VendorError(f"cargo update -p {spec} failed: {result.stderr.strip()}")
+
     vendor_dir = src_dir / "vendor"
     if vendor_dir.exists():
         shutil.rmtree(vendor_dir)

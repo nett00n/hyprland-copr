@@ -1,7 +1,7 @@
 
 Name:           waybar
 Version:        0.15.0
-Release:        7%{?dist}
+Release:        14%{?dist}
 Summary:        Highly customizable Wayland bar for Sway and Wlroots based compositors
 License:        MIT
 URL:            https://github.com/Alexays/Waybar
@@ -11,6 +11,7 @@ BuildRequires:  catch-devel
 BuildRequires:  gcc-c++
 BuildRequires:  gpsd-devel
 BuildRequires:  jack-audio-connection-kit-devel
+BuildRequires:  libcava-v0-devel
 BuildRequires:  libdbusmenu-gtk3-devel
 BuildRequires:  libevdev-devel
 BuildRequires:  libinput-devel
@@ -43,8 +44,6 @@ BuildRequires:  wireplumber-devel
 %description
 Highly customizable Wayland bar for Sway and Wlroots based compositors
 
-Note: cava integration is disabled temporary. I am stuck with trying to fix it
-
 Maintainer info:
 
 Source repository: https://github.com/nett00n/hyprland-copr
@@ -57,7 +56,7 @@ Package info:
 %autosetup -p1 -n Waybar-%{version}
 
 %build
-%meson -Dcava=disabled
+%meson
 %meson_build
 
 %install
@@ -81,6 +80,6 @@ Development files for waybar.
 %files devel
 
 %changelog
-* Sun Aug 02 2026 nett00n <copr@nett00n.org> - 0.15.0-7
+* Tue Aug 04 2026 nett00n <copr@nett00n.org> - 0.15.0-14
 
 - Update to 0.15.0

@@ -1,7 +1,7 @@
 
 Name:           hyprland-guiutils
 Version:        0.2.2
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Hyprland GUI utilities
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-guiutils
@@ -51,6 +51,6 @@ Commit:            a16ad89ed5fb4192c966018a80c652de8d96f748
 %{_prefix}/bin/hyprland-*
 
 %changelog
-* Mon Jul 20 2026 nett00n <copr@nett00n.org> - 0.2.2-4
+* Mon Jul 20 2026 nett00n <copr@nett00n.org> - 0.2.2-5
 
 - version: bump to 0.2.2

@@ -427,3 +427,84 @@ class TestToolchainSkewIntegration:
                 (src_dir / "vendor").mkdir()
                 generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
         mock_skew.assert_not_called()
+
+
+class TestCargoUpdate:
+    """Test the cargo_update pre-vendor lockfile-bump hook."""
+
+    @patch("lib.vendor_rust.shutil.rmtree")
+    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.vendor_rust.tarfile.open")
+    def test_cargo_update_runs_before_vendor(
+        self, mock_tar, mock_run, mock_rmtree, tmp_path
+    ):
+        version_result = MagicMock()
+        version_result.returncode = 0
+        update_result = MagicMock()
+        update_result.returncode = 0
+        update_result.stdout = ""
+        update_result.stderr = ""
+        vendor_result = MagicMock()
+        vendor_result.returncode = 0
+        vendor_result.stdout = ""
+        vendor_result.stderr = ""
+        mock_run.side_effect = [version_result, update_result, vendor_result]
+        mock_tf = MagicMock()
+        mock_tar.return_value.__enter__.return_value = mock_tf
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "Cargo.toml").write_text("[package]")
+        (src_dir / "vendor").mkdir()
+
+        pkg_meta = {"build": {"cargo_update": ["time@0.3.34"]}}
+        generate("pkg", pkg_meta, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+        calls = mock_run.call_args_list
+        assert calls[1][0][0] == ["cargo", "update", "-p", "time@0.3.34"]
+        assert calls[1][1]["cwd"] == src_dir
+        # cargo update ran before cargo vendor.
+        assert calls[2][0][0][:2] == ["cargo", "vendor"]
+
+    @patch("lib.vendor_rust.subprocess.run")
+    def test_cargo_update_failure_raises(self, mock_run, tmp_path):
+        version_result = MagicMock()
+        version_result.returncode = 0
+        update_result = MagicMock()
+        update_result.returncode = 1
+        update_result.stderr = "no matching package named `bogus` found"
+        mock_run.side_effect = [version_result, update_result]
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "Cargo.toml").write_text("[package]")
+
+        pkg_meta = {"build": {"cargo_update": ["bogus@1.0.0"]}}
+        with pytest.raises(VendorError, match="cargo update -p bogus@1.0.0 failed"):
+            generate("pkg", pkg_meta, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+    @patch("lib.vendor_rust.shutil.rmtree")
+    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.vendor_rust.tarfile.open")
+    def test_no_cargo_update_field_skips_step(
+        self, mock_tar, mock_run, mock_rmtree, tmp_path
+    ):
+        version_result = MagicMock()
+        version_result.returncode = 0
+        vendor_result = MagicMock()
+        vendor_result.returncode = 0
+        vendor_result.stdout = ""
+        vendor_result.stderr = ""
+        mock_run.side_effect = [version_result, vendor_result]
+        mock_tf = MagicMock()
+        mock_tar.return_value.__enter__.return_value = mock_tf
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "Cargo.toml").write_text("[package]")
+        (src_dir / "vendor").mkdir()
+
+        generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+        # Only cargo --version and cargo vendor -- no update call.
+        assert mock_run.call_count == 2

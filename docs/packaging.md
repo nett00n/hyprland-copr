@@ -148,6 +148,23 @@ incomplete vendor tree fails locally instead of only on COPR.
 release would actually install into the mock chroot, since vendoring runs against the
 container's own `go`/`cargo`, not the chroot's.
 
+If an upstream `Cargo.lock` pins a crate version that's broken against the vendoring
+toolchain (e.g. a rustc type-inference regression the crate later fixed), bump it before
+`cargo vendor` runs:
+
+```yaml
+build:
+  cargo_update:
+  - time@0.3.34
+```
+
+Each entry is passed as `cargo update -p <spec>` (pkgid syntax disambiguates when more than
+one version of the crate is in the tree). No `--precise` — it resolves to the latest
+semver-compatible version at vendor-generation time, so it stays self-healing as crates.io
+publishes further fixes; a first-generation vendor tarball is then cached in the
+content-addressed vendor store like any other, so this doesn't compromise reproducibility
+between cache hits.
+
 ## Release auto-increment
 
 Each package's RPM `release` is managed automatically by `full-cycle`'s pre-build step
