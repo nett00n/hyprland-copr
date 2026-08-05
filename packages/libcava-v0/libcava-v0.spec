@@ -3,8 +3,8 @@
 
 Name:           libcava-v0
 Version:        0.10.7
-Release:        5%{?dist}
-Summary:        Fork of cava providing it as a shared library
+Release:        6%{?dist}
+Summary:        cava built as a shared library
 License:        MIT
 URL:            https://github.com/LukashonakV/cava
 Source0:        https://github.com/LukashonakV/cava/archive/refs/tags/0.10.7.tar.gz#/libcava-v0-0.10.7.tar.gz
@@ -29,7 +29,7 @@ BuildRequires:  sndio-devel
 
 
 %description
-Fork of cava providing it as a shared library, e.g. used by waybar.
+cava built as a shared library, e.g. used by waybar.
 Cava is not provided as an executable.
 
 Maintainer info:
@@ -56,7 +56,7 @@ Package info:
 %{_libdir}/libcava.so.*
 
 %package devel
-Summary:        Development files for Fork of cava providing it as a shared library
+Summary:        Development files for cava built as a shared library
 Requires:       %{name} = %{version}-%{release}
 
 %description devel
@@ -68,6 +68,6 @@ Development files for libcava-v0.
 %{_libdir}/pkgconfig/libcava.pc
 
 %changelog
-* Mon Aug 03 2026 nett00n <copr@nett00n.org> - 0.10.7-5
+* Tue Aug 04 2026 nett00n <copr@nett00n.org> - 0.10.7-6
 
 - Update to 0.10.7
