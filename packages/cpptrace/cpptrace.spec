@@ -1,7 +1,7 @@
 
 Name:           cpptrace
 Version:        1.0.4
-Release:        36%{?dist}
+Release:        38%{?dist}
 Summary:        Simple, portable, and self-contained stacktrace library for C++11 and newer
 License:        MIT
 URL:            https://github.com/jeremy-rifkin/cpptrace
@@ -62,6 +62,6 @@ Development files for cpptrace.
 %{_libdir}/cmake/cpptrace/Findzstd.cmake
 
 %changelog
-* Thu Jul 24 2025 nett00n <copr@nett00n.org> - 1.0.4-36
+* Thu Jul 24 2025 nett00n <copr@nett00n.org> - 1.0.4-38
 
 - Bump to v1.0.4

@@ -2,7 +2,7 @@
 
 Name:           imageio-ffmpeg
 Version:        0.6.0
-Release:        4%{?dist}
+Release:        7%{?dist}
 Summary:        FFMPEG wrapper for Python
 BuildArch:      noarch
 License:        BSD-2-Clause
@@ -27,8 +27,6 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.6.0
-Commit:            ae47d8028c237ca5507ceef1b843ee427b442887
 
 %prep
 %autosetup -p1
@@ -45,6 +43,6 @@ Commit:            ae47d8028c237ca5507ceef1b843ee427b442887
 %license LICENSE
 
 %changelog
-* Thu Jan 16 2025 nett00n <copr@nett00n.org> - 0.6.0-4
+* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.6.0-7
 
-- Bump version
+- Update to 0.6.0

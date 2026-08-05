@@ -150,6 +150,7 @@ PS. Spec file now contains versions of build requirements for better debugging
 - `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
 - `uwsm` — Universal Wayland Session Manager
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
+- `waypaper` — GUI wallpaper manager for Wayland and Xorg Linux systems
 
 ### Other dependencies
 
@@ -157,15 +158,17 @@ PS. Spec file now contains versions of build requirements for better debugging
 - `cpptrace` — Simple, portable, and self-contained stacktrace library for C++11 and newer
 - `glaze` — Extremely fast, in memory, JSON and reflection library for modern C++.
 - `gtk4-layer-shell` — A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
+- `imageio-ffmpeg` — FFMPEG wrapper for Python
 - `libcava` — Fork of cava providing it as a shared library
 - `libcava-v0` — cava built as a shared library
 - `libdwarf-code` — Library to access DWARF debugging information
+- `screeninfo` — Fetch location and size of physical screens
 - `sndio` — Portable version of OpenBSD's lightweight audio & MIDI sub-system
 > *\** - not provided by this repo, exists in fedora's
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-08-03
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-08-05
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->
@@ -211,7 +214,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- Vladimir Budylnikov
+- Vladimir Budylnikov- Vladimir nett00n Budylnikov- [github-actions[bot]](https://github.com/github-actions[bot])
 ---
 
 ## Additional Information
