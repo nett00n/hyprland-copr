@@ -137,6 +137,13 @@ def generate_spec(
         else:
             install_cmd = BUILD_SYSTEMS.get(build_system, BUILD_SYSTEMS["cmake"])[1]
 
+        # Python packages: %pyproject_save_files pairs with %files -f %{pyproject_files}
+        save_files = build.get("save_files")
+        files_from = None
+        if save_files:
+            install_cmd += f"\n%pyproject_save_files -l -a {save_files}"
+            files_from = "%{pyproject_files}"
+
         # Build devel package info
         raw_devel = pkg_meta.get("devel")
         devel = (
@@ -189,6 +196,7 @@ def generate_spec(
                 for f in pkg_meta.get("files", [f"%{{_bindir}}/{pkg}"])
                 if f is not None
             ],
+            "files_from": files_from,
             "no_debug_package": rpm.get("no_debug_package", False),
             "no_lto": build.get("no_lto", False),
             "changelog": changelog,

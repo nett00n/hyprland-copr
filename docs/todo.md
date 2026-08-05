@@ -8,6 +8,8 @@ bullet); IDs are never reused or renumbered, so deletions leave gaps.
   project's own TDD rule
 - **TODO-0033** — package add/delete logic lives in untestable Makefile recipes instead of
   scripts/
+- **TODO-0072** - auto pull module if missing, auto refresh checksums, etc on full-cycle
+- **TODO-0073** - do not force rebuild if template changed. Just inform if cached package has outdated template. Also show built with outdated gen-spec.py.
 
 # Features
 
@@ -137,7 +139,3 @@ designed here:
   `update-versions.py` records its commit -- but every submodule in this checkout is
   uninitialized by default (`git submodule update --init` is not part of any Makefile target
   today), so this can't run unconditionally without also deciding whether to add that init step #low
-
-# Packages
-
-Moved to `docs/package-requests.md`.

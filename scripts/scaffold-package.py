@@ -17,7 +17,9 @@ from lib.detection import (
     detect_license,
     extract_cmake_info,
     extract_meson_info,
+    extract_python_info,
     extract_version,
+    python_build_requires,
 )
 from lib.tarball import detect_tarball_source_name
 from lib.gitmodules import (
@@ -100,6 +102,13 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
             summary = meson_info.get("summary", "FIXME")
         pkg_deps = meson_info.get("pkg_deps", [])
 
+    python_module_name = None
+    if build_system == "python":
+        python_info = extract_python_info(repo)
+        if summary == "FIXME":
+            summary = python_info.get("summary", "FIXME")
+        python_module_name = python_info.get("module_name")
+
     build_requires: list[str] = []
     if build_system == "cmake":
         build_requires += ["cmake", "ninja-build", "gcc-c++"]
@@ -107,6 +116,8 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
         build_requires += ["meson", "ninja-build", "gcc-c++"]
     elif build_system == "cargo":
         build_requires += ["cargo", "rustc"]
+    elif build_system == "python":
+        build_requires += python_build_requires(python_info.get("build_backend"))
     for dep in pkg_deps:
         build_requires.append(f"pkgconfig({dep})")
 
@@ -172,9 +183,15 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
             "commands": [],
             "install": [],
             "no_lto": False,
+            **(
+                {"save_files": python_module_name or key}
+                if build_system == "python"
+                else {}
+            ),
         },
         "rpm": {
-            "no_debug_package": False,
+            "no_debug_package": build_system == "python",
+            **({"buildarch": "noarch"} if build_system == "python" else {}),
         },
     }
 

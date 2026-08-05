@@ -263,3 +263,21 @@ hyprland-per-window-layout:
     sha256: 16c32c4189092901a8d4bc140bbf64c93aa0091da76cdda3644d8fa37119ca6b
     size: 15016
     recorded: '2026-08-03'
+waypaper:
+  waypaper-2.8.tar.gz:
+    url: https://github.com/anufrievroman/waypaper/archive/refs/tags/2.8.tar.gz#/waypaper-2.8.tar.gz
+    sha256: 6d9abe1fd95a1170d4bad643ff04d9e6bf7e53fda7b2df904d93fa1509426849
+    size: 218515
+    recorded: '2026-08-05'
+screeninfo:
+  screeninfo-0.8.1.tar.gz:
+    url: https://github.com/rr-/screeninfo/archive/refs/tags/0.8.1.tar.gz#/screeninfo-0.8.1.tar.gz
+    sha256: f6b3eeb22196a253611df1d3ee8fff549f2654730823ef4d2533018c27f13b09
+    size: 26498
+    recorded: '2026-08-05'
+imageio-ffmpeg:
+  imageio-ffmpeg-0.6.0.tar.gz:
+    url: https://github.com/imageio/imageio-ffmpeg/archive/refs/tags/v0.6.0.tar.gz#/imageio-ffmpeg-0.6.0.tar.gz
+    sha256: 9c671e814b6d78680db71b1fab88ae20d9305f38808b8aaf57dae53fd969ad9d
+    size: 27896
+    recorded: '2026-08-05'

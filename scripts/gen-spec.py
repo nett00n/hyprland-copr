@@ -325,6 +325,13 @@ def build_context(
 
     prep_commands = extra_prep + build.get("prep", [])
 
+    # Python packages: %pyproject_save_files pairs with %files -f %{pyproject_files}
+    save_files = build.get("save_files")
+    files_from = None
+    if save_files:
+        install_cmd += f"\n%pyproject_save_files -l -a {save_files}"
+        files_from = "%{pyproject_files}"
+
     processed_archives = process_archive_urls(
         source.get("archives", []),
         pkg.get("url", ""),
@@ -357,6 +364,7 @@ def build_context(
         "files": [
             f for f in pkg.get("files", [f"%{{_bindir}}/{name}"]) if f is not None
         ],
+        "files_from": files_from,
         "no_debug_package": rpm.get("no_debug_package", False),
         "no_lto": build.get("no_lto", False),
         "changelog": changelog,
