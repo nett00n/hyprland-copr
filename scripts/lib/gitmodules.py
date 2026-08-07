@@ -50,6 +50,44 @@ def fetch_tags(url: str) -> list[str]:
         return []
 
 
+def ensure_initialized(root: Path, modules: list[dict], urls: set[str]) -> list[str]:
+    """Auto-init any submodule in `modules` whose url is in `urls` and isn't checked
+    out yet (fresh clone without --recurse-submodules leaves an empty placeholder
+    directory). Returns the paths that were initialized; empty if all were already
+    checked out or nothing matched.
+
+    Uses `git submodule status` to detect the uninitialized case (a leading '-' in
+    its output) rather than checking directory emptiness directly, since that's
+    git's own notion of "not initialized" and matches what `submodule update --init`
+    would act on.
+    """
+    paths = [mod["path"] for mod in modules if mod["url"] in urls and mod["path"]]
+    if not paths:
+        return []
+
+    status = subprocess.run(
+        ["git", "-C", str(root), "submodule", "status", "--", *paths],
+        capture_output=True,
+        text=True,
+    )
+    if status.returncode != 0:
+        return []
+
+    uninitialized = [
+        line[1:].split()[1]
+        for line in status.stdout.splitlines()
+        if line.startswith("-")
+    ]
+    if not uninitialized:
+        return []
+
+    subprocess.run(
+        ["git", "-C", str(root), "submodule", "update", "--init", "--", *uninitialized],
+        check=True,
+    )
+    return uninitialized
+
+
 def resolve_module(modules: list[dict], name: str) -> dict | None:
     """Find a module whose path's last component matches name (case-insensitive)."""
     name_lower = name.lower()

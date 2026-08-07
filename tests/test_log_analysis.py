@@ -372,6 +372,64 @@ class TestAnalyzeMockBuildLog:
         assert "libcava" in issues[0][2]
         assert "pkgconfig" in issues[0][4]
 
+    def test_cmake_fetchcontent_no_git(self, tmp_path):
+        """Detect CMake FetchContent falling back to git clone with no git/network."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "CMake Error at /usr/share/cmake/Modules/ExternalProject/shared_internal_commands.cmake:928 (message):\n"
+            "  error: could not find git for clone of glaze\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        matches = [i for i in issues if "FetchContent" in i[2]]
+        assert len(matches) == 1
+        assert "glaze" in matches[0][2]
+        assert matches[0][3] == "glaze"
+        assert matches[0][4] == "builddep"
+
+    def test_cmake_fetchcontent_strips_populate_suffix(self, tmp_path):
+        """CMake names the ExternalProject sub-target '<dep>-populate'; strip it."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "CMake Error at /usr/share/cmake/Modules/ExternalProject/shared_internal_commands.cmake:928 (message):\n"
+            "  error: could not find git for clone of glaze-populate\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        matches = [i for i in issues if "FetchContent" in i[2]]
+        assert len(matches) == 1
+        assert matches[0][3] == "glaze"
+
+    def test_cmake_fetchcontent_captures_requested_version(self, tmp_path):
+        """Message includes the version CMake tried to retrieve via FetchContent."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "-- glaze dependency not found, retrieving v7.2.0 with FetchContent\n"
+            "CMake Error at /usr/share/cmake/Modules/ExternalProject/shared_internal_commands.cmake:928 (message):\n"
+            "  error: could not find git for clone of glaze\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        matches = [i for i in issues if "FetchContent" in i[2]]
+        assert len(matches) == 1
+        assert "v7.2.0" in matches[0][2]
+
+    def test_cmake_fetchcontent_captures_call_site(self, tmp_path):
+        """Message includes the CMakeLists.txt line that triggered FetchContent_MakeAvailable."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "CMake Error at /usr/share/cmake/Modules/ExternalProject/shared_internal_commands.cmake:928 (message):\n"
+            "  error: could not find git for clone of glaze\n"
+            "Call Stack (most recent call first):\n"
+            "  /usr/share/cmake/Modules/FetchContent.cmake:1703 (_ep_add_download_command)\n"
+            "  /usr/share/cmake/Modules/FetchContent.cmake:1620 (__FetchContent_populateDirect)\n"
+            "  /usr/share/cmake/Modules/FetchContent.cmake:2158:EVAL:2 (__FetchContent_doPopulation)\n"
+            "  /usr/share/cmake/Modules/FetchContent.cmake:2158 (cmake_language)\n"
+            "  /usr/share/cmake/Modules/FetchContent.cmake:2399 (__FetchContent_Populate)\n"
+            "  CMakeLists.txt:144 (FetchContent_MakeAvailable)\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        matches = [i for i in issues if "FetchContent" in i[2]]
+        assert len(matches) == 1
+        assert "CMakeLists.txt:144" in matches[0][2]
+
     def test_unpackaged_files(self, tmp_path):
         """Detect unpackaged files error."""
         log_file = tmp_path / "21-mock-build.log"

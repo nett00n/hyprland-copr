@@ -257,7 +257,16 @@ def run_for_package(
         "--config-opts",
         "use_host_resolv=False",
     ]
-    if (LOCAL_REPO / "repodata").exists():
+    repodata = LOCAL_REPO / "repodata"
+    repomd = repodata / "repomd.xml"
+    if repodata.exists() and (not repomd.exists() or not repomd.stat().st_size):
+        # Self-heal a truncated/corrupted repodata (e.g. a prior run killed mid
+        # createrepo_c): dnf5 can't parse an empty repomd.xml at all and aborts
+        # buildroot install before %build even starts, which then fails every
+        # package until someone notices and regenerates by hand.
+        logging.warning("local-repo repodata is empty/corrupt -- regenerating")
+        regenerate_repo_metadata()
+    if repodata.exists():
         cmd += ["--addrepo", f"file://{LOCAL_REPO}"]
     cmd += ["--rebuild", srpm_path]
     print(f"  [RUN]  mock: {pkg}", flush=True)

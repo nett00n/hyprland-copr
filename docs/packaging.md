@@ -62,6 +62,55 @@ entry templated on `%{version}`. `update-versions.py` warns when this happens.
 Run manually: `python3 scripts/update-versions.py`, then `git add packages.yaml && git commit`.
 `make update-daily` runs this as its first step.
 
+## Compat packages (two versions of one upstream)
+
+Sometimes one consumer needs an older major version of a library while other
+consumers (or the library's own latest release) have moved on. Rather than
+downgrading the shared package, add a second `packages.yaml` entry for the same
+`url` that installs to version-suffixed paths so both RPMs coexist in the same
+buildroot without file conflicts — e.g. `libcava` (1.0.0) / `libcava-v0` (0.10.7)
+sharing `url: https://github.com/LukashonakV/cava`, or `glaze` (8.x) / `glaze7`
+(7.x) sharing `url: https://github.com/stephenberry/glaze`.
+
+Both entries point at the same `url`, so both resolve to the same git submodule
+(submodules are keyed by upstream url, not by package name) — no second
+`git submodule add` needed. `make stage-validate` warns on the shared `url`
+(`validate_no_duplicate_urls`, `lib/validation.py`); that warning is expected and
+is the marker that a pair is a deliberate compat package rather than an accidental
+duplicate.
+
+Give the compat entry `auto_update.release_type: pinned-version` (or
+`pinned-tag`/`pinned-commit`) — it exists to stay off the newer major version, so
+the nightly `update-versions.py` run must never move it. Bumping within the pinned
+major version is a manual `packages.yaml` edit.
+
+For a CMake project that lets you override its install directories (check for a
+`CACHE PATH` variable like `<name>_INSTALL_CMAKEDIR` in its `install(...)` rules),
+route the compat build's headers and CMake config through `build.commands`, e.g.:
+
+```yaml
+build:
+  commands:
+    - '%cmake -DCMAKE_INSTALL_INCLUDEDIR=include/<name>7 -D<name>_INSTALL_CMAKEDIR=%{_datadir}/<name>7'
+    - '%cmake_build'
+devel:
+  files:
+    - '%{_includedir}/<name>7/'
+    - '%{_datadir}/<name>7/*.cmake'
+```
+
+Give the project's own `_INSTALL_CMAKEDIR` override an **absolute** path (`%{_datadir}/<name>7`,
+not the relative `share/<name>7`). CMake treats an uninitialized `CACHE PATH` variable passed via
+`-D` on the command line as filesystem-relative to the invocation's working directory, not
+relative to `CMAKE_INSTALL_PREFIX` -- unlike GNUInstallDirs variables (`CMAKE_INSTALL_INCLUDEDIR`
+etc.), which stay prefix-relative. A relative override here silently installs the `.cmake` files
+into the source tree under `BUILD/`, invisible to `%files`, and `%{_datadir}/<name>7/*.cmake`
+matches nothing at RPM-build time (glaze-v7 hit this; see `docs/CHANGELOG.md`).
+
+The consuming package's own `build.commands` then points `find_package`/`pkg-config`
+at the compat path explicitly (e.g. `-D<name>_DIR=%{_datadir}/<name>7`) rather than
+relying on search-path globbing to prefer the right one.
+
 ## Source verification
 
 `sources.lock.yaml` (repo root, committed) pins a sha256 for every remote file a package's

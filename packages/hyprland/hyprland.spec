@@ -1,7 +1,7 @@
 
 Name:           hyprland
 Version:        0.56.2
-Release:        1%{?dist}
+Release:        6%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -10,7 +10,7 @@ Source0:        https://github.com/hyprwm/Hyprland/archive/refs/tags/v0.56.2.tar
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
-BuildRequires:  glaze-devel
+BuildRequires:  glaze-v7-devel
 BuildRequires:  glslang-devel
 BuildRequires:  hyprcursor-devel
 BuildRequires:  hyprgraphics-devel
@@ -74,7 +74,7 @@ Commit:            efb50993780079460b0cbed1363e2166a2de1d9f
 %autosetup -p1 -n Hyprland-%{version}
 
 %build
-%cmake
+%cmake -Dglaze_DIR=%{_datadir}/glaze-v7
 %cmake_build
 
 %install
@@ -112,6 +112,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.56.2-1
+* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.56.2-6
 
 - [gha] Nix: update inputs

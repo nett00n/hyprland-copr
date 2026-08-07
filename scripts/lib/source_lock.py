@@ -134,6 +134,24 @@ def verify(pkg_name: str, meta: dict, sources_dir: Path) -> list[str]:
     return problems
 
 
+def missing_entries(packages: dict) -> list[str]:
+    """Return names of packages that have a remote source with no entry at all in
+    sources.lock.yaml -- the case stage-srpm.py fails closed on (BUG-0025).
+
+    Distinct from a hash mismatch or an undownloaded file (both require the file
+    on disk to detect and are a build-time concern, not a preflight one): this is
+    the "nobody has ever run refresh-checksums for this package" case, which a
+    freshly scaffolded/added package hits every time until someone remembers to.
+    """
+    lock = load_lock()
+    missing: list[str] = []
+    for pkg, meta in packages.items():
+        pkg_lock = lock.get(pkg, {})
+        if any(filename not in pkg_lock for filename, _url in remote_sources(pkg, meta)):
+            missing.append(pkg)
+    return missing
+
+
 class Skip:
     """One file record() declined to (re)write. `conflict=True` means the
     recorded hash differs from the downloaded file's hash and force wasn't

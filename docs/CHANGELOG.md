@@ -12,6 +12,27 @@ entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
 
 History before this file's introduction is not backfilled - see `git log`.
 
+## 2026-08-06
+
+- Added: `lib/log_analysis.py` now recognizes CMake `FetchContent`/`ExternalProject`
+  fallbacks in mock build logs (`error: could not find git for clone of <dep>`), which
+  previously surfaced only as a generic "Bad exit status" line. The new rule names the
+  dependency, the version CMake wanted, and the `CMakeLists.txt` line that triggered it,
+  and suggests providing packages via `dnf repoquery`.
+- Added: `glaze-v7` compat package -- glaze 7.9.1 installed to versioned paths
+  (`%{_includedir}/glaze-v7`, `%{_datadir}/glaze-v7`) so it coexists with `glaze` 8.x.
+  Hyprland v0.56.2 pins `find_package(glaze 7...<8)` and was silently falling back to
+  a network `FetchContent` that cannot work in mock; it now builds against `glaze-v7-devel`.
+- Fixed: `glaze-v7`'s `%cmake` override passed a relative path to `-Dglaze_INSTALL_CMAKEDIR`
+  (`share/glaze-v7`). CMake absolutizes an uninitialized `CACHE PATH` variable set via `-D`
+  against the command's working directory, not `CMAKE_INSTALL_PREFIX` -- unlike the
+  GNUInstallDirs vars (`CMAKE_INSTALL_INCLUDEDIR`), which stay prefix-relative. The `.cmake`
+  package config files (`FindAsio.cmake`, `glazeConfig.cmake`, ...) installed into the source
+  tree under `BUILD/` instead of `BUILDROOT`, so `%{_datadir}/glaze-v7/*.cmake` in `%files`
+  matched nothing and rpmbuild reported "Installed (but unpackaged) file(s) found". Now passes
+  an absolute path (`%{_datadir}/glaze-v7`), confirmed with a local cmake configure/build/install
+  against the upstream v7.9.1 and v8.0.0 tags. See `docs/packaging.md` "Compat packages".
+
 ## 2026-08-05
 
 - Added: `build.system: python` now works. `lib/build_systems.py` pointed it at the

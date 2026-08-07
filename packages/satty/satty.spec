@@ -1,7 +1,7 @@
 
 Name:           satty
 Version:        0.22.0
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        Satty - Modern Screenshot Annotation
 License:        MPL-2.0
 URL:            https://github.com/gabm/satty
@@ -68,6 +68,6 @@ Development files for satty.
 %files devel
 
 %changelog
-* Mon Aug 03 2026 nett00n <copr@nett00n.org> - 0.22.0-7
+* Mon Aug 03 2026 nett00n <copr@nett00n.org> - 0.22.0-8
 
 - Updating version to v0.22.0

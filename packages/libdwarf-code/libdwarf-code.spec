@@ -1,7 +1,7 @@
 
 Name:           libdwarf-code
 Version:        2.3.2
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Library to access DWARF debugging information
 License:        LGPL 2.1
 URL:            https://github.com/davea42/libdwarf-code
@@ -70,7 +70,7 @@ Development files for libdwarf-code.
 %{_libdir}/pkgconfig/libdwarf.pc
 
 %changelog
-* Tue Jul 07 2026 nett00n <copr@nett00n.org> - 2.3.2-3
+* Tue Jul 07 2026 nett00n <copr@nett00n.org> - 2.3.2-4
 
 - Release=2.3.2
 - -----BEGIN PGP SIGNATURE-----

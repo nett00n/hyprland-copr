@@ -1,7 +1,7 @@
 
 Name:           hyprwayland-scanner
 Version:        0.4.6
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        A Wayland scanner replacement for Hypr projects
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprwayland-scanner
@@ -54,6 +54,6 @@ Development files for hyprwayland-scanner.
 %{_libdir}/pkgconfig/hyprwayland-scanner.pc
 
 %changelog
-* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.4.6-7
+* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.4.6-8
 
 - version: bump to 0.4.6

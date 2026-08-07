@@ -305,6 +305,27 @@ class TestValidatePackage:
         # Should not warn about build_requires since depends_on covers it
         assert not any("build_requires" in w.lower() and "covered" in w.lower() for w in warnings)
 
+    def test_no_warning_for_digit_suffixed_compat_package(self):
+        """A digit-suffixed compat package name (e.g. glaze7) resolves via plain
+        removesuffix('-devel') without dropping the trailing digit, so
+        'glaze7-devel' + depends_on: [glaze7] must not warn.
+
+        Regression guard for the glaze/glaze7 compat-package pattern
+        (docs/packaging.md "Compat packages").
+        """
+        meta = self.get_minimal_package()
+        meta["build_requires"] = ["glaze7-devel"]
+        meta["depends_on"] = ["glaze7"]
+
+        all_packages = {
+            "Hyprland": meta,
+            "glaze7": self.get_minimal_package(),
+        }
+
+        errors, warnings = validate_package("Hyprland", meta, all_packages)
+
+        assert not any("build_requires" in w.lower() and "covered" in w.lower() for w in warnings)
+
     def test_warns_unsupported_fedora_version(self):
         """Should warn when fedora override uses unsupported version."""
         meta = self.get_minimal_package()

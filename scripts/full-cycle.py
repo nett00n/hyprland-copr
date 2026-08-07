@@ -32,14 +32,24 @@ from lib import build_db
 from lib.cache import compute_input_hashes
 from lib.copr import print_chroot_coverage
 from lib.deps import build_dep_graph, effective_deps, topological_sort, transitive_deps
+from lib.gitmodules import ensure_initialized, parse_gitmodules
 from lib.log_analysis import report_mock_failures, report_copr_failures
 from lib.pipeline import (
     compute_forced_stages,
     is_cached,
     cache_miss_reason,
 )
-from lib.paths import ARCH, BUILD_LOG_DIR, DISTRO, get_package_log_dir, resolve_target
+from lib.paths import (
+    ARCH,
+    BUILD_LOG_DIR,
+    DISTRO,
+    GITMODULES,
+    ROOT,
+    get_package_log_dir,
+    resolve_target,
+)
 from lib.reporting import print_summary
+from lib.source_lock import missing_entries
 from lib.yaml_utils import (
     STAGES,
     SUPPORTED_FEDORA_VERSIONS,
@@ -62,8 +72,38 @@ _stage = {
         "stage-srpm",
         "stage-mock",
         "stage-copr",
+        "refresh-checksums",
     ]
 }
+
+
+def preflight_autoheal(packages: dict) -> None:
+    """Auto-fix two known "forgot a manual step" causes of pipeline failure
+    before the per-package loop even starts (TODO-0072):
+
+    - A package's git submodule was never checked out (fresh clone without
+      --recurse-submodules, or newly added via add-new/add-submodule and never
+      pulled) -- init it in place via `git submodule update --init`.
+    - A package has a remote source with no entry in sources.lock.yaml yet
+      (newly scaffolded/added package, refresh-checksums never run) -- record
+      it now instead of letting stage-srpm fail closed on it (BUG-0025).
+
+    Both are idempotent no-ops when there's nothing to fix, so this is safe to
+    run unconditionally on every full-cycle invocation.
+    """
+    if GITMODULES.exists():
+        modules = parse_gitmodules(GITMODULES)
+        urls = {meta.get("url", "") for meta in packages.values() if meta.get("url")}
+        pulled = ensure_initialized(ROOT, modules, urls)
+        if pulled:
+            print(f"\nAuto-initialized submodules: {', '.join(pulled)}")
+
+    stale = missing_entries(packages)
+    if stale:
+        print(f"\nAuto-refreshing checksums for: {', '.join(stale)}")
+        stale_packages = {pkg: packages[pkg] for pkg in stale}
+        if not _stage["refresh-checksums"].refresh(stale_packages, force=False):
+            sys.exit("error: auto checksum refresh failed -- see output above")
 
 
 def print_proceed_status(packages: dict, target: str, copr_repo: str) -> None:
@@ -652,6 +692,8 @@ def main() -> None:
     packages = prepare_packages(package_filter, skip_filter)
     if not packages:
         sys.exit("error: no packages to build")
+
+    preflight_autoheal(packages)
 
     BUILD_LOG_DIR.mkdir(parents=True, exist_ok=True)
     for pkg in packages:

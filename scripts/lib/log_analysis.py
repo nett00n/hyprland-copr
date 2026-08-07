@@ -113,6 +113,22 @@ _CMAKE_MISSING_PKGCONFIG_BYNAME_RE = re.compile(r'By not providing "Find(\w+)\.c
 #     cavacore.c
 _CMAKE_MISSING_SOURCE_RE = re.compile(r"Cannot find source file:")
 
+# CMake Error at .../ExternalProject/shared_internal_commands.cmake:928 (message):
+#   error: could not find git for clone of glaze-populate
+_CMAKE_FETCHCONTENT_NO_GIT_RE = re.compile(
+    r"error: could not find git for clone of (\S+)"
+)
+
+# -- glaze dependency not found, retrieving v7.2.0 with FetchContent
+_CMAKE_FETCHCONTENT_RETRIEVING_RE = re.compile(
+    r"^--\s+(\S+) dependency not found, retrieving (\S+)"
+)
+
+#   CMakeLists.txt:144 (FetchContent_MakeAvailable)
+_CMAKE_FETCHCONTENT_CALLSITE_RE = re.compile(
+    r"^\s*(CMakeLists\.txt:\d+) \(FetchContent_MakeAvailable\)"
+)
+
 # /path/to/file.cpp:11:10: fatal error: hyprland/src/managers/HookSystemManager.hpp: No such file or directory
 _COMPILER_MISSING_HEADER_RE = re.compile(
     r"^([^:]+):(\d+):\d+: fatal error: ([^:]+): No such file or directory"
@@ -469,6 +485,39 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                         "pkgconfig",
                     )
                 )
+            continue
+        m = _CMAKE_FETCHCONTENT_NO_GIT_RE.search(line)
+        if m:
+            dep = re.sub(r"-populate$", "", m.group(1))
+            # Look back for the "<dep> dependency not found, retrieving <version>" line
+            version = ""
+            for prev_idx in range(lineno - 1, max(lineno - 10, 0), -1):
+                prev_m = _CMAKE_FETCHCONTENT_RETRIEVING_RE.match(
+                    raw_lines[prev_idx - 1]
+                )
+                if prev_m:
+                    version = prev_m.group(2)
+                    break
+            # Look forward for the CMakeLists.txt:N (FetchContent_MakeAvailable) call site
+            callsite = ""
+            for next_idx in range(lineno, min(lineno + 15, len(raw_lines))):
+                next_m = _CMAKE_FETCHCONTENT_CALLSITE_RE.match(raw_lines[next_idx])
+                if next_m:
+                    callsite = next_m.group(1)
+                    break
+            msg = f'CMake fell back to FetchContent for "{dep}"'
+            if version:
+                msg += f" (wants {version})"
+            if callsite:
+                msg += f" at {callsite}"
+            msg += (
+                " — git/network are unavailable in mock. Add a system package"
+                f' providing "{dep}" to build_requires in packages.yaml; if it is'
+                " already listed, the buildroot version does not satisfy"
+                " upstream's version pin (patch the pin or provide a matching"
+                " version)."
+            )
+            issues.append((lineno, line.strip(), msg, dep, "builddep"))
             continue
         m = _MAKE_MISSING_TOOL_RE.match(line)
         if m:

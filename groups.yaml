@@ -98,6 +98,7 @@ other-deps:
   - aylurs-gtk-shell
   - cpptrace
   - glaze
+  - glaze-v7
   - gtk4-layer-shell
   - imageio-ffmpeg
   - libcava
