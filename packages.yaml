@@ -147,7 +147,7 @@ glaze-v7:
   - '%doc README.md'
   - '%license LICENSE'
   license: MIT
-  release: 7
+  release: 8
   rpm:
     no_debug_package: true
   source:
@@ -397,7 +397,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 6
+  release: 7
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -485,13 +485,13 @@ hyprland-plugins:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
-      date: '20260805'
-      full: 00862ca3e2908857f9660adbba1b2d55796aaa43
+      date: '20260806'
+      full: a9eaa5263ae64291c1711c43bd5602c4a8b88c7c
     patches:
     - hyprland-0.54-exclude-incompatible-plugins.patch
   summary: Official plugins for Hyprland
   url: https://github.com/hyprwm/hyprland-plugins
-  version: 0.56.0^20260805git00862ca
+  version: 0.56.0^20260806gita9eaa52
 hyprland-protocols:
   build:
     system: meson

@@ -157,6 +157,7 @@ PS. Spec file now contains versions of build requirements for better debugging
 - `aylurs-gtk-shell` — Scaffolding CLI for Astal+Gnim
 - `cpptrace` — Simple, portable, and self-contained stacktrace library for C++11 and newer
 - `glaze` — Extremely fast, in memory, JSON and reflection library for modern C++.
+- `glaze-v7` — Compat build of glaze 7.x for consumers pinned below 8.0
 - `gtk4-layer-shell` — A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
 - `imageio-ffmpeg` — FFMPEG wrapper for Python
 - `libcava` — Fork of cava providing it as a shared library
@@ -168,7 +169,7 @@ PS. Spec file now contains versions of build requirements for better debugging
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-08-05
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-08-09
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->
@@ -214,7 +215,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- Vladimir nett00n Budylnikov
+- Vladimir nett00n Budylnikov- [github-actions[bot]](https://github.com/github-actions[bot])- Vladimir Budylnikov
 ---
 
 ## Additional Information
