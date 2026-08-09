@@ -26,6 +26,12 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-08-09
+
+Fixed packages:
+- screeninfo - was not built successfully on fedora 43
+- quickshell - was not built successfully on fedora 43
+
 ### 2026-08-02
 
 I understood that i've added `*-git` packages just to match solopasha's repo and i did not understand how hard it would really be. `*-git` packages are removed from repo for now. Maybe i would get back to it in future, bit that's not a promise.
@@ -60,16 +66,6 @@ New packages: snappy switcher, mpvpaper. Added a `recommends` field to package c
 `release` a thing now, and shows real counter of builds for current version of package. The most ofthen cause of rebuild would be the dependency version update.
 Recently all packages were build as 1.2.3-1, where "1.2.3" - was a version and "1" was a static %autorelease. But this was breaking a depedency find process. I could just replace 1 in packages.yaml, but humans are making mistakes, so full-cycle autoicrement release, while building a package.
 Replaced all YAML writes with ruamel lib for simplifying code and unifying
-
-### 2026-04-08
-
-Surely i can say, hyprland builds are pretty stable for now (yeah-yeah-yeah, ARM builds are failing, i know). Most troubles are found, new updates are working automatically without any operator activity. Minor bugs stayed, plan to fix them later, before splitting this repo in two: for automations and repo content itself.
-
-I think i can plan a cronjob to really check for updates nightly. I started this froject 2026-02-25 so it tooks me almost two month to reach this point.
-
-Cool, i guess
-
-PS. Spec file now contains versions of build requirements for better debugging
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/blog/NEWS.md)
 
@@ -215,7 +211,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- Vladimir nett00n Budylnikov
+- Vladimir Budylnikov
 ---
 
 ## Additional Information
