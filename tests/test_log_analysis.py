@@ -341,6 +341,18 @@ class TestAnalyzeMockBuildLog:
         assert len(issues) == 1
         assert "gcc" in issues[0][2]
 
+    def test_make_no_rule_to_make_target(self, tmp_path):
+        """Detect make target with missing generated/source file dependency."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "gmake[2]: *** No rule to make target 'src/dbus/dbus_objectmanager.cpp', "
+            "needed by 'src/dbus/dbusmenu/CMakeFiles/quickshell-dbusmenu_autogen_timestamp_deps'.  Stop.\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
+        assert len(issues) == 1
+        assert "src/dbus/dbus_objectmanager.cpp" in issues[0][2]
+        assert "quickshell-dbusmenu_autogen_timestamp_deps" in issues[0][2]
+
     def test_cp_missing_file(self, tmp_path):
         """Detect cp missing file error."""
         log_file = tmp_path / "21-mock-build.log"

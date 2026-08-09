@@ -1448,7 +1448,7 @@ uwsm:
 quickshell:
   build:
     commands:
-    - '%cmake -DCRASH_REPORTER=OFF'
+    - '%cmake -GNinja -DCRASH_REPORTER=OFF'
     - '%cmake_build'
     install: []
     no_lto: false
@@ -1489,7 +1489,7 @@ quickshell:
   - '%{_datadir}/applications/org.quickshell.desktop'
   - '%{_datadir}/icons/hicolor/scalable/apps/org.quickshell.svg'
   license: LGPL-3.0-or-later
-  release: 35
+  release: 38
   requires: []
   rpm:
     no_debug_package: false

@@ -4,6 +4,12 @@ Maintainer's microblog, informal. Newest first, dated `## YYYY-MM-DD` entries, o
 paragraph each. README shows the most recent entries - see
 `scripts/gen-report.py:get_recent_news()`.
 
+## 2026-08-09
+
+Fixed packages:
+- screeninfo - was not built successfully on fedora 43
+- quickshell - was not built successfully on fedora 43
+
 ## 2026-08-02
 
 I understood that i've added `*-git` packages just to match solopasha's repo and i did not understand how hard it would really be. `*-git` packages are removed from repo for now. Maybe i would get back to it in future, bit that's not a promise.
