@@ -13,6 +13,11 @@ Environment variables:
   PACKAGE                    Build only this package (optional, comma-separated)
   SKIP_PACKAGES              Skip these packages (optional, comma-separated)
   PROCEED_BUILD              If 'true', skip stages already succeeded; preserve prior state
+  FORCE_REBUILD              If '1'/'true', ignore the cache and re-run every stage
+                              (spec through copr) for the requested PACKAGE(s) -- or every
+                              package if PACKAGE is unset. Wins over PROCEED_BUILD for the
+                              affected packages. Deps pulled in transitively still respect
+                              the cache; use `make build-pop` for a mock/copr-only force.
   SKIP_MOCK                  If 'true', skip mock build stage
   SKIP_COPR                  If 'true', skip copr submission stage
   SYNCHRONOUS_COPR_BUILD     If 'true', wait for COPR builds; default is async (--nowait)
@@ -30,6 +35,7 @@ import time
 
 from lib import build_db
 from lib.cache import compute_input_hashes
+from lib.config import env_flag
 from lib.copr import print_chroot_coverage
 from lib.deps import build_dep_graph, effective_deps, topological_sort, transitive_deps
 from lib.gitmodules import ensure_initialized, parse_gitmodules
@@ -124,10 +130,11 @@ def print_proceed_status(packages: dict, target: str, copr_repo: str) -> None:
     print()
 
 
-def load_config() -> tuple[str, str, str, str, str, bool, bool, bool]:
+def load_config() -> tuple[str, str, str, str, str, bool, bool, bool, bool]:
     """Load environment variables.
 
-    Returns (fedora_version, target, copr_repo, package_filter, skip_filter, skip_mock, skip_copr, synchronous_copr).
+    Returns (fedora_version, target, copr_repo, package_filter, skip_filter, skip_mock,
+    skip_copr, synchronous_copr, force_rebuild).
     """
     fedora_version = os.environ.get("FEDORA_VERSION", "43")
     if fedora_version not in SUPPORTED_FEDORA_VERSIONS:
@@ -142,6 +149,13 @@ def load_config() -> tuple[str, str, str, str, str, bool, bool, bool]:
     skip_mock = os.environ.get("SKIP_MOCK", "").lower() == "true"
     skip_copr = os.environ.get("SKIP_COPR", "").lower() == "true"
     synchronous_copr = os.environ.get("SYNCHRONOUS_COPR_BUILD", "").lower() == "true"
+    force_rebuild = env_flag("FORCE_REBUILD")
+    if force_rebuild and env_flag("PROCEED_BUILD"):
+        print(
+            "warning: FORCE_REBUILD=1 and PROCEED_BUILD=true both set -- "
+            "FORCE_REBUILD wins for the affected package(s)",
+            file=sys.stderr,
+        )
     return (
         fedora_version,
         target,
@@ -151,6 +165,7 @@ def load_config() -> tuple[str, str, str, str, str, bool, bool, bool]:
         skip_mock,
         skip_copr,
         synchronous_copr,
+        force_rebuild,
     )
 
 
@@ -194,6 +209,23 @@ def prepare_packages(package_filter: str, skip_filter: str) -> dict:
             print(f"  {pkg}{reason}")
 
     return packages
+
+
+def resolve_force_packages(
+    force_rebuild: bool, package_filter: str, packages: dict
+) -> set[str]:
+    """Resolve which packages FORCE_REBUILD applies to.
+
+    Scoped to the explicitly-requested packages only -- transitive deps pulled into
+    the run by `prepare_packages()` still respect the cache. If PACKAGE is unset,
+    every package in the run is "requested", so force applies to all of them.
+    """
+    if not force_rebuild:
+        return set()
+    if package_filter:
+        requested = {n.strip() for n in package_filter.split(",") if n.strip()}
+        return requested & set(packages)
+    return set(packages)
 
 
 def setup_run(
@@ -240,6 +272,7 @@ def run_build_pipeline(
     skip_mock: bool = False,
     skip_copr: bool = False,
     synchronous_copr: bool = False,
+    force_packages: set[str] | None = None,
 ) -> None:
     """Run per-package pipeline orchestration: validate→spec→vendor→srpm→mock, then copr.
 
@@ -248,16 +281,24 @@ def run_build_pipeline(
     tracking. Tracks rebuilt packages to cascade forced stages to dependents.
     Respects skip_mock and skip_copr flags to skip those stages entirely.
 
+    force_packages (FORCE_REBUILD): packages in this set get every stage forced
+    (compute_forced_stages(force_all=True)) and also have PROCEED_BUILD ignored for
+    themselves specifically, so an explicit force always wins over a stale "already
+    succeeded" resume.
+
     Copr submission runs as a separate pass AFTER every package has gone through
     mock, and is skipped entirely (for every package) if any package's mock stage
     failed this run -- a broken dependency set must never be partially published.
 
     If synchronous_copr is False (default), COPR builds use --nowait for async submission.
     """
+    force_packages = force_packages or set()
     all_packages = get_packages()
 
     # Show plan first, before any processing
-    _stage["stage-show-plan"].show_plan(copr_repo=copr_repo, target=target)
+    _stage["stage-show-plan"].show_plan(
+        copr_repo=copr_repo, target=target, force_packages=force_packages
+    )
     print("  waiting 5 seconds before proceeding...", flush=True)
     time.sleep(5)
 
@@ -283,8 +324,13 @@ def run_build_pipeline(
         # Resolve effective dependencies once per package
         deps = effective_deps(pkg, meta, all_packages)
 
-        # Compute forced stages (from force_run or dependency cascade)
-        forced_stages = compute_forced_stages(pkg, deps, target, rebuilt_packages)
+        # FORCE_REBUILD for this package wins over a PROCEED_BUILD resume.
+        pkg_proceed = proceed and pkg not in force_packages
+
+        # Compute forced stages (from FORCE_REBUILD, force_run, or dependency cascade)
+        forced_stages = compute_forced_stages(
+            pkg, deps, target, rebuilt_packages, force_all=pkg in force_packages
+        )
 
         # Validate (non-fatal, no caching)
         if not _stage["stage-validate"].run_for_package(
@@ -302,7 +348,7 @@ def run_build_pipeline(
             started_at = int(time.time())
             prior_entry = build_db.get_stage(pkg, "spec", target)
             prior_state = prior_entry.get("state") if prior_entry else None
-            is_proceed_skip = proceed and prior_state == "success"
+            is_proceed_skip = pkg_proceed and prior_state == "success"
             reason = (
                 "proceed-skip"
                 if is_proceed_skip
@@ -356,7 +402,7 @@ def run_build_pipeline(
             rebuilt_packages.add(pkg)
             started_at = int(time.time())
             prior_state = vendor_entry.get("state") if vendor_entry else None
-            is_proceed_skip = proceed and prior_state == "success"
+            is_proceed_skip = pkg_proceed and prior_state == "success"
             reason = (
                 "proceed-skip"
                 if is_proceed_skip
@@ -406,7 +452,7 @@ def run_build_pipeline(
             started_at = int(time.time())
             prior_entry = build_db.get_stage(pkg, "srpm", target)
             prior_state = prior_entry.get("state") if prior_entry else None
-            is_proceed_skip = proceed and prior_state == "success"
+            is_proceed_skip = pkg_proceed and prior_state == "success"
             reason = (
                 "proceed-skip"
                 if is_proceed_skip
@@ -421,7 +467,7 @@ def run_build_pipeline(
                 )
             )
             if not _stage["stage-srpm"].run_for_package(
-                pkg, meta, fedora_version, proceed, target, run_id
+                pkg, meta, fedora_version, pkg_proceed, target, run_id
             ):
                 build_db.finalize_stage(
                     pkg,
@@ -459,7 +505,7 @@ def run_build_pipeline(
                 started_at = int(time.time())
                 prior_entry = build_db.get_stage(pkg, "mock", target)
                 prior_state = prior_entry.get("state") if prior_entry else None
-                is_proceed_skip = proceed and prior_state == "success"
+                is_proceed_skip = pkg_proceed and prior_state == "success"
                 reason = (
                     "proceed-skip"
                     if is_proceed_skip
@@ -478,7 +524,7 @@ def run_build_pipeline(
                     meta,
                     fedora_version,
                     target,
-                    proceed,
+                    pkg_proceed,
                     mock_failed,
                     packages,
                     run_id,
@@ -574,7 +620,10 @@ def run_build_pipeline(
 
         new_hashes = compute_input_hashes(pkg, meta, all_packages)
         deps = effective_deps(pkg, meta, all_packages)
-        forced_stages = compute_forced_stages(pkg, deps, target, rebuilt_packages)
+        pkg_proceed = proceed and pkg not in force_packages
+        forced_stages = compute_forced_stages(
+            pkg, deps, target, rebuilt_packages, force_all=pkg in force_packages
+        )
 
         if is_cached("copr", pkg, target, new_hashes, forced_stages):
             print("    copr: cached")
@@ -584,7 +633,7 @@ def run_build_pipeline(
             started_at = int(time.time())
             prior_entry = build_db.get_stage(pkg, "copr", target)
             prior_state = prior_entry.get("state") if prior_entry else None
-            is_proceed_skip = proceed and prior_state == "success"
+            is_proceed_skip = pkg_proceed and prior_state == "success"
             reason = (
                 "proceed-skip"
                 if is_proceed_skip
@@ -603,7 +652,7 @@ def run_build_pipeline(
                 meta,
                 fedora_version,
                 copr_repo,
-                proceed,
+                pkg_proceed,
                 target,
                 run_id,
                 synchronous_copr,
@@ -687,6 +736,7 @@ def main() -> None:
         skip_mock,
         skip_copr,
         synchronous_copr,
+        force_rebuild,
     ) = load_config()
 
     packages = prepare_packages(package_filter, skip_filter)
@@ -714,6 +764,9 @@ def main() -> None:
         packages = prepare_packages(package_filter, skip_filter)
 
     proceed = os.environ.get("PROCEED_BUILD", "").lower() == "true"
+    force_packages = resolve_force_packages(force_rebuild, package_filter, packages)
+    if force_packages:
+        print(f"\nFORCE_REBUILD: forcing every stage for {', '.join(force_packages)}")
 
     run_build_pipeline(
         packages,
@@ -725,6 +778,7 @@ def main() -> None:
         skip_mock,
         skip_copr,
         synchronous_copr,
+        force_packages,
     )
     finalize_report(packages, target, run_id, copr_repo, synchronous_copr)
 

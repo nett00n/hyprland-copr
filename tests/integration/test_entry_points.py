@@ -547,4 +547,44 @@ class TestStageShowPlan:
 
         captured = capsys.readouterr()
         assert "MyPkg" in captured.out
+
+    def test_show_plan_force_packages_shows_run_not_cache(self, capsys):
+        """A package with matching hashes normally caches; force_packages shows 'run' instead."""
+        packages = {
+            "pkg-a": {"version": "1.0"},
+            "pkg-b": {"version": "1.0"},
+        }
+        self._seed_validate({"pkg-a": "success", "pkg-b": "success"})
+
+        fixed_hashes = {
+            "source_commit": "x",
+            "templates": "x",
+            "package_config": "x",
+            "dependencies": "x",
+            "patches": "x",
+            "content": "x",
+            "package_version": "1.0",
+        }
+        for pkg in packages:
+            run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+            build_db.set_stage(pkg, "spec", TARGET, run_id, "success")
+            build_db.finalize_stage(pkg, "spec", TARGET, started_at=1, hashes=fixed_hashes)
+
+        with (
+            patch.object(stage_show_plan, "get_packages") as mock_get,
+            patch.object(
+                stage_show_plan, "compute_input_hashes", return_value=fixed_hashes
+            ),
+        ):
+            mock_get.return_value = packages
+            stage_show_plan.show_plan(target=TARGET, force_packages={"pkg-a"})
+
+        captured = capsys.readouterr()
+        lines = {
+            parts[0]: line
+            for line in captured.out.splitlines()
+            if (parts := line.split())
+        }
+        assert "run" in lines["pkg-a"]
+        assert "cache" in lines["pkg-b"]
         assert "OtherPkg" not in captured.out

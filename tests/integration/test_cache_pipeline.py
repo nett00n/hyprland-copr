@@ -150,6 +150,28 @@ class TestCachePipeline:
         forced = compute_forced_stages("pkg-a", deps, TARGET, set())
         assert forced == set()
 
+    def test_force_all_forces_every_stage_even_with_fresh_matching_hashes(self, tmp_path):
+        """force_all=True (FORCE_REBUILD) forces every stage regardless of cache state."""
+        hashes = {"source_commit": "abc123", "templates": "def456"}
+        for stage in STAGE_ORDER:
+            _seed("pkg-a", stage, hashes=hashes, version="1.0-1.fc43", force_run=0)
+            _seed_matching_artifact(tmp_path, "pkg-a", stage, "1.0-1.fc43")
+
+        forced = compute_forced_stages("pkg-a", set(), TARGET, set(), force_all=True)
+        assert forced == set(STAGE_ORDER)
+
+        for stage in STAGE_ORDER:
+            assert is_cached(stage, "pkg-a", TARGET, hashes, forced) is False
+
+    def test_force_all_false_is_unaffected(self):
+        """force_all defaults to False and doesn't change existing no-force behaviour."""
+        deps = set()
+        for stage in STAGE_ORDER:
+            _seed("pkg-a", stage, force_run=0)
+
+        forced = compute_forced_stages("pkg-a", deps, TARGET, set(), force_all=False)
+        assert forced == set()
+
 
 class TestShowPlanMatchesExecution:
     """Test that show_plan output matches what execution will do."""

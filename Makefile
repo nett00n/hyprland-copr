@@ -175,6 +175,7 @@ help: ## Show this help
 	@echo "    make stage-mock PACKAGE=hyprland FEDORA_VERSION=44"
 	@echo "    make stage-mock PACKAGE=hyprland CMD_TIMEOUT=7200  # 2 hours for large builds"
 	@echo "    make full-cycle PACKAGE=hyprland COPR_REPO=nett00n/hyprland"
+	@echo "    make full-cycle PACKAGE=hyprland FORCE_REBUILD=1  # ignore cache, rebuild spec through copr"
 	@echo ""
 	@echo "  Cleanup (when dependency conflicts occur):"
 	@echo "    make clean              # Remove build logs"
@@ -423,7 +424,7 @@ sources: check-image check-venv setup-volumes ## Download sources for PACKAGE (o
 	done
 	$(MAKE) check-checksums PACKAGE=$(PACKAGE)
 
-FORCE_MOCK ?=
+FORCE_REBUILD ?=
 PROCEED_BUILD ?=
 SKIP_MOCK ?=
 SKIP_COPR ?=
@@ -431,13 +432,13 @@ DRY_RUN ?=
 SYNCHRONOUS_COPR_BUILD ?=
 REQUIRE_CHROOT_COVERAGE ?=
 
-full-cycle: check-image check-venv setup-volumes ## Run full cycle with YAML report: spec → srpm → mock → copr (PACKAGE, COPR_REPO, env vars)
+full-cycle: check-image check-venv setup-volumes ## Run full cycle with YAML report: spec → srpm → mock → copr (PACKAGE, COPR_REPO, FORCE_REBUILD, env vars)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
 		COPR_REPO=$(COPR_REPO) \
-		FORCE_MOCK=$(FORCE_MOCK) \
+		FORCE_REBUILD=$(FORCE_REBUILD) \
 		PROCEED_BUILD=$(PROCEED_BUILD) \
 		SKIP_MOCK=$(SKIP_MOCK) \
 		SKIP_COPR=$(SKIP_COPR) \
@@ -508,13 +509,14 @@ stage-validate: check-image check-venv setup-volumes ## Run validation stage (PA
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-validate.py,Validation stage passed,Validation stage failed)
 
-stage-show-plan: check-image check-venv setup-volumes ## Show build plan - what will run, cache, or skip (PACKAGE, SKIP_PACKAGES, COPR_REPO optional, runs in container)
+stage-show-plan: check-image check-venv setup-volumes ## Show build plan - what will run, cache, or skip (PACKAGE, SKIP_PACKAGES, COPR_REPO, FORCE_REBUILD optional, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
 		SKIP_PACKAGES=$(SKIP_PACKAGES) \
 		COPR_REPO=$(COPR_REPO) \
+		FORCE_REBUILD=$(FORCE_REBUILD) \
 		/work/.venv/bin/python3 scripts/stage-show-plan.py,Build plan displayed,Build plan failed)
 
 stage-spec: check-image check-venv setup-volumes ## Run spec generation stage (PACKAGE=<name>, CMD_TIMEOUT, runs in container)

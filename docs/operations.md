@@ -37,6 +37,7 @@ make full-cycle PACKAGE=<name> SKIP_MOCK=true                              # sto
 make full-cycle PACKAGE=<name> SKIP_COPR=true                              # test locally, don't push
 make full-cycle PACKAGE=<name> COPR_REPO=nett00n/hyprland SYNCHRONOUS_COPR_BUILD=true  # wait for COPR
 make full-cycle PACKAGE=<name> COPR_REPO=nett00n/hyprland REQUIRE_CHROOT_COVERAGE=true # block submit on chroot gaps
+make full-cycle PACKAGE=<name> FORCE_REBUILD=1                             # ignore cache, rebuild spec→copr
 ```
 
 Copr submission runs as its own pass, only after every package in the run has gone through
@@ -100,16 +101,30 @@ Requires `copr-cli` configured with `~/.config/copr`.
 
 ## Build cache and forcing a re-run
 
-`full-cycle` skips stages whose inputs haven't changed (hash-based caching). To force one or
-more packages to re-run without a full pipeline run:
+`full-cycle` skips stages whose inputs haven't changed (hash-based caching). Three ways to
+force a re-run, from broadest to narrowest:
 
 ```shell
-make build-pop PKG=hyprland,waybar   # force re-run for specific packages
-make build-pop PKG=""                # force ALL packages (asks for confirmation)
+make full-cycle PACKAGE=hyprland FORCE_REBUILD=1   # this run: force spec→vendor→srpm→mock→copr
+                                                    # for hyprland only; its deps stay cached
+                                                    # unless their own inputs changed
+make build-pop PKG=hyprland,waybar                 # persistent: force mock+copr next full-cycle
+make build-pop PKG=""                              # force ALL packages (asks for confirmation)
 ```
 
-This sets `force_run` on the mock/copr rows in `build-report.db`; the next `full-cycle` picks it
-up and clears it (one-shot). For a stage other than mock/copr, use `db-shell` directly:
+`FORCE_REBUILD=1` is scoped to the package(s) named in `PACKAGE` (all packages if `PACKAGE` is
+unset) and only applies to that one invocation — it does not write anything to
+`build-report.db` beyond the normal stage rows for the run that just happened. It takes
+precedence over `PROCEED_BUILD` for the packages it applies to (a warning is printed if both are
+set). Note: `stage-vendor`'s tarball-exists short-circuit means `FORCE_REBUILD` still reuses an
+already-generated vendor tarball for the same version instead of re-vendoring — harmless (same
+content, content-addressed), but if a genuinely fresh vendor tree is needed, delete the tarball
+by hand first.
+
+`make build-pop` sets `force_run` on the mock/copr rows in `build-report.db`; the next
+`full-cycle` picks it up and clears it (one-shot) — use this to force only mock+copr, or when
+the force needs to persist into a later invocation that won't itself pass `FORCE_REBUILD`.
+For a stage other than mock/copr, use `db-shell` directly:
 
 ```shell
 make db-shell

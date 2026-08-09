@@ -12,6 +12,16 @@ entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
 
 History before this file's introduction is not backfilled - see `git log`.
 
+## 2026-08-09
+
+- Added: `FORCE_REBUILD=1` for `make full-cycle`/`make stage-show-plan` -- ignores the cache
+  and re-runs every stage (spec through copr) for the requested `PACKAGE`(s), or all packages
+  if `PACKAGE` is unset. Scoped to the packages named explicitly; transitive deps pulled into
+  the run still respect the cache. Takes precedence over `PROCEED_BUILD` for the packages it
+  applies to. See `docs/operations.md` "Build cache and forcing a re-run".
+- Removed: the `FORCE_MOCK` Makefile flag (docs/bugs.md BUG-0009 -- it was passed into the
+  container but nothing ever read it); replaced by the real `FORCE_REBUILD` above.
+
 ## 2026-08-06
 
 - Added: `lib/log_analysis.py` now recognizes CMake `FetchContent`/`ExternalProject`

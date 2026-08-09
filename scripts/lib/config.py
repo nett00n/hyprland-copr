@@ -6,6 +6,9 @@ Environment variables:
   CMD_TIMEOUT     Command timeout in seconds (default 3600/60min). Used by run_cmd() in subprocess_utils.py.
   LOG_LEVEL       Logging level: DEBUG, INFO (default), WARNING, ERROR, CRITICAL.
   PACKAGER        Packager name/email for RPM headers (format: "Name <email@example.com>").
+
+See also env_flag() below for the shared boolean-flag parser used by other scripts' own
+env vars (e.g. FORCE_REBUILD in full-cycle.py/stage-show-plan.py).
 """
 
 import logging
@@ -13,6 +16,17 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+
+
+def env_flag(name: str) -> bool:
+    """True when env var `name` is set to 1/true/yes (case-insensitive).
+
+    Most boolean flags in this codebase are read inline as
+    `os.environ.get("X", "").lower() == "true"`, which rejects the `1` a user
+    naturally types on a `make FOO=1` command line. Use this helper for new
+    flags instead of adding another inline variant.
+    """
+    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes")
 
 
 def get_packager() -> str:

@@ -51,23 +51,34 @@ def artifacts_present(stage: str, pkg: str, target: str, version: str | None) ->
 
 
 def compute_forced_stages(
-    pkg: str, deps: set[str], target: str, rebuilt_packages: set[str]
+    pkg: str,
+    deps: set[str],
+    target: str,
+    rebuilt_packages: set[str],
+    *,
+    force_all: bool = False,
 ) -> set[str]:
     """Compute set of stages that must run due to force_run or dependency cascade.
 
     Rules:
-    1. If any dependency was rebuilt this run, force all stages
-    2. If any stage has force_run=true, that stage and all downstream stages are forced
+    1. If force_all is set (operator requested FORCE_REBUILD for this package), force
+       all stages, ignoring cache/force_run entirely.
+    2. If any dependency was rebuilt this run, force all stages
+    3. If any stage has force_run=true, that stage and all downstream stages are forced
 
     Args:
         pkg: Package name
         deps: Package's effective dependencies (see lib.deps.effective_deps)
         target: build_db target key (mock chroot, e.g. fedora-44-x86_64)
         rebuilt_packages: Set of packages that were rebuilt this run
+        force_all: If True, force every stage for this package (FORCE_REBUILD=1)
 
     Returns:
         Set of stage names that must run
     """
+    if force_all:
+        return set(STAGE_ORDER)
+
     forced: set[str] = set()
     cascade = False
 

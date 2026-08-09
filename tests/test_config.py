@@ -10,7 +10,25 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import pytest
 
-from lib.config import get_packager, setup_logging
+from lib.config import env_flag, get_packager, setup_logging
+
+
+class TestEnvFlag:
+    """Test env_flag function."""
+
+    @pytest.mark.parametrize("value", ["1", "true", "TRUE", "True", "yes", "YES"])
+    def test_truthy_values(self, monkeypatch, value):
+        monkeypatch.setenv("FORCE_REBUILD", value)
+        assert env_flag("FORCE_REBUILD") is True
+
+    @pytest.mark.parametrize("value", ["", "0", "false", "FALSE", "no", "junk"])
+    def test_falsy_values(self, monkeypatch, value):
+        monkeypatch.setenv("FORCE_REBUILD", value)
+        assert env_flag("FORCE_REBUILD") is False
+
+    def test_unset_is_false(self, monkeypatch):
+        monkeypatch.delenv("FORCE_REBUILD", raising=False)
+        assert env_flag("FORCE_REBUILD") is False
 
 
 class TestGetPackager:

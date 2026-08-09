@@ -11,12 +11,15 @@ Environment variables:
   FEDORA_VERSION  Fedora version to target (default: 43)
   MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   COPR_REPO       If set, include copr stage in plan (optional)
+  FORCE_REBUILD   If '1'/'true', show every requested package's stages as "run"
+                  instead of "cache" (mirrors full-cycle.py's FORCE_REBUILD)
 """
 
 import os
 
 from lib import build_db
 from lib.cache import compute_input_hashes
+from lib.config import env_flag
 from lib.deps import effective_deps
 from lib.paths import resolve_target
 from lib.pipeline import compute_forced_stages, is_cached
@@ -33,6 +36,7 @@ def show_plan(
     skip_packages_arg: str = "",
     copr_repo: str = "",
     target: str = "",
+    force_packages: set[str] | None = None,
 ) -> None:
     """Display build plan as a table.
 
@@ -40,13 +44,17 @@ def show_plan(
     - Computes input hashes (source commit, template, config, deps, patches)
     - Checks force_run flags and dependency cascade rules
     - Labels "cache" only if inputs haven't changed AND no forced stages apply
+    - force_packages (FORCE_REBUILD) always labels every stage "run", matching
+      compute_forced_stages(force_all=True) in full-cycle.py
 
     Args:
         package: If set, show only these package(s). Comma-separated. If empty, show all.
         skip_packages_arg: If set, exclude these package(s). Comma-separated.
         copr_repo: If set, include copr stage in plan (optional)
         target: build_db target key (mock chroot) to read cached state from
+        force_packages: Packages FORCE_REBUILD applies to (see full-cycle.py)
     """
+    force_packages = force_packages or set()
     if not target:
         fedora_version = os.environ.get("FEDORA_VERSION", "43")
         target = resolve_target(fedora_version, os.environ.get("MOCK_CHROOT", ""))
@@ -74,7 +82,9 @@ def show_plan(
 
         # Compute forced stages (note: during planning, no packages have been rebuilt yet)
         deps = effective_deps(pkg, meta, all_packages_full)
-        forced_stages = compute_forced_stages(pkg, deps, target, set())
+        forced_stages = compute_forced_stages(
+            pkg, deps, target, set(), force_all=pkg in force_packages
+        )
 
         row = []
         for stage in stages:
@@ -102,4 +112,11 @@ if __name__ == "__main__":
     package = os.environ.get("PACKAGE", "")
     skip_packages_arg = os.environ.get("SKIP_PACKAGES", "")
     copr_repo = os.environ.get("COPR_REPO", "")
-    show_plan(package, skip_packages_arg, copr_repo)
+    force_packages: set[str] = set()
+    if env_flag("FORCE_REBUILD"):
+        force_packages = (
+            {n.strip() for n in package.split(",") if n.strip()}
+            if package
+            else set(get_packages())
+        )
+    show_plan(package, skip_packages_arg, copr_repo, force_packages=force_packages)

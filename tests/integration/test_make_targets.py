@@ -300,6 +300,117 @@ class TestCoprGatedByMockFailure:
         assert entry["reason"] == "SKIP_COPR"
 
 
+class TestResolveForcePackages:
+    """Unit coverage for full_cycle.resolve_force_packages (FORCE_REBUILD scoping)."""
+
+    def test_disabled_returns_empty_set(self):
+        packages = {"hyprutils": {}, "Hyprland": {}}
+        assert full_cycle.resolve_force_packages(False, "", packages) == set()
+        assert full_cycle.resolve_force_packages(False, "Hyprland", packages) == set()
+
+    def test_no_package_filter_forces_every_package_in_run(self):
+        packages = {"hyprutils": {}, "Hyprland": {}}
+        assert full_cycle.resolve_force_packages(True, "", packages) == set(packages)
+
+    def test_package_filter_scopes_to_requested_only(self):
+        """Deps pulled in transitively (present in `packages` but not requested) are excluded."""
+        packages = {"hyprutils": {}, "Hyprland": {}}  # hyprutils pulled in as a dep
+        result = full_cycle.resolve_force_packages(True, "Hyprland", packages)
+        assert result == {"Hyprland"}
+
+    def test_package_filter_ignores_names_not_in_run(self):
+        packages = {"hyprutils": {}}
+        result = full_cycle.resolve_force_packages(True, "Hyprland, hyprutils", packages)
+        assert result == {"hyprutils"}
+
+
+class TestForceRebuildOverridesProceed:
+    """FORCE_REBUILD must force every stage for the affected package(s) and win over a
+    PROCEED_BUILD resume for those same packages, while leaving untouched packages'
+    PROCEED_BUILD behavior alone (see full-cycle.py's `pkg_proceed`).
+    """
+
+    def _run(self, force_packages):
+        packages = {"hyprutils": {}, "Hyprland": {}}
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+
+        received_proceed: dict[str, bool] = {}
+
+        def fake_mock_run_for_package(
+            pkg, meta, fedora_version, target, proceed, mock_failed, all_pkgs, run_id_
+        ):
+            received_proceed[pkg] = proceed
+            build_db.set_stage(pkg, "mock", target, run_id_, "success")
+            mock_failed[pkg] = False
+            return True
+
+        def fake_is_cached(stage, pkg, target, new_hashes, forced_stages):
+            # Only mock/copr are "not cached" -- exercises the real branches,
+            # matching the pattern used by TestCoprGatedByMockFailure.
+            return stage not in ("mock", "copr")
+
+        with patch.object(
+            full_cycle, "get_packages", return_value=packages
+        ), patch.object(
+            full_cycle, "compute_input_hashes", return_value={}
+        ), patch.object(
+            full_cycle, "effective_deps", return_value=set()
+        ), patch.object(
+            full_cycle,
+            "compute_forced_stages",
+            wraps=full_cycle.compute_forced_stages,
+        ) as forced_stages_spy, patch.object(
+            full_cycle, "is_cached", side_effect=fake_is_cached
+        ), patch.object(
+            full_cycle, "cache_miss_reason", return_value="test"
+        ), patch.object(
+            full_cycle.time, "sleep"
+        ), patch.object(
+            full_cycle._stage["stage-show-plan"], "show_plan"
+        ), patch.object(
+            full_cycle._stage["stage-validate"], "run_global_checks"
+        ), patch.object(
+            full_cycle._stage["stage-validate"], "run_for_package", return_value=True
+        ), patch.object(
+            full_cycle._stage["stage-copr"], "check_copr_credentials"
+        ), patch.object(
+            full_cycle._stage["stage-mock"],
+            "run_for_package",
+            side_effect=fake_mock_run_for_package,
+        ), patch.object(
+            full_cycle._stage["stage-copr"], "run_for_package", return_value=True
+        ):
+            full_cycle.run_build_pipeline(
+                packages,
+                TARGET,
+                run_id,
+                fedora_version="44",
+                copr_repo="",
+                proceed=True,
+                force_packages=force_packages,
+            )
+
+        return received_proceed, forced_stages_spy
+
+    def test_forced_package_gets_proceed_false_and_force_all_true(self):
+        received_proceed, forced_stages_spy = self._run({"Hyprland"})
+
+        assert received_proceed == {"hyprutils": True, "Hyprland": False}
+
+        force_all_by_pkg = {
+            call.args[0]: call.kwargs["force_all"] for call in forced_stages_spy.call_args_list
+        }
+        assert force_all_by_pkg["Hyprland"] is True
+        assert force_all_by_pkg["hyprutils"] is False
+
+    def test_no_force_packages_leaves_proceed_untouched(self):
+        received_proceed, forced_stages_spy = self._run(set())
+
+        assert received_proceed == {"hyprutils": True, "Hyprland": True}
+        for call in forced_stages_spy.call_args_list:
+            assert call.kwargs["force_all"] is False
+
+
 class TestCoprGatedByChrootCoverage:
     """Coverage for docs/bugs.md BUG-0018's pre-submit gate: REQUIRE_CHROOT_COVERAGE=true
     must block Copr submission the same way a mock failure already does, while the
