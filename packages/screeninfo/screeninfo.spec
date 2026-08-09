@@ -2,7 +2,7 @@
 
 Name:           screeninfo
 Version:        0.8.1
-Release:        9%{?dist}
+Release:        12%{?dist}
 Summary:        Fetch location and size of physical screens
 BuildArch:      noarch
 License:        MIT
@@ -35,13 +35,13 @@ Package info:
 
 %install
 %pyproject_install
-%pyproject_save_files -l -a screeninfo
+%pyproject_save_files -L -a screeninfo
 
 %files -f %{pyproject_files}
 %doc README.md
 %license LICENSE.md
 
 %changelog
-* Thu Aug 06 2026 nett00n <copr@nett00n.org> - 0.8.1-9
+* Sun Aug 09 2026 nett00n <copr@nett00n.org> - 0.8.1-12
 
 - Update to 0.8.1

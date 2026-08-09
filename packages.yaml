@@ -1976,7 +1976,7 @@ screeninfo:
   - '%doc README.md'
   - '%license LICENSE.md'
   license: MIT
-  release: 9
+  release: 12
   requires: []
   rpm:
     buildarch: noarch

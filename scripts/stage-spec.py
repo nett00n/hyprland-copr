@@ -141,7 +141,7 @@ def generate_spec(
         save_files = build.get("save_files")
         files_from = None
         if save_files:
-            install_cmd += f"\n%pyproject_save_files -l -a {save_files}"
+            install_cmd += f"\n%pyproject_save_files -L -a {save_files}"
             files_from = "%{pyproject_files}"
 
         # Build devel package info

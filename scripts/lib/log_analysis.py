@@ -194,6 +194,13 @@ _BAD_EXIT_STATUS_RE = re.compile(
     r"^error: Bad exit status from /var/tmp/rpm-tmp\.\w+ \(%(\w+)\)"
 )
 
+# ValueError: No License-File (PEP 639) in upstream metadata found. Adjust the
+# upstream metadata if the project's build backend supports PEP 639 or use
+# `%pyproject_save_files -L` and include the %license file in %files manually.
+_PYPROJECT_NO_LICENSE_FILE_RE = re.compile(
+    r"^ValueError: No License-File \(PEP 639\) in upstream metadata found"
+)
+
 # /usr/bin/ar: unable to copy file 'libhyprland_lib.a'; reason: No space left on device
 # dd: failed to open 'file': No space left on device
 _NO_SPACE_LEFT_RE = re.compile(r"No space left on device")
@@ -756,6 +763,21 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                     line.strip(),
                     f'librpm format error: unknown tag "{tag}" in spec file — check for invalid RPM macros or malformed spec syntax',
                     tag,
+                    "none",
+                )
+            )
+            continue
+        m = _PYPROJECT_NO_LICENSE_FILE_RE.match(line)
+        if m:
+            issues.append(
+                (
+                    lineno,
+                    line.strip(),
+                    "%pyproject_save_files -l could not auto-detect a license file"
+                    " (upstream metadata has no PEP 639 License-File) — regenerate"
+                    ' the spec with gen-spec.py, which now passes "-L" instead of'
+                    ' "-l" (the %license entry in files: still packages it manually)',
+                    "",
                     "none",
                 )
             )
