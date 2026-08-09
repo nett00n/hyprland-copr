@@ -22,8 +22,6 @@ bullet); IDs are never reused or renumbered, so deletions leave gaps.
 
 # Containers / caches
 
-- **TODO-0014** `/var/lib/mock` (mock's own chroot cache) isn't mounted as a volume like `rpmbuild`/`local-repo` are -> since containers run `--rm`, every fresh `make stage-mock` run rebuilds/bootstraps the whole chroot from scratch instead of reusing a cached one, costing real time on every `update-daily`. Would need cache-invalidation handling if persisted, since a stale local-repo (see bugs.md) could then poison a persisted chroot's dnf cache too #medium
-
 # Build report db
 
 Migrated from build-report.yaml to build-report.db (sqlite, stdlib) -- see git
@@ -110,10 +108,6 @@ instead.
   BUG-0041 -- that's what puts the analysis before the next run's log rmtree), but its output only
   goes to whatever captures update-daily's stdout (cron mail, if configured); there's still no
   durable nightly summary artifact committed or posted anywhere #low
-- **TODO-0067** `make readme` starts three separate containers to render three templates from the
-  same build-report.db, and only the first (`github`) polls Copr -- the other two pass
-  `--skip-copr-poll` and read whatever the first left behind. One invocation rendering all three
-  would be cheaper and could not drift #low
 - **TODO-0068** `update-versions.py` force-pulls 45 submodules and fetches tags for 45 packages
   serially on every run, with no concurrency, no offline mode, and no aggregate failure report: an
   individual `git fetch` failure prints a warning and is then invisible in the stdout summary, so

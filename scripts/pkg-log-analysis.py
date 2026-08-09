@@ -126,10 +126,28 @@ def analyze_package(pkg: str) -> int:
     return 1
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <package>")
-        sys.exit(1)
+def main(argv: list[str]) -> int:
+    """Analyze every package in argv in one process (instead of one process per
+    package) so `make stage-log-analyze` doesn't spawn a container per package.
 
-    pkg = sys.argv[1]
-    sys.exit(analyze_package(pkg))
+    A package with no log dir (analyze_package() -> 2) is just noted, not a
+    failure -- that's the common case across the whole set and must not abort
+    the rest. Returns 1 only if a package reported real issues.
+    """
+    if not argv:
+        print(f"Usage: {sys.argv[0]} <package> [<package> ...]")
+        return 1
+
+    had_issues = False
+    for pkg in argv:
+        result = analyze_package(pkg)
+        if result == 1:
+            had_issues = True
+        elif result == 2:
+            print(f"{HIGHLIGHT_PREFIX} ⊘ No logs for {pkg}, skipping", file=sys.stderr)
+
+    return 1 if had_issues else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

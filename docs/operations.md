@@ -166,6 +166,28 @@ and only resolve with the same volumes mounted.
 would orphan every tracked file with no record of what it is. For a full wipe (irreversible,
 asks for confirmation): `make db-nuke`.
 
+## Container volumes
+
+Per-`FEDORA_VERSION` named volumes persist state across the `--rm` containers every `make`
+target runs in: `rpmbuild-<ver>` (SOURCES/SRPMS/RPMS), `local-repo-<ver>` (dep-resolution repo
+for mock), and `mock-cache-<ver>`/`mock-root-<ver>` (mock's own `/var/cache/mock` and
+`/var/lib/mock` — the bootstrapped buildroot and dnf package cache). Without the last two, every
+`make full-cycle`/nightly run would re-bootstrap every chroot from scratch; with them, only the
+first build after `container-volume-clean` pays that cost, and it grows to roughly 1-1.5GB per
+Fedora version.
+
+If a stale `local-repo` poisons the persisted dnf cache (mock resolving against an RPM that no
+longer matches what's actually there), reset just the mock volumes:
+
+```shell
+make clean-mock-cache FEDORA_VERSION=44   # drop mock-cache-44/mock-root-44 only
+make clean-localrepo  FEDORA_VERSION=44   # also drops mock-cache-44/mock-root-44 (they go stale together)
+```
+
+`make container-volume-clean` removes all four volumes for one (or, from the default
+`FEDORA_VERSION`, every `SUPPORTED`) version — use it for a full reset, e.g. after a mock/dnf
+upgrade in the base image.
+
 ## Regenerating docs
 
 ```shell

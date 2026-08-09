@@ -432,3 +432,66 @@ class TestGenReportMain:
 
         # The updated state must have made it into the DB (and thus into the render).
         assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "success"
+
+    def test_main_renders_multiple_formats_from_one_invocation(self, tmp_path):
+        """Repeated --format/--output pairs (TODO-0067) must render every
+        template from a single build-report.db read/Copr poll, writing each
+        to its own output file."""
+        self._seed_run()
+        out_github = tmp_path / "README.md"
+        out_copr = tmp_path / "README.copr.md"
+        out_full = tmp_path / "full-report.md"
+
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
+             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
+             patch.object(gen_report, "ROOT", tmp_path), \
+             patch.object(gen_report, "poll_copr_status") as mock_poll, \
+             patch.object(gen_report, "create_jinja_env") as mock_env, \
+             patch(
+                 "sys.argv",
+                 [
+                     "gen-report.py",
+                     "--format", "github", "--output", str(out_github),
+                     "--format", "copr", "--output", str(out_copr),
+                     "--format", "full-report", "--output", str(out_full),
+                 ],
+             ):
+
+            mock_poll.return_value = False
+            mock_template = MagicMock()
+            mock_template.render.side_effect = ["github-out", "copr-out", "full-out"]
+            mock_jinja_env = MagicMock()
+            mock_jinja_env.get_template.return_value = mock_template
+            mock_env.return_value = mock_jinja_env
+
+            gen_report.main()
+
+        assert out_github.read_text() == "github-out"
+        assert out_copr.read_text() == "copr-out"
+        assert out_full.read_text() == "full-out"
+        assert mock_jinja_env.get_template.call_args_list == [
+            (("readme-github.md.j2",),),
+            (("readme-copr.md.j2",),),
+            (("full-report.md.j2",),),
+        ]
+        # One shared Copr poll for all three renders, not one per format.
+        assert mock_poll.call_count == 1
+
+    def test_main_rejects_mismatched_format_output_counts(self, tmp_path):
+        self._seed_run()
+
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
+             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
+             patch.object(gen_report, "ROOT", tmp_path), \
+             patch.object(gen_report, "poll_copr_status") as mock_poll, \
+             patch(
+                 "sys.argv",
+                 ["gen-report.py", "--format", "github", "--format", "copr", "--output", str(tmp_path / "x")],
+             ):
+            mock_poll.return_value = False
+            with pytest.raises(SystemExit) as exc_info:
+                gen_report.main()
+
+        assert exc_info.value.code == 2

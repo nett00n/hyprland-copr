@@ -637,6 +637,119 @@ class TestPackageVarSemantics:
         assert "_PKGS := a,b" not in result.stdout
 
 
+class TestSingleContainerTargets:
+    """`sources`/`stage-log-analyze`/`readme` used to spawn one podman container per
+    package (or per template, for readme) via a shell/Makefile loop. They now spawn
+    one container for the whole package list. Asserted via `make -n` dry-run text
+    (following TestPackageVarSemantics.test_pkgs_expands_comma_list_to_space_separated
+    above) rather than actually invoking podman, which these unit tests don't have.
+    """
+
+    def _dry_run(self, *args: str) -> str:
+        result = subprocess.run(
+            ["make", "-n", *args],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        return result.stdout
+
+    def test_sources_uses_one_container_for_the_whole_package_list(self):
+        stdout = self._dry_run("sources", "PACKAGE=a,b")
+        # One podman invocation for spectool (a second, separate one is expected for
+        # the check-checksums sub-make sources already chains to).
+        assert stdout.count("spectool -g -R") == 1
+        # Both packages' downloads happen inside that one container's shell for-loop
+        # ("sh -c '... for pkg in a b ... spectool ...'"), not as two separate
+        # `podman run` invocations -- the recipe line wraps with a trailing `\`, so
+        # match across the joined block rather than a single physical line.
+        assert "sh -c 'set -e; for pkg in a b; do" in stdout
+        block_start = stdout.index("sh -c 'set -e; for pkg in a b; do")
+        block_end = stdout.index("done'", block_start)
+        assert "spectool -g -R" in stdout[block_start:block_end]
+
+    def test_stage_log_analyze_uses_one_container_for_the_whole_package_list(self):
+        stdout = self._dry_run("stage-log-analyze", "PACKAGE=a,b")
+        assert stdout.count("pkg-log-analysis.py") == 1
+        analyze_line = next(
+            line for line in stdout.splitlines() if "pkg-log-analysis.py" in line
+        )
+        assert analyze_line.rstrip().endswith("pkg-log-analysis.py a b")
+
+    def test_stage_log_analyze_respects_skip_packages(self):
+        stdout = self._dry_run(
+            "stage-log-analyze", "PACKAGE=a,b,c", "SKIP_PACKAGES=b"
+        )
+        analyze_line = next(
+            line for line in stdout.splitlines() if "pkg-log-analysis.py" in line
+        )
+        assert analyze_line.rstrip().endswith("pkg-log-analysis.py a c")
+
+    def test_readme_renders_all_three_formats_from_one_container(self):
+        stdout = self._dry_run("readme")
+        assert stdout.count("gen-report.py") == 1
+        assert stdout.count("podman run --rm --privileged") == 1
+        block_start = stdout.index("gen-report.py")
+        block_end = stdout.index("2>", block_start)
+        render_block = stdout[block_start:block_end]
+        assert "--format github" in render_block
+        assert "--format copr" in render_block
+        assert "--format full-report" in render_block
+        assert "--output ./README.md" in render_block
+        assert "--output ./docs/README.copr.md" in render_block
+        assert "--output ./docs/full-report.md" in render_block
+        # The old per-template --skip-copr-poll is gone -- one shared poll now covers
+        # all three renders.
+        assert "--skip-copr-poll" not in render_block
+
+
+class TestMockCacheVolumes:
+    """TODO-0014: mock's buildroot cache now persists across --rm containers via
+    named volumes instead of being rebuilt from scratch on every run."""
+
+    def _dry_run(self, *args: str) -> str:
+        result = subprocess.run(
+            ["make", "-n", *args],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        return result.stdout
+
+    def test_stage_mock_mounts_cache_and_root_volumes(self):
+        stdout = self._dry_run("stage-mock", "PACKAGE=x", "FEDORA_VERSION=44")
+        assert "mock-cache-44:/var/cache/mock:z" in stdout
+        assert "mock-root-44:/var/lib/mock:z" in stdout
+
+    def test_volumes_are_per_fedora_version(self):
+        stdout = self._dry_run("stage-mock", "PACKAGE=x", "FEDORA_VERSION=43")
+        assert "mock-cache-43:/var/cache/mock:z" in stdout
+        assert "mock-root-43:/var/lib/mock:z" in stdout
+        assert "mock-cache-44" not in stdout
+
+    def test_clean_mock_cache_removes_both_volumes(self):
+        stdout = self._dry_run("clean-mock-cache", "FEDORA_VERSION=44")
+        assert "volume rm mock-cache-44" in stdout
+        assert "volume rm mock-root-44" in stdout
+
+    def test_clean_localrepo_also_drops_mock_cache(self):
+        """A stale local-repo can poison the persisted dnf cache too (docs/todo.md
+        TODO-0014's stated worry) -- the two must be reset together."""
+        stdout = self._dry_run("clean-localrepo", "FEDORA_VERSION=44")
+        assert "volume rm mock-cache-44" in stdout
+        assert "volume rm mock-root-44" in stdout
+        assert "volume rm local-repo-44" not in stdout  # localrepo is purged, not removed
+
+    def test_container_volume_clean_removes_mock_volumes_too(self):
+        stdout = self._dry_run(
+            "container-volume-clean", "FEDORA_VERSION=44", "RECURSIVE_CALL=1"
+        )
+        assert "volume rm mock-cache-44" in stdout
+        assert "volume rm mock-root-44" in stdout
+
+
 class TestUpdateDailyResilience:
     """Coverage for docs/todo.md TODO-0061 (a failed package build must not abort readme/
     copr-description/git commit) and TODO-0064 (nightly gate is validate-packages+fmt only,

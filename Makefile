@@ -52,6 +52,14 @@ RPMBUILD_VOLUME  := rpmbuild-$(FEDORA_VERSION)
 RPMBUILD_MOUNT   := $(RPMBUILD_VOLUME):/root/rpmbuild:z
 LOCALREPO_VOLUME := local-repo-$(FEDORA_VERSION)
 LOCALREPO_MOUNT  := $(LOCALREPO_VOLUME):/local-repo:z
+# Persist mock's buildroot cache/state across --rm containers (TODO-0014) so a
+# fresh `make full-cycle`/nightly run doesn't re-bootstrap every chroot from
+# scratch. Deliberately left owned by root (mock's own layout, root:mock
+# 2775) -- unlike RPMBUILD/LOCALREPO below, setup-volumes does not chown these.
+MOCKCACHE_VOLUME := mock-cache-$(FEDORA_VERSION)
+MOCKCACHE_MOUNT  := $(MOCKCACHE_VOLUME):/var/cache/mock:z
+MOCKROOT_VOLUME  := mock-root-$(FEDORA_VERSION)
+MOCKROOT_MOUNT   := $(MOCKROOT_VOLUME):/var/lib/mock:z
 WORKDIR_MOUNT    := $(PWD):/work:z
 VENV_MOUNT       := $(PWD)/.venv:/work/.venv:z
 MOCK_CONF_MOUNT  := $(PWD)/mock-local-repo.conf:/etc/mock/local-repo.conf:ro,z
@@ -71,6 +79,8 @@ else
 CONTAINER_RUN := $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm --privileged \
 	-v $(RPMBUILD_MOUNT) \
 	-v $(LOCALREPO_MOUNT) \
+	-v $(MOCKCACHE_MOUNT) \
+	-v $(MOCKROOT_MOUNT) \
 	-v $(WORKDIR_MOUNT) \
 	-v $(VENV_MOUNT) \
 	-v $(MOCK_CONF_MOUNT) \
@@ -106,7 +116,7 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-all db-usage db-prune db-shell db-nuke
+.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-nuke
 
 save-last-build: ## Save last built RPMs and build-report.db to local-repo/ before clean
 	@mkdir -p local-repo
@@ -119,13 +129,20 @@ clean-logs: check-image check-venv setup-volumes ## Remove build logs; clears st
 	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --reset || true
 	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned build logs and stage state (artifact ledger preserved)"
 
-clean-localrepo: ## Purge local repo for FEDORA_VERSION to resolve dependency conflicts
+clean-localrepo: clean-mock-cache ## Purge local repo for FEDORA_VERSION to resolve dependency conflicts
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(LOCALREPO_VOLUME) >/dev/null 2>&1 && \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(LOCALREPO_MOUNT) $(IMAGE_NAME):$(FEDORA_VERSION) \
 			rm -rf /local-repo/* || true
 	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned local repo: $(LOCALREPO_VOLUME)"
 
-clean-all: clean-logs clean-localrepo ## Clean logs and local repo; build-report.db's artifact ledger survives (see db-nuke)
+clean-mock-cache: ## Drop the persisted mock buildroot cache for FEDORA_VERSION (forces a full re-bootstrap next build; see docs/todo.md TODO-0014)
+	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKCACHE_VOLUME) >/dev/null 2>&1 && \
+		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKCACHE_VOLUME) || true
+	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKROOT_VOLUME) >/dev/null 2>&1 && \
+		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKROOT_VOLUME) || true
+	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned mock cache: $(MOCKCACHE_VOLUME), $(MOCKROOT_VOLUME)"
+
+clean-all: clean-logs clean-localrepo ## Clean logs, local repo, and mock cache; build-report.db's artifact ledger survives (see db-nuke)
 	@echo $(HIGHLIGHT_PREFIX) "✓ Full cleanup completed"
 
 clean: save-last-build clean-logs ## Remove build logs (saves last build first)
@@ -158,6 +175,10 @@ else
 		($(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume create $(LOCALREPO_VOLUME) || exit 1; \
 		 $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(LOCALREPO_MOUNT) $(IMAGE_NAME):$(FEDORA_VERSION) \
 		 	chown -R $(USER_ID):$(GROUP_ID) /local-repo || exit 1)
+	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKCACHE_VOLUME) >/dev/null 2>&1 || \
+		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume create $(MOCKCACHE_VOLUME) || exit 1
+	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKROOT_VOLUME) >/dev/null 2>&1 || \
+		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume create $(MOCKROOT_VOLUME) || exit 1
 	@echo "$(HIGHLIGHT_PREFIX) ✓ Volumes ready"
 endif
 
@@ -318,16 +339,13 @@ gen-report: check-image check-venv setup-volumes ## Render build-report.db to st
 readme: check-image check-venv setup-volumes ## Generate README.md, docs/README.copr.md, and docs/full-report.md for FEDORA_VERSION
 	@mkdir -p "$(MAKE_LOGS_DIR)/readme"
 	@$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) \
-		/work/.venv/bin/python3 scripts/gen-report.py --format github --output ./README.md \
-		2>"$(MAKE_LOGS_DIR)/readme/github.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ GitHub README failed"; exit 1)
+		/work/.venv/bin/python3 scripts/gen-report.py \
+			--format github      --output ./README.md \
+			--format copr        --output ./docs/README.copr.md \
+			--format full-report --output ./docs/full-report.md \
+		2>"$(MAKE_LOGS_DIR)/readme/render.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ README/docs generation failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ GitHub README generated"
-	@$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) \
-		/work/.venv/bin/python3 scripts/gen-report.py --format copr --output ./docs/README.copr.md --skip-copr-poll \
-		2>"$(MAKE_LOGS_DIR)/readme/copr.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ COPR README failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ COPR README generated"
-	@$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) \
-		/work/.venv/bin/python3 scripts/gen-report.py --format full-report --output ./docs/full-report.md --skip-copr-poll \
-		2>"$(MAKE_LOGS_DIR)/readme/full-report.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ Full Report failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ Full Report generated"
 
 readme-shell: check-image check-venv ## Regenerate only the branding shell of README.md/docs/README.copr.md (no build-report.db needed; for CI)
@@ -391,7 +409,7 @@ container-clean: ## Remove image for FEDORA_VERSION
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) rmi $(IMAGE_NAME):$(FEDORA_VERSION) || true
 	@echo $(HIGHLIGHT_PREFIX) "Cleaned $(IMAGE_NAME):$(FEDORA_VERSION)"
 
-container-volume-clean: ## Remove volumes (rpmbuild, local-repo) for FEDORA_VERSION (all if not specified)
+container-volume-clean: ## Remove volumes (rpmbuild, local-repo, mock-cache, mock-root) for FEDORA_VERSION (all if not specified)
 	@if [ "$(FEDORA_VERSION)" = "43" ] && [ -z "$(RECURSIVE_CALL)" ]; then \
 		for v in $(SUPPORTED); do \
 			echo $(HIGHLIGHT_PREFIX) "Removing volumes for Fedora $$v..."; \
@@ -404,7 +422,11 @@ container-volume-clean: ## Remove volumes (rpmbuild, local-repo) for FEDORA_VERS
 			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(RPMBUILD_VOLUME) || true; \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(LOCALREPO_VOLUME) >/dev/null 2>&1 && \
 			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(LOCALREPO_VOLUME) || true; \
-		echo $(HIGHLIGHT_PREFIX) "Cleaned volumes: $(RPMBUILD_VOLUME), $(LOCALREPO_VOLUME)"; \
+		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKCACHE_VOLUME) >/dev/null 2>&1 && \
+			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKCACHE_VOLUME) || true; \
+		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKROOT_VOLUME) >/dev/null 2>&1 && \
+			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKROOT_VOLUME) || true; \
+		echo $(HIGHLIGHT_PREFIX) "Cleaned volumes: $(RPMBUILD_VOLUME), $(LOCALREPO_VOLUME), $(MOCKCACHE_VOLUME), $(MOCKROOT_VOLUME)"; \
 	fi
 
 container-all: ## Build images for all supported Fedora versions
@@ -419,9 +441,11 @@ sources: check-image check-venv setup-volumes ## Download sources for PACKAGE (o
 		if [ ! -f "$$_spec" ]; then \
 			echo "$(HIGHLIGHT_PREFIX) ✗ sources: $$pkg - spec file not found: $$_spec"; exit 1; \
 		fi; \
-		echo "$(HIGHLIGHT_PREFIX) sources: $$pkg"; \
-		$(CONTAINER_RUN) spectool -g -R $$_spec || exit 1; \
 	done
+	@$(CONTAINER_RUN) sh -c 'set -e; for pkg in $(_PKGS); do \
+		echo "$(HIGHLIGHT_PREFIX) sources: $$pkg"; \
+		spectool -g -R "packages/$$pkg/$$pkg.spec"; \
+	done'
 	$(MAKE) check-checksums PACKAGE=$(PACKAGE)
 
 FORCE_REBUILD ?=
@@ -573,16 +597,7 @@ stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (P
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-copr.py,Copr submission stage passed,Copr submission stage failed)
 
+_LOG_PKGS := $(filter-out $(subst $(comma),$(space),$(SKIP_PACKAGES)),$(_PKGS))
+
 stage-log-analyze: check-image check-venv setup-volumes ## Analyze build logs for packages and report actionable errors (PACKAGE=<name> for one, runs for all by default, respects SKIP_PACKAGES)
-	@for pkg in $(_PKGS); do \
-		_skip_list="$(SKIP_PACKAGES)"; \
-		if [ -n "$$_skip_list" ]; then \
-			_match=0; \
-			for _skip in $$(echo "$$_skip_list" | tr ',' ' '); do \
-				[ "$$pkg" = "$$_skip" ] && _match=1 && break; \
-			done; \
-			[ $$_match -eq 1 ] && { echo "$(HIGHLIGHT_PREFIX) ⊘ Skipping: $$pkg"; continue; }; \
-		fi; \
-		echo "$(HIGHLIGHT_PREFIX) Analyzing: $$pkg"; \
-		$(CONTAINER_PYTHON) scripts/pkg-log-analysis.py $$pkg || exit 1; \
-	done
+	@$(CONTAINER_PYTHON) scripts/pkg-log-analysis.py $(_LOG_PKGS)

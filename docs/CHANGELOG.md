@@ -14,6 +14,20 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-09
 
+- Added: mock's buildroot cache (`/var/cache/mock`, `/var/lib/mock`) now persists across
+  `--rm` containers via the new `mock-cache-<ver>`/`mock-root-<ver>` volumes, so
+  `make full-cycle`/nightly `update-daily` no longer re-bootstrap every chroot from scratch
+  (docs/todo.md TODO-0014, resolved). `make clean-mock-cache` (also run by
+  `clean-localrepo`/`clean-all`/`container-volume-clean`) drops them if a stale local-repo
+  poisons the persisted dnf cache. `stage-mock.py` now clears `/var/lib/mock/<chroot>/result`
+  before each build so a crash mid-run can't leak a prior package's RPMs into the next one.
+- Changed: `make sources` and `make stage-log-analyze` each now run one container for the
+  whole `PACKAGE` list instead of one container per package (`scripts/pkg-log-analysis.py`
+  gained a multi-package CLI). `make readme` renders all three templates
+  (README.md/docs/README.copr.md/docs/full-report.md) from one container and one Copr poll
+  instead of three (docs/todo.md TODO-0067, resolved) -- `scripts/gen-report.py`'s
+  `--format`/`--output` are now repeatable, paired positionally.
+
 - Added: `FORCE_REBUILD=1` for `make full-cycle`/`make stage-show-plan` -- ignores the cache
   and re-runs every stage (spec through copr) for the requested `PACKAGE`(s), or all packages
   if `PACKAGE` is unset. Scoped to the packages named explicitly; transitive deps pulled into

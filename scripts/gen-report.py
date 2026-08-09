@@ -211,14 +211,20 @@ def main() -> None:
     parser.add_argument(
         "--format",
         choices=["github", "copr", "full-report"],
-        default="github",
-        help="Output format: github (table), copr (list), or full-report (detailed)",
+        action="append",
+        dest="formats",
+        help="Output format: github (table), copr (list), or full-report (detailed). "
+        "Repeatable -- pair each with an --output to render several templates from "
+        "one build-report.db read/Copr poll instead of one process per format "
+        "(see docs/todo.md TODO-0067). Defaults to a single 'github' render.",
     )
     parser.add_argument(
         "--output",
         type=str,
-        default=None,
-        help="Output file path. If not provided, writes to stdout.",
+        action="append",
+        dest="outputs",
+        help="Output file path, one per --format in the same order. If omitted for "
+        "a single-format call, writes to stdout.",
     )
     parser.add_argument(
         "--skip-copr-poll",
@@ -226,11 +232,10 @@ def main() -> None:
         help="Skip polling COPR status updates (use cached status from build-report.db).",
     )
     args = parser.parse_args()
-    template_name = (
-        f"readme-{args.format}.md.j2"
-        if args.format != "full-report"
-        else "full-report.md.j2"
-    )
+    formats = args.formats or ["github"]
+    outputs = args.outputs or [None] * len(formats)
+    if len(outputs) != len(formats):
+        parser.error("--output must be given once per --format (or not at all)")
 
     target = resolve_target(
         os.environ.get("FEDORA_VERSION", "43"), os.environ.get("MOCK_CHROOT", "")
@@ -278,22 +283,26 @@ def main() -> None:
     sections = get_sections(repo)
 
     env = create_jinja_env()
-    template = env.get_template(template_name)
-    output = template.render(
-        run=run,
-        repo=repo,
-        packages=packages,
-        groups=groups,
-        contributors=contributors,
-        badge_style=badge_style,
-        news_entries=news_entries,
-        sections=sections,
-    )
+    for fmt, out in zip(formats, outputs):
+        template_name = (
+            f"readme-{fmt}.md.j2" if fmt != "full-report" else "full-report.md.j2"
+        )
+        template = env.get_template(template_name)
+        output = template.render(
+            run=run,
+            repo=repo,
+            packages=packages,
+            groups=groups,
+            contributors=contributors,
+            badge_style=badge_style,
+            news_entries=news_entries,
+            sections=sections,
+        )
 
-    if args.output:
-        Path(args.output).write_text(output)
-    else:
-        print(output, end="")
+        if out:
+            Path(out).write_text(output)
+        else:
+            print(output, end="")
 
 
 if __name__ == "__main__":

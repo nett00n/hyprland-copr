@@ -344,3 +344,57 @@ class TestOfflineGate:
         assert "--addrepo" in cmd
         assert f"file://{local_repo}" in cmd
         assert "--config-opts" in cmd
+
+
+class TestResultDirCleared:
+    """TODO-0014: /var/lib/mock is now a persisted volume, not container-
+    ephemeral storage -- a stale resultdir from a prior run must not survive
+    into the next mock invocation and get misattributed to this package."""
+
+    def test_clears_stale_resultdir_before_running_mock(self, tmp_path, monkeypatch):
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        srpm_path = tmp_path / "test-pkg-1.0.0-1.fc44.src.rpm"
+        srpm_path.write_bytes(b"srpm")
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path=str(srpm_path))
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+        local_repo = tmp_path / "local-repo"
+        local_repo.mkdir()
+
+        mock_var_lib = tmp_path / "var-lib-mock"
+        stale_result = mock_var_lib / TARGET / "result"
+        stale_result.mkdir(parents=True)
+        (stale_result / "leftover-1.0.0-1.fc44.x86_64.rpm").write_text("stale")
+
+        def fake_path(p, *rest):
+            if p == "/var/lib/mock":
+                return mock_var_lib
+            return Path(p, *rest)
+
+        with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
+             patch.object(stage_mock, "ROOT", tmp_path), \
+             patch.object(stage_mock, "LOCAL_REPO", local_repo), \
+             patch.object(stage_mock, "Path", fake_path), \
+             patch.object(stage_mock, "copy_mock_results", return_value=[]), \
+             patch.object(stage_mock, "update_local_repo", return_value=[]):
+
+            def fake_run_cmd(cmd, log):
+                # By the time mock would run, the stale resultdir must already
+                # be gone -- otherwise a crash mid-build would leave it for the
+                # next run to misattribute.
+                assert not stale_result.exists()
+                return True, "", ""
+
+            with patch.object(stage_mock, "run_cmd", side_effect=fake_run_cmd):
+                stage_mock.run_for_package(
+                    pkg,
+                    meta,
+                    "44",
+                    TARGET,
+                    proceed=False,
+                    failed={},
+                    all_packages={pkg: meta},
+                    run_id=run_id,
+                )

@@ -1,3 +1,4 @@
+---
 aquamarine:
   build:
     system: cmake
@@ -140,8 +141,8 @@ glaze-v7:
     Hyprland's find_package(glaze 7...<8)).
   devel:
     files:
-    - '%{_includedir}/glaze-v7/'
     - '%{_datadir}/glaze-v7/*.cmake'
+    - '%{_includedir}/glaze-v7/'
   files:
   - '%doc README.md'
   - '%license LICENSE'

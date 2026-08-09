@@ -147,7 +147,9 @@ def missing_entries(packages: dict) -> list[str]:
     missing: list[str] = []
     for pkg, meta in packages.items():
         pkg_lock = lock.get(pkg, {})
-        if any(filename not in pkg_lock for filename, _url in remote_sources(pkg, meta)):
+        if any(
+            filename not in pkg_lock for filename, _url in remote_sources(pkg, meta)
+        ):
             missing.append(pkg)
     return missing
 

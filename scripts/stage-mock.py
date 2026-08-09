@@ -269,6 +269,12 @@ def run_for_package(
     if repodata.exists():
         cmd += ["--addrepo", f"file://{LOCAL_REPO}"]
     cmd += ["--rebuild", srpm_path]
+    # /var/lib/mock is now a persisted volume (TODO-0014), not container-ephemeral
+    # storage -- a run that dies before mock clears its own resultdir would
+    # otherwise leave the *previous* package's RPMs there for update_local_repo()/
+    # copy_mock_results() to pick up and misattribute below. Clear it ourselves
+    # first so a stale resultdir can never masquerade as this run's output.
+    shutil.rmtree(Path("/var/lib/mock") / target / "result", ignore_errors=True)
     print(f"  [RUN]  mock: {pkg}", flush=True)
     ok, _, _ = run_cmd(cmd, log)
     # Copies build.log/root.log/state.log to logs/build/<pkg>/, then records
