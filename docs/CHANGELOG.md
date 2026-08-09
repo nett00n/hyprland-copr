@@ -35,6 +35,10 @@ History before this file's introduction is not backfilled - see `git log`.
   applies to. See `docs/operations.md` "Build cache and forcing a re-run".
 - Removed: the `FORCE_MOCK` Makefile flag (docs/bugs.md BUG-0009 -- it was passed into the
   container but nothing ever read it); replaced by the real `FORCE_REBUILD` above.
+- Added: `scripts/lib/log_analysis.py` now recognizes gmake's `No rule to make target 'X',
+  needed by 'Y'` error (e.g. quickshell's `dbus_objectmanager.cpp` missing from
+  `redhat-linux-build`) instead of falling through to the generic `%build` failure message.
+- screeninfo and quickshell packages are fixed for Fedora 43
 
 ## 2026-08-06
 

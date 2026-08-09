@@ -1,7 +1,7 @@
 
 Name:           quickshell
 Version:        0.3.0
-Release:        35%{?dist}
+Release:        38%{?dist}
 Summary:        Flexible QtQuick based desktop shell toolkit
 License:        LGPL-3.0-or-later
 URL:            https://git.outfoxxed.me/quickshell/quickshell.git
@@ -47,7 +47,7 @@ Commit:            59e9c47b0eb48a9e4bcf9631fa062ee939bd2e83
 %autosetup -p1 -n quickshell
 
 %build
-%cmake -DCRASH_REPORTER=OFF
+%cmake -GNinja -DCRASH_REPORTER=OFF
 %cmake_build
 
 %install
@@ -71,7 +71,7 @@ Development files for quickshell.
 %files devel
 
 %changelog
-* Mon May 04 2026 nett00n <copr@nett00n.org> - 0.3.0-35
+* Mon May 04 2026 nett00n <copr@nett00n.org> - 0.3.0-38
 
 - -----BEGIN PGP SIGNATURE-----
 - iHUEABYKAB0WIQQBgf+JTzR/zOsGVxBMiKGF+4kwHgUCafhhjAAKCRBMiKGF+4kw

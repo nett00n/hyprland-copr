@@ -76,6 +76,12 @@ _MAKE_MISSING_TOOL_RE = re.compile(
     r"^make\[?\d*\]?:\s+(\S+): No such file or directory"
 )
 
+# gmake[2]: *** No rule to make target 'src/dbus/dbus_objectmanager.cpp', needed by
+# 'src/dbus/dbusmenu/CMakeFiles/quickshell-dbusmenu_autogen_timestamp_deps'.  Stop.
+_MAKE_NO_RULE_RE = re.compile(
+    r"^\S*make\[?\d*\]?: \*\*\* No rule to make target '([^']+)', needed by '([^']+)'"
+)
+
 # cp: cannot stat '/builddir/build/BUILD/.../README.md': No such file or directory
 _CP_MISSING_FILE_RE = re.compile(
     r"cp: cannot stat '/builddir/build/BUILD/[^']+/([^/']+)': No such file or directory"
@@ -531,6 +537,22 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
             tool = m.group(1)
             issues.append(
                 (lineno, line.strip(), f'make: tool not found: "{tool}"', tool, "tool")
+            )
+            continue
+        m = _MAKE_NO_RULE_RE.match(line)
+        if m:
+            target, needed_by = m.group(1), m.group(2)
+            issues.append(
+                (
+                    lineno,
+                    line.strip(),
+                    f'no rule to make target "{target}", needed by "{needed_by}" — expected'
+                    " source/generated file is missing; check earlier in the log for a"
+                    " failed code-generation step (e.g. qdbusxml2cpp/moc) or a file"
+                    " missing from the source tarball",
+                    target,
+                    "none",
+                )
             )
             continue
         m = _CP_MISSING_FILE_RE.search(line)
