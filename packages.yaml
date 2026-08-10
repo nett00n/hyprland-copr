@@ -312,6 +312,14 @@ Hyprland:
     - '%cmake -Dglaze_DIR=%{_datadir}/glaze-v7'
     - '%cmake_build'
     system: cmake
+  fedora:
+    "43":
+      build:
+        prep:
+        - |
+          sed -i '/return (.* || std::ranges::starts_with(str_view, prefixes));/c\
+          auto check = [&](auto prefix) { return std::string(str_view.begin(), str_view.end()).starts_with(prefix); };\
+          return (... || check(prefixes));' src/helpers/MiscFunctions.cpp
   build_requires:
   - aquamarine-devel
   - cmake
