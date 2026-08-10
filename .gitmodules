@@ -194,3 +194,7 @@
 	path = submodules/imageio/imageio-ffmpeg
 	url = https://github.com/imageio/imageio-ffmpeg
 	ignore = dirty
+[submodule "submodules/JakeStanger/ironbar"]
+	path = submodules/JakeStanger/ironbar
+	url = https://github.com/JakeStanger/ironbar
+	ignore = dirty

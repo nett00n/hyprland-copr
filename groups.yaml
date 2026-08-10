@@ -58,18 +58,19 @@ hyprland-deps:
 other-apps:
   label: Useful apps
   packages:
+  - Waybar
   - ashell
   - cliphist
   - cliphist-git
   - eww
   - hyprland-per-window-layout
+  - ironbar
   - mpvpaper
   - pyprland
   - quickshell
   - satty
   - snappy-switcher
   - uwsm
-  - Waybar
   - waypaper
   packages_from_global_repo:
   - name: swaybg

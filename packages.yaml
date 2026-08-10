@@ -312,14 +312,6 @@ Hyprland:
     - '%cmake -Dglaze_DIR=%{_datadir}/glaze-v7'
     - '%cmake_build'
     system: cmake
-  fedora:
-    "43":
-      build:
-        prep:
-        - |
-          sed -i '/return (.* || std::ranges::starts_with(str_view, prefixes));/c\
-          auto check = [&](auto prefix) { return std::string(str_view.begin(), str_view.end()).starts_with(prefix); };\
-          return (... || check(prefixes));' src/helpers/MiscFunctions.cpp
   build_requires:
   - aquamarine-devel
   - cmake
@@ -383,6 +375,14 @@ Hyprland:
     files:
     - '%{_includedir}/hyprland/'
     - '%{_prefix}/share/pkgconfig/hyprland.pc'
+  fedora:
+    '43':
+      build:
+        prep:
+        - |
+          sed -i '/return (.* || std::ranges::starts_with(str_view, prefixes));/c\
+          auto check = [&](auto prefix) { return std::string(str_view.begin(), str_view.end()).starts_with(prefix); };\
+          return (... || check(prefixes));' src/helpers/MiscFunctions.cpp
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -2029,3 +2029,49 @@ imageio-ffmpeg:
   summary: FFMPEG wrapper for Python
   url: https://github.com/imageio/imageio-ffmpeg
   version: 0.6.0
+ironbar:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
+  build_requires:
+  - cairo-gobject-devel
+  - cargo
+  - dh-autoreconf
+  - gtk4-layer-shell-devel
+  - libinput-devel
+  - luajit-devel
+  - pulseaudio-libs-devel
+  - rust-gdk-pixbuf+default-devel
+  - rust-gdk4-wayland-sys+default-devel
+  - rust-glib-sys+default-devel
+  - rust-graphene-rs-devel
+  - rust-libdbus-sys+default-devel
+  - rust-pango-devel
+  - rustc
+  depends_on:
+  - gtk4-layer-shell
+  description: |
+    Customisable and feature-rich GTK4 bar for Wayland compositors, written in Rust.
+    Ironbar is designed to support anything from a lightweight bar to a full desktop panel with ease.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/ironbar'
+  license: MIT
+  release: 13
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+  summary: Customisable Wayland GTK4 bar written in Rust
+  url: https://github.com/JakeStanger/ironbar
+  version: 0.19.0
