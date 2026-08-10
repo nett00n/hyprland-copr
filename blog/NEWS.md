@@ -7,8 +7,9 @@ paragraph each. README shows the most recent entries - see
 ## 2026-08-09
 
 Fixed packages:
-- screeninfo - was not built successfully on fedora 43
-- quickshell - was not built successfully on fedora 43
+- screeninfo - was not built successfully on fedora 43 - automation fix
+- quickshell - was not built successfully on fedora 43 - additional flag in build process
+- Hyprland - was not built sucessfully on fedora 43 - applied LionHeartP's pathch
 
 ## 2026-08-02
 
