@@ -26,12 +26,17 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-08-10
+
+Added Packages:
+- Ironbar
+
 ### 2026-08-09
 
 Fixed packages:
 - screeninfo - was not built successfully on fedora 43 - automation fix
 - quickshell - was not built successfully on fedora 43 - additional flag in build process
-- Hyprland - was not built sucessfully on fedora 43 - applied LionHeartP's pathch
+- Hyprland - was not built sucessfully on fedora 43 - applied LionHeartP's patch. It builds locally but copr still fails
 
 ### 2026-08-02
 
@@ -61,12 +66,6 @@ New packages: snappy switcher, mpvpaper.
 ### 2026-06-30
 
 New packages: snappy switcher, mpvpaper. Added a `recommends` field to package config.
-
-### 2026-04-24
-
-`release` a thing now, and shows real counter of builds for current version of package. The most ofthen cause of rebuild would be the dependency version update.
-Recently all packages were build as 1.2.3-1, where "1.2.3" - was a version and "1" was a static %autorelease. But this was breaking a depedency find process. I could just replace 1 in packages.yaml, but humans are making mistakes, so full-cycle autoicrement release, while building a package.
-Replaced all YAML writes with ruamel lib for simplifying code and unifying
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/blog/NEWS.md)
 
