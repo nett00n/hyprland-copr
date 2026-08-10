@@ -4,12 +4,16 @@ Maintainer's microblog, informal. Newest first, dated `## YYYY-MM-DD` entries, o
 paragraph each. README shows the most recent entries - see
 `scripts/gen-report.py:get_recent_news()`.
 
+## 2026-08-10
+Added Packages:
+- Ironbar
+
 ## 2026-08-09
 
 Fixed packages:
 - screeninfo - was not built successfully on fedora 43 - automation fix
 - quickshell - was not built successfully on fedora 43 - additional flag in build process
-- Hyprland - was not built sucessfully on fedora 43 - applied LionHeartP's pathch
+- Hyprland - was not built sucessfully on fedora 43 - applied LionHeartP's patch. It builds locally but copr still fails
 
 ## 2026-08-02
 
