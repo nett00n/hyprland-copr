@@ -88,7 +88,9 @@ make stage-log-analyze PACKAGE=<name>
 ```
 
 Reports missing dependencies, incompatible plugins, missing source files, compile errors with
-line references, and (for Copr) which chroots failed vs. succeeded.
+line references, unsatisfiable buildroot transactions (e.g. a stale `local-repo` RPM pinned
+against a soname the current buildroot no longer provides — see `clean-mock-cache`/
+`clean-localrepo` above), and (for Copr) which chroots failed vs. succeeded.
 
 ## Submitting to Copr
 

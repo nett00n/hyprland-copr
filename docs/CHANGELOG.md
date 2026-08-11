@@ -12,6 +12,17 @@ entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
 
 History before this file's introduction is not backfilled - see `git log`.
 
+## 2026-08-11
+
+- Added: `_analyze_mock_root_log` (used by `make stage-log-analyze` /
+  `scripts/pkg-log-analysis.py`) now detects unsatisfiable buildroot transactions —
+  "Failed to resolve the transaction" / "Problem: package X requires Y, but none of the
+  providers can be installed" / "nothing provides Z" — and, when the unsatisfiable package
+  came from `local-repo`, points at `make clean-mock-cache`/`make clean-localrepo` (the fix
+  documented in `docs/operations.md` for a stale local-repo poisoning the buildroot). Previously
+  this class of failure (e.g. a locally built package pinned against a soname the current
+  buildroot no longer provides) produced no actionable output at all.
+
 ## 2026-08-09
 
 - Added: mock's buildroot cache (`/var/cache/mock`, `/var/lib/mock`) now persists across

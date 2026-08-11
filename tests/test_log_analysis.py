@@ -12,6 +12,7 @@ from lib.log_analysis import (
     _analyze_srpm_log,
     _analyze_mock_log,
     _analyze_mock_build_log,
+    _analyze_mock_root_log,
     _analyze_copr_log,
     _analyze_copr_chroot_summary,
     _analyze_copr_chroot_logs,
@@ -1062,6 +1063,68 @@ class TestPrintStageIssues:
         captured = capsys.readouterr()
         # Header should appear once
         assert captured.out.count("Post-build analysis:") == 1
+
+
+class TestAnalyzeMockRootLog:
+    """Test _analyze_mock_root_log (-21-mock-root.log)."""
+
+    def test_nonexistent_log_file(self, tmp_path):
+        issues = _analyze_mock_root_log(tmp_path / "missing.log")
+        assert issues == []
+
+    def test_disk_space_transaction_failure(self, tmp_path):
+        log_file = tmp_path / "21-mock-root.log"
+        log_file.write_text(
+            "DEBUG util.py:461:  Transaction failed: Rpm transaction failed.\n"
+            "DEBUG util.py:461:  - installing package hyprland-0.56.2-7.fc44.x86_64 "
+            "needs 142MB more space on the / filesystem\n"
+        )
+        issues = _analyze_mock_root_log(log_file)
+        assert len(issues) == 1
+        assert "insufficient disk space" in issues[0][2]
+        assert "hyprland-0.56.2-7.fc44.x86_64 needs 142MB on the /" in issues[0][2]
+
+    def test_local_repo_unsatisfiable_dependency(self, tmp_path):
+        log_file = tmp_path / "21-mock-root.log"
+        log_file.write_text(
+            "DEBUG util.py:461:  Failed to resolve the transaction:\n"
+            'DEBUG util.py:461:  Package "pkgconf-pkg-config-2.5.1-1.fc44.x86_64" is '
+            "already installed.\n"
+            "DEBUG util.py:461:  Problem: package aquamarine-devel-0.14.0-10.fc43.x86_64 "
+            "from _work_localrepo requires aquamarine = 0.14.0-10.fc43, but none of the "
+            "providers can be installed\n"
+            "DEBUG util.py:461:    - conflicting requests\n"
+            "DEBUG util.py:461:    - nothing provides libdisplay-info.so.2()(64bit) needed "
+            "by aquamarine-0.14.0-10.fc43.x86_64 from _work_localrepo\n"
+        )
+        issues = _analyze_mock_root_log(log_file)
+        assert len(issues) == 1
+        lineno, raw_line, msg, dep, method = issues[0]
+        assert lineno == 1
+        assert "aquamarine-devel-0.14.0-10.fc43.x86_64" in msg
+        assert "requires aquamarine = 0.14.0-10.fc43" in msg
+        assert "nothing provides libdisplay-info.so.2()(64bit)" in msg
+        assert "make clean-mock-cache" in msg
+        assert "make clean-localrepo" in msg
+
+    def test_upstream_repo_unsatisfiable_dependency_no_localrepo_hint(self, tmp_path):
+        log_file = tmp_path / "21-mock-root.log"
+        log_file.write_text(
+            "DEBUG util.py:461:  Failed to resolve the transaction:\n"
+            "DEBUG util.py:461:  Problem: package foo-1.0-1.fc44.x86_64 from fedora "
+            "requires bar >= 2.0, but none of the providers can be installed\n"
+            "DEBUG util.py:461:    - nothing provides libbar.so.2()(64bit) needed by "
+            "bar-1.0-1.fc44.x86_64 from fedora\n"
+        )
+        issues = _analyze_mock_root_log(log_file)
+        assert len(issues) == 1
+        assert "make clean-mock-cache" not in issues[0][2]
+
+    def test_log_without_errors(self, tmp_path):
+        log_file = tmp_path / "21-mock-root.log"
+        log_file.write_text("DEBUG util.py:461:  Repositories loaded.\n")
+        issues = _analyze_mock_root_log(log_file)
+        assert issues == []
 
 
 class TestAnalyzeCoprLog:

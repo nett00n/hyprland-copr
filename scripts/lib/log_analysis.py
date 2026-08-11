@@ -225,6 +225,22 @@ _RPM_TRANSACTION_SPACE_RE = re.compile(
 # Transaction failed: Rpm transaction failed.
 _TRANSACTION_FAILED_RE = re.compile(r"Transaction failed: Rpm transaction failed")
 
+# Failed to resolve the transaction:
+_FAILED_TO_RESOLVE_RE = re.compile(r"Failed to resolve the transaction:")
+
+# Problem: package aquamarine-devel-0.14.0-10.fc43.x86_64 from _work_localrepo requires
+# aquamarine = 0.14.0-10.fc43, but none of the providers can be installed
+_UNSATISFIABLE_PROBLEM_RE = re.compile(
+    r"Problem: package (\S+) from (\S+) requires (.+?), "
+    r"but none of the providers can be installed$"
+)
+
+#   - nothing provides libdisplay-info.so.2()(64bit) needed by
+#     aquamarine-0.14.0-10.fc43.x86_64 from _work_localrepo
+_NOTHING_PROVIDES_RE = re.compile(
+    r"- nothing provides (\S+) needed by (\S+) from (\S+)$"
+)
+
 
 def _dnf_whatprovides(query: str) -> list[str]:
     try:
@@ -1018,6 +1034,44 @@ def _analyze_mock_root_log(log_path: Path) -> list[tuple[int, str, str, str, str
                     )
                 )
                 transaction_reported = True
+
+        m = _FAILED_TO_RESOLVE_RE.search(line)
+        if m:
+            for next_idx in range(lineno, min(lineno + 20, len(raw_lines) + 1)):
+                next_line = raw_lines[next_idx - 1]
+                problem_m = _UNSATISFIABLE_PROBLEM_RE.search(next_line)
+                if not problem_m:
+                    continue
+                pkg, repo, requirement = problem_m.group(1, 2, 3)
+                providers = []
+                for provides_idx in range(
+                    next_idx, min(next_idx + 10, len(raw_lines) + 1)
+                ):
+                    provides_line = raw_lines[provides_idx - 1]
+                    provides_m = _NOTHING_PROVIDES_RE.search(provides_line)
+                    if provides_m:
+                        capability, needed_by, needed_by_repo = provides_m.group(
+                            1, 2, 3
+                        )
+                        providers.append(
+                            f"nothing provides {capability} needed by {needed_by} "
+                            f"from {needed_by_repo}"
+                        )
+                msg = (
+                    f"unsatisfiable buildroot dependency: {pkg} from {repo} requires "
+                    f"{requirement}, but none of the providers can be installed"
+                )
+                if providers:
+                    msg += " — " + "; ".join(providers)
+                if "local" in repo.lower():
+                    msg += (
+                        " — locally built package in local-repo is stale/incompatible"
+                        " with the current buildroot; reset it with"
+                        " `make clean-mock-cache FEDORA_VERSION=<ver>` or"
+                        " `make clean-localrepo FEDORA_VERSION=<ver>`"
+                    )
+                issues.append((lineno, line.strip(), msg, "", "none"))
+                break
     return issues
 
 
