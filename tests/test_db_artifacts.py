@@ -201,3 +201,35 @@ class TestForget:
         assert build_db.get_stage("a", "mock", TARGET) is None
         assert build_db.artifacts(package="a") == []
         assert "Forgot a" in capsys.readouterr().out
+
+
+class TestForgetRepo:
+    """--forget-repo TARGET drops local-repo ledger rows for one target, used
+    by the fixed `make clean-localrepo` (docs/CHANGELOG.md 2026-08-11) to keep
+    the artifact ledger honest after `rm -rf local-repo/<target>/`."""
+
+    def test_removes_only_repo_rpm_rows_for_target(self, tmp_path, capsys):
+        _artifact(tmp_path, "a.rpm", "a", "rpm", 100, mtime=1, target=TARGET)
+        _artifact(
+            tmp_path, "a-43.rpm", "a", "rpm", 100, mtime=1, target="fedora-43-x86_64"
+        )
+        # Non-repo realm rows (e.g. rpmbuild-volume srpms) must survive untouched.
+        f = tmp_path / "a.src.rpm"
+        f.write_bytes(b"x")
+        build_db.record_artifact(str(f), "rpmbuild-volume", "srpm", "a", TARGET, None)
+        # A mock_log row for the same target must also survive -- only rpm rows go.
+        log = tmp_path / "20-mock.log"
+        log.write_text("log")
+        build_db.record_artifact(str(log), "repo", "mock_log", "a", TARGET, None)
+
+        db_artifacts.forget_repo(TARGET)
+
+        remaining = build_db.artifacts(package="a")
+        remaining_targets_kinds = {
+            (r["target"], r["kind"], r["realm"]) for r in remaining
+        }
+        assert (TARGET, "rpm", "repo") not in remaining_targets_kinds
+        assert ("fedora-43-x86_64", "rpm", "repo") in remaining_targets_kinds
+        assert (TARGET, "srpm", "rpmbuild-volume") in remaining_targets_kinds
+        assert (TARGET, "mock_log", "repo") in remaining_targets_kinds
+        assert TARGET in capsys.readouterr().out

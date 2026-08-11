@@ -212,7 +212,7 @@ class TestCoprGatedByMockFailure:
         run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
 
         def fake_mock_run_for_package(
-            pkg, meta, fedora_version, target, proceed, mock_failed, all_pkgs, run_id_
+            pkg, meta, fedora_version, target, proceed, mock_failed, all_pkgs, run_id_, repo_dir
         ):
             ok = mock_outcomes[pkg]
             build_db.set_stage(pkg, "mock", target, run_id_, "success" if ok else "failed")
@@ -337,7 +337,7 @@ class TestForceRebuildOverridesProceed:
         received_proceed: dict[str, bool] = {}
 
         def fake_mock_run_for_package(
-            pkg, meta, fedora_version, target, proceed, mock_failed, all_pkgs, run_id_
+            pkg, meta, fedora_version, target, proceed, mock_failed, all_pkgs, run_id_, repo_dir
         ):
             received_proceed[pkg] = proceed
             build_db.set_stage(pkg, "mock", target, run_id_, "success")
@@ -422,7 +422,7 @@ class TestCoprGatedByChrootCoverage:
         run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
 
         def fake_mock_run_for_package(
-            pkg, meta, fedora_version, target, proceed, mock_failed, all_pkgs, run_id_
+            pkg, meta, fedora_version, target, proceed, mock_failed, all_pkgs, run_id_, repo_dir
         ):
             build_db.set_stage(pkg, "mock", target, run_id_, "success")
             mock_failed[pkg] = False
@@ -602,14 +602,15 @@ class TestPackageVarSemantics:
             assert result.stdout.strip() == expected, f"PACKAGE={value!r}"
 
     def test_gather_requires_uses_rpm_var(self):
+        rpm = "local-repo/fedora-44-x86_64/hyprutils-0.14.0.fc44.x86_64.rpm"
         result = subprocess.run(
-            ["make", "-n", "gather-requires", "RPM=local-repo/hyprutils-0.14.0.fc44.x86_64.rpm"],
+            ["make", "-n", "gather-requires", f"RPM={rpm}"],
             cwd=ROOT,
             capture_output=True,
             text=True,
         )
         assert result.returncode == 0
-        assert "gather-requires.py local-repo/hyprutils-0.14.0.fc44.x86_64.rpm" in result.stdout
+        assert f"gather-requires.py {rpm}" in result.stdout
         assert "PACKAGE=" not in result.stdout
 
     def test_gather_requires_missing_rpm_errors(self):
@@ -740,7 +741,12 @@ class TestMockCacheVolumes:
         stdout = self._dry_run("clean-localrepo", "FEDORA_VERSION=44")
         assert "volume rm mock-cache-44" in stdout
         assert "volume rm mock-root-44" in stdout
-        assert "volume rm local-repo-44" not in stdout  # localrepo is purged, not removed
+        # local-repo is a plain directory now (docs/CHANGELOG.md 2026-08-11), not a podman
+        # volume -- clean-localrepo must purge local-repo/<target>/ and its ledger rows,
+        # not (any longer) reach for a volume at all.
+        assert "volume rm local-repo-44" not in stdout
+        assert "rm -rf local-repo/fedora-44-x86_64" in stdout
+        assert "--forget-repo fedora-44-x86_64" in stdout
 
     def test_container_volume_clean_removes_mock_volumes_too(self):
         stdout = self._dry_run(
@@ -748,6 +754,20 @@ class TestMockCacheVolumes:
         )
         assert "volume rm mock-cache-44" in stdout
         assert "volume rm mock-root-44" in stdout
+
+    def test_container_volume_clean_keeps_legacy_localrepo_volume_sweep(self):
+        """local-repo-<ver> is no longer created (local-repo is a plain per-target
+        directory now), but a guarded `volume rm` for it stays for one cycle so
+        machines with the old volume still get cleaned up."""
+        stdout = self._dry_run(
+            "container-volume-clean", "FEDORA_VERSION=44", "RECURSIVE_CALL=1"
+        )
+        assert "volume rm local-repo-44" in stdout
+
+    def test_setup_volumes_no_longer_creates_localrepo_volume(self):
+        stdout = self._dry_run("setup-volumes", "FEDORA_VERSION=44")
+        assert "volume create local-repo-44" not in stdout
+        assert "mkdir -p local-repo/fedora-44-x86_64" in stdout
 
 
 class TestUpdateDailyResilience:

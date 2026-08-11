@@ -50,22 +50,28 @@ HOME_DIR     := $(shell echo $$HOME)
 # Per-Fedora-version volumes (container user is set in Containerfile)
 RPMBUILD_VOLUME  := rpmbuild-$(FEDORA_VERSION)
 RPMBUILD_MOUNT   := $(RPMBUILD_VOLUME):/root/rpmbuild:z
-LOCALREPO_VOLUME := local-repo-$(FEDORA_VERSION)
-LOCALREPO_MOUNT  := $(LOCALREPO_VOLUME):/local-repo:z
 # Persist mock's buildroot cache/state across --rm containers (TODO-0014) so a
 # fresh `make full-cycle`/nightly run doesn't re-bootstrap every chroot from
 # scratch. Deliberately left owned by root (mock's own layout, root:mock
-# 2775) -- unlike RPMBUILD/LOCALREPO below, setup-volumes does not chown these.
+# 2775) -- unlike RPMBUILD above, setup-volumes does not chown these.
 MOCKCACHE_VOLUME := mock-cache-$(FEDORA_VERSION)
 MOCKCACHE_MOUNT  := $(MOCKCACHE_VOLUME):/var/cache/mock:z
 MOCKROOT_VOLUME  := mock-root-$(FEDORA_VERSION)
 MOCKROOT_MOUNT   := $(MOCKROOT_VOLUME):/var/lib/mock:z
 WORKDIR_MOUNT    := $(PWD):/work:z
 VENV_MOUNT       := $(PWD)/.venv:/work/.venv:z
-MOCK_CONF_MOUNT  := $(PWD)/mock-local-repo.conf:/etc/mock/local-repo.conf:ro,z
 COPR_MOUNT_OPT   := ro,z
 COPR_CONFIG_MOUNT := $(if $(COPR_REPO),-v $(HOME_DIR)/.config/copr:/root/.config/copr:$(COPR_MOUNT_OPT),)
 
+# local-repo/$(MOCK_CHROOT)/ (the dnf repo dep resolution reads) is a plain
+# per-target directory under the /work bind mount, not a podman volume -- see
+# docs/CHANGELOG.md 2026-08-11. MOCK_CHROOT (above) is already the same chroot
+# triple lib.paths.local_repo()/resolve_target() key on, so it's reused here
+# rather than adding a second, redundant variable.
+# LOCALREPO_VOLUME itself is no longer created/mounted anywhere -- kept only so
+# container-volume-clean can still sweep it off machines from before this
+# change. Remove this var and its use below after one cycle.
+LOCALREPO_VOLUME := local-repo-$(FEDORA_VERSION)
 
 # Container execution with volume mounts
 # Note: Containerfile already sets USER, so don't override it here
@@ -78,12 +84,10 @@ WORK             := .
 else
 CONTAINER_RUN := $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm --privileged \
 	-v $(RPMBUILD_MOUNT) \
-	-v $(LOCALREPO_MOUNT) \
 	-v $(MOCKCACHE_MOUNT) \
 	-v $(MOCKROOT_MOUNT) \
 	-v $(WORKDIR_MOUNT) \
 	-v $(VENV_MOUNT) \
-	-v $(MOCK_CONF_MOUNT) \
 	$(COPR_CONFIG_MOUNT) \
 	$(if $(LOG_LEVEL),-e LOG_LEVEL=$(LOG_LEVEL),) \
 	-w /work \
@@ -118,22 +122,20 @@ endef
 .DEFAULT_GOAL := help
 .PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-nuke
 
-save-last-build: ## Save last built RPMs and build-report.db to local-repo/ before clean
-	@mkdir -p local-repo
-	@$(CONTAINER_RUN) sh -c "cp -r /local-repo/. /work/local-repo/"
-	@[ -f build-report.db ] && cp build-report.db local-repo/build-report.db || true
-	@echo $(HIGHLIGHT_PREFIX) "✓ Saved last build snapshot to local-repo/"
+save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
+	@mkdir -p logs
+	@[ -f build-report.db ] && cp build-report.db logs/build-report.db.last || true
+	@echo $(HIGHLIGHT_PREFIX) "✓ Saved build-report.db snapshot to logs/build-report.db.last"
 
 clean-logs: check-image check-venv setup-volumes ## Remove build logs; clears stage/run state but keeps the artifact ledger (use db-nuke to also drop that)
 	@rm -rf logs/build logs/make
 	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --reset || true
 	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned build logs and stage state (artifact ledger preserved)"
 
-clean-localrepo: clean-mock-cache ## Purge local repo for FEDORA_VERSION to resolve dependency conflicts
-	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(LOCALREPO_VOLUME) >/dev/null 2>&1 && \
-		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(LOCALREPO_MOUNT) $(IMAGE_NAME):$(FEDORA_VERSION) \
-			rm -rf /local-repo/* || true
-	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned local repo: $(LOCALREPO_VOLUME)"
+clean-localrepo: clean-mock-cache ## Purge local repo for FEDORA_VERSION/MOCK_CHROOT to resolve dependency conflicts
+	@rm -rf local-repo/$(MOCK_CHROOT)
+	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --forget-repo $(MOCK_CHROOT) || true
+	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned local repo: local-repo/$(MOCK_CHROOT)"
 
 clean-mock-cache: ## Drop the persisted mock buildroot cache for FEDORA_VERSION (forces a full re-bootstrap next build; see docs/todo.md TODO-0014)
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKCACHE_VOLUME) >/dev/null 2>&1 && \
@@ -163,7 +165,8 @@ check-venv: ## Verify .venv exists and has Python
 		 echo "$(HIGHLIGHT_PREFIX) Run: make setup-venv"; exit 1)
 
 # Setup container volumes with correct permissions - required for rpmbuild and repo operations
-setup-volumes: check-image ## Initialize rpmbuild and local-repo volumes with correct UID/GID (no-op under NO_CONTAINER=1)
+setup-volumes: check-image ## Initialize rpmbuild volume (correct UID/GID) and local-repo/$(MOCK_CHROOT)/ dir (no-op under NO_CONTAINER=1)
+	@mkdir -p local-repo/$(MOCK_CHROOT)
 ifeq ($(NO_CONTAINER),1)
 	@true
 else
@@ -171,10 +174,6 @@ else
 		($(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume create $(RPMBUILD_VOLUME) || exit 1; \
 		 $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(RPMBUILD_MOUNT) $(IMAGE_NAME):$(FEDORA_VERSION) \
 		 	chown -R $(USER_ID):$(GROUP_ID) /root/rpmbuild || exit 1)
-	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(LOCALREPO_VOLUME) >/dev/null 2>&1 || \
-		($(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume create $(LOCALREPO_VOLUME) || exit 1; \
-		 $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(LOCALREPO_MOUNT) $(IMAGE_NAME):$(FEDORA_VERSION) \
-		 	chown -R $(USER_ID):$(GROUP_ID) /local-repo || exit 1)
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKCACHE_VOLUME) >/dev/null 2>&1 || \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume create $(MOCKCACHE_VOLUME) || exit 1
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKROOT_VOLUME) >/dev/null 2>&1 || \
@@ -329,7 +328,7 @@ set-release: check-image check-venv setup-volumes ## Set package release value (
 	$(CONTAINER_PYTHON) scripts/set-package-release.py $(PACKAGE) $(RELEASE) $(if $(filter 1,$(LOCK)),--lock,)
 
 gather-requires: check-image check-venv setup-volumes ## Suggest requires entries from built RPMs (RPM=path/to/pkg.rpm [path/to/other.rpm ...] required -- a filesystem path, not a packages.yaml name)
-	@test -n "$(RPM)" || (echo "$(HIGHLIGHT_PREFIX) Error: RPM is required (e.g. RPM=local-repo/hyprutils-0.14.0.fc44.x86_64.rpm)"; exit 1)
+	@test -n "$(RPM)" || (echo "$(HIGHLIGHT_PREFIX) Error: RPM is required (e.g. RPM=local-repo/fedora-44-x86_64/hyprutils-0.14.0.fc44.x86_64.rpm)"; exit 1)
 	$(CONTAINER_PYTHON) scripts/gather-requires.py $(RPM)
 
 gen-report: check-image check-venv setup-volumes ## Render build-report.db to stdout for FEDORA_VERSION (--format github|copr)
@@ -399,7 +398,6 @@ container-build: ## Build image for FEDORA_VERSION
 container-enter: ## Enter interactive shell in container for FEDORA_VERSION
 	$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run -it --rm \
 		-v $(RPMBUILD_MOUNT) \
-		-v $(LOCALREPO_MOUNT) \
 		-v $(WORKDIR_MOUNT) \
 		-w /work \
 		$(IMAGE_NAME):$(FEDORA_VERSION) /bin/bash
@@ -409,7 +407,7 @@ container-clean: ## Remove image for FEDORA_VERSION
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) rmi $(IMAGE_NAME):$(FEDORA_VERSION) || true
 	@echo $(HIGHLIGHT_PREFIX) "Cleaned $(IMAGE_NAME):$(FEDORA_VERSION)"
 
-container-volume-clean: ## Remove volumes (rpmbuild, local-repo, mock-cache, mock-root) for FEDORA_VERSION (all if not specified)
+container-volume-clean: ## Remove volumes (rpmbuild, mock-cache, mock-root) for FEDORA_VERSION (all if not specified); local-repo/ itself is a plain directory now, remove by hand if wanted
 	@if [ "$(FEDORA_VERSION)" = "43" ] && [ -z "$(RECURSIVE_CALL)" ]; then \
 		for v in $(SUPPORTED); do \
 			echo $(HIGHLIGHT_PREFIX) "Removing volumes for Fedora $$v..."; \
@@ -420,13 +418,13 @@ container-volume-clean: ## Remove volumes (rpmbuild, local-repo, mock-cache, moc
 		echo $(HIGHLIGHT_PREFIX) "Removing volumes for Fedora $(FEDORA_VERSION)..."; \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(RPMBUILD_VOLUME) >/dev/null 2>&1 && \
 			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(RPMBUILD_VOLUME) || true; \
-		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(LOCALREPO_VOLUME) >/dev/null 2>&1 && \
-			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(LOCALREPO_VOLUME) || true; \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKCACHE_VOLUME) >/dev/null 2>&1 && \
 			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKCACHE_VOLUME) || true; \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKROOT_VOLUME) >/dev/null 2>&1 && \
 			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKROOT_VOLUME) || true; \
-		echo $(HIGHLIGHT_PREFIX) "Cleaned volumes: $(RPMBUILD_VOLUME), $(LOCALREPO_VOLUME), $(MOCKCACHE_VOLUME), $(MOCKROOT_VOLUME)"; \
+		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(LOCALREPO_VOLUME) >/dev/null 2>&1 && \
+			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(LOCALREPO_VOLUME) || true; \
+		echo $(HIGHLIGHT_PREFIX) "Cleaned volumes: $(RPMBUILD_VOLUME), $(MOCKCACHE_VOLUME), $(MOCKROOT_VOLUME)"; \
 	fi
 
 container-all: ## Build images for all supported Fedora versions
@@ -469,6 +467,7 @@ full-cycle: check-image check-venv setup-volumes ## Run full cycle with YAML rep
 		DRY_RUN=$(DRY_RUN) \
 		SYNCHRONOUS_COPR_BUILD=$(SYNCHRONOUS_COPR_BUILD) \
 		REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) \
+		$(if $(SKIP_REPO_PREFLIGHT),SKIP_REPO_PREFLIGHT=$(SKIP_REPO_PREFLIGHT),) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/full-cycle.py,Full cycle completed,Full cycle failed)
 
@@ -580,11 +579,12 @@ stage-srpm: check-image check-venv setup-volumes ## Run SRPM build stage (PACKAG
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-srpm.py,SRPM stage passed,SRPM stage failed)
 
-stage-mock: check-image check-venv setup-volumes ## Run mock build stage (PACKAGE=<name>, FEDORA_VERSION, CMD_TIMEOUT, runs in container)
+stage-mock: check-image check-venv setup-volumes ## Run mock build stage (PACKAGE=<name>, FEDORA_VERSION, CMD_TIMEOUT, SKIP_REPO_PREFLIGHT=1 to demote the local-repo preflight to warnings, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
+		$(if $(SKIP_REPO_PREFLIGHT),SKIP_REPO_PREFLIGHT=$(SKIP_REPO_PREFLIGHT),) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-mock.py,Mock build stage passed,Mock build stage failed)
 

@@ -14,14 +14,32 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-11
 
-- Added: `_analyze_mock_root_log` (used by `make stage-log-analyze` /
-  `scripts/pkg-log-analysis.py`) now detects unsatisfiable buildroot transactions —
-  "Failed to resolve the transaction" / "Problem: package X requires Y, but none of the
-  providers can be installed" / "nothing provides Z" — and, when the unsatisfiable package
-  came from `local-repo`, points at `make clean-mock-cache`/`make clean-localrepo` (the fix
-  documented in `docs/operations.md` for a stale local-repo poisoning the buildroot). Previously
-  this class of failure (e.g. a locally built package pinned against a soname the current
-  buildroot no longer provides) produced no actionable output at all.
+- Changed: `local-repo/` is now scoped per chroot (`local-repo/<target>/`) instead of one
+  shared directory for every Fedora version, so an RPM built for one Fedora version can no
+  longer be served into a different version's buildroot (the `aquamarine`/`libdisplay-info`
+  soname mismatch that prompted this). One-time cost: every package's `mock` stage rebuilds
+  once per target. Old flat RPMs under `local-repo/` are no longer served; `stage-mock` warns
+  if it finds any (`rm -rf local-repo/*.rpm local-repo/repodata` to clean up).
+- Added: `scripts/lib/repo_preflight.py` — `stage-mock` now checks each package's local deps
+  are present in `local-repo/<target>/` (right dist tag) *before* spawning mock, failing fast
+  with an actionable message instead of a multi-minute dnf5 resolution failure. Override with
+  `SKIP_REPO_PREFLIGHT=1`.
+- Added: `db-artifacts.py --forget-repo <target>`, used by the fixed `clean-localrepo` below.
+- Fixed: `make clean-localrepo` was purging the unused `local-repo-<ver>` podman volume instead
+  of the directory mock actually reads (`--addrepo` always pointed at the bind-mounted
+  `local-repo/`, not the volume) — the remediation this doc and `_analyze_mock_root_log`
+  recommended was a no-op. Now deletes `local-repo/<target>/` and its ledger rows.
+- Fixed: `save-last-build` copied that same unused volume onto the live `local-repo/`; its
+  `build-report.db` snapshot now goes to `logs/build-report.db.last`.
+- Fixed: `prune_local_repo()` could let an fc43 build beat and delete a correct fc44 build of
+  the same package by EVR alone — per-chroot directories make that comparison correct.
+- Removed: the `local-repo-<ver>` podman volume and `mock-local-repo.conf` (dead — nothing
+  `include()`d it). A guarded legacy `volume rm` stays in `container-volume-clean` for one cycle.
+- Added: `_analyze_mock_root_log` now detects unsatisfiable buildroot transactions ("Failed to
+  resolve the transaction" / "nothing provides Z") and, for a stale `local-repo` package,
+  recommends rebuilding it for the current chroot before falling back to
+  `clean-mock-cache`/`clean-localrepo`. Previously this class of failure produced no actionable
+  output at all.
 
 ## 2026-08-09
 

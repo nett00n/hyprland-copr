@@ -512,6 +512,22 @@ def delete_artifact(realm: str, path: str) -> None:
     conn.commit()
 
 
+def delete_artifacts_for_target(target: str, realm: str, kind: str) -> None:
+    """Delete every artifact row for one (target, realm, kind).
+
+    Used by `db-artifacts.py --forget-repo` (the fixed `make clean-localrepo`,
+    docs/CHANGELOG.md 2026-08-11) to drop ledger rows for a target's
+    local-repo RPMs after `rm -rf local-repo/<target>/` -- does not unlink
+    files, callers do that first.
+    """
+    conn = connect()
+    conn.execute(
+        "DELETE FROM artifacts WHERE target = ? AND realm = ? AND kind = ?",
+        (target, realm, kind),
+    )
+    conn.commit()
+
+
 # --- reset -------------------------------------------------------------
 
 

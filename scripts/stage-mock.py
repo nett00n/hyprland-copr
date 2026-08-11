@@ -27,16 +27,18 @@ from pathlib import Path
 from typing import Any
 
 from lib import build_db
-from lib.config import setup_logging
+from lib.config import env_flag, setup_logging
 from lib.deps import build_dep_graph, effective_deps, topological_sort
 from lib.paths import (
     ARCH,
     DISTRO,
-    LOCAL_REPO,
+    LOCAL_REPO_ROOT,
     ROOT,
     get_package_log_dir,
+    local_repo,
     resolve_target,
 )
+from lib.repo_preflight import check_buildroot_repo
 from lib.reporting import status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
@@ -52,10 +54,13 @@ def failed_local_dep(
     return None
 
 
-def regenerate_repo_metadata() -> None:
-    """Regenerate local repo metadata to index all packages."""
+def regenerate_repo_metadata(repo_dir: Path) -> None:
+    """Regenerate repo_dir's repo metadata to index all packages built for
+    that target. Creates repo_dir if this is the first build for it --
+    createrepo_c errors on a nonexistent directory."""
+    repo_dir.mkdir(parents=True, exist_ok=True)
     result = subprocess.run(
-        ["createrepo_c", "--update", str(LOCAL_REPO)],
+        ["createrepo_c", "--update", str(repo_dir)],
         capture_output=True,
         stdin=subprocess.DEVNULL,
     )
@@ -65,6 +70,21 @@ def regenerate_repo_metadata() -> None:
             result.stderr.decode() if result.stderr else "",
         )
         raise RuntimeError(f"createrepo_c failed with code {result.returncode}")
+
+
+def warn_if_flat_local_repo(local_repo_root: Path) -> None:
+    """Warn (never delete) if pre-2026-08-11 flat RPMs are sitting directly
+    under local-repo/ with no chroot subdirectory -- leftovers from before
+    local-repo was scoped per target. They are not served to mock any more."""
+    if not local_repo_root.exists():
+        return
+    if any(local_repo_root.glob("*.rpm")):
+        logging.warning(
+            "flat RPMs found directly under local-repo/ (pre-2026-08-11 layout) -- "
+            "these are NOT served to mock any more (local-repo is now scoped per "
+            "chroot, local-repo/<target>/); remove them with "
+            "`rm -rf local-repo/*.rpm local-repo/repodata`"
+        )
 
 
 def _rpm_query(rpm_path: Path, fmt: str) -> str:
@@ -101,15 +121,17 @@ def _vercmp(evr_a: str, evr_b: str) -> int:
     return 0
 
 
-def prune_local_repo() -> bool:
-    """Delete all but the newest NVR per (name, arch) in LOCAL_REPO.
+def prune_local_repo(repo_dir: Path) -> bool:
+    """Delete all but the newest NVR per (name, arch) within repo_dir.
 
     Nothing else here ever removes an old build: every rebuild only adds a
     new NVR, so a stale hyprutils-0.13.1 can sit next to 0.14.0 forever (see
     docs/bugs.md). mock's dnf resolves build deps against everything in the
     repo, so this only bloats disk today, but a repo left in a half-pruned
     state after a partial run is exactly the kind of thing that could
-    resolve the wrong version later.
+    resolve the wrong version later. repo_dir is scoped per chroot, so this
+    never has to (and never should) compare RPMs from different Fedora
+    versions against each other -- see docs/CHANGELOG.md 2026-08-11.
 
     Also drops the artifact ledger row for anything unlinked, so `db-usage`
     never reports a file that prune already removed.
@@ -117,7 +139,7 @@ def prune_local_repo() -> bool:
     Returns True if anything was removed.
     """
     by_key: dict[tuple[str, str], list[tuple[str, Path]]] = {}
-    for rpm_path in LOCAL_REPO.glob("*.rpm"):
+    for rpm_path in repo_dir.glob("*.rpm"):
         if rpm_path.name.endswith(".src.rpm"):
             continue
         name = _rpm_query(rpm_path, "%{NAME}")
@@ -141,22 +163,22 @@ def prune_local_repo() -> bool:
     return removed
 
 
-def update_local_repo(mock_chroot: str) -> list[str]:
+def update_local_repo(mock_chroot: str, repo_dir: Path) -> list[str]:
     """Copy this build's RPMs (excluding .src.rpm) from mock's result dir into
-    LOCAL_REPO, prune stale NVRs, and regenerate repo metadata if anything
+    repo_dir, prune stale NVRs, and regenerate repo metadata if anything
     changed. Returns the absolute paths of the RPMs copied.
     """
     result_dir = Path("/var/lib/mock") / mock_chroot / "result"
-    LOCAL_REPO.mkdir(exist_ok=True)
+    repo_dir.mkdir(parents=True, exist_ok=True)
     copied: list[str] = []
     for rpm in result_dir.glob("*.rpm"):
         if not rpm.name.endswith(".src.rpm"):
-            dest = LOCAL_REPO / rpm.name
+            dest = repo_dir / rpm.name
             shutil.copy2(rpm, dest)
             copied.append(str(dest))
-    pruned = prune_local_repo()
+    pruned = prune_local_repo(repo_dir)
     if copied or pruned:
-        regenerate_repo_metadata()
+        regenerate_repo_metadata(repo_dir)
     return copied
 
 
@@ -184,6 +206,7 @@ def run_for_package(
     failed: dict,
     all_packages: dict,
     run_id: int,
+    repo_dir: Path,
 ) -> bool:
     """Run mock build for a single package. Return True on success/skip, False on failure.
 
@@ -243,6 +266,37 @@ def run_for_package(
         )
         return True
 
+    # Fail fast, before mock is even spawned, if repo_dir can't actually serve
+    # this package's local build deps (missing entirely, or -- structurally
+    # impossible under the per-chroot layout, checked anyway as a tripwire --
+    # wrong Fedora dist tag). Otherwise this is the ~5-minute round trip
+    # through mock bootstrapping a buildroot only for dnf5 to fail resolving
+    # the transaction (see docs/CHANGELOG.md 2026-08-11).
+    errors, warnings = check_buildroot_repo(
+        pkg, meta, all_packages, target, fedora_version, repo_dir
+    )
+    for warning in warnings:
+        logging.warning("%s: %s", pkg, warning)
+    if errors and env_flag("SKIP_REPO_PREFLIGHT"):
+        for error in errors:
+            logging.warning("%s: preflight (SKIP_REPO_PREFLIGHT set): %s", pkg, error)
+        errors = []
+    if errors:
+        detail = f"preflight: {errors[0]}"
+        failed[pkg] = True
+        status("mock", pkg, "fail", detail)
+        build_db.set_stage(
+            pkg,
+            "mock",
+            target,
+            run_id,
+            "failed",
+            version=ver,
+            reason=detail,
+            has_devel=has_devel,
+        )
+        return False
+
     # rpmbuild_networking/use_host_resolv off: reproduce COPR's offline %build
     # step locally (docs/todo.md TODO-0004), so an incomplete vendor tree fails
     # here instead of only on COPR. Dep resolution (dnf install of BuildRequires)
@@ -257,17 +311,19 @@ def run_for_package(
         "--config-opts",
         "use_host_resolv=False",
     ]
-    repodata = LOCAL_REPO / "repodata"
+    repodata = repo_dir / "repodata"
     repomd = repodata / "repomd.xml"
     if repodata.exists() and (not repomd.exists() or not repomd.stat().st_size):
         # Self-heal a truncated/corrupted repodata (e.g. a prior run killed mid
         # createrepo_c): dnf5 can't parse an empty repomd.xml at all and aborts
         # buildroot install before %build even starts, which then fails every
         # package until someone notices and regenerates by hand.
-        logging.warning("local-repo repodata is empty/corrupt -- regenerating")
-        regenerate_repo_metadata()
+        logging.warning(
+            "local-repo/%s repodata is empty/corrupt -- regenerating", target
+        )
+        regenerate_repo_metadata(repo_dir)
     if repodata.exists():
-        cmd += ["--addrepo", f"file://{LOCAL_REPO}"]
+        cmd += ["--addrepo", f"file://{repo_dir}"]
     cmd += ["--rebuild", srpm_path]
     # /var/lib/mock is now a persisted volume (TODO-0014), not container-ephemeral
     # storage -- a run that dies before mock clears its own resultdir would
@@ -287,9 +343,9 @@ def run_for_package(
         failed[pkg] = True
     else:
         failed[pkg] = False
-        # Copied RPMs get absolute paths (unlike mock_log above): LOCAL_REPO
+        # Copied RPMs get absolute paths (unlike mock_log above): repo_dir
         # isn't always under ROOT in tests, and this stays correct either way.
-        for rpm_path in update_local_repo(target):
+        for rpm_path in update_local_repo(target, repo_dir):
             build_db.record_artifact(rpm_path, "repo", "rpm", pkg, target, ver)
     status("mock", pkg, "ok" if ok else "fail")
 
@@ -328,10 +384,19 @@ def main() -> None:
         package_filter=os.environ.get("PACKAGE", ""),
     )
 
-    packages = prepare_stage("mock", target, proceed)
+    # include_all=True: `all_packages` is the *unfiltered* set, used only for
+    # dependency-name resolution (failed_local_dep/check_buildroot_repo) --
+    # unlike full-cycle.py, `make stage-mock PACKAGE=x` doesn't expand `x`'s
+    # transitive deps into `packages`, so a dep outside the PACKAGE filter
+    # (e.g. aquamarine when PACKAGE=Hyprland) must still resolve by name, or
+    # effective_deps() silently drops it and the preflight can't see it.
+    all_packages, packages = prepare_stage("mock", target, proceed, include_all=True)
+
+    warn_if_flat_local_repo(LOCAL_REPO_ROOT)
+    repo_dir = local_repo(target)
 
     # Regenerate repo metadata before building to ensure fresh package index
-    regenerate_repo_metadata()
+    regenerate_repo_metadata(repo_dir)
 
     failed: dict[str, bool] = {}
 
@@ -350,8 +415,9 @@ def main() -> None:
             target,
             proceed,
             failed,
-            packages,
+            all_packages,
             run_id,
+            repo_dir,
         ):
             failed_overall = True
 

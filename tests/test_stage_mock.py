@@ -1,9 +1,13 @@
 """Tests for scripts/stage-mock.py, focused on local-repo NVR pruning.
 
-Nothing previously removed an old NVR from local-repo/: every mock rebuild
-only ever added a file, so e.g. hyprutils-0.13.1 could sit next to 0.14.0
-forever (see docs/bugs.md). prune_local_repo() keeps only the newest NVR per
-(name, arch), and now also drops the matching artifact row.
+Nothing previously removed an old NVR from local-repo/<target>/: every mock
+rebuild only ever added a file, so e.g. hyprutils-0.13.1 could sit next to
+0.14.0 forever (see docs/bugs.md). prune_local_repo() keeps only the newest
+NVR per (name, arch) *within one target's directory*, and now also drops the
+matching artifact row. local-repo is scoped per chroot (docs/CHANGELOG.md
+2026-08-11) specifically so an fc43 and an fc44 build of the same package
+never compete against each other in the first place -- see
+TestPruneLocalRepo::test_different_targets_never_compete below.
 """
 
 import importlib
@@ -60,12 +64,13 @@ def _fake_rpm_query(evr_by_name_arch: dict[tuple[str, str], str]):
 
 
 class TestPruneLocalRepo:
-    """Test prune_local_repo() keeps only the newest NVR per (name, arch)."""
+    """Test prune_local_repo(repo_dir) keeps only the newest NVR per (name, arch)."""
 
-    def test_keeps_newest_removes_older(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(stage_mock, "LOCAL_REPO", tmp_path)
-        old = tmp_path / "hyprutils@x86_64__old.rpm"
-        new = tmp_path / "hyprutils@x86_64__new.rpm"
+    def test_keeps_newest_removes_older(self, tmp_path):
+        repo_dir = tmp_path / TARGET
+        repo_dir.mkdir()
+        old = repo_dir / "hyprutils@x86_64__old.rpm"
+        new = repo_dir / "hyprutils@x86_64__new.rpm"
         old.write_text("old")
         new.write_text("new")
 
@@ -81,17 +86,18 @@ class TestPruneLocalRepo:
 
         with patch.object(stage_mock, "_rpm_query", side_effect=fake):
             with patch.object(stage_mock, "_evr", side_effect=fake_evr):
-                removed = stage_mock.prune_local_repo()
+                removed = stage_mock.prune_local_repo(repo_dir)
 
         assert removed is True
         assert not old.exists()
         assert new.exists()
 
-    def test_removed_file_drops_artifact_row(self, tmp_path, monkeypatch):
+    def test_removed_file_drops_artifact_row(self, tmp_path):
         """Pruning a stale RPM also removes its artifact ledger row."""
-        monkeypatch.setattr(stage_mock, "LOCAL_REPO", tmp_path)
-        old = tmp_path / "hyprutils@x86_64__old.rpm"
-        new = tmp_path / "hyprutils@x86_64__new.rpm"
+        repo_dir = tmp_path / TARGET
+        repo_dir.mkdir()
+        old = repo_dir / "hyprutils@x86_64__old.rpm"
+        new = repo_dir / "hyprutils@x86_64__new.rpm"
         old.write_text("old")
         new.write_text("new")
         build_db.record_artifact(str(old), "repo", "rpm", "hyprutils", TARGET, "0.13.1-4.fc44")
@@ -105,16 +111,17 @@ class TestPruneLocalRepo:
 
         with patch.object(stage_mock, "_rpm_query", side_effect=fake):
             with patch.object(stage_mock, "_evr", side_effect=fake_evr):
-                stage_mock.prune_local_repo()
+                stage_mock.prune_local_repo(repo_dir)
 
         remaining_paths = {a["path"] for a in build_db.artifacts(package="hyprutils")}
         assert str(old) not in remaining_paths
         assert str(new) in remaining_paths
 
-    def test_no_duplicates_removes_nothing(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(stage_mock, "LOCAL_REPO", tmp_path)
-        a = tmp_path / "hyprutils@x86_64__a.rpm"
-        b = tmp_path / "hyprutils-devel@x86_64__b.rpm"
+    def test_no_duplicates_removes_nothing(self, tmp_path):
+        repo_dir = tmp_path / TARGET
+        repo_dir.mkdir()
+        a = repo_dir / "hyprutils@x86_64__a.rpm"
+        b = repo_dir / "hyprutils-devel@x86_64__b.rpm"
         a.write_text("a")
         b.write_text("b")
 
@@ -126,29 +133,31 @@ class TestPruneLocalRepo:
         )
 
         with patch.object(stage_mock, "_rpm_query", side_effect=fake):
-            removed = stage_mock.prune_local_repo()
+            removed = stage_mock.prune_local_repo(repo_dir)
 
         assert removed is False
         assert a.exists()
         assert b.exists()
 
-    def test_ignores_src_rpm(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(stage_mock, "LOCAL_REPO", tmp_path)
-        src = tmp_path / "hyprutils-0.14.0-1.src.rpm"
+    def test_ignores_src_rpm(self, tmp_path):
+        repo_dir = tmp_path / TARGET
+        repo_dir.mkdir()
+        src = repo_dir / "hyprutils-0.14.0-1.src.rpm"
         src.write_text("src")
 
         with patch.object(stage_mock, "_rpm_query") as mock_query:
-            removed = stage_mock.prune_local_repo()
+            removed = stage_mock.prune_local_repo(repo_dir)
 
         mock_query.assert_not_called()
         assert removed is False
         assert src.exists()
 
-    def test_three_versions_keeps_only_newest(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(stage_mock, "LOCAL_REPO", tmp_path)
-        v1 = tmp_path / "hyprutils@x86_64__v1.rpm"
-        v2 = tmp_path / "hyprutils@x86_64__v2.rpm"
-        v3 = tmp_path / "hyprutils@x86_64__v3.rpm"
+    def test_three_versions_keeps_only_newest(self, tmp_path):
+        repo_dir = tmp_path / TARGET
+        repo_dir.mkdir()
+        v1 = repo_dir / "hyprutils@x86_64__v1.rpm"
+        v2 = repo_dir / "hyprutils@x86_64__v2.rpm"
+        v3 = repo_dir / "hyprutils@x86_64__v3.rpm"
         for f in (v1, v2, v3):
             f.write_text("x")
 
@@ -168,12 +177,47 @@ class TestPruneLocalRepo:
             return "0"
 
         with patch.object(stage_mock, "_rpm_query", side_effect=fake):
-            removed = stage_mock.prune_local_repo()
+            removed = stage_mock.prune_local_repo(repo_dir)
 
         assert removed is True
         assert not v1.exists()
         assert not v3.exists()
         assert v2.exists()  # 0.14.0-1 is newest
+
+    def test_different_targets_never_compete(self, tmp_path):
+        """The concrete bug this layout fixes: an fc43 and an fc44 build of
+        the same package used to sit in one shared directory and compete by
+        EVR alone (a higher-release fc43 build could beat and delete a
+        correct fc44 build). Per-target directories mean prune_local_repo()
+        is never even called with both in scope at once."""
+        repo_43 = tmp_path / "fedora-43-x86_64"
+        repo_44 = tmp_path / "fedora-44-x86_64"
+        repo_43.mkdir()
+        repo_44.mkdir()
+        fc43_rpm = repo_43 / "aquamarine@x86_64__fc43.rpm"
+        fc44_rpm = repo_44 / "aquamarine@x86_64__fc44.rpm"
+        fc43_rpm.write_text("fc43")
+        fc44_rpm.write_text("fc44")
+
+        # fc43's release (10) is numerically higher than fc44's (8) -- exactly
+        # the case that let the fc43 build win under the old shared layout.
+        def fake(rpm_path: Path, fmt: str) -> str:
+            if fmt == "%{NAME}":
+                return "aquamarine"
+            if fmt == "%{ARCH}":
+                return "x86_64"
+            if fmt == "%{VERSION}-%{RELEASE}":
+                return "0.14.0-10" if "fc43" in rpm_path.name else "0.14.0-8"
+            return "0"
+
+        with patch.object(stage_mock, "_rpm_query", side_effect=fake):
+            removed_43 = stage_mock.prune_local_repo(repo_43)
+            removed_44 = stage_mock.prune_local_repo(repo_44)
+
+        assert removed_43 is False
+        assert removed_44 is False
+        assert fc43_rpm.exists()
+        assert fc44_rpm.exists()
 
 
 class TestVercmp:
@@ -195,7 +239,8 @@ class TestVercmp:
 
 
 class TestUpdateLocalRepo:
-    """Test update_local_repo() copies mock results and prunes/regenerates."""
+    """Test update_local_repo(mock_chroot, repo_dir) copies mock results and
+    prunes/regenerates."""
 
     def _patched_path(self, tmp_path: Path, mock_var_lib: Path):
         """Return a Path stand-in that redirects the hardcoded '/var/lib/mock'
@@ -216,22 +261,43 @@ class TestUpdateLocalRepo:
         (result_dir / "hyprutils-0.14.0-1.fc44.x86_64.rpm").write_text("rpm")
         (result_dir / "hyprutils-0.14.0-1.fc44.src.rpm").write_text("srpm")
 
-        local_repo = tmp_path / "local-repo"
-        monkeypatch.setattr(stage_mock, "LOCAL_REPO", local_repo)
+        repo_dir = tmp_path / "local-repo" / "fedora-44-x86_64"
         monkeypatch.setattr(
             stage_mock, "Path", self._patched_path(tmp_path, mock_var_lib)
         )
 
         with patch.object(stage_mock, "prune_local_repo", return_value=False):
             with patch.object(stage_mock, "regenerate_repo_metadata") as mock_regen:
-                copied = stage_mock.update_local_repo("fedora-44-x86_64")
+                copied = stage_mock.update_local_repo("fedora-44-x86_64", repo_dir)
 
-        assert (local_repo / "hyprutils-0.14.0-1.fc44.x86_64.rpm").exists()
-        assert not (local_repo / "hyprutils-0.14.0-1.fc44.src.rpm").exists()
-        mock_regen.assert_called_once()
+        assert (repo_dir / "hyprutils-0.14.0-1.fc44.x86_64.rpm").exists()
+        assert not (repo_dir / "hyprutils-0.14.0-1.fc44.src.rpm").exists()
+        mock_regen.assert_called_once_with(repo_dir)
         # Returns the absolute path of the copied (non-src) RPM, for the
         # caller to record as an artifact.
-        assert copied == [str(local_repo / "hyprutils-0.14.0-1.fc44.x86_64.rpm")]
+        assert copied == [str(repo_dir / "hyprutils-0.14.0-1.fc44.x86_64.rpm")]
+
+    def test_creates_target_dir_that_does_not_yet_exist(self, tmp_path, monkeypatch):
+        """The first build for a brand-new target must not fail just because
+        local-repo/<target>/ doesn't exist yet -- mkdir needs parents=True
+        since local-repo/ itself may not exist either."""
+        mock_var_lib = tmp_path / "var-lib-mock"
+        result_dir = mock_var_lib / "fedora-45-x86_64" / "result"
+        result_dir.mkdir(parents=True)
+        (result_dir / "hyprutils-0.15.0-1.fc45.x86_64.rpm").write_text("rpm")
+
+        repo_dir = tmp_path / "brand-new-local-repo-root" / "fedora-45-x86_64"
+        assert not repo_dir.exists()
+        monkeypatch.setattr(
+            stage_mock, "Path", self._patched_path(tmp_path, mock_var_lib)
+        )
+
+        with patch.object(stage_mock, "prune_local_repo", return_value=False):
+            with patch.object(stage_mock, "regenerate_repo_metadata"):
+                copied = stage_mock.update_local_repo("fedora-45-x86_64", repo_dir)
+
+        assert repo_dir.exists()
+        assert copied == [str(repo_dir / "hyprutils-0.15.0-1.fc45.x86_64.rpm")]
 
     def test_regenerates_on_prune_alone(self, tmp_path, monkeypatch):
         """Even with no new RPMs copied, a pruning pass should still trigger
@@ -240,18 +306,17 @@ class TestUpdateLocalRepo:
         result_dir = mock_var_lib / "fedora-44-x86_64" / "result"
         result_dir.mkdir(parents=True)
 
-        local_repo = tmp_path / "local-repo"
-        local_repo.mkdir()
-        monkeypatch.setattr(stage_mock, "LOCAL_REPO", local_repo)
+        repo_dir = tmp_path / "local-repo" / "fedora-44-x86_64"
+        repo_dir.mkdir(parents=True)
         monkeypatch.setattr(
             stage_mock, "Path", self._patched_path(tmp_path, mock_var_lib)
         )
 
         with patch.object(stage_mock, "prune_local_repo", return_value=True):
             with patch.object(stage_mock, "regenerate_repo_metadata") as mock_regen:
-                stage_mock.update_local_repo("fedora-44-x86_64")
+                stage_mock.update_local_repo("fedora-44-x86_64", repo_dir)
 
-        mock_regen.assert_called_once()
+        mock_regen.assert_called_once_with(repo_dir)
 
     def test_no_regenerate_when_nothing_changed(self, tmp_path, monkeypatch):
         """No new RPMs and no pruning: metadata is not regenerated."""
@@ -259,16 +324,15 @@ class TestUpdateLocalRepo:
         result_dir = mock_var_lib / "fedora-44-x86_64" / "result"
         result_dir.mkdir(parents=True)
 
-        local_repo = tmp_path / "local-repo"
-        local_repo.mkdir()
-        monkeypatch.setattr(stage_mock, "LOCAL_REPO", local_repo)
+        repo_dir = tmp_path / "local-repo" / "fedora-44-x86_64"
+        repo_dir.mkdir(parents=True)
         monkeypatch.setattr(
             stage_mock, "Path", self._patched_path(tmp_path, mock_var_lib)
         )
 
         with patch.object(stage_mock, "prune_local_repo", return_value=False):
             with patch.object(stage_mock, "regenerate_repo_metadata") as mock_regen:
-                stage_mock.update_local_repo("fedora-44-x86_64")
+                stage_mock.update_local_repo("fedora-44-x86_64", repo_dir)
 
         mock_regen.assert_not_called()
 
@@ -285,12 +349,11 @@ class TestOfflineGate:
         build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path=str(srpm_path))
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
-        local_repo = tmp_path / "local-repo"
-        local_repo.mkdir()
+        repo_dir = tmp_path / "local-repo" / TARGET
+        repo_dir.mkdir(parents=True)
 
         with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
              patch.object(stage_mock, "ROOT", tmp_path), \
-             patch.object(stage_mock, "LOCAL_REPO", local_repo), \
              patch.object(stage_mock, "run_cmd", return_value=(True, "", "")) as mock_run_cmd, \
              patch.object(stage_mock, "copy_mock_results", return_value=[]), \
              patch.object(stage_mock, "update_local_repo", return_value=[]):
@@ -303,6 +366,7 @@ class TestOfflineGate:
                 failed={},
                 all_packages={pkg: meta},
                 run_id=run_id,
+                repo_dir=repo_dir,
             )
 
         cmd = mock_run_cmd.call_args[0][0]
@@ -320,12 +384,11 @@ class TestOfflineGate:
         build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path=str(srpm_path))
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
-        local_repo = tmp_path / "local-repo"
-        (local_repo / "repodata").mkdir(parents=True)
+        repo_dir = tmp_path / "local-repo" / TARGET
+        (repo_dir / "repodata").mkdir(parents=True)
 
         with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
              patch.object(stage_mock, "ROOT", tmp_path), \
-             patch.object(stage_mock, "LOCAL_REPO", local_repo), \
              patch.object(stage_mock, "run_cmd", return_value=(True, "", "")) as mock_run_cmd, \
              patch.object(stage_mock, "copy_mock_results", return_value=[]), \
              patch.object(stage_mock, "update_local_repo", return_value=[]):
@@ -338,11 +401,12 @@ class TestOfflineGate:
                 failed={},
                 all_packages={pkg: meta},
                 run_id=run_id,
+                repo_dir=repo_dir,
             )
 
         cmd = mock_run_cmd.call_args[0][0]
         assert "--addrepo" in cmd
-        assert f"file://{local_repo}" in cmd
+        assert f"file://{repo_dir}" in cmd
         assert "--config-opts" in cmd
 
 
@@ -360,8 +424,8 @@ class TestResultDirCleared:
         build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path=str(srpm_path))
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
-        local_repo = tmp_path / "local-repo"
-        local_repo.mkdir()
+        repo_dir = tmp_path / "local-repo" / TARGET
+        repo_dir.mkdir(parents=True)
 
         mock_var_lib = tmp_path / "var-lib-mock"
         stale_result = mock_var_lib / TARGET / "result"
@@ -375,7 +439,6 @@ class TestResultDirCleared:
 
         with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
              patch.object(stage_mock, "ROOT", tmp_path), \
-             patch.object(stage_mock, "LOCAL_REPO", local_repo), \
              patch.object(stage_mock, "Path", fake_path), \
              patch.object(stage_mock, "copy_mock_results", return_value=[]), \
              patch.object(stage_mock, "update_local_repo", return_value=[]):
@@ -397,4 +460,139 @@ class TestResultDirCleared:
                     failed={},
                     all_packages={pkg: meta},
                     run_id=run_id,
+                    repo_dir=repo_dir,
                 )
+
+
+class TestWarnIfFlatLocalRepo:
+    """A pre-2026-08-11 checkout can have flat RPMs directly under
+    local-repo/ (no chroot subdirectory) left over from before per-target
+    scoping. They are not served to mock any more -- warn, never delete."""
+
+    def test_warns_when_flat_rpms_present(self, tmp_path, caplog):
+        local_repo_root = tmp_path / "local-repo"
+        local_repo_root.mkdir()
+        (local_repo_root / "aquamarine-0.14.0-10.fc43.x86_64.rpm").write_text("rpm")
+
+        with caplog.at_level("WARNING"):
+            stage_mock.warn_if_flat_local_repo(local_repo_root)
+
+        assert any("local-repo" in r.message for r in caplog.records)
+        # Never deletes -- warning only.
+        assert (local_repo_root / "aquamarine-0.14.0-10.fc43.x86_64.rpm").exists()
+
+    def test_no_warning_when_only_scoped_dirs_present(self, tmp_path, caplog):
+        local_repo_root = tmp_path / "local-repo"
+        (local_repo_root / TARGET).mkdir(parents=True)
+        (local_repo_root / TARGET / "aquamarine-0.14.0-8.fc44.x86_64.rpm").write_text("rpm")
+
+        with caplog.at_level("WARNING"):
+            stage_mock.warn_if_flat_local_repo(local_repo_root)
+
+        assert caplog.records == []
+
+    def test_no_warning_when_root_does_not_exist(self, tmp_path, caplog):
+        local_repo_root = tmp_path / "local-repo"
+        with caplog.at_level("WARNING"):
+            stage_mock.warn_if_flat_local_repo(local_repo_root)
+        assert caplog.records == []
+
+
+class TestPreflight:
+    """run_for_package() runs the repo_preflight check before spawning mock
+    at all -- a missing/wrong-chroot local dependency must fail fast with a
+    `preflight:`-prefixed reason instead of paying for a full mock invocation
+    that dnf5 would fail anyway."""
+
+    def _setup(self, tmp_path, pkg="hyprland", depends_on=None):
+        meta = {"version": "0.51.0", "release": 1}
+        if depends_on is not None:
+            meta["depends_on"] = depends_on
+        srpm_path = tmp_path / f"{pkg}-0.51.0-1.fc44.src.rpm"
+        srpm_path.write_bytes(b"srpm")
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path=str(srpm_path))
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+        return meta, run_id, log_dir
+
+    def test_preflight_error_blocks_before_mock_runs(self, tmp_path, monkeypatch):
+        pkg = "hyprland"
+        meta, run_id, log_dir = self._setup(tmp_path, pkg, depends_on=["aquamarine"])
+        repo_dir = tmp_path / "local-repo" / TARGET
+        repo_dir.mkdir(parents=True)  # empty -- aquamarine is missing
+        all_packages = {pkg: meta, "aquamarine": {"version": "0.14.0", "release": 8}}
+
+        with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
+             patch.object(stage_mock, "ROOT", tmp_path), \
+             patch.object(stage_mock, "run_cmd") as mock_run_cmd:
+            ok = stage_mock.run_for_package(
+                pkg,
+                meta,
+                "44",
+                TARGET,
+                proceed=False,
+                failed={},
+                all_packages=all_packages,
+                run_id=run_id,
+                repo_dir=repo_dir,
+            )
+
+        mock_run_cmd.assert_not_called()
+        assert ok is False
+        entry = build_db.get_stage(pkg, "mock", TARGET)
+        assert entry["state"] == "failed"
+        assert entry["reason"].startswith("preflight:")
+
+    def test_skip_repo_preflight_env_demotes_to_warning(self, tmp_path, monkeypatch):
+        pkg = "hyprland"
+        meta, run_id, log_dir = self._setup(tmp_path, pkg, depends_on=["aquamarine"])
+        repo_dir = tmp_path / "local-repo" / TARGET
+        repo_dir.mkdir(parents=True)
+        all_packages = {pkg: meta, "aquamarine": {"version": "0.14.0", "release": 8}}
+        monkeypatch.setenv("SKIP_REPO_PREFLIGHT", "1")
+
+        with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
+             patch.object(stage_mock, "ROOT", tmp_path), \
+             patch.object(stage_mock, "run_cmd", return_value=(True, "", "")) as mock_run_cmd, \
+             patch.object(stage_mock, "copy_mock_results", return_value=[]), \
+             patch.object(stage_mock, "update_local_repo", return_value=[]):
+            stage_mock.run_for_package(
+                pkg,
+                meta,
+                "44",
+                TARGET,
+                proceed=False,
+                failed={},
+                all_packages=all_packages,
+                run_id=run_id,
+                repo_dir=repo_dir,
+            )
+
+        mock_run_cmd.assert_called_once()
+
+    def test_no_local_deps_proceeds_normally(self, tmp_path):
+        pkg = "standalone"
+        meta, run_id, log_dir = self._setup(tmp_path, pkg)
+        repo_dir = tmp_path / "local-repo" / TARGET
+        repo_dir.mkdir(parents=True)
+
+        with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
+             patch.object(stage_mock, "ROOT", tmp_path), \
+             patch.object(stage_mock, "run_cmd", return_value=(True, "", "")) as mock_run_cmd, \
+             patch.object(stage_mock, "copy_mock_results", return_value=[]), \
+             patch.object(stage_mock, "update_local_repo", return_value=[]):
+            ok = stage_mock.run_for_package(
+                pkg,
+                meta,
+                "44",
+                TARGET,
+                proceed=False,
+                failed={},
+                all_packages={pkg: meta},
+                run_id=run_id,
+                repo_dir=repo_dir,
+            )
+
+        mock_run_cmd.assert_called_once()
+        assert ok is True

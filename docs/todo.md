@@ -31,7 +31,9 @@ disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
 
 - **TODO-0015** only "last attempt" is stored per (package, stage, target), not "last success" -> a failed rebuild overwrites the previous known-good version/log/build_id, no `last_success` kept alongside `last_attempt` #medium
 - **TODO-0017** export sqlite -> yaml/json snapshot for offline diffing (`make db-export`) #low
-- **TODO-0018** artifact sha256 to detect corrupted local-repo RPMs #medium
+- **TODO-0018** artifact sha256 to detect corrupted local-repo RPMs (the wrong-chroot case is
+  now caught by the per-chroot `local-repo/<target>/` layout; sha256 is still needed for
+  on-disk corruption within a target) #medium
 - **TODO-0019** see docs/bugs.md BUG-0017 (`db-prune` is newest-by-mtime only, no real NVR comparison) #medium
 - **TODO-0020** `db-shell`/`db-usage`/`db-prune` only resolve correctly inside the container (artifact paths are container-absolute); no host-side fallback #low
 
@@ -42,8 +44,10 @@ disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
   is still fedora+x86_64-only: #low
 - **TODO-0022** FEDORA_VERSION is the only env knob; needs a TARGET (or DISTRO+ARCH) var, and
   SUPPORTED/mock_chroot()/Containerfile FROM are all fedora-hardcoded #medium
-- **TODO-0023** podman volumes are keyed rpmbuild-$(FEDORA_VERSION) / local-repo-$(FEDORA_VERSION);
-  need the arch in the name or two arches clobber each other #medium
+- **TODO-0023** the `rpmbuild-$(FEDORA_VERSION)` podman volume is keyed by Fedora version only;
+  needs the arch in the name or two arches clobber each other (`local-repo/` is no longer a
+  volume and is already arch-scoped via its `<target>` layout, so this now applies to
+  `rpmbuild-<ver>` only) #medium
 - **TODO-0024** aarch64 builds need qemu-user-static binfmt or a native runner; mock --forcearch is
   not enough for real cross-arch #high
 - **TODO-0025** packages.yaml has `fedora:` override blocks only -> need distro-agnostic override keys,
@@ -60,7 +64,9 @@ disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
 - **TODO-0031** HIGHLIGHT_PREFIX default bakes literal quote chars into value as a hack so unquoted `echo $(HIGHLIGHT_PREFIX) "text"` works; check-image/check-venv/setup-volumes instead embed it inside a quoted string -> fragile, one edit away from breaking output. simplify to plain value + consistent quoting everywhere #low
 - **TODO-0032** ALL_PACKAGES parses packages.yaml with a grep regex instead of the yaml lib used everywhere else (scripts/*.py, inline python in delete-package/add-submodule) -> fragile, switch to yaml #medium
 - **TODO-0033** delete-package/add-submodule/add-new embed real logic (yaml edits, git submodule surgery) directly in Makefile recipes instead of scripts/*.py -> untestable by pytest, move to scripts #medium
-- **TODO-0035** delete-package purges rpmbuild-* volumes for removed package across SUPPORTED versions but never touches local-repo-* volumes -> stale RPMs linger #low
+- **TODO-0035** delete-package purges rpmbuild-* volumes for removed package across SUPPORTED
+  versions but never touches `local-repo/*/<pkg>-*.rpm` (nor its `artifacts` ledger rows) ->
+  stale RPMs linger across every target #low
 
 # Scripts
 
@@ -133,3 +139,5 @@ designed here:
   `update-versions.py` records its commit -- but every submodule in this checkout is
   uninitialized by default (`git submodule update --init` is not part of any Makefile target
   today), so this can't run unconditionally without also deciding whether to add that init step #low
+- **TODO-0072** Currently build logs are copied from container to host machine. Additional step, cannot monitor logs live. Mount local folder instead. Follow ./logs/distro/version/package/ pattern. Make sure patterned __relative__ path is shown in logs instead of absolute one
+

@@ -92,10 +92,12 @@ unattended nightly job. Audited end to end 2026-08:
   ships, so the habit is established) #high
 - **BUG-0043** no concurrency guard on a job documented as cron-driven. Nothing takes a lock: 45
   packages at up to `CMD_TIMEOUT=3600s` *per command* can easily outrun the cron interval, and two
-  overlapping runs write the same build-report.db, the same rpmbuild-*/local-repo-* podman
-  volumes, the same packages.yaml, and the same git index #high
+  overlapping runs write the same build-report.db, the same rpmbuild-* podman volumes, the same
+  `local-repo/<target>/` directory, the same packages.yaml, and the same git index #high
 - **BUG-0044** the quality gate never sees the file that gets committed. Order is
   `update-versions -> pre-commit (validate + lint + fmt) -> full-cycle`, but `full-cycle` calls
   `update_package_releases()`, which rewrites packages.yaml in place *after* the gate has run (via
   the regex of BUG-0011). The packages.yaml that lands in the daily commit is the post-regex one,
   which validate-packages.py, yamllint, and format-yaml.py never inspected #high
+- **BUG-0045** stage `vendor` shows `cached` status for packages that have no vendor stage in build
+

@@ -1104,6 +1104,8 @@ class TestAnalyzeMockRootLog:
         assert "aquamarine-devel-0.14.0-10.fc43.x86_64" in msg
         assert "requires aquamarine = 0.14.0-10.fc43" in msg
         assert "nothing provides libdisplay-info.so.2()(64bit)" in msg
+        assert "local-repo build of aquamarine is stale" in msg
+        assert "make stage-mock PACKAGE=aquamarine FEDORA_VERSION=<ver>" in msg
         assert "make clean-mock-cache" in msg
         assert "make clean-localrepo" in msg
 
