@@ -120,7 +120,7 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-nuke
+.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-nuke submodules-update submodules-purge sync-hard-reset
 
 save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
 	@mkdir -p logs
@@ -148,6 +148,40 @@ clean-all: clean-logs clean-localrepo ## Clean logs, local repo, and mock cache;
 	@echo $(HIGHLIGHT_PREFIX) "✓ Full cleanup completed"
 
 clean: save-last-build clean-logs ## Remove build logs (saves last build first)
+
+submodules-update: ## Sync submodule working trees to the commit recorded in git (safe, does not touch the main repo)
+	@git submodule sync --recursive
+	@git submodule update --init --recursive --force
+	@echo $(HIGHLIGHT_PREFIX) "✓ Submodules synced to git-tracked state"
+
+submodules-purge: ## Deinit and wipe all submodule working trees + cached git data (irreversible; confirmation required; re-run submodules-update to restore)
+	@printf "$(HIGHLIGHT_PREFIX) Purge all submodule working trees and cached git data? [y/N] "; \
+		read ans; \
+		[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "$(HIGHLIGHT_PREFIX) Aborted."; exit 1; }
+	@git submodule deinit -f --all
+	@rm -rf .git/modules/submodules
+	@echo $(HIGHLIGHT_PREFIX) "✓ Purged submodule working trees and cached data"
+
+sync-hard-reset: ## Hard-reset repo+submodules to origin/<current branch>, stashing/reapplying uncommitted main-repo changes (resolves submodule conflicts; confirmation required)
+	@printf "$(HIGHLIGHT_PREFIX) Hard-reset repo and all submodules to origin/$$(git branch --show-current)? [y/N] "; \
+		read ans; \
+		[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "$(HIGHLIGHT_PREFIX) Aborted."; exit 1; }
+	@branch=$$(git branch --show-current); \
+		stashed=0; \
+		if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$$(git status --porcelain --untracked-files=normal -- . ':!submodules')" ]; then \
+			git stash push -u -m "pre-reset-backup-$$(date +%s)" || exit 1; \
+			stashed=1; \
+		fi; \
+		git fetch origin || exit 1; \
+		git reset --hard "origin/$$branch" || exit 1; \
+		git clean -ffdx || exit 1; \
+		git submodule sync --recursive || exit 1; \
+		git submodule update --init --recursive --force || exit 1; \
+		git submodule foreach --recursive 'git clean -ffdx' || exit 1; \
+		if [ "$$stashed" -eq 1 ]; then \
+			git stash pop || (echo "$(HIGHLIGHT_PREFIX) ✗ stash pop conflict -- resolve manually, changes remain in git stash list"; exit 1); \
+		fi; \
+		echo $(HIGHLIGHT_PREFIX) "✓ Repo and submodules reset to origin/$$branch"
 
 # Prerequisite checks - fail fast on missing dependencies
 check-image: ## Verify container image exists for FEDORA_VERSION (no-op under NO_CONTAINER=1)
@@ -201,6 +235,11 @@ help: ## Show this help
 	@echo "    make clean              # Remove build logs"
 	@echo "    make clean-localrepo    # Clear local repo RPMs (resolve conflicts)"
 	@echo "    make clean-all          # Remove logs and local repo"
+	@echo ""
+	@echo "  Submodules / git sync:"
+	@echo "    make submodules-update  # Sync submodules to git-tracked state (safe)"
+	@echo "    make submodules-purge   # Deinit + wipe all submodule working trees (destructive)"
+	@echo "    make sync-hard-reset    # Hard-reset repo+submodules to origin (destructive; resolves conflicts)"
 	@echo ""
 	@echo "  Build artifact tracking (build-report.db):"
 	@echo "    make db-usage           # Disk usage by package/target"

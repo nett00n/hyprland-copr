@@ -14,6 +14,12 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-11
 
+- Added: `make submodules-update` (safe: `git submodule sync`+`update --init --recursive --force`
+  to the commit git already has recorded), `make submodules-purge` (destructive: `git submodule
+  deinit -f --all` + wipe `.git/modules/submodules`, confirmation required), and `make
+  sync-hard-reset` (destructive: hard-resets the repo and all submodules to `origin/<branch>`,
+  stashing/reapplying uncommitted main-repo changes around it, confirmation required) — for
+  resolving submodule conflicts without hand-rolling the git incantation each time.
 - Changed: `local-repo/` is now scoped per chroot (`local-repo/<target>/`) instead of one
   shared directory for every Fedora version, so an RPM built for one Fedora version can no
   longer be served into a different version's buildroot (the `aquamarine`/`libdisplay-info`
