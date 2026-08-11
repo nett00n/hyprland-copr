@@ -192,7 +192,7 @@ def copy_mock_results(mock_chroot: str, pkg: str) -> list[str]:
         try:
             shutil.copy2(result_dir / name, dst)
             copied.append(str(dst.relative_to(ROOT)))
-        except (FileNotFoundError, PermissionError):
+        except (FileNotFoundError, PermissionError, NotADirectoryError):
             pass
     return copied
 
@@ -330,7 +330,16 @@ def run_for_package(
     # otherwise leave the *previous* package's RPMs there for update_local_repo()/
     # copy_mock_results() to pick up and misattribute below. Clear it ourselves
     # first so a stale resultdir can never masquerade as this run's output.
-    shutil.rmtree(Path("/var/lib/mock") / target / "result", ignore_errors=True)
+    # A prior mock invocation can also leave `result` as a plain file instead of
+    # a directory (observed: mock writing the input srpm straight to that path
+    # when resultdir didn't exist yet) -- rmtree() silently no-ops on a
+    # non-directory even with ignore_errors=True, so that corruption would
+    # otherwise persist across every future run. Handle both shapes explicitly.
+    stale_result = Path("/var/lib/mock") / target / "result"
+    if stale_result.is_dir():
+        shutil.rmtree(stale_result, ignore_errors=True)
+    elif stale_result.exists():
+        stale_result.unlink()
     print(f"  [RUN]  mock: {pkg}", flush=True)
     ok, _, _ = run_cmd(cmd, log)
     # Copies build.log/root.log/state.log to logs/build/<pkg>/, then records

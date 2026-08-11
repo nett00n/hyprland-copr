@@ -410,6 +410,32 @@ class TestOfflineGate:
         assert "--config-opts" in cmd
 
 
+class TestCopyMockResults:
+    """copy_mock_results() must not crash the whole pipeline when result_dir
+    is corrupted -- a single package's logs failing to copy is a soft
+    failure, not a reason to abort every other package in the run."""
+
+    def test_tolerates_result_dir_being_a_file(self, tmp_path, monkeypatch):
+        mock_var_lib = tmp_path / "var-lib-mock"
+        mock_var_lib.mkdir()
+        stray = mock_var_lib / TARGET
+        stray.write_bytes(b"stray srpm bytes")  # result_dir's parent is a file
+
+        def fake_path(p, *rest):
+            if p == "/var/lib/mock":
+                return mock_var_lib
+            return Path(p, *rest)
+
+        log_dir = tmp_path / "logs/build/test-pkg"
+
+        with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
+             patch.object(stage_mock, "ROOT", tmp_path), \
+             patch.object(stage_mock, "Path", fake_path):
+            copied = stage_mock.copy_mock_results(TARGET, "test-pkg")
+
+        assert copied == []
+
+
 class TestResultDirCleared:
     """TODO-0014: /var/lib/mock is now a persisted volume, not container-
     ephemeral storage -- a stale resultdir from a prior run must not survive
@@ -447,6 +473,57 @@ class TestResultDirCleared:
                 # By the time mock would run, the stale resultdir must already
                 # be gone -- otherwise a crash mid-build would leave it for the
                 # next run to misattribute.
+                assert not stale_result.exists()
+                return True, "", ""
+
+            with patch.object(stage_mock, "run_cmd", side_effect=fake_run_cmd):
+                stage_mock.run_for_package(
+                    pkg,
+                    meta,
+                    "44",
+                    TARGET,
+                    proceed=False,
+                    failed={},
+                    all_packages={pkg: meta},
+                    run_id=run_id,
+                    repo_dir=repo_dir,
+                )
+
+    def test_clears_stale_resultdir_when_it_is_a_file(self, tmp_path, monkeypatch):
+        """mock can leave `result` as a plain file instead of a directory (seen
+        in practice: the input srpm written straight to that path when the
+        resultdir didn't exist yet as a directory). shutil.rmtree() silently
+        no-ops on a non-directory even with ignore_errors=True, so this must be
+        unlinked explicitly or the corruption persists across every run and
+        later crashes copy_mock_results() with NotADirectoryError."""
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        srpm_path = tmp_path / "test-pkg-1.0.0-1.fc44.src.rpm"
+        srpm_path.write_bytes(b"srpm")
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path=str(srpm_path))
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+        repo_dir = tmp_path / "local-repo" / TARGET
+        repo_dir.mkdir(parents=True)
+
+        mock_var_lib = tmp_path / "var-lib-mock"
+        stale_result = mock_var_lib / TARGET / "result"
+        stale_result.parent.mkdir(parents=True)
+        stale_result.write_bytes(b"stray srpm bytes")
+
+        def fake_path(p, *rest):
+            if p == "/var/lib/mock":
+                return mock_var_lib
+            return Path(p, *rest)
+
+        with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
+             patch.object(stage_mock, "ROOT", tmp_path), \
+             patch.object(stage_mock, "Path", fake_path), \
+             patch.object(stage_mock, "copy_mock_results", return_value=[]), \
+             patch.object(stage_mock, "update_local_repo", return_value=[]):
+
+            def fake_run_cmd(cmd, log):
                 assert not stale_result.exists()
                 return True, "", ""
 
