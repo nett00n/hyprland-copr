@@ -210,6 +210,7 @@ class TestMissingSrpmArtifactGuard:
                 failed=failed,
                 all_packages={pkg: meta},
                 run_id=run_id,
+                repo_dir=tmp_path / "local-repo" / TARGET,
             )
 
         assert result is True  # skip, not a hard failure
@@ -243,6 +244,7 @@ class TestMissingSrpmArtifactGuard:
                 failed=failed,
                 all_packages={pkg: meta},
                 run_id=run_id,
+                repo_dir=tmp_path / "local-repo" / TARGET,
             )
 
         assert result is True

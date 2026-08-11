@@ -11,6 +11,7 @@ Usage:
   db-artifacts.py --prune [--confirm]
   db-artifacts.py --reset
   db-artifacts.py --forget PACKAGE
+  db-artifacts.py --forget-repo TARGET
 """
 
 import argparse
@@ -135,6 +136,18 @@ def forget(package: str) -> None:
     print(f"Forgot {package} (stage rows and artifact rows across all targets).")
 
 
+def forget_repo(target: str) -> None:
+    """Remove local-repo RPM artifact rows for one target (all packages).
+
+    Used by `make clean-localrepo` after `rm -rf local-repo/<target>/`, so
+    the ledger doesn't keep reporting files that directory deletion already
+    removed. Does not touch other targets, other kinds (e.g. mock_log), or
+    other realms (e.g. rpmbuild-volume srpms).
+    """
+    build_db.delete_artifacts_for_target(target, "repo", "rpm")
+    print(f"Forgot local-repo RPM artifact rows for {target}.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -158,10 +171,17 @@ def main() -> None:
     parser.add_argument(
         "--forget", metavar="PACKAGE", help="Remove all rows for PACKAGE"
     )
+    parser.add_argument(
+        "--forget-repo",
+        metavar="TARGET",
+        help="Remove local-repo RPM artifact rows for TARGET",
+    )
     args = parser.parse_args()
 
-    if not any([args.usage, args.prune, args.reset, args.forget]):
-        parser.error("one of --usage, --prune, --reset, --forget is required")
+    if not any([args.usage, args.prune, args.reset, args.forget, args.forget_repo]):
+        parser.error(
+            "one of --usage, --prune, --reset, --forget, --forget-repo is required"
+        )
 
     if args.usage:
         usage_report()
@@ -171,6 +191,8 @@ def main() -> None:
         reset()
     if args.forget:
         forget(args.forget)
+    if args.forget_repo:
+        forget_repo(args.forget_repo)
 
 
 if __name__ == "__main__":

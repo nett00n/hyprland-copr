@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 from lib.copr import COPR_BUILD_URL
+from lib.repo_preflight import format_local_repo_remedy
 
 # meson.build:86:14: ERROR: Dependency "upower-glib" not found, tried pkgconfig
 _MESON_DEP_RE = re.compile(
@@ -240,6 +241,12 @@ _UNSATISFIABLE_PROBLEM_RE = re.compile(
 _NOTHING_PROVIDES_RE = re.compile(
     r"- nothing provides (\S+) needed by (\S+) from (\S+)$"
 )
+
+
+def _nvra_to_name(nvra: str) -> str:
+    """Strip version-release.arch off an N-V-R.A string, e.g.
+    "aquamarine-0.14.0-10.fc43.x86_64" -> "aquamarine"."""
+    return nvra.rsplit("-", 2)[0] if nvra.count("-") >= 2 else nvra
 
 
 def _dnf_whatprovides(query: str) -> list[str]:
@@ -1044,6 +1051,7 @@ def _analyze_mock_root_log(log_path: Path) -> list[tuple[int, str, str, str, str
                     continue
                 pkg, repo, requirement = problem_m.group(1, 2, 3)
                 providers = []
+                stale_local_pkgs: list[str] = []
                 for provides_idx in range(
                     next_idx, min(next_idx + 10, len(raw_lines) + 1)
                 ):
@@ -1057,19 +1065,22 @@ def _analyze_mock_root_log(log_path: Path) -> list[tuple[int, str, str, str, str
                             f"nothing provides {capability} needed by {needed_by} "
                             f"from {needed_by_repo}"
                         )
+                        if "local" in needed_by_repo.lower():
+                            name = _nvra_to_name(needed_by)
+                            if name not in stale_local_pkgs:
+                                stale_local_pkgs.append(name)
                 msg = (
                     f"unsatisfiable buildroot dependency: {pkg} from {repo} requires "
                     f"{requirement}, but none of the providers can be installed"
                 )
                 if providers:
                     msg += " — " + "; ".join(providers)
-                if "local" in repo.lower():
-                    msg += (
-                        " — locally built package in local-repo is stale/incompatible"
-                        " with the current buildroot; reset it with"
-                        " `make clean-mock-cache FEDORA_VERSION=<ver>` or"
-                        " `make clean-localrepo FEDORA_VERSION=<ver>`"
-                    )
+                if "local" in repo.lower() or stale_local_pkgs:
+                    names = stale_local_pkgs or [_nvra_to_name(pkg)]
+                    # Shared with lib/repo_preflight.py's pre-build check so a
+                    # build-time failure and a log-analysis-time diagnosis of the
+                    # same underlying problem never drift into different wording.
+                    msg += " — " + format_local_repo_remedy(names, "<ver>")
                 issues.append((lineno, line.strip(), msg, "", "none"))
                 break
     return issues

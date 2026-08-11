@@ -92,6 +92,10 @@ line references, unsatisfiable buildroot transactions (e.g. a stale `local-repo`
 against a soname the current buildroot no longer provides — see `clean-mock-cache`/
 `clean-localrepo` above), and (for Copr) which chroots failed vs. succeeded.
 
+Most of that class of failure is now caught earlier: `stage-mock` preflights each package's
+local deps before invoking mock at all (see "local-repo layout" below), failing in seconds
+instead of after a multi-minute dnf5 resolution failure. `SKIP_REPO_PREFLIGHT=1` overrides it.
+
 ## Submitting to Copr
 
 ```shell
@@ -171,24 +175,36 @@ asks for confirmation): `make db-nuke`.
 ## Container volumes
 
 Per-`FEDORA_VERSION` named volumes persist state across the `--rm` containers every `make`
-target runs in: `rpmbuild-<ver>` (SOURCES/SRPMS/RPMS), `local-repo-<ver>` (dep-resolution repo
-for mock), and `mock-cache-<ver>`/`mock-root-<ver>` (mock's own `/var/cache/mock` and
-`/var/lib/mock` — the bootstrapped buildroot and dnf package cache). Without the last two, every
-`make full-cycle`/nightly run would re-bootstrap every chroot from scratch; with them, only the
-first build after `container-volume-clean` pays that cost, and it grows to roughly 1-1.5GB per
-Fedora version.
+target runs in: `rpmbuild-<ver>` (SOURCES/SRPMS/RPMS) and `mock-cache-<ver>`/`mock-root-<ver>`
+(mock's own `/var/cache/mock` and `/var/lib/mock` — the bootstrapped buildroot and dnf package
+cache). Without the last two, every `make full-cycle`/nightly run would re-bootstrap every
+chroot from scratch; with them, only the first build after `container-volume-clean` pays that
+cost, and it grows to roughly 1-1.5GB per Fedora version.
 
-If a stale `local-repo` poisons the persisted dnf cache (mock resolving against an RPM that no
-longer matches what's actually there), reset just the mock volumes:
+To reset just the mock cache (e.g. it's resolving against a package that no longer matches
+what's actually installable):
 
 ```shell
 make clean-mock-cache FEDORA_VERSION=44   # drop mock-cache-44/mock-root-44 only
-make clean-localrepo  FEDORA_VERSION=44   # also drops mock-cache-44/mock-root-44 (they go stale together)
 ```
 
-`make container-volume-clean` removes all four volumes for one (or, from the default
+`make container-volume-clean` removes both volumes for one (or, from the default
 `FEDORA_VERSION`, every `SUPPORTED`) version — use it for a full reset, e.g. after a mock/dnf
 upgrade in the base image.
+
+### local-repo layout
+
+`local-repo/` — the dnf repo `stage-mock` builds from locally-built RPMs, so mock can resolve
+one package's `depends_on` against another's output — is a plain directory (not a volume),
+scoped per chroot: `local-repo/<target>/` (e.g. `local-repo/fedora-44-x86_64/`). An RPM built
+for one Fedora version can't be served into a different version's buildroot.
+
+```shell
+make clean-localrepo FEDORA_VERSION=44   # delete local-repo/fedora-44-x86_64/ + its ledger rows
+```
+
+`stage-mock` warns about any flat RPMs still sitting directly under `local-repo/` (pre-migration
+leftovers, not served to mock) — remove with `rm -rf local-repo/*.rpm local-repo/repodata`.
 
 ## Regenerating docs
 

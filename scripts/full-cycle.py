@@ -52,6 +52,7 @@ from lib.paths import (
     GITMODULES,
     ROOT,
     get_package_log_dir,
+    local_repo,
     resolve_target,
 )
 from lib.reporting import print_summary
@@ -294,6 +295,7 @@ def run_build_pipeline(
     """
     force_packages = force_packages or set()
     all_packages = get_packages()
+    repo_dir = local_repo(target)
 
     # Show plan first, before any processing
     _stage["stage-show-plan"].show_plan(
@@ -528,6 +530,7 @@ def run_build_pipeline(
                     mock_failed,
                     packages,
                     run_id,
+                    repo_dir,
                 ):
                     build_db.finalize_stage(
                         pkg,

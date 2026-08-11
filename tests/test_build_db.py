@@ -315,6 +315,42 @@ class TestForgetPackage:
         assert build_db.get_stage("b", "mock", "fedora-44-x86_64") is not None
 
 
+class TestDeleteArtifactsForTarget:
+    """Used by `db-artifacts.py --forget-repo` (the fixed `make clean-localrepo`,
+    docs/CHANGELOG.md 2026-08-11) to drop ledger rows for one target's local-repo
+    RPMs after `rm -rf local-repo/<target>/`."""
+
+    def test_deletes_only_matching_realm_kind_target(self, build_db_path, tmp_path):
+        matching = tmp_path / "a.rpm"
+        matching.write_bytes(b"x")
+        build_db.record_artifact(
+            str(matching), "repo", "rpm", "a", "fedora-44-x86_64", "1.0-1.fc44"
+        )
+        other_target = tmp_path / "a-43.rpm"
+        other_target.write_bytes(b"x")
+        build_db.record_artifact(
+            str(other_target), "repo", "rpm", "a", "fedora-43-x86_64", "1.0-1.fc43"
+        )
+        other_kind = tmp_path / "20-mock.log"
+        other_kind.write_text("log")
+        build_db.record_artifact(
+            str(other_kind), "repo", "mock_log", "a", "fedora-44-x86_64", None
+        )
+        other_realm = tmp_path / "a.src.rpm"
+        other_realm.write_bytes(b"x")
+        build_db.record_artifact(
+            str(other_realm), "rpmbuild-volume", "srpm", "a", "fedora-44-x86_64", None
+        )
+
+        build_db.delete_artifacts_for_target("fedora-44-x86_64", "repo", "rpm")
+
+        remaining = {r["path"] for r in build_db.artifacts(package="a")}
+        assert str(matching) not in remaining
+        assert str(other_target) in remaining
+        assert str(other_kind) in remaining
+        assert str(other_realm) in remaining
+
+
 class TestArtifacts:
     def test_record_artifact_stores_size_and_mtime(self, build_db_path, tmp_path):
         f = tmp_path / "pkg.rpm"

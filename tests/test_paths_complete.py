@@ -10,8 +10,10 @@ import pytest
 from lib.paths import (
     get_package_log_dir,
     mock_chroot,
+    local_repo,
     ROOT,
     BUILD_LOG_DIR,
+    LOCAL_REPO_ROOT,
 )
 
 
@@ -71,6 +73,46 @@ class TestMockChroot:
         """Should return a string chroot name."""
         result = mock_chroot("43")
         assert isinstance(result, str)
+
+
+class TestLocalRepo:
+    """Test local_repo() -- the per-chroot dnf repo dir mock resolves build deps against."""
+
+    def test_scoped_under_local_repo_root(self):
+        """Should nest under LOCAL_REPO_ROOT, keyed by target."""
+        result = local_repo("fedora-44-x86_64")
+        assert result == LOCAL_REPO_ROOT / "fedora-44-x86_64"
+
+    def test_different_targets_get_different_dirs(self):
+        """Should isolate fedora-43 from fedora-44 -- the whole point of scoping."""
+        assert local_repo("fedora-43-x86_64") != local_repo("fedora-44-x86_64")
+
+    def test_works_with_mock_chroot_output(self):
+        """Should accept whatever mock_chroot()/resolve_target() produces, incl. rawhide."""
+        result = local_repo(mock_chroot("rawhide"))
+        assert result == LOCAL_REPO_ROOT / "fedora-rawhide-x86_64"
+
+    def test_returns_path_under_root(self):
+        """Should stay inside the repo checkout."""
+        result = local_repo("fedora-44-x86_64")
+        assert result.is_relative_to(ROOT)
+
+    def test_rejects_path_traversal(self):
+        """Should refuse a target that would escape LOCAL_REPO_ROOT."""
+        with pytest.raises(ValueError):
+            local_repo("../../etc")
+
+    def test_rejects_path_separator(self):
+        """Should refuse a target containing a path separator."""
+        with pytest.raises(ValueError):
+            local_repo("a/b")
+
+    def test_local_repo_constant_no_longer_exported(self):
+        """The old shared, unscoped LOCAL_REPO constant must be gone -- a leftover alias
+        would let a caller silently keep writing to it."""
+        import lib.paths as paths_module
+
+        assert not hasattr(paths_module, "LOCAL_REPO")
 
 
 class TestPathConstants:

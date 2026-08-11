@@ -1,5 +1,6 @@
 """Canonical path constants for the hyprland-copr repository."""
 
+import re
 from pathlib import Path
 
 # scripts/lib/ -> scripts/ -> repo root
@@ -11,7 +12,7 @@ SOURCES_LOCK = ROOT / "sources.lock.yaml"
 GITMODULES = ROOT / ".gitmodules"
 LOG_DIR = ROOT / "logs"
 BUILD_LOG_DIR = LOG_DIR / "build"
-LOCAL_REPO = ROOT / "local-repo"
+LOCAL_REPO_ROOT = ROOT / "local-repo"
 TEMPLATE_DIR = ROOT / "templates"
 GITHUB_RELEASE_CACHE = ROOT / "cache" / "github-releases.json"
 BUILD_DB = ROOT / "build-report.db"
@@ -45,3 +46,18 @@ def resolve_target(fedora_version: str, mock_chroot_override: str = "") -> str:
     from fedora_version. This is also the actual mock chroot name passed to `mock -r`.
     """
     return mock_chroot_override or mock_chroot(fedora_version)
+
+
+def local_repo(target: str) -> Path:
+    """Return the per-chroot dnf repo dir mock resolves build deps against.
+
+    Scoped by `target` (the same key build-report.db uses, e.g.
+    "fedora-44-x86_64") so an RPM built for one Fedora version can never be
+    served into a different version's buildroot -- see docs/CHANGELOG.md
+    2026-08-11. There is deliberately no shared/unscoped LOCAL_REPO constant
+    any more: a leftover alias is exactly how a caller would silently keep
+    writing to an unscoped directory.
+    """
+    if not re.match(r"^[\w.-]+$", target):
+        raise ValueError(f"Invalid target: {target}")
+    return LOCAL_REPO_ROOT / target
