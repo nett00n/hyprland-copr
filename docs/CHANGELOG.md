@@ -12,6 +12,29 @@ entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
 
 History before this file's introduction is not backfilled - see `git log`.
 
+## 2026-08-12
+
+- Changed: stage/pipeline logging replaced with single-line, RFC3339-timestamped,
+  tab-separated `key=value` events (`lib.reporting.event()`), always carrying
+  `target=` so concurrent-target output is unambiguous; `state=` and `stage=` are
+  each colorized (state by RUN/OK/FAIL/SKIP/CHECK, stage with one hue per pipeline
+  stage for fast visual filtering) only on a tty (`NO_COLOR` respected). Dropped
+  the multi-line `=== stage ===` banners and per-package `\n  <pkg>:` headers that
+  broke on narrow terminals. See `docs/operations.md` "Stage event lines".
+- Fixed: `CONTAINER_RUN` (Makefile) now passes `-t` to `podman`/`docker run` when
+  make's own stdout is a terminal (`MAKE_TERMOUT`, not the broken
+  `$(shell test -t 1 ...)` pattern -- `$(shell)` always pipes its subshell's
+  stdout to capture the return value, so that check was always false) and
+  forwards `NO_COLOR` into the container. Without `-t`, the container's stdout
+  was always a plain pipe, so `lib.reporting`'s colorized event lines were
+  invisible to `isatty()` even when `make full-cycle` was run interactively.
+- Fixed: `stage-vendor.run_for_package()` now creates `SOURCES_DIR`
+  (`/root/rpmbuild/SOURCES`) itself instead of relying on `main()` to have done
+  it -- `full-cycle.py`'s per-package pipeline calls `run_for_package()`
+  directly and never goes through `main()`, so a fresh `rpmbuild-<version>`
+  volume (no prior `make stage-vendor` run) crashed on the first Go/Rust
+  package's vendor stage with `FileNotFoundError` writing the vendor tarball.
+
 ## 2026-08-11
 
 - Added: `make submodules-update` (safe: `git submodule sync`+`update --init --recursive --force`

@@ -39,7 +39,7 @@ from lib.paths import (
     resolve_target,
 )
 from lib.repo_preflight import check_buildroot_repo
-from lib.reporting import status, verbose_proceed_check
+from lib.reporting import event, status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
 from lib.yaml_utils import apply_os_overrides, prepare_stage
@@ -215,7 +215,7 @@ def run_for_package(
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
-        print(f"  [skip] {pkg} (fedora:{fedora_version} skip)")
+        event("mock", target, pkg, "skip", reason=f"fedora:{fedora_version} skip")
         build_db.set_stage(
             pkg, "mock", target, run_id, "skipped", reason="config: skip"
         )
@@ -231,8 +231,8 @@ def run_for_package(
     # Skip if mock stage already succeeded
     mock_entry = build_db.get_stage(pkg, "mock", target)
     mock_state = mock_entry.get("state") if mock_entry else None
-    if proceed and verbose_proceed_check("mock", pkg, mock_state):
-        status("mock", pkg, "skip", "already succeeded")
+    if proceed and verbose_proceed_check("mock", pkg, mock_state, target):
+        status("mock", pkg, "skip", target, "already succeeded")
         return True  # preserve existing entry (has completed_at from prior run)
 
     blocker = failed_local_dep(pkg, meta, all_packages, failed)
@@ -253,7 +253,7 @@ def run_for_package(
             else f"srpm {srpm_state}"
         )
         failed[pkg] = True
-        status("mock", pkg, "skip", detail)
+        status("mock", pkg, "skip", target, detail)
         build_db.set_stage(
             pkg,
             "mock",
@@ -284,7 +284,7 @@ def run_for_package(
     if errors:
         detail = f"preflight: {errors[0]}"
         failed[pkg] = True
-        status("mock", pkg, "fail", detail)
+        status("mock", pkg, "fail", target, detail)
         build_db.set_stage(
             pkg,
             "mock",
@@ -340,7 +340,7 @@ def run_for_package(
         shutil.rmtree(stale_result, ignore_errors=True)
     elif stale_result.exists():
         stale_result.unlink()
-    print(f"  [RUN]  mock: {pkg}", flush=True)
+    event("mock", target, pkg, "run")
     ok, _, _ = run_cmd(cmd, log)
     # Copies build.log/root.log/state.log to logs/build/<pkg>/, then records
     # each as an artifact (repo-relative path, matching the `log` column
@@ -356,7 +356,7 @@ def run_for_package(
         # isn't always under ROOT in tests, and this stays correct either way.
         for rpm_path in update_local_repo(target, repo_dir):
             build_db.record_artifact(rpm_path, "repo", "rpm", pkg, target, ver)
-    status("mock", pkg, "ok" if ok else "fail")
+    status("mock", pkg, "ok" if ok else "fail", target)
 
     extra: dict[str, Any] = {}
     if ok:
@@ -414,7 +414,6 @@ def main() -> None:
     build_order = topological_sort(dep_graph)
 
     failed_overall = False
-    print("\n=== mock ===")
     for pkg in build_order:
         meta = packages[pkg]
         if not run_for_package(

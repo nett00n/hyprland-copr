@@ -1,4 +1,8 @@
-"""Build summary printing and badge generation."""
+"""Build summary printing, per-event logging, and badge generation."""
+
+import os
+import sys
+from datetime import datetime
 
 STATE_COLOR = {
     "success": "brightgreen",
@@ -14,20 +18,74 @@ STATUS_EMOJI = {
 
 BADGE_URL = "https://img.shields.io/badge/{label}-{message}-{color}"
 
+# ANSI colors for the `state=` value only -- the rest of the line stays plain
+# so redirected output/log files and grep never have to deal with escape codes.
+_STATE_ANSI = {
+    "RUN": "\033[33m",  # yellow
+    "OK": "\033[32m",  # green
+    "FAIL": "\033[31m",  # red
+    "SKIP": "\033[90m",  # grey
+    "CHECK": "\033[36m",  # cyan
+}
+# ANSI colors for the `stage=` value, one per pipeline stage -- lets you spot
+# "which stage is this line about" at a glance while scanning a scrolling log,
+# independent of (and visually distinct from) the state colors above.
+_STAGE_ANSI = {
+    "validate": "\033[34m",  # blue
+    "spec": "\033[35m",  # magenta
+    "vendor": "\033[36m",  # cyan
+    "srpm": "\033[94m",  # bright blue
+    "mock": "\033[95m",  # bright magenta
+    "copr": "\033[96m",  # bright cyan
+}
+_ANSI_RESET = "\033[0m"
 
-def verbose_proceed_check(stage_checked: str, pkg: str, state: str | None) -> bool:
+
+def _color_enabled() -> bool:
+    return not os.environ.get("NO_COLOR") and sys.stdout.isatty()
+
+
+def event(stage: str, target: str, pkg: str, state: str, **fields: str) -> None:
+    """Print a single tab-separated, RFC3339-timestamped event line.
+
+    Format: `<rfc3339 ts>\\tstage=<stage>\\ttarget=<target>\\tpkg=<pkg>\\tstate=<STATE>`,
+    followed by any non-empty `key=value` extras. See docs/operations.md "Stage event
+    lines".
+    """
+    state = state.upper()
+    stage_display = stage
+    if _color_enabled():
+        if state in _STATE_ANSI:
+            state = f"{_STATE_ANSI[state]}{state}{_ANSI_RESET}"
+        if stage in _STAGE_ANSI:
+            stage_display = f"{_STAGE_ANSI[stage]}{stage}{_ANSI_RESET}"
+    parts = [
+        datetime.now().astimezone().isoformat(timespec="seconds"),
+        f"stage={stage_display}",
+        f"target={target}",
+        f"pkg={pkg}",
+        f"state={state}",
+    ]
+    for key, value in fields.items():
+        if value:
+            parts.append(f"{key}={value}")
+    print("\t".join(parts), flush=True)
+
+
+def verbose_proceed_check(
+    stage_checked: str, pkg: str, state: str | None, target: str
+) -> bool:
     """Print PROCEED_BUILD check result. Returns True if stage should be skipped."""
     skip = state == "success"
     action = "skip" if skip else ("retry" if state == "failed" else "run")
-    print(f"  [CHECK] {stage_checked}: {pkg} — prior={state or 'none'} → {action}")
+    event(stage_checked, target, pkg, "CHECK", prior=state or "none", action=action)
     return skip
 
 
-def status(stage: str, pkg: str, result: str, detail: str = "") -> None:
-    """Print a single-line stage status line."""
-    tag = {"ok": "[OK]  ", "fail": "[FAIL]", "skip": "[SKIP]"}[result]
-    suffix = f" — {detail}" if detail else ""
-    print(f"  {tag} {stage}: {pkg}{suffix}")
+def status(stage: str, pkg: str, result: str, target: str, detail: str = "") -> None:
+    """Print a single-line stage event."""
+    state = {"ok": "ok", "fail": "fail", "skip": "skip"}[result]
+    event(stage, target, pkg, state, reason=detail)
 
 
 def print_summary(packages: dict, stages: dict, copr_repo: str) -> None:

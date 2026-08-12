@@ -321,3 +321,33 @@ make delete-package PACKAGE=<name>   # PKG=<name> also works
 ```shell
 LOG_LEVEL=DEBUG make stage-validate PACKAGE=hyprland
 ```
+
+### Stage event lines
+
+Every stage transition (`RUN`/`OK`/`FAIL`/`SKIP`/`CHECK`) is printed as one self-contained
+line via `lib.reporting.event()` (used internally by `status()`/`verbose_proceed_check()`) —
+no multi-line banners, no state that only exists in an earlier line you've already scrolled
+past:
+
+```
+2026-08-12T14:03:41-04:00	stage=mock	target=fedora-43-x86_64	pkg=hyprland	state=RUN
+2026-08-12T14:04:22-04:00	stage=mock	target=fedora-43-x86_64	pkg=hyprland	state=OK	dur=41.2s
+2026-08-12T14:04:23-04:00	stage=mock	target=fedora-44-x86_64	pkg=hyprland-devel	state=FAIL	reason=cached
+```
+
+Fields:
+- Timestamp: RFC 3339, second precision, local offset.
+- Tab-separated `key=value` pairs — `stage`, `target`, `pkg`, `state` always present;
+  extra fields (`reason`, `dur`, `prior`, `action`, ...) appended only when non-empty.
+- `state` is colorized (RUN=yellow, OK=green, FAIL=red, SKIP=grey, CHECK=cyan) when stdout
+  is a tty and `NO_COLOR` is unset; plain text otherwise, so redirected/piped output and
+  log files never carry escape codes.
+- `stage` is also colorized, one hue per stage (validate=blue, spec=magenta, vendor=cyan,
+  srpm=bright blue, mock=bright magenta, copr=bright cyan) — separate from the state
+  palette, so scanning a scrolling multi-target log for "just the mock lines" (or any
+  other stage) is a color you can pick out without reading text.
+- Through `make` (any target that runs `CONTAINER_RUN`), colors only appear if make's
+  own stdout is a terminal — the Makefile passes `-t` to `podman`/`docker run`
+  conditionally on that, since without it the container's stdout is always a plain
+  pipe regardless of your outer terminal. `NO_COLOR` set on the host is forwarded into
+  the container the same way `LOG_LEVEL` already is.

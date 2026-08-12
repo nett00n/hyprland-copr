@@ -31,7 +31,7 @@ from lib.paths import (
     get_package_log_dir,
     resolve_target,
 )
-from lib.reporting import status, verbose_proceed_check
+from lib.reporting import event, status, verbose_proceed_check
 from lib.source_lock import verify as verify_sources
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
@@ -74,7 +74,7 @@ def run_for_package(
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
-        print(f"  [skip] {pkg} (fedora:{fedora_version} skip)")
+        event("srpm", target, pkg, "skip", reason=f"fedora:{fedora_version} skip")
         build_db.set_stage(
             pkg, "srpm", target, run_id, "skipped", reason="config: skip"
         )
@@ -94,15 +94,19 @@ def run_for_package(
     srpm_entry = build_db.get_stage(pkg, "srpm", target)
     prior_srpm_path = srpm_entry.get("path") if srpm_entry else None
     srpm_exists = bool(prior_srpm_path) and Path(str(prior_srpm_path)).exists()
-    if proceed and verbose_proceed_check("mock", pkg, prior_mock_state) and srpm_exists:
-        status("srpm", pkg, "skip", "mock already succeeded")
+    if (
+        proceed
+        and verbose_proceed_check("mock", pkg, prior_mock_state, target)
+        and srpm_exists
+    ):
+        status("srpm", pkg, "skip", target, "mock already succeeded")
         return True  # preserve existing srpm entry untouched
 
     # Skip if spec stage failed
     spec_entry = build_db.get_stage(pkg, "spec", target)
     spec_state = spec_entry.get("state", "") if spec_entry else ""
     if spec_state == "failed" or spec_entry is None:
-        status("srpm", pkg, "skip", "spec failed")
+        status("srpm", pkg, "skip", target, "spec failed")
         build_db.set_stage(
             pkg,
             "srpm",
@@ -117,7 +121,7 @@ def run_for_package(
 
     ok, _, _ = run_cmd(["spectool", "-g", "-R", str(spec)], log)
     if not ok:
-        status("srpm", pkg, "fail")
+        status("srpm", pkg, "fail", target)
         build_db.set_stage(
             pkg,
             "srpm",
@@ -132,7 +136,7 @@ def run_for_package(
 
     problems = verify_sources(pkg, meta, SOURCES_DIR)
     if problems:
-        status("srpm", pkg, "fail", "source verify failed")
+        status("srpm", pkg, "fail", target, "source verify failed")
         log.parent.mkdir(parents=True, exist_ok=True)
         with open(log, "a") as fh:
             fh.write("source verification failed:\n")
@@ -152,10 +156,10 @@ def run_for_package(
         return False
 
     copy_local_patches(pkg, meta)
-    print(f"  [RUN]  srpm: {pkg}", flush=True)
+    event("srpm", target, pkg, "run")
     ok, _, _ = run_cmd(["rpmbuild", "-bs", str(spec)], log)
     if not ok:
-        status("srpm", pkg, "fail")
+        status("srpm", pkg, "fail", target)
         build_db.set_stage(
             pkg,
             "srpm",
@@ -169,7 +173,7 @@ def run_for_package(
         return False
 
     path = find_srpm(pkg)
-    status("srpm", pkg, "ok")
+    status("srpm", pkg, "ok", target)
     build_db.set_stage(
         pkg,
         "srpm",
@@ -205,7 +209,6 @@ def main() -> None:
     packages = prepare_stage("srpm", target, proceed)
 
     failed = False
-    print("\n=== srpm ===")
     for pkg, meta in packages.items():
         if not run_for_package(pkg, meta, fedora_version, proceed, target, run_id):
             failed = True

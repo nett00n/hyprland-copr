@@ -37,7 +37,7 @@ from lib.copr import (
     validate_copr_repo,
 )
 from lib.paths import ARCH, DISTRO, ROOT, get_package_log_dir, resolve_target
-from lib.reporting import status, verbose_proceed_check
+from lib.reporting import event, status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
 from lib.yaml_utils import apply_os_overrides, prepare_stage
@@ -61,7 +61,7 @@ def run_for_package(
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
-        print(f"  [skip] {pkg} (fedora:{fedora_version} skip)")
+        event("copr", target, pkg, "skip", reason=f"fedora:{fedora_version} skip")
         build_db.set_stage(
             pkg, "copr", target, run_id, "skipped", reason="config: skip"
         )
@@ -77,8 +77,8 @@ def run_for_package(
     # Skip if copr stage already succeeded
     copr_entry = build_db.get_stage(pkg, "copr", target)
     prior_copr_state = copr_entry.get("state") if copr_entry else None
-    if proceed and verbose_proceed_check("copr", pkg, prior_copr_state):
-        status("copr", pkg, "skip", "already succeeded")
+    if proceed and verbose_proceed_check("copr", pkg, prior_copr_state, target):
+        status("copr", pkg, "skip", target, "already succeeded")
         return True
 
     srpm_entry = build_db.get_stage(pkg, "srpm", target)
@@ -103,7 +103,7 @@ def run_for_package(
             if srpm_missing
             else f"srpm {srpm_state}"
         )
-        status("copr", pkg, "skip", blocker)
+        status("copr", pkg, "skip", target, blocker)
         build_db.set_stage(
             pkg,
             "copr",
@@ -116,7 +116,7 @@ def run_for_package(
         )
         return True
 
-    print(f"  [RUN]  copr: {pkg}", flush=True)
+    event("copr", target, pkg, "run")
     cmd = ["copr-cli", "build"]
     if not synchronous:
         cmd.append("--nowait")
@@ -136,7 +136,7 @@ def run_for_package(
     # a "failed" terminal state). Parse it unconditionally so failed builds
     # still get a build_id recorded, which fetch_failed_chroot_logs needs.
     build_id = parse_build_id(stdout)
-    status("copr", pkg, "ok" if ok else "fail")
+    status("copr", pkg, "ok" if ok else "fail", target)
 
     if not ok and synchronous and build_id:
         fetch_failed_chroot_logs(pkg, build_id)
@@ -206,7 +206,6 @@ def main() -> None:
         sys.exit(2)
 
     failed = False
-    print("\n=== copr ===")
     for pkg, meta in packages.items():
         if not run_for_package(
             pkg, meta, fedora_version, copr_repo, proceed, target, run_id, synchronous

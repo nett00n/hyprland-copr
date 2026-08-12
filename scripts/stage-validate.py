@@ -21,7 +21,7 @@ from lib import build_db
 from lib.config import setup_logging
 from lib.gitmodules import parse_gitmodules
 from lib.paths import ARCH, DISTRO, GITMODULES, ROOT, resolve_target
-from lib.reporting import status
+from lib.reporting import event, status
 from lib.validation import (
     validate_gitmodules,
     validate_group_membership,
@@ -46,22 +46,22 @@ def run_for_package(
     """
     resolved = apply_os_overrides(meta, fedora_version)
     if resolved.get("_skip"):
-        status("validate", pkg, "skip")
+        status("validate", pkg, "skip", target)
         build_db.set_stage(
             pkg, "validate", target, run_id, "skipped", reason="config: skip"
         )
         return True
 
-    print(f"  [RUN]  validate: {pkg}", flush=True)
+    event("validate", target, pkg, "run")
     errors, warnings = validate_package(pkg, resolved, all_packages)
 
     state = "failed" if errors else "success"
     if errors:
-        status("validate", pkg, "fail")
+        status("validate", pkg, "fail", target)
         for e in errors:
             print(f"    error: {e}")
     else:
-        status("validate", pkg, "ok")
+        status("validate", pkg, "ok", target)
 
     for w in warnings:
         print(f"    warn: {w}")
@@ -78,7 +78,7 @@ def run_for_package(
     return state == "success"
 
 
-def run_global_checks(all_packages: dict) -> bool:
+def run_global_checks(all_packages: dict, target: str) -> bool:
     """Run global validation checks (group membership and .gitmodules).
 
     Returns True if all checks pass, False if any failed. Prints results;
@@ -92,11 +92,11 @@ def run_global_checks(all_packages: dict) -> bool:
     grp_errors, grp_warnings = validate_group_membership(all_packages)
     if grp_errors:
         failed = True
-        status("validate", "groups", "fail")
+        status("validate", "groups", "fail", target)
         for e in grp_errors:
             print(f"    error: {e}")
     else:
-        status("validate", "groups", "ok")
+        status("validate", "groups", "ok", target)
     total_errors += len(grp_errors)
     total_warnings += len(grp_warnings)
 
@@ -120,11 +120,11 @@ def run_global_checks(all_packages: dict) -> bool:
     gm_errors, gm_warnings = validate_gitmodules(ROOT)
     if gm_errors:
         failed = True
-        status("validate", ".gitmodules", "fail")
+        status("validate", ".gitmodules", "fail", target)
         for e in gm_errors:
             print(f"    error: {e}")
     else:
-        status("validate", ".gitmodules", "ok")
+        status("validate", ".gitmodules", "ok", target)
     for w in gm_warnings:
         print(f"    warn: {w}")
     total_errors += len(gm_errors)
@@ -156,12 +156,10 @@ def main() -> None:
         "validate", target, proceed, include_all=True
     )
 
-    print("\n=== validate ===")
-
     for pkg, meta in packages.items():
         run_for_package(pkg, meta, all_packages, fedora_version, target, run_id)
 
-    global_ok = run_global_checks(all_packages)
+    global_ok = run_global_checks(all_packages, target)
     build_db.finish_run(run_id, "ok" if global_ok else "failed")
 
     if not global_ok:

@@ -35,6 +35,17 @@ endif
 CONTAINER_RUNTIME ?= $(shell command -v podman >/dev/null 2>&1 && echo podman || echo docker)
 CONTAINER_SUDO    := $(if $(filter docker,$(CONTAINER_RUNTIME)),sudo,)
 
+# Only allocate a pty for the container (-t) when make's own stdout is one --
+# without this, lib.reporting's colorized stage=/state= event lines are always
+# invisible to isatty() inside the container, even run interactively from a
+# real terminal (podman/docker give a plain pipe without -t). Piped/CI/non-tty
+# invocations correctly get no -t, same as the no-container path already does.
+# MAKE_TERMOUT (GNU Make >=4.1) is the name of make's own stdout terminal when
+# it is one -- `$(shell test -t 1 ...)` doesn't work here: $(shell) always
+# captures its subshell's stdout through a pipe to get the function's return
+# value, so `test -t 1` inside it sees that pipe, never the real terminal.
+MAKE_TTY := $(if $(MAKE_TERMOUT),-t,)
+
 # NO_CONTAINER=1 runs lint/test natively (no podman/docker) -- for CI, which is
 # already a disposable container with no privilege for nested --privileged runs.
 # Only lint/test targets are guaranteed to work this way; build/mock/copr stages
@@ -82,7 +93,7 @@ CONTAINER_PYTHON := .venv/bin/python3
 RPMLINT          := .venv/bin/rpmlint
 WORK             := .
 else
-CONTAINER_RUN := $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm --privileged \
+CONTAINER_RUN := $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm --privileged $(MAKE_TTY) \
 	-v $(RPMBUILD_MOUNT) \
 	-v $(MOCKCACHE_MOUNT) \
 	-v $(MOCKROOT_MOUNT) \
@@ -90,6 +101,7 @@ CONTAINER_RUN := $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm --privileged \
 	-v $(VENV_MOUNT) \
 	$(COPR_CONFIG_MOUNT) \
 	$(if $(LOG_LEVEL),-e LOG_LEVEL=$(LOG_LEVEL),) \
+	$(if $(NO_COLOR),-e NO_COLOR=$(NO_COLOR),) \
 	-w /work \
 	$(IMAGE_NAME):$(FEDORA_VERSION)
 

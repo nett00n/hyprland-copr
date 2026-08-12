@@ -55,7 +55,7 @@ from lib.paths import (
     local_repo,
     resolve_target,
 )
-from lib.reporting import print_summary
+from lib.reporting import event, print_summary
 from lib.source_lock import missing_entries
 from lib.yaml_utils import (
     STAGES,
@@ -305,7 +305,7 @@ def run_build_pipeline(
     time.sleep(5)
 
     # Global checks: run once before the per-package loop
-    _stage["stage-validate"].run_global_checks(all_packages)
+    _stage["stage-validate"].run_global_checks(all_packages, target)
 
     if copr_repo:
         # FIXME(BUG-0036): return value is discarded, and validate_copr_repo()
@@ -316,10 +316,7 @@ def run_build_pipeline(
     mock_failed: dict[str, bool] = {}
     rebuilt_packages: set[str] = set()
 
-    print("\n=== Full Cycle (Per-Package) ===")
     for pkg, meta in packages.items():
-        print(f"\n  {pkg}:")
-
         # Compute input hashes once per package
         new_hashes = compute_input_hashes(pkg, meta, all_packages)
 
@@ -343,7 +340,7 @@ def run_build_pipeline(
 
         # Spec
         if is_cached("spec", pkg, target, new_hashes, forced_stages):
-            print("    spec: cached")
+            event("spec", target, pkg, "skip", reason="cached")
             build_db.update_reason(pkg, "spec", target, "cached")
         else:
             rebuilt_packages.add(pkg)
@@ -397,7 +394,7 @@ def run_build_pipeline(
         if vendor_entry.get("state") == "skipped" or is_cached(
             "vendor", pkg, target, new_hashes, forced_stages
         ):
-            print("    vendor: cached")
+            event("vendor", target, pkg, "skip", reason="cached")
             if vendor_entry:
                 build_db.update_reason(pkg, "vendor", target, "cached")
         else:
@@ -447,7 +444,7 @@ def run_build_pipeline(
 
         # SRPM
         if is_cached("srpm", pkg, target, new_hashes, forced_stages):
-            print("    srpm: cached")
+            event("srpm", target, pkg, "skip", reason="cached")
             build_db.update_reason(pkg, "srpm", target, "cached")
         else:
             rebuilt_packages.add(pkg)
@@ -496,11 +493,11 @@ def run_build_pipeline(
 
         # Mock
         if skip_mock:
-            print("    mock: skipped (SKIP_MOCK=true)")
+            event("mock", target, pkg, "skip", reason="SKIP_MOCK=true")
             build_db.update_reason(pkg, "mock", target, "SKIP_MOCK")
         else:
             if is_cached("mock", pkg, target, new_hashes, forced_stages):
-                print("    mock: cached")
+                event("mock", target, pkg, "skip", reason="cached")
                 build_db.update_reason(pkg, "mock", target, "cached")
             else:
                 rebuilt_packages.add(pkg)
@@ -583,12 +580,9 @@ def run_build_pipeline(
                 file=sys.stderr,
             )
 
-    print("\n=== Full Cycle (Per-Package): Copr ===")
     for pkg, meta in packages.items():
-        print(f"\n  {pkg}:")
-
         if skip_copr:
-            print("    copr: skipped (SKIP_COPR=true)")
+            event("copr", target, pkg, "skip", reason="SKIP_COPR=true")
             build_db.update_reason(pkg, "copr", target, "SKIP_COPR")
             continue
 
@@ -596,7 +590,13 @@ def run_build_pipeline(
             continue
 
         if blockers:
-            print(f"    copr: blocked (mock failed for {', '.join(blockers)})")
+            event(
+                "copr",
+                target,
+                pkg,
+                "skip",
+                reason=f"blocked: mock failed for {', '.join(blockers)}",
+            )
             # state=skipped, matching every other upstream-failure skip case
             # in the pipeline (e.g. "spec failed", "srpm failed").
             build_db.set_stage(
@@ -610,7 +610,7 @@ def run_build_pipeline(
             continue
 
         if coverage_blocked:
-            print("    copr: blocked (chroot coverage)")
+            event("copr", target, pkg, "skip", reason="blocked: chroot coverage")
             build_db.set_stage(
                 pkg,
                 "copr",
@@ -629,7 +629,7 @@ def run_build_pipeline(
         )
 
         if is_cached("copr", pkg, target, new_hashes, forced_stages):
-            print("    copr: cached")
+            event("copr", target, pkg, "skip", reason="cached")
             build_db.update_reason(pkg, "copr", target, "cached")
         else:
             rebuilt_packages.add(pkg)

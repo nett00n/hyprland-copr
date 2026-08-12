@@ -34,7 +34,7 @@ import sys
 from lib import build_db, vendor_store
 from lib.config import setup_logging
 from lib.paths import ARCH, DISTRO, ROOT, SOURCES_DIR, resolve_target
-from lib.reporting import status
+from lib.reporting import event, status
 from lib.vendor import (
     VendorError,
     generate,
@@ -69,7 +69,7 @@ def run_for_package(
     all_packages = all_packages if all_packages is not None else {pkg: meta}
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
-        print(f"  [skip] {pkg} (fedora:{fedora_version} skip)")
+        event("vendor", target, pkg, "skip", reason=f"fedora:{fedora_version} skip")
         build_db.set_stage(
             pkg, "vendor", target, run_id, "skipped", reason="config: skip"
         )
@@ -80,6 +80,13 @@ def run_for_package(
     pkg_log_dir.mkdir(parents=True, exist_ok=True)
     log = pkg_log_dir / "05-vendor.log"
     log.unlink(missing_ok=True)
+
+    # Callers that invoke run_for_package() directly (full-cycle.py's
+    # per-package pipeline) never go through main(), which is the only place
+    # this used to be created -- a fresh rpmbuild volume with no prior
+    # `make stage-vendor` run then hits generate()'s tarfile.open() with a
+    # missing parent dir (FileNotFoundError).
+    SOURCES_DIR.mkdir(parents=True, exist_ok=True)
 
     # Skip if not a Go or Rust package
     if not (is_go_package(meta) or is_rust_package(meta)):
@@ -92,7 +99,7 @@ def run_for_package(
     spec_entry = build_db.get_stage(pkg, "spec", target)
     spec_state = spec_entry.get("state", "") if spec_entry else ""
     if spec_state == "failed" or spec_entry is None:
-        status("vendor", pkg, "skip", "spec failed")
+        status("vendor", pkg, "skip", target, "spec failed")
         build_db.set_stage(
             pkg, "vendor", target, run_id, "skipped", version=ver, reason="spec failed"
         )
@@ -122,7 +129,7 @@ def run_for_package(
         )
 
     if tarballs_exist:
-        status("vendor", pkg, "ok")
+        status("vendor", pkg, "ok", target)
         build_db.set_stage(
             pkg, "vendor", target, run_id, "success", version=ver, path=str(tarball)
         )
@@ -131,10 +138,10 @@ def run_for_package(
 
     store_hit = vendor_store.find(pkg, meta, all_packages)
     if store_hit is not None:
-        print(f"  [HIT]  vendor store: {pkg}", flush=True)
+        event("vendor", target, pkg, "ok", reason="vendor-store hit")
         tarball.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(store_hit, tarball)
-        status("vendor", pkg, "ok")
+        status("vendor", pkg, "ok", target)
         build_db.set_stage(
             pkg,
             "vendor",
@@ -150,10 +157,10 @@ def run_for_package(
         return True
 
     try:
-        print(f"  [RUN]  vendor: {pkg}", flush=True)
+        event("vendor", target, pkg, "run")
         generate(pkg, meta, tarball, log_path=log, fedora_version=fedora_version)
         store_path = vendor_store.store(pkg, meta, all_packages, tarball)
-        status("vendor", pkg, "ok")
+        status("vendor", pkg, "ok", target)
         build_db.set_stage(
             pkg,
             "vendor",
@@ -168,7 +175,7 @@ def run_for_package(
         _record_store(store_path)
         return True
     except VendorError as exc:
-        status("vendor", pkg, "fail")
+        status("vendor", pkg, "fail", target)
         with open(log, "a") as fh:
             fh.write(f"error: {exc}\n")
         build_db.set_stage(
@@ -198,10 +205,8 @@ def main() -> None:
     )
 
     packages = prepare_stage("vendor", target, proceed)
-    SOURCES_DIR.mkdir(parents=True, exist_ok=True)
 
     failed = False
-    print("\n=== vendor ===")
     for pkg, meta in packages.items():
         if not run_for_package(pkg, meta, fedora_version, target, run_id, packages):
             failed = True

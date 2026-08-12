@@ -26,7 +26,7 @@ from lib.github import build_changelog
 from lib.gitmodules import get_changelog_info, parse_gitmodules, resolve_module
 from lib.jinja_utils import create_jinja_env
 from lib.paths import ARCH, DISTRO, ROOT, get_package_log_dir, resolve_target
-from lib.reporting import status
+from lib.reporting import event, status
 from lib.spec_utils import process_archive_urls
 from lib.version import nvr
 from lib.yaml_utils import (
@@ -225,7 +225,7 @@ def run_for_package(
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
-        print(f"  [skip] {pkg} (fedora:{fedora_version} skip)")
+        event("spec", target, pkg, "skip", reason=f"fedora:{fedora_version} skip")
         build_db.set_stage(
             pkg, "spec", target, run_id, "skipped", reason="config: skip"
         )
@@ -237,7 +237,7 @@ def run_for_package(
     log = pkg_log_dir / "00-spec.log"
     log.unlink(missing_ok=True)
 
-    print(f"  [RUN]  spec: {pkg}", flush=True)
+    event("spec", target, pkg, "run")
 
     try:
         spec_content = generate_spec(pkg, meta, all_packages, fedora_version)
@@ -257,7 +257,7 @@ def run_for_package(
         ok = False
 
     state = "success" if ok else "failed"
-    status("spec", pkg, "ok" if ok else "fail")
+    status("spec", pkg, "ok" if ok else "fail", target)
 
     build_db.set_stage(
         pkg,
@@ -291,7 +291,6 @@ def main() -> None:
     all_packages = get_packages()
 
     failed = False
-    print("\n=== spec ===")
     for pkg, meta in packages.items():
         if not run_for_package(pkg, meta, all_packages, fedora_version, target, run_id):
             failed = True

@@ -1,13 +1,21 @@
 """Tests for lib.reporting module."""
 
 import sys
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import pytest
 
-from lib.reporting import badge, badge_short, print_summary, status, verbose_proceed_check
+from lib.reporting import (
+    badge,
+    badge_short,
+    event,
+    print_summary,
+    status,
+    verbose_proceed_check,
+)
 
 
 class TestPrintSummary:
@@ -49,72 +57,139 @@ class TestPrintSummary:
         assert "pkg1" in captured.out or "Summary" in captured.out
 
 
+class TestEvent:
+    """Test the low-level event() line format."""
+
+    def test_line_shape(self, capsys):
+        """One tab-separated line: rfc3339 ts, stage=, target=, pkg=, state=."""
+        event("mock", "fedora-43-x86_64", "hyprland", "run")
+        line = capsys.readouterr().out.strip()
+        fields = line.split("\t")
+        assert len(fields) == 5
+        datetime.fromisoformat(fields[0])  # raises if not a valid RFC3339 timestamp
+        assert fields[1] == "stage=mock"
+        assert fields[2] == "target=fedora-43-x86_64"
+        assert fields[3] == "pkg=hyprland"
+        assert fields[4] == "state=RUN"
+
+    def test_extra_fields_appended(self, capsys):
+        """Extra kwargs become their own key=value tab fields, in call order."""
+        event("mock", "fedora-43-x86_64", "hyprland", "ok", dur="41.2s")
+        line = capsys.readouterr().out.strip()
+        assert line.endswith("state=OK\tdur=41.2s")
+
+    def test_empty_extra_fields_omitted(self, capsys):
+        """A falsy/empty extra field is dropped, not printed as key=."""
+        event("mock", "fedora-43-x86_64", "hyprland", "skip", reason="")
+        line = capsys.readouterr().out.strip()
+        assert "reason=" not in line
+
+    def test_no_color_when_not_a_tty(self, capsys):
+        """capsys is never a tty, so no ANSI escapes should leak into captured output."""
+        event("mock", "fedora-43-x86_64", "hyprland", "fail")
+        line = capsys.readouterr().out
+        assert "\033[" not in line
+
+    def test_stage_colorized_on_tty(self, capsys, monkeypatch):
+        """Each stage gets its own ANSI color on the stage= value when on a tty."""
+        monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+        monkeypatch.delenv("NO_COLOR", raising=False)
+        event("mock", "fedora-43-x86_64", "hyprland", "run")
+        line = capsys.readouterr().out
+        assert "\033[95mmock\033[0m" in line
+
+    def test_different_stages_get_different_colors(self, capsys, monkeypatch):
+        """Two different stages must not share the same stage= color."""
+        monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+        monkeypatch.delenv("NO_COLOR", raising=False)
+        event("mock", "fedora-43-x86_64", "hyprland", "run")
+        mock_line = capsys.readouterr().out
+        event("spec", "fedora-43-x86_64", "hyprland", "run")
+        spec_line = capsys.readouterr().out
+        mock_color = mock_line.split("stage=", 1)[1].split("hyprland")[0]
+        spec_color = spec_line.split("stage=", 1)[1].split("hyprland")[0]
+        assert mock_color != spec_color
+
+    def test_no_stage_color_when_not_a_tty(self, capsys):
+        """Stage color must respect the same tty/NO_COLOR gate as state color."""
+        event("mock", "fedora-43-x86_64", "hyprland", "run")
+        line = capsys.readouterr().out
+        assert "\tstage=mock\t" in line
+
+
 class TestStatus:
     """Test status function."""
 
     def test_status_ok(self, capsys):
-        """Should print OK status."""
-        status("spec", "mypackage", "ok")
+        """Should print OK state."""
+        status("spec", "mypackage", "ok", "fedora-43-x86_64")
         captured = capsys.readouterr()
-        assert "[OK]" in captured.out
-        assert "spec" in captured.out
-        assert "mypackage" in captured.out
+        assert "state=OK" in captured.out
+        assert "stage=spec" in captured.out
+        assert "pkg=mypackage" in captured.out
+        assert "target=fedora-43-x86_64" in captured.out
 
     def test_status_fail(self, capsys):
-        """Should print FAIL status."""
-        status("mock", "mypackage", "fail")
+        """Should print FAIL state."""
+        status("mock", "mypackage", "fail", "fedora-43-x86_64")
         captured = capsys.readouterr()
-        assert "[FAIL]" in captured.out
-        assert "mock" in captured.out
+        assert "state=FAIL" in captured.out
+        assert "stage=mock" in captured.out
 
     def test_status_skip(self, capsys):
-        """Should print SKIP status."""
-        status("vendor", "mypackage", "skip")
+        """Should print SKIP state."""
+        status("vendor", "mypackage", "skip", "fedora-43-x86_64")
         captured = capsys.readouterr()
-        assert "[SKIP]" in captured.out
-        assert "vendor" in captured.out
+        assert "state=SKIP" in captured.out
+        assert "stage=vendor" in captured.out
 
     def test_status_with_detail(self, capsys):
-        """Should include detail message."""
-        status("spec", "pkg", "ok", detail="error message")
+        """Should include detail as a reason= field."""
+        status("spec", "pkg", "ok", "fedora-43-x86_64", detail="error message")
         captured = capsys.readouterr()
-        assert "error message" in captured.out
+        assert "reason=error message" in captured.out
 
 
 class TestVerboseProceedCheck:
     """Test verbose_proceed_check function."""
 
     def test_skip_on_success(self, capsys):
-        """Should return True and print 'skip' for success state."""
-        result = verbose_proceed_check("spec", "mypackage", "success")
+        """Should return True and print action=skip for success state."""
+        result = verbose_proceed_check(
+            "spec", "mypackage", "success", "fedora-43-x86_64"
+        )
         assert result is True
         captured = capsys.readouterr()
-        assert "skip" in captured.out
-        assert "spec" in captured.out
-        assert "mypackage" in captured.out
+        assert "action=skip" in captured.out
+        assert "stage=spec" in captured.out
+        assert "pkg=mypackage" in captured.out
 
     def test_retry_on_failed(self, capsys):
-        """Should return False and print 'retry' for failed state."""
-        result = verbose_proceed_check("mock", "mypackage", "failed")
+        """Should return False and print action=retry for failed state."""
+        result = verbose_proceed_check(
+            "mock", "mypackage", "failed", "fedora-43-x86_64"
+        )
         assert result is False
         captured = capsys.readouterr()
-        assert "retry" in captured.out
-        assert "failed" in captured.out
+        assert "action=retry" in captured.out
+        assert "prior=failed" in captured.out
 
     def test_run_on_none(self, capsys):
-        """Should return False and print 'run' for None state."""
-        result = verbose_proceed_check("spec", "mypackage", None)
+        """Should return False and print action=run/prior=none for None state."""
+        result = verbose_proceed_check("spec", "mypackage", None, "fedora-43-x86_64")
         assert result is False
         captured = capsys.readouterr()
-        assert "run" in captured.out
-        assert "none" in captured.out
+        assert "action=run" in captured.out
+        assert "prior=none" in captured.out
 
     def test_run_on_unknown_state(self, capsys):
-        """Should return False and print 'run' for unknown state."""
-        result = verbose_proceed_check("spec", "mypackage", "unknown")
+        """Should return False and print action=run for unknown state."""
+        result = verbose_proceed_check(
+            "spec", "mypackage", "unknown", "fedora-43-x86_64"
+        )
         assert result is False
         captured = capsys.readouterr()
-        assert "run" in captured.out
+        assert "action=run" in captured.out
 
 
 class TestBadge:

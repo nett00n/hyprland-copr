@@ -65,7 +65,9 @@ class TestStageValidate:
         with patch.object(stage_validate, "validate_package") as mock_validate:
             mock_validate.return_value = ([], [])  # No errors or warnings
 
-            result = validate_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
+            result = validate_run_for_package(
+                pkg, meta, all_packages, "43", TARGET, run_id
+            )
 
         assert result is True
         entry = build_db.get_stage(pkg, "validate", TARGET)
@@ -84,7 +86,9 @@ class TestStageValidate:
         with patch.object(stage_validate, "validate_package") as mock_validate:
             mock_validate.return_value = (errors, warnings)
 
-            result = validate_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
+            result = validate_run_for_package(
+                pkg, meta, all_packages, "43", TARGET, run_id
+            )
 
         assert result is False
         entry = build_db.get_stage(pkg, "validate", TARGET)
@@ -96,12 +100,14 @@ class TestStageValidate:
         """Test global checks pass."""
         all_packages = {}
 
-        with patch.object(stage_validate, "validate_group_membership") as mock_group, \
-             patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules:
+        with (
+            patch.object(stage_validate, "validate_group_membership") as mock_group,
+            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+        ):
             mock_group.return_value = ([], [])
             mock_gitmodules.return_value = ([], [])
 
-            result = run_global_checks(all_packages)
+            result = run_global_checks(all_packages, "fedora-43-x86_64")
 
         assert result is True
 
@@ -109,12 +115,14 @@ class TestStageValidate:
         """Test global checks fail with errors."""
         all_packages = {}
 
-        with patch.object(stage_validate, "validate_group_membership") as mock_group, \
-             patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules:
+        with (
+            patch.object(stage_validate, "validate_group_membership") as mock_group,
+            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+        ):
             mock_group.return_value = (["Group error"], [])
             mock_gitmodules.return_value = ([], [])
 
-            result = run_global_checks(all_packages)
+            result = run_global_checks(all_packages, "fedora-43-x86_64")
 
         assert result is False
 
@@ -122,12 +130,14 @@ class TestStageValidate:
         """Test global checks fail when gitmodules has errors."""
         all_packages = {}
 
-        with patch.object(stage_validate, "validate_group_membership") as mock_group, \
-             patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules:
+        with (
+            patch.object(stage_validate, "validate_group_membership") as mock_group,
+            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+        ):
             mock_group.return_value = ([], [])
             mock_gitmodules.return_value = (["Gitmodules error"], [])
 
-            result = run_global_checks(all_packages)
+            result = run_global_checks(all_packages, "fedora-43-x86_64")
 
         assert result is False
 
@@ -135,12 +145,14 @@ class TestStageValidate:
         """Test global checks with warnings print count."""
         all_packages = {}
 
-        with patch.object(stage_validate, "validate_group_membership") as mock_group, \
-             patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules:
+        with (
+            patch.object(stage_validate, "validate_group_membership") as mock_group,
+            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+        ):
             mock_group.return_value = ([], ["Group warning"])
             mock_gitmodules.return_value = ([], ["Gitmodules warning"])
 
-            result = run_global_checks(all_packages)
+            result = run_global_checks(all_packages, "fedora-43-x86_64")
 
         assert result is True
         captured = capsys.readouterr()
@@ -153,18 +165,22 @@ class TestStageValidate:
         """
         all_packages = {"Waybar-git": {"url": "https://github.com/Alexays/Waybar"}}
 
-        with patch.object(stage_validate, "validate_group_membership") as mock_group, \
-             patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules, \
-             patch.object(stage_validate, "parse_gitmodules") as mock_parse:
+        with (
+            patch.object(stage_validate, "validate_group_membership") as mock_group,
+            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+            patch.object(stage_validate, "parse_gitmodules") as mock_parse,
+        ):
             mock_group.return_value = ([], [])
             mock_gitmodules.return_value = ([], [])
             mock_parse.return_value = [
-                {"name": "submodules/Alexays/Waybar",
-                 "path": "submodules/Alexays/Waybar",
-                 "url": "https://github.com/Alexays/Waybar.git"}
+                {
+                    "name": "submodules/Alexays/Waybar",
+                    "path": "submodules/Alexays/Waybar",
+                    "url": "https://github.com/Alexays/Waybar.git",
+                }
             ]
 
-            result = run_global_checks(all_packages)
+            result = run_global_checks(all_packages, "fedora-43-x86_64")
 
         assert result is True  # warning, not an error -- build still proceeds
         captured = capsys.readouterr()
@@ -174,21 +190,25 @@ class TestStageValidate:
         """Test global checks fail when both group and gitmodules have errors."""
         all_packages = {}
 
-        with patch.object(stage_validate, "validate_group_membership") as mock_group, \
-             patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules:
+        with (
+            patch.object(stage_validate, "validate_group_membership") as mock_group,
+            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+        ):
             mock_group.return_value = (["Group error 1"], [])
             mock_gitmodules.return_value = (["Gitmodules error 1"], [])
 
-            result = run_global_checks(all_packages)
+            result = run_global_checks(all_packages, "fedora-43-x86_64")
 
         assert result is False
 
     def test_main_success(self, monkeypatch):
         """Test main() function with successful validation."""
         monkeypatch.delenv("PROCEED_BUILD", raising=False)
-        with patch.object(stage_validate, "prepare_stage") as mock_prepare, \
-             patch.object(stage_validate, "run_for_package") as mock_run, \
-             patch.object(stage_validate, "run_global_checks") as mock_global:
+        with (
+            patch.object(stage_validate, "prepare_stage") as mock_prepare,
+            patch.object(stage_validate, "run_for_package") as mock_run,
+            patch.object(stage_validate, "run_global_checks") as mock_global,
+        ):
             mock_prepare.return_value = ({}, {})
             mock_run.return_value = True
             mock_global.return_value = True
@@ -199,10 +219,12 @@ class TestStageValidate:
     def test_main_exits_on_global_check_failure(self, monkeypatch):
         """Test main() exits with code 1 on global check failure."""
         monkeypatch.delenv("PROCEED_BUILD", raising=False)
-        with patch.object(stage_validate, "prepare_stage") as mock_prepare, \
-             patch.object(stage_validate, "run_for_package") as mock_run, \
-             patch.object(stage_validate, "run_global_checks") as mock_global, \
-             pytest.raises(SystemExit) as exc_info:
+        with (
+            patch.object(stage_validate, "prepare_stage") as mock_prepare,
+            patch.object(stage_validate, "run_for_package") as mock_run,
+            patch.object(stage_validate, "run_global_checks") as mock_global,
+            pytest.raises(SystemExit) as exc_info,
+        ):
             mock_prepare.return_value = ({}, {})
             mock_run.return_value = True
             mock_global.return_value = False
@@ -216,14 +238,14 @@ class TestStageValidate:
         with patch.object(stage_validate, "setup_logging"):
             try:
                 # Simulate __name__ == "__main__" execution
-                code = '''
+                code = """
 import sys
 sys.path.insert(0, 'scripts')
 import importlib
 stage_validate = importlib.import_module("scripts.stage-validate")
 # This would trigger KeyboardInterrupt in the try/except
 raise KeyboardInterrupt()
-'''
+"""
                 # We can't easily test this without mocking more, skip for now
             except KeyboardInterrupt:
                 pass
@@ -255,9 +277,11 @@ class TestStageSpec:
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
 
-        with patch.object(stage_spec, "generate_spec") as mock_gen, \
-             patch.object(stage_spec, "get_package_log_dir") as mock_log_dir, \
-             patch.object(stage_spec, "ROOT", tmp_path):
+        with (
+            patch.object(stage_spec, "generate_spec") as mock_gen,
+            patch.object(stage_spec, "get_package_log_dir") as mock_log_dir,
+            patch.object(stage_spec, "ROOT", tmp_path),
+        ):
             mock_gen.return_value = "# Generated spec"
             mock_log_dir.return_value = log_dir
             result = spec_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
@@ -277,9 +301,11 @@ class TestStageSpec:
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
 
-        with patch.object(stage_spec, "generate_spec") as mock_gen, \
-             patch.object(stage_spec, "get_package_log_dir") as mock_log_dir, \
-             patch.object(stage_spec, "ROOT", tmp_path):
+        with (
+            patch.object(stage_spec, "generate_spec") as mock_gen,
+            patch.object(stage_spec, "get_package_log_dir") as mock_log_dir,
+            patch.object(stage_spec, "ROOT", tmp_path),
+        ):
             mock_gen.side_effect = RuntimeError("Template error")
             mock_log_dir.return_value = log_dir
             result = spec_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
@@ -299,9 +325,11 @@ class TestStageSpec:
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
 
-        with patch.object(stage_spec, "generate_spec") as mock_gen, \
-             patch.object(stage_spec, "get_package_log_dir") as mock_log_dir, \
-             patch.object(stage_spec, "ROOT", tmp_path):
+        with (
+            patch.object(stage_spec, "generate_spec") as mock_gen,
+            patch.object(stage_spec, "get_package_log_dir") as mock_log_dir,
+            patch.object(stage_spec, "ROOT", tmp_path),
+        ):
             mock_gen.return_value = "# spec content"
             mock_log_dir.return_value = log_dir
             spec_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
@@ -322,9 +350,11 @@ class TestStageSpec:
         log_dir = tmp_path / "logs/build" / pkg
         log_dir.mkdir(parents=True)
 
-        with patch.object(stage_spec, "generate_spec") as mock_gen, \
-             patch.object(stage_spec, "get_package_log_dir") as mock_log_dir, \
-             patch.object(stage_spec, "ROOT", tmp_path):
+        with (
+            patch.object(stage_spec, "generate_spec") as mock_gen,
+            patch.object(stage_spec, "get_package_log_dir") as mock_log_dir,
+            patch.object(stage_spec, "ROOT", tmp_path),
+        ):
             mock_gen.return_value = "# spec"
             mock_log_dir.return_value = log_dir
             spec_run_for_package(pkg, meta, all_packages, "43", TARGET, run_id)
@@ -341,8 +371,14 @@ class TestStageCoprBlocking:
         meta = {"_skip": True}
 
         result = stage_copr.run_for_package(
-            pkg, meta, "43", "nett00n/hyprland", proceed=False,
-            target=TARGET, run_id=run_id, synchronous=False,
+            pkg,
+            meta,
+            "43",
+            "nett00n/hyprland",
+            proceed=False,
+            target=TARGET,
+            run_id=run_id,
+            synchronous=False,
         )
 
         assert result is True
@@ -356,8 +392,14 @@ class TestStageCoprBlocking:
         build_db.set_stage(pkg, "mock", TARGET, run_id, "success")
 
         result = stage_copr.run_for_package(
-            pkg, meta, "43", "nett00n/hyprland", proceed=False,
-            target=TARGET, run_id=run_id, synchronous=False,
+            pkg,
+            meta,
+            "43",
+            "nett00n/hyprland",
+            proceed=False,
+            target=TARGET,
+            run_id=run_id,
+            synchronous=False,
         )
 
         assert result is True
@@ -367,12 +409,20 @@ class TestStageCoprBlocking:
         """Test COPR skipped when mock failed."""
         pkg = "test-pkg"
         meta = {"version": "1.0.0", "release": 1}
-        build_db.set_stage(pkg, "srpm", TARGET, run_id, "success", path="/some/path.src.rpm")
+        build_db.set_stage(
+            pkg, "srpm", TARGET, run_id, "success", path="/some/path.src.rpm"
+        )
         build_db.set_stage(pkg, "mock", TARGET, run_id, "failed")
 
         result = stage_copr.run_for_package(
-            pkg, meta, "43", "nett00n/hyprland", proceed=False,
-            target=TARGET, run_id=run_id, synchronous=False,
+            pkg,
+            meta,
+            "43",
+            "nett00n/hyprland",
+            proceed=False,
+            target=TARGET,
+            run_id=run_id,
+            synchronous=False,
         )
 
         assert result is True
@@ -409,8 +459,14 @@ class TestStageCoprBlocking:
             patch.object(stage_copr, "ROOT", tmp_path),
         ):
             result = stage_copr.run_for_package(
-                pkg, meta, "43", "nett00n/hyprland", proceed=False,
-                target=TARGET, run_id=run_id, synchronous=True,
+                pkg,
+                meta,
+                "43",
+                "nett00n/hyprland",
+                proceed=False,
+                target=TARGET,
+                run_id=run_id,
+                synchronous=True,
             )
 
         assert result is False
@@ -528,8 +584,10 @@ class TestStageShowPlan:
         packages = {"pkg-a": {"version": "1.0"}}
         self._seed_validate({"pkg-a": "success"})
 
-        with patch.object(stage_show_plan, "get_packages") as mock_get, \
-             pytest.raises(SystemExit):
+        with (
+            patch.object(stage_show_plan, "get_packages") as mock_get,
+            pytest.raises(SystemExit),
+        ):
             mock_get.return_value = packages
             stage_show_plan.show_plan(package="nonexistent", target=TARGET)
 
@@ -568,7 +626,9 @@ class TestStageShowPlan:
         for pkg in packages:
             run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
             build_db.set_stage(pkg, "spec", TARGET, run_id, "success")
-            build_db.finalize_stage(pkg, "spec", TARGET, started_at=1, hashes=fixed_hashes)
+            build_db.finalize_stage(
+                pkg, "spec", TARGET, started_at=1, hashes=fixed_hashes
+            )
 
         with (
             patch.object(stage_show_plan, "get_packages") as mock_get,
