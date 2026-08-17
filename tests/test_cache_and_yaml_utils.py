@@ -536,6 +536,33 @@ class TestPrepareStage:
         assert entry is not None
         assert entry["state"] == "success"
 
+    def test_full_cycle_never_calls_prepare_stage_or_clear_stage(self):
+        """full-cycle.py must never call prepare_stage() (or build_db.clear_stage()
+        directly), for any stage -- not just vendor.
+
+        Regression guard for docs/bugs.md's (verified non-bug, formerly
+        BUG-0020) "full-cycle.py never calls prepare_stage() for the vendor
+        stage": prepare_stage()'s only effect beyond what full-cycle.py's own
+        prepare_packages() already does is build_db.clear_stage(), which
+        DELETEs the stage_results row -- including hashes_json -- that
+        lib.pipeline.is_cached() depends on. Wiring prepare_stage() (or a raw
+        clear_stage() call) into full-cycle.py would turn every stage into a
+        permanent cache miss and force a full rebuild of every package on
+        every run. See scripts/lib/yaml_utils.py's prepare_stage() docstring
+        and the comment in full-cycle.py's run_build_pipeline().
+        """
+        full_cycle_path = Path(__file__).parent.parent / "scripts" / "full-cycle.py"
+        # Strip comment-only lines (the explanatory NOTE above the per-package
+        # loop names both functions on purpose) -- only real code lines count.
+        code_lines = [
+            line
+            for line in full_cycle_path.read_text().splitlines()
+            if not line.strip().startswith("#")
+        ]
+        code_text = "\n".join(code_lines)
+        assert "prepare_stage" not in code_text
+        assert "clear_stage" not in code_text
+
 
 class TestWriteYamlPreservingComments:
     """Test write_yaml_preserving_comments function."""

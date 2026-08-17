@@ -198,6 +198,17 @@ def prepare_stage(
 
     Scoped to `packages` -- unlike the old init_stage(), which wiped the
     WHOLE stage regardless of the PACKAGE filter (see docs/bugs.md/#8).
+
+    This is the `make stage-<x>` standalone entry-point helper: its six
+    callers are exactly the six `stage-*.py` `main()` functions, where
+    starting each requested package's row from scratch is the point.
+    `full-cycle.py` deliberately never calls this (for any stage, not just
+    vendor -- see docs/bugs.md, formerly BUG-0020): it filters packages via
+    its own `prepare_packages()` instead (which additionally topo-sorts and
+    expands transitive deps), and calling `build_db.clear_stage()` here
+    would delete `hashes_json` off the very rows `lib.pipeline.is_cached()`
+    depends on, turning every stage into a permanent cache miss on every
+    full-cycle/update-daily run.
     """
     package_env = os.environ.get("PACKAGE", "")
     skip_env = os.environ.get("SKIP_PACKAGES", "")

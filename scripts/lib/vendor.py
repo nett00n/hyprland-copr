@@ -33,6 +33,11 @@ def is_rust_package(meta: dict) -> bool:
     return "cargo" in (meta.get("build_requires") or [])
 
 
+def needs_vendoring(meta: dict) -> bool:
+    """Return True if this package has a vendor stage at all (Go or Rust)."""
+    return is_go_package(meta) or is_rust_package(meta)
+
+
 def resolve_source_url(pkg_meta: dict, pkg_name: str) -> str:
     """Resolve the first source URL, expanding %{url}, %{name}, and %{version} macros.
 

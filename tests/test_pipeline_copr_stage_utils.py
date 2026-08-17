@@ -22,6 +22,7 @@ from lib.pipeline import (
     compute_forced_stages,
     is_cached,
     cache_miss_reason,
+    vendor_decision,
 )
 from lib.copr import parse_build_id, validate_copr_repo
 
@@ -186,25 +187,103 @@ class TestIsCached:
         # is_cached returns False for non-success states; full-cycle.py guards this
         assert result is False
 
-    def test_vendor_skipped_with_skip_guard_logic(self):
-        """Verify the skip guard logic: skipped state OR is_cached = True for skipped.
 
-        This test validates the fix in full-cycle.py: before calling is_cached() for
-        vendor, we check: `vendor_entry.get("state") == "skipped" or is_cached(...)`
+class TestVendorDecision:
+    """Test vendor_decision(), the full-cycle.py replacement for the old
 
-        For a non-Go package with vendor state="skipped", this guard ensures the
-        package is not added to rebuilt_packages, preventing false cascade rebuilds.
-        """
-        _seed("aquamarine", "vendor", state="skipped", version="0.4.0", reason="not-go")
-        vendor_entry = build_db.get_stage("aquamarine", "vendor", TARGET) or {}
+    `vendor_entry.get("state") == "skipped" or is_cached(...)` guard that caused
+    docs/bugs.md's (now-fixed) BUG-0045: it decided "not-applicable" from a
+    stored DB row instead of packages.yaml, so full-cycle.py overwrote the real
+    reason ("not-vendored"/"config: skip"/"spec failed") with "cached".
+    """
+
+    _NOT_GO = {"build_requires": ["gcc"]}
+    _GO = {"build_requires": ["golang"], "version": "1.0"}
+
+    def test_non_go_package_not_applicable_regardless_of_db_state(self):
+        """A non-Go/Rust package is "not-applicable" even with no DB row at all."""
         new_hashes = {}
         forced_stages = set()
-        # The full-cycle.py logic: skip guard OR is_cached
-        is_vendor_cached = vendor_entry.get("state") == "skipped" or is_cached(
-            "vendor", "aquamarine", TARGET, new_hashes, forced_stages
+        result = vendor_decision(
+            "aquamarine", self._NOT_GO, "44", TARGET, new_hashes, forced_stages
         )
-        # Should be True because state == "skipped"
-        assert is_vendor_cached is True
+        assert result == "not-applicable"
+
+    def test_non_go_package_not_applicable_even_with_stale_cached_row(self):
+        """A stale "cached" DB row (the bug's leftover) must not flip the decision."""
+        _seed("aquamarine", "vendor", state="skipped", version="0.4.0", reason="cached")
+        new_hashes = {}
+        forced_stages = set()
+        result = vendor_decision(
+            "aquamarine", self._NOT_GO, "44", TARGET, new_hashes, forced_stages
+        )
+        assert result == "not-applicable"
+
+    def test_fedora_skip_override_is_not_applicable(self):
+        """fedora:<ver>: skip: true also decides "not-applicable", even for a Go package."""
+        meta = {**self._GO, "fedora": {44: {"skip": True}}}
+        new_hashes = {}
+        forced_stages = set()
+        result = vendor_decision("pkg", meta, "44", TARGET, new_hashes, forced_stages)
+        assert result == "not-applicable"
+
+    def test_go_package_skipped_for_spec_failed_is_run_not_cached(self):
+        """Regression for docs/bugs.md BUG-0020: a vendor row skipped once with
+        reason "spec failed" must not be permanent -- once the package is Go/Rust,
+        vendor_decision() falls through to is_cached(), which is False for any
+        non-"success" state, so the stage is retried.
+        """
+        _seed(
+            "cliphist-git",
+            "vendor",
+            state="skipped",
+            version="1.0",
+            reason="spec failed",
+        )
+        new_hashes = {}
+        forced_stages = set()
+        result = vendor_decision(
+            "cliphist-git", self._GO, "44", TARGET, new_hashes, forced_stages
+        )
+        assert result == "run"
+
+    def test_go_package_matching_hashes_is_cached(self, tmp_path):
+        """A Go package with a matching-hash success row is a normal cache hit."""
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(
+            "cliphist-git", "vendor", TARGET, run_id, "success", version="1.0"
+        )
+        new_hashes = {"a": "hash1"}
+        build_db.finalize_stage("cliphist-git", "vendor", TARGET, 1, new_hashes)
+        tarball = tmp_path / "cliphist-git-1.0-vendor.tar.gz"
+        tarball.write_text("fake tarball")
+        build_db.record_artifact(
+            str(tarball), "rpmbuild-volume", "vendor", "cliphist-git", TARGET, "1.0"
+        )
+        forced_stages = set()
+        result = vendor_decision(
+            "cliphist-git", self._GO, "44", TARGET, new_hashes, forced_stages
+        )
+        assert result == "cached"
+
+    def test_go_package_forced_is_run(self, tmp_path):
+        """A Go package in forced_stages always runs, even with a matching cache."""
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(
+            "cliphist-git", "vendor", TARGET, run_id, "success", version="1.0"
+        )
+        new_hashes = {"a": "hash1"}
+        build_db.finalize_stage("cliphist-git", "vendor", TARGET, 1, new_hashes)
+        tarball = tmp_path / "cliphist-git-1.0-vendor.tar.gz"
+        tarball.write_text("fake tarball")
+        build_db.record_artifact(
+            str(tarball), "rpmbuild-volume", "vendor", "cliphist-git", TARGET, "1.0"
+        )
+        forced_stages = {"vendor"}
+        result = vendor_decision(
+            "cliphist-git", self._GO, "44", TARGET, new_hashes, forced_stages
+        )
+        assert result == "run"
 
 
 class TestArtifactAwareCaching:

@@ -111,8 +111,14 @@ def print_summary(packages: dict, stages: dict, copr_repo: str) -> None:
             pkg_data = stages.get(stage, {}).get(pkg, {})
             state = pkg_data.get("state", "-")
             reason = pkg_data.get("reason", "")
-            # Show "cached" if stage was cached, otherwise show state
-            if reason == "cached":
+            # "not-vendored": this package has no vendor stage at all (not
+            # Go/Rust) -- show "n/a", not "cached" (a real cache hit) or a
+            # bare "SKIP(ts)" (which reads like a build step that was
+            # deliberately bypassed). See docs/bugs.md, formerly BUG-0045.
+            if reason == "not-vendored":
+                icon = "n/a"
+            elif reason == "cached":
+                # Show "cached" if stage was cached, otherwise show state
                 icon = "cached"
             else:
                 # Validate uses WARN for failures (warning level), other stages use FAIL
@@ -125,7 +131,8 @@ def print_summary(packages: dict, stages: dict, copr_repo: str) -> None:
                         state, state
                     )
             ts = pkg_data.get("completed_at")
-            cell = f"{icon}({ts})" if ts and state == "skipped" else icon
+            show_ts = state == "skipped" and reason != "not-vendored"
+            cell = f"{icon}({ts})" if ts and show_ts else icon
             row += f"{cell:<18}"
         print(row)
     print(sep)

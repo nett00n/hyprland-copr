@@ -27,7 +27,6 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
 ## stage-vendor
 
 - **BUG-0019** `make stage-vendor` doesn't forward `MOCK_CHROOT` (nor `SKIP_PACKAGES`) into the container, but `stage-vendor.py` reads both -> with a `MOCK_CHROOT` override, vendor rows land under a different `target` than `stage-mock`/`full-cycle` use #medium
-- **BUG-0020** `full-cycle.py` never calls `prepare_stage()` for the vendor stage, and its vendor branch treats a stored `state == "skipped"` as cached -> a vendor row skipped once with reason "spec failed" is permanent; after the spec is fixed the tarball is never generated and srpm later fails on the missing Source1 #high
 - **BUG-0024** `go mod vendor` / `cargo vendor` run with no timeout at all; the Makefile forwards `CMD_TIMEOUT` and nothing on the vendor path reads it -> a hung vendor invocation blocks `update-daily` indefinitely #high
 - **BUG-0027** `stage-vendor.py:run_for_package` records a missing spec row (`spec_entry is None`) with reason "spec failed" (misleading -- there was no spec run at all), and doesn't special-case spec `state == "skipped"` #low
 - **BUG-0028** `eww` extracts its vendor tarball twice: an explicit `tar xf %{SOURCE1}` in `build.prep` in packages.yaml *and* `stage-spec.py`'s auto-inject for any cargo package whose `archives[1]` contains "vendor" #low
@@ -99,5 +98,4 @@ unattended nightly job. Audited end to end 2026-08:
   `update_package_releases()`, which rewrites packages.yaml in place *after* the gate has run (via
   the regex of BUG-0011). The packages.yaml that lands in the daily commit is the post-regex one,
   which validate-packages.py, yamllint, and format-yaml.py never inspected #high
-- **BUG-0045** stage `vendor` shows `cached` status for packages that have no vendor stage in build
 

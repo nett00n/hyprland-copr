@@ -17,6 +17,7 @@ from lib.vendor import (
     _download,
     _extract,
     is_go_package,
+    needs_vendoring,
     resolve_source_url,
     vendor_tarball_name,
     generate,
@@ -42,6 +43,28 @@ class TestIsGoPackage:
         """Should return False if build_requires is missing."""
         assert is_go_package({}) is False
         assert is_go_package({"build_requires": None}) is False
+
+
+class TestNeedsVendoring:
+    """Test needs_vendoring function: truth table over is_go_package/is_rust_package."""
+
+    def test_go_package_needs_vendoring(self):
+        assert needs_vendoring({"build_requires": ["golang"]}) is True
+
+    def test_rust_package_needs_vendoring(self):
+        assert needs_vendoring({"build_requires": ["cargo"]}) is True
+
+    def test_both_go_and_rust_needs_vendoring(self):
+        assert needs_vendoring({"build_requires": ["golang", "cargo"]}) is True
+
+    def test_neither_does_not_need_vendoring(self):
+        assert needs_vendoring({"build_requires": ["gcc", "make"]}) is False
+
+    def test_missing_build_requires_does_not_need_vendoring(self):
+        assert needs_vendoring({}) is False
+
+    def test_empty_build_requires_does_not_need_vendoring(self):
+        assert needs_vendoring({"build_requires": []}) is False
 
 
 class TestResolveSourceUrl:
