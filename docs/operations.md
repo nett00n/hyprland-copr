@@ -146,6 +146,16 @@ Rules:
 - `reason` on each stage row explains why it was cached/skipped/forced (e.g. `"cached"`,
   `"hash-mismatch"`, `"forced (dep rebuilt: hyprutils)"`) — only lists deps that actually
   changed.
+- The vendor stage is special-cased: whether a package has a vendor stage at all is decided
+  from `packages.yaml` (`lib.vendor.needs_vendoring`) every run, never from a stored DB row.
+  A non-Go/Rust package's vendor row always reads `reason="not-vendored"` and renders as `n/a`
+  in the summary table and `docs/full-report.md` — it is never reported as `"cached"`.
+- `make stage-<x>` (any single stage, standalone) clears that stage's `build-report.db` rows for
+  the packages being built via `lib.yaml_utils.prepare_stage()`, unless `PROCEED_BUILD=true`.
+  `full-cycle` never calls `prepare_stage()`, for any stage — those rows are the hash cache
+  `is_cached()` reads, so clearing them there would force a full rebuild of every package on every
+  run. Use `FORCE_REBUILD`/`make build-pop`/the `db-shell` recipe above to force a rebuild through
+  `full-cycle` instead.
 
 ## Build report database
 

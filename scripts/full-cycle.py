@@ -44,6 +44,7 @@ from lib.pipeline import (
     compute_forced_stages,
     is_cached,
     cache_miss_reason,
+    vendor_decision,
 )
 from lib.paths import (
     ARCH,
@@ -316,6 +317,13 @@ def run_build_pipeline(
     mock_failed: dict[str, bool] = {}
     rebuilt_packages: set[str] = set()
 
+    # NOTE: no lib.yaml_utils.prepare_stage() call anywhere in this file, for
+    # any stage (see docs/bugs.md, formerly BUG-0020). `packages` here already
+    # came from prepare_packages() (topo-sorted, transitive deps expanded --
+    # strictly more than prepare_stage()'s filtering). prepare_stage()'s other
+    # effect, build_db.clear_stage(), DELETEs the stage_results row including
+    # hashes_json -- exactly what is_cached()/vendor_decision() below read to
+    # decide skip vs. rerun. Calling it here would defeat the cache entirely.
     for pkg, meta in packages.items():
         # Compute input hashes once per package
         new_hashes = compute_input_hashes(pkg, meta, all_packages)
@@ -391,12 +399,22 @@ def run_build_pipeline(
 
         # Vendor
         vendor_entry = build_db.get_stage(pkg, "vendor", target) or {}
-        if vendor_entry.get("state") == "skipped" or is_cached(
-            "vendor", pkg, target, new_hashes, forced_stages
-        ):
+        decision = vendor_decision(
+            pkg, meta, fedora_version, target, new_hashes, forced_stages
+        )
+        if decision == "not-applicable":
+            # No vendor stage for this package (not Go/Rust, or config: skip) --
+            # let stage-vendor.py record the real reason ("not-vendored"/
+            # "config: skip") every run. Never touch update_reason/finalize_stage
+            # here, and never add to rebuilt_packages: doing either previously
+            # made this look like a genuine cache hit and cascaded rebuilds onto
+            # dependents (see docs/bugs.md, formerly BUG-0045).
+            _stage["stage-vendor"].run_for_package(
+                pkg, meta, fedora_version, target, run_id, all_packages
+            )
+        elif decision == "cached":
             event("vendor", target, pkg, "skip", reason="cached")
-            if vendor_entry:
-                build_db.update_reason(pkg, "vendor", target, "cached")
+            build_db.update_reason(pkg, "vendor", target, "cached")
         else:
             rebuilt_packages.add(pkg)
             started_at = int(time.time())

@@ -13,6 +13,8 @@ from pathlib import Path
 
 from lib import build_db
 from lib.cache import hashes_match
+from lib.vendor import needs_vendoring
+from lib.yaml_utils import apply_os_overrides
 
 # Stage order for cascading force_run (all stages except validate, which has no cache).
 STAGE_ORDER = build_db.STAGES[1:]
@@ -125,6 +127,41 @@ def is_cached(
     return artifacts_present(stage, pkg, target, entry.get("version"))
 
 
+def vendor_decision(
+    pkg: str,
+    meta: dict,
+    fedora_version: str,
+    target: str,
+    new_hashes: dict,
+    forced_stages: set[str],
+) -> str:
+    """Return "not-applicable", "cached", or "run" for the vendor stage.
+
+    "not-applicable" means packages.yaml says this package has no vendor stage at
+    all (not Go/Rust, or `fedora:<ver>: skip`) -- decided fresh from packages.yaml
+    every run, never trusted from a stored DB row. This is what stage-vendor.py
+    itself checks (lib.vendor.needs_vendoring) before writing a "skipped" row with
+    reason "not-vendored"/"config: skip"; callers must let that row stand (never
+    call update_reason/finalize_stage on it) and must not add the package to
+    rebuilt_packages, so dependents don't cascade-rebuild over a stage that never
+    ran (see docs/bugs.md, formerly BUG-0045).
+
+    A package that *does* need vendoring but has a "skipped" row for some other
+    reason (e.g. "spec failed", formerly BUG-0020) is deliberately NOT treated as
+    not-applicable here -- it falls through to the normal is_cached() check, which
+    returns False for any non-"success" state, so the stage runs again once its
+    blocker (e.g. the spec) is fixed.
+    """
+    eff_meta = apply_os_overrides(meta, fedora_version)
+    if eff_meta.get("_skip") or not needs_vendoring(eff_meta):
+        return "not-applicable"
+    return (
+        "cached"
+        if is_cached("vendor", pkg, target, new_hashes, forced_stages)
+        else "run"
+    )
+
+
 def cache_miss_reason(
     stage: str,
     pkg: str,
@@ -166,7 +203,11 @@ def cache_miss_reason(
         - "proceed-skip" — PROCEED_BUILD=true, prior state success (full-cycle.py)
         - "SKIP_MOCK" / "SKIP_COPR" — env var skip (full-cycle.py)
         - "config: skip" — fedora:<ver>: skip: true in packages.yaml (stage scripts)
-        - "not-vendored" — vendor skipped, package is not Go/Rust (stage-vendor.py)
+        - "not-vendored" — vendor skipped, package is not Go/Rust (stage-vendor.py).
+          Terminal for that package: vendor_decision() re-derives "not-applicable"
+          from packages.yaml every run, so full-cycle.py never calls
+          cache_miss_reason()/update_reason() for it and this reason is never
+          overwritten with "cached" (see docs/bugs.md, formerly BUG-0045).
         - "vendor-store hit" — vendor tarball copied from the content-addressed
           store (lib/vendor_store.py) instead of rebuilt (stage-vendor.py)
         - "spec failed" — spec stage failed (vendor/srpm downstream) (stage scripts)

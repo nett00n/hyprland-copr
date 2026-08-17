@@ -56,6 +56,55 @@ class TestPrintSummary:
         captured = capsys.readouterr()
         assert "pkg1" in captured.out or "Summary" in captured.out
 
+    def test_not_vendored_renders_n_a_not_cached(self, capsys):
+        """A package with no vendor stage (reason="not-vendored") shows "n/a", not
+        "cached" -- the symptom of docs/bugs.md's (now-fixed) BUG-0045 -- and no
+        stray "(timestamp)" suffix.
+        """
+        stages = {
+            "vendor": {
+                "pkg1": {
+                    "state": "skipped",
+                    "reason": "not-vendored",
+                    "completed_at": "2026-08-18T00:00:00Z",
+                }
+            },
+        }
+        packages = {"pkg1": {}}
+        print_summary(packages, stages, copr_repo="")
+        captured = capsys.readouterr()
+        assert "n/a" in captured.out
+        assert "cached" not in captured.out
+        assert "SKIP" not in captured.out
+        assert "2026-08-18" not in captured.out
+
+    def test_cached_reason_still_renders_cached(self, capsys):
+        """A genuine cache hit still renders "cached"."""
+        stages = {
+            "vendor": {"pkg1": {"state": "skipped", "reason": "cached"}},
+        }
+        packages = {"pkg1": {}}
+        print_summary(packages, stages, copr_repo="")
+        captured = capsys.readouterr()
+        assert "cached" in captured.out
+        assert "n/a" not in captured.out
+
+    def test_other_skip_reason_still_renders_skip_with_timestamp(self, capsys):
+        """A skip for any other reason keeps the existing SKIP(timestamp) rendering."""
+        stages = {
+            "vendor": {
+                "pkg1": {
+                    "state": "skipped",
+                    "reason": "config: skip",
+                    "completed_at": "2026-08-18T00:00:00Z",
+                }
+            },
+        }
+        packages = {"pkg1": {}}
+        print_summary(packages, stages, copr_repo="")
+        captured = capsys.readouterr()
+        assert "SKIP(2026-08-18T00:00:00Z)" in captured.out
+
 
 class TestEvent:
     """Test the low-level event() line format."""

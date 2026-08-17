@@ -12,6 +12,35 @@ entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
 
 History before this file's introduction is not backfilled - see `git log`.
 
+## 2026-08-18
+
+- Fixed: the vendor stage no longer reports `reason=cached` for packages that
+  have no vendor stage at all (not Go/Rust, or `fedora:<ver>: skip`).
+  `full-cycle.py` used to treat any `state="skipped"` vendor row as a cache
+  hit and overwrite its real `reason` (`not-vendored`, `config: skip`, `spec
+  failed`) with `cached`; the summary table and `docs/full-report.md` then
+  showed a build step that never ran as if it had been skipped-because-
+  unchanged. Vendor's applicability is now decided from `packages.yaml`
+  (`lib.vendor.needs_vendoring`, `lib.pipeline.vendor_decision`) every run
+  instead of trusted from a stale DB row -- as a side effect, a vendor row
+  stuck at `state="skipped", reason="spec failed"` (BUG-0020) is no longer
+  permanent once the spec is fixed. The summary table and
+  `docs/full-report.md` render this case as `n/a` instead of `cached`/
+  `Skipped`. See `docs/bugs.md` (BUG-0045 removed, BUG-0020 narrowed).
+- Changed: retired BUG-0020's remaining "`full-cycle.py` never calls
+  `prepare_stage()` for the vendor stage" half after verifying it is a
+  non-bug, not a fix. `prepare_stage()` is the `make stage-<x>` standalone
+  entry-point helper; `full-cycle.py` deliberately calls it for no stage,
+  not just vendor. Its filtering is already superseded by
+  `full-cycle.py`'s own `prepare_packages()` (which additionally
+  topo-sorts and expands transitive deps), and its `clear_stage()` call
+  deletes the `stage_results` row -- including `hashes_json` -- that
+  `lib.pipeline.is_cached()` depends on; wiring it into full-cycle would
+  turn every stage into a permanent cache miss and force a full rebuild of
+  all packages on every `update-daily` run. See `docs/operations.md` and
+  the `prepare_stage()`/`run_build_pipeline()` docstrings for the durable
+  explanation.
+
 ## 2026-08-12
 
 - Changed: stage/pipeline logging replaced with single-line, RFC3339-timestamped,

@@ -38,8 +38,7 @@ from lib.reporting import event, status
 from lib.vendor import (
     VendorError,
     generate,
-    is_go_package,
-    is_rust_package,
+    needs_vendoring,
     vendor_tarball_path,
 )
 from lib.version import nvr
@@ -89,7 +88,7 @@ def run_for_package(
     SOURCES_DIR.mkdir(parents=True, exist_ok=True)
 
     # Skip if not a Go or Rust package
-    if not (is_go_package(meta) or is_rust_package(meta)):
+    if not needs_vendoring(meta):
         build_db.set_stage(
             pkg, "vendor", target, run_id, "skipped", version=ver, reason="not-vendored"
         )
