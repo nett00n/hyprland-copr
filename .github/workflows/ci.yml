@@ -24,12 +24,5 @@ jobs:
       - name: Set up venv
         run: make setup-venv
 
-      # Dev tools (ruff/mypy/yamllint/rpmlint) are installed as a side effect of
-      # `lint-flake`, which runs after `lint-ruff` in the `lint` target -- see
-      # docs/bugs.md for the ordering gap. Install them up front so CI doesn't
-      # depend on that ordering.
-      - name: Install dev dependencies
-        run: .venv/bin/pip install -q -r requirements-dev.txt
-
       - name: Lint + test (no container -- already running in one)
         run: make lint test NO_CONTAINER=1

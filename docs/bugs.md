@@ -49,15 +49,6 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
   `make readme && git diff --exit-code` would catch it, but `build-report.db` is gitignored so
   CI has no build history to render from -- needs a design decision (commit a report snapshot? skip
   the COPR-status-dependent parts of the diff check?) before it can be added #medium
-- **BUG-0032** `lint-ruff` runs before `lint-flake` in the `lint` target's prerequisite list, but
-  `requirements-dev.txt` (which installs ruff/mypy/yamllint/rpmlint) is only ever `pip install`ed
-  inside `lint-flake`'s recipe -> a genuinely fresh `.venv` (post `make setup-venv`, which only
-  installs `requirements.txt`) fails `make lint`/`make pre-commit` at the first sub-target with
-  "ruff: command not found". Has gone unnoticed because every local `.venv` in practice already
-  has the dev tools from a prior run (the CI workflow works around it by installing
-  `requirements-dev.txt` explicitly before `make lint`). `make update-daily` no longer runs
-  `lint` (or `pre-commit`) at all -- it only needs `validate-packages`/`fmt` -- so this is back
-  to a local annoyance, not a nightly-blocking one (see docs/CHANGELOG.md 2026-08-02) #low
 
 ## update-daily
 
