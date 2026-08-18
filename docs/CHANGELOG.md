@@ -14,6 +14,28 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-18
 
+- Changed: groomed `docs/bugs.md`/`docs/todo.md` -- re-verified every entry against
+  current code, added a `[P#/D#]` priority/difficulty marker to each (documented in
+  both file headers, plus a next-free-ID line to stop future re-allocation), and
+  reformatted entry IDs from `**BUG-0000**` to `#BUG-0000` to match how they're
+  already written in commit subjects. Replaced the `## Next` section (which only
+  restated body entries and had silently become the source of BUG-0018's duplicate
+  ID) with a `## Unsorted` intake section for genuinely under-investigated items;
+  moved TODO-0010/0012/0013 there since none had a stated problem or acceptance
+  criterion. Deleted 3 entries found already resolved: BUG-0004 (dependency-triggered
+  release bumps work correctly, per `lib/cache.py`/`lib/yaml_utils.py`), TODO-0053
+  (mixed cargo+golang `build_requires` is now a hard `VendorError`, not a silent
+  Rust-preference), and the `## Next`-only half of TODO-0072 (`preflight_autoheal()`
+  already auto-inits submodules and auto-refreshes checksums, `full-cycle.py:88-115`).
+  Renumbered the surviving TODO-0072 (build logs copied instead of bind-mounted) to
+  TODO-0074 to resolve the ID collision, added TODO-0075 (split out of TODO-0068's
+  concurrency half) and TODO-0076 (gen-spec staleness, split out of TODO-0073), and
+  filed BUG-0046 (`full-cycle-matrix` drops `SKIP_PACKAGES`/`FORCE_REBUILD`). Corrected
+  stale figures across a dozen entries (line counts, package counts, git-call counts)
+  and repointed 5 dangling `docs/bugs.md BUG-0025`/`BUG-0041` references (both fixed
+  and deleted from bugs.md already) to `docs/CHANGELOG.md` instead, in
+  `refresh-checksums.py`, `lib/validation.py`, `lib/pipeline.py`, `Makefile`, and
+  `docs/packaging.md`. No production code changed.
 - Fixed: `tests/integration/test_make_targets.py`'s `TestCoprGatedByMockFailure`,
   `TestForceRebuildOverridesProceed`, and `TestCoprGatedByChrootCoverage` classes
   went stale after BUG-0045's `vendor_decision()` started calling the real

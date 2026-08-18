@@ -550,7 +550,7 @@ update-daily: ## Update versions, validate+format packages.yaml, build (package 
 	@# and fetched any newly-failed chroot logs (see lib.copr.poll_copr_status) --
 	@# and before tomorrow's full-cycle.py rmtree's logs/build/<pkg> at the start of
 	@# its run. Otherwise last night's mock/Copr failure evidence is destroyed
-	@# unread (see docs/bugs.md BUG-0041). pkg-log-analysis.py exits non-zero when
+	@# unread (see docs/CHANGELOG.md BUG-0041). pkg-log-analysis.py exits non-zero when
 	@# it finds issues (not an error), so this must not abort the recipe.
 	$(MAKE) stage-log-analyze || true
 	git add packages.yaml packages/ submodules/ sources.lock.yaml README.md docs/README.copr.md docs/full-report.md || exit 1

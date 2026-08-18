@@ -118,7 +118,7 @@ relying on search-path globbing to prefer the right one.
 SRPM. `make stage-srpm` (and the Go/Rust vendor download path) fail closed on anything
 downloaded that has no entry, or whose hash no longer matches: a retagged upstream release, a
 tampered mirror, or a truncated download all get caught before they reach a published RPM
-(see `docs/bugs.md` BUG-0025).
+(see `docs/CHANGELOG.md` BUG-0025).
 
 After a version bump (`make update-versions`), record the new hash:
 

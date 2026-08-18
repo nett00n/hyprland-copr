@@ -5,7 +5,7 @@ Downloads each package's remote sources (see lib.source_lock.remote_sources)
 into ~/rpmbuild/SOURCES if not already present, hashes them, and writes the
 result to the committed sources.lock.yaml. This is the only script that
 writes that file -- stage-srpm.py and the vendor download path only ever
-read it, and fail closed on anything unrecorded (see docs/bugs.md BUG-0025).
+read it, and fail closed on anything unrecorded (see docs/CHANGELOG.md BUG-0025).
 
 An existing entry whose filename is unchanged but whose hash differs (a
 retag, a tampered mirror, ...) is refused unless FORCE_CHECKSUM=1 is set --
