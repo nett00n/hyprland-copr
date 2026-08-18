@@ -16,13 +16,10 @@ Examples:
 """
 
 import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
-
-import yaml  # noqa: E402
-from lib.paths import PACKAGES_YAML  # noqa: E402
-from lib.yaml_utils import (  # noqa: E402
+import yaml
+from lib.paths import PACKAGES_YAML
+from lib.yaml_utils import (
     dump_yaml_pretty,
     find_package_name,
     get_packages,

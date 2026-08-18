@@ -14,6 +14,73 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-18
 
+- Changed: groomed `docs/bugs.md`/`docs/todo.md` -- re-verified every entry against
+  current code, added a `[P#/D#]` priority/difficulty marker to each (documented in
+  both file headers, plus a next-free-ID line to stop future re-allocation), and
+  reformatted entry IDs from `**BUG-0000**` to `#BUG-0000` to match how they're
+  already written in commit subjects. Replaced the `## Next` section (which only
+  restated body entries and had silently become the source of BUG-0018's duplicate
+  ID) with a `## Unsorted` intake section for genuinely under-investigated items;
+  moved TODO-0010/0012/0013 there since none had a stated problem or acceptance
+  criterion. Deleted 3 entries found already resolved: BUG-0004 (dependency-triggered
+  release bumps work correctly, per `lib/cache.py`/`lib/yaml_utils.py`), TODO-0053
+  (mixed cargo+golang `build_requires` is now a hard `VendorError`, not a silent
+  Rust-preference), and the `## Next`-only half of TODO-0072 (`preflight_autoheal()`
+  already auto-inits submodules and auto-refreshes checksums, `full-cycle.py:88-115`).
+  Renumbered the surviving TODO-0072 (build logs copied instead of bind-mounted) to
+  TODO-0074 to resolve the ID collision, added TODO-0075 (split out of TODO-0068's
+  concurrency half) and TODO-0076 (gen-spec staleness, split out of TODO-0073), and
+  filed BUG-0046 (`full-cycle-matrix` drops `SKIP_PACKAGES`/`FORCE_REBUILD`). Corrected
+  stale figures across a dozen entries (line counts, package counts, git-call counts)
+  and repointed 5 dangling `docs/bugs.md BUG-0025`/`BUG-0041` references (both fixed
+  and deleted from bugs.md already) to `docs/CHANGELOG.md` instead, in
+  `refresh-checksums.py`, `lib/validation.py`, `lib/pipeline.py`, `Makefile`, and
+  `docs/packaging.md`. No production code changed.
+- Fixed: `tests/integration/test_make_targets.py`'s `TestCoprGatedByMockFailure`,
+  `TestForceRebuildOverridesProceed`, and `TestCoprGatedByChrootCoverage` classes
+  went stale after BUG-0045's `vendor_decision()` started calling the real
+  `stage-vendor.run_for_package()` for packages with no vendor stage -- these
+  tests' fixture `meta` dicts are empty, so `run_for_package()`'s
+  `meta["version"]` lookup raised `KeyError`. Extracted the three tests' near-
+  identical `patch.object` stacks into a shared `_patched_pipeline()` context
+  manager and added `stage-vendor` to it, alongside the other already-patched
+  stages. While consolidating, also fixed `TestCoprGatedByMockFailure._run`
+  making a live Copr API call and reading the developer's real
+  `REQUIRE_CHROOT_COVERAGE` env var (neither `print_chroot_coverage` nor
+  `os.environ` were patched there, unlike in `TestCoprGatedByChrootCoverage`).
+  No production code changed.
+- Removed: `scripts/set-package-release.py`'s `sys.path.insert(0,
+  str(Path(__file__).parent))` -- redundant, since Python already puts the
+  running script's own directory at `sys.path[0]` when invoked as `python3
+  scripts/set-package-release.py`, same as every other top-level script that
+  imports from `lib/` without this line (TODO-0047).
+- Removed: the Python <3.12 manual-validation fallback in
+  `lib/vendor.py:_extract()`'s `except TypeError` branch. The container only
+  ever runs Fedora 43/44/rawhide, all of which ship Python >=3.12, so
+  `tarfile.extractall(..., filter="data")` never raises `TypeError` here --
+  the fallback was unreachable (TODO-0054).
+- Removed: `docs/todo.md` TODO-0059 (`SOURCES_DIR.mkdir()` only in
+  `stage-vendor.py:main()`) -- already fixed 2026-08-12, stale entry, no code
+  change.
+- Fixed: `.env` `LOG_LEVEL=""`/`CMD_TIMEOUT=""` are now quote-stripped by the
+  Makefile like `FEDORA_VERSION`/`COPR_REPO`/`PACKAGE`/`SKIP_PACKAGES` already
+  were. Previously `LOG_LEVEL=""` survived as the literal two-character string
+  `""`, so make's `$(if $(LOG_LEVEL),...)` treated it as non-empty and injected
+  `-e LOG_LEVEL=""` into the container instead of leaving it unset (BUG-0008).
+  `CMD_TIMEOUT=""` had the same root cause but crashed every subprocess call,
+  since `run_cmd()` does `int(os.environ.get("CMD_TIMEOUT", 3600))` on the
+  empty string (BUG-0042).
+- Fixed: `make clean-localrepo` now depends on `check-image`. It runs
+  `$(CONTAINER_PYTHON) scripts/db-artifacts.py` directly with no image check
+  in its prereq chain, and that call is guarded by `... || true`, so a missing
+  container image previously printed a raw podman error and silently
+  continued instead of failing with the "run make container-build" hint every
+  other container-backed target gives (BUG-0007; `save-last-build` and
+  `clean` from the same report turned out not to need this -- `save-last-build`
+  never touches the container, and `clean` already gets `check-image`
+  transitively through its `clean-logs` prerequisite).
+- Removed: `docs/bugs.md` BUG-0005 (`add-submodule` PACKAGE check) was already
+  fixed in the code (Makefile, since 2026-04-05) -- stale entry, no code change.
 - Fixed: `save_release_cache` now evicts entries older than `CACHE_TTL` (7
   days) on every write instead of only TTL-gating reads. Previously
   `cache/github-releases.json` kept one entry per `(url, version)` ever seen

@@ -1,5 +1,6 @@
 """Integration tests for make targets and pipeline components."""
 
+import contextlib
 import os
 import subprocess
 import sys
@@ -199,6 +200,84 @@ class TestMockFailedPackages:
         assert full_cycle.mock_failed_packages(packages, TARGET) == []
 
 
+@contextlib.contextmanager
+def _patched_pipeline(
+    mock_side_effect,
+    is_cached_side_effect=None,
+    coverage_ok=True,
+    require_coverage=False,
+    spy_forced_stages=False,
+):
+    """Patch every stage full_cycle.run_build_pipeline touches except the Copr/mock
+    gating logic itself, which is what these tests actually exercise.
+
+    stage-vendor is patched too (BUG-0045's vendor_decision() now calls
+    stage-vendor.run_for_package() for the "not-applicable" case -- i.e. every
+    package here, since the fixture meta dicts are empty -- and the real
+    run_for_package() requires meta["version"], which these fakes don't have).
+
+    print_chroot_coverage/REQUIRE_CHROOT_COVERAGE default to "always covered" so
+    callers that don't care about chroot-coverage gating (everything but
+    TestCoprGatedByChrootCoverage) don't hit the real Copr API or leak the
+    developer's actual REQUIRE_CHROOT_COVERAGE env var.
+
+    Yields (copr_mock, forced_stages_spy) -- forced_stages_spy is None unless
+    spy_forced_stages=True.
+    """
+    if is_cached_side_effect is None:
+
+        def is_cached_side_effect(stage, pkg, target, new_hashes, forced_stages):
+            # Only mock/copr are "not cached" -- exercises the real branches.
+            return stage not in ("mock", "copr")
+
+    with contextlib.ExitStack() as stack:
+        enter = stack.enter_context
+        enter(patch.object(full_cycle, "compute_input_hashes", return_value={}))
+        enter(patch.object(full_cycle, "effective_deps", return_value=set()))
+        enter(patch.object(full_cycle, "is_cached", side_effect=is_cached_side_effect))
+        enter(patch.object(full_cycle, "cache_miss_reason", return_value="test"))
+        enter(patch.object(full_cycle.time, "sleep"))
+        enter(patch.object(full_cycle._stage["stage-show-plan"], "show_plan"))
+        enter(patch.object(full_cycle._stage["stage-validate"], "run_global_checks"))
+        enter(
+            patch.object(
+                full_cycle._stage["stage-validate"], "run_for_package", return_value=True
+            )
+        )
+        enter(
+            patch.object(
+                full_cycle._stage["stage-vendor"], "run_for_package", return_value=True
+            )
+        )
+        enter(patch.object(full_cycle._stage["stage-copr"], "check_copr_credentials"))
+        enter(
+            patch.object(
+                full_cycle._stage["stage-mock"],
+                "run_for_package",
+                side_effect=mock_side_effect,
+            )
+        )
+        copr_mock = enter(
+            patch.object(full_cycle._stage["stage-copr"], "run_for_package", return_value=True)
+        )
+        enter(patch.object(full_cycle, "print_chroot_coverage", return_value=coverage_ok))
+        enter(
+            patch.dict(
+                os.environ, {"REQUIRE_CHROOT_COVERAGE": "true" if require_coverage else ""}
+            )
+        )
+
+        forced_stages_spy = None
+        if spy_forced_stages:
+            forced_stages_spy = enter(
+                patch.object(
+                    full_cycle, "compute_forced_stages", wraps=full_cycle.compute_forced_stages
+                )
+            )
+
+        yield copr_mock, forced_stages_spy
+
+
 class TestCoprGatedByMockFailure:
     """Regression coverage for issue #8: per-package pipelines used to submit
     each package to Copr as soon as its own mock succeeded, so a healthy early
@@ -208,7 +287,7 @@ class TestCoprGatedByMockFailure:
     """
 
     def _run(self, packages, mock_outcomes, copr_repo="nett00n/hyprland", skip_copr=False):
-        """Run run_build_pipeline with heavy mocking; return (target, run_id, copr_mock)."""
+        """Run run_build_pipeline with heavy mocking; return (run_id, copr_mock)."""
         run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
 
         def fake_mock_run_for_package(
@@ -219,33 +298,9 @@ class TestCoprGatedByMockFailure:
             mock_failed[pkg] = not ok
             return ok
 
-        def fake_is_cached(stage, pkg, target, new_hashes, forced_stages):
-            # Only mock/copr are "not cached" -- exercises the real branches.
-            return stage not in ("mock", "copr")
-
-        with patch.object(full_cycle, "get_packages", return_value=packages), patch.object(
-            full_cycle, "compute_input_hashes", return_value={}
-        ), patch.object(full_cycle, "effective_deps", return_value=set()), patch.object(
-            full_cycle, "is_cached", side_effect=fake_is_cached
-        ), patch.object(
-            full_cycle, "cache_miss_reason", return_value="test"
-        ), patch.object(
-            full_cycle.time, "sleep"
-        ), patch.object(
-            full_cycle._stage["stage-show-plan"], "show_plan"
-        ), patch.object(
-            full_cycle._stage["stage-validate"], "run_global_checks"
-        ), patch.object(
-            full_cycle._stage["stage-validate"], "run_for_package", return_value=True
-        ), patch.object(
-            full_cycle._stage["stage-copr"], "check_copr_credentials"
-        ), patch.object(
-            full_cycle._stage["stage-mock"],
-            "run_for_package",
-            side_effect=fake_mock_run_for_package,
-        ), patch.object(
-            full_cycle._stage["stage-copr"], "run_for_package", return_value=True
-        ) as copr_mock:
+        with patch.object(
+            full_cycle, "get_packages", return_value=packages
+        ), _patched_pipeline(fake_mock_run_for_package) as (copr_mock, _):
             full_cycle.run_build_pipeline(
                 packages,
                 TARGET,
@@ -344,41 +399,11 @@ class TestForceRebuildOverridesProceed:
             mock_failed[pkg] = False
             return True
 
-        def fake_is_cached(stage, pkg, target, new_hashes, forced_stages):
-            # Only mock/copr are "not cached" -- exercises the real branches,
-            # matching the pattern used by TestCoprGatedByMockFailure.
-            return stage not in ("mock", "copr")
-
         with patch.object(
             full_cycle, "get_packages", return_value=packages
-        ), patch.object(
-            full_cycle, "compute_input_hashes", return_value={}
-        ), patch.object(
-            full_cycle, "effective_deps", return_value=set()
-        ), patch.object(
-            full_cycle,
-            "compute_forced_stages",
-            wraps=full_cycle.compute_forced_stages,
-        ) as forced_stages_spy, patch.object(
-            full_cycle, "is_cached", side_effect=fake_is_cached
-        ), patch.object(
-            full_cycle, "cache_miss_reason", return_value="test"
-        ), patch.object(
-            full_cycle.time, "sleep"
-        ), patch.object(
-            full_cycle._stage["stage-show-plan"], "show_plan"
-        ), patch.object(
-            full_cycle._stage["stage-validate"], "run_global_checks"
-        ), patch.object(
-            full_cycle._stage["stage-validate"], "run_for_package", return_value=True
-        ), patch.object(
-            full_cycle._stage["stage-copr"], "check_copr_credentials"
-        ), patch.object(
-            full_cycle._stage["stage-mock"],
-            "run_for_package",
-            side_effect=fake_mock_run_for_package,
-        ), patch.object(
-            full_cycle._stage["stage-copr"], "run_for_package", return_value=True
+        ), _patched_pipeline(fake_mock_run_for_package, spy_forced_stages=True) as (
+            _,
+            forced_stages_spy,
         ):
             full_cycle.run_build_pipeline(
                 packages,
@@ -428,40 +453,13 @@ class TestCoprGatedByChrootCoverage:
             mock_failed[pkg] = False
             return True
 
-        def fake_is_cached(stage, pkg, target, new_hashes, forced_stages):
-            return stage not in ("mock", "copr")
-
         with patch.object(
             full_cycle, "get_packages", return_value=packages
-        ), patch.object(
-            full_cycle, "compute_input_hashes", return_value={}
-        ), patch.object(
-            full_cycle, "effective_deps", return_value=set()
-        ), patch.object(
-            full_cycle, "is_cached", side_effect=fake_is_cached
-        ), patch.object(
-            full_cycle, "cache_miss_reason", return_value="test"
-        ), patch.object(
-            full_cycle.time, "sleep"
-        ), patch.object(
-            full_cycle._stage["stage-show-plan"], "show_plan"
-        ), patch.object(
-            full_cycle._stage["stage-validate"], "run_global_checks"
-        ), patch.object(
-            full_cycle._stage["stage-validate"], "run_for_package", return_value=True
-        ), patch.object(
-            full_cycle._stage["stage-copr"], "check_copr_credentials"
-        ), patch.object(
-            full_cycle._stage["stage-mock"],
-            "run_for_package",
-            side_effect=fake_mock_run_for_package,
-        ), patch.object(
-            full_cycle._stage["stage-copr"], "run_for_package", return_value=True
-        ) as copr_mock, patch.object(
-            full_cycle, "print_chroot_coverage", return_value=coverage_ok
-        ), patch.dict(
-            os.environ, {"REQUIRE_CHROOT_COVERAGE": "true" if require_coverage else ""}
-        ):
+        ), _patched_pipeline(
+            fake_mock_run_for_package,
+            coverage_ok=coverage_ok,
+            require_coverage=require_coverage,
+        ) as (copr_mock, _):
             full_cycle.run_build_pipeline(
                 packages,
                 TARGET,

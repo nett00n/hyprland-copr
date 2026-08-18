@@ -199,53 +199,42 @@ class TestExtract:
         assert result == extract_dir / "mylib"
 
     def test_blocks_path_traversal(self, tmp_path):
-        """Should block path traversal attacks in tarballs."""
+        """Should refuse to extract a member that escapes extract_dir."""
         archive = tmp_path / "malicious.tar.gz"
         extract_dir = tmp_path / "extracted"
         extract_dir.mkdir()
 
-        # Create a tarball with path traversal (only on Python < 3.12)
-        # Python 3.12+ with filter="data" handles this automatically
-        if sys.version_info < (3, 12):
-            with tarfile.open(archive, "w:gz") as tf:
-                import io
+        with tarfile.open(archive, "w:gz") as tf:
+            import io
 
-                # Try to create a file with ..
-                tarinfo = tarfile.TarInfo(name="../../../etc/passwd")
-                data = b"hacked"
-                tarinfo.size = len(data)
-                tf.addfile(tarinfo, io.BytesIO(data))
+            tarinfo = tarfile.TarInfo(name="../../../etc/passwd")
+            data = b"hacked"
+            tarinfo.size = len(data)
+            tf.addfile(tarinfo, io.BytesIO(data))
 
-            # Extraction should fail or block the traversal
-            try:
-                _extract(archive, extract_dir)
-                # If it succeeds, check that the file wasn't created outside extract_dir
-                assert not Path("/etc/passwd").exists() or "/etc/passwd" not in str(
-                    Path("/etc/passwd")
-                )
-            except VendorError:
-                # Expected: the extraction should raise VendorError
-                pass
+        # tarfile's filter="data" (Python 3.12+, the only version this
+        # project runs on) raises OutsideDestinationError for this member.
+        with pytest.raises(tarfile.OutsideDestinationError):
+            _extract(archive, extract_dir)
 
-    def test_blocks_absolute_paths(self, tmp_path):
-        """Should block absolute paths in tarballs."""
+    def test_contains_absolute_paths_within_extract_dir(self, tmp_path):
+        """Should extract an absolute-path member inside extract_dir, not at the real path."""
         archive = tmp_path / "malicious.tar.gz"
         extract_dir = tmp_path / "extracted"
         extract_dir.mkdir()
 
-        if sys.version_info < (3, 12):
-            with tarfile.open(archive, "w:gz") as tf:
-                import io
+        with tarfile.open(archive, "w:gz") as tf:
+            import io
 
-                # Try to create a file with absolute path
-                tarinfo = tarfile.TarInfo(name="/etc/passwd")
-                data = b"hacked"
-                tarinfo.size = len(data)
-                tf.addfile(tarinfo, io.BytesIO(data))
+            tarinfo = tarfile.TarInfo(name="/etc/passwd")
+            data = b"hacked"
+            tarinfo.size = len(data)
+            tf.addfile(tarinfo, io.BytesIO(data))
 
-            # Should raise VendorError for absolute path
-            with pytest.raises(VendorError):
-                _extract(archive, extract_dir)
+        # tarfile's filter="data" strips the leading "/" and contains the
+        # member under extract_dir instead of raising.
+        _extract(archive, extract_dir)
+        assert (extract_dir / "etc" / "passwd").read_bytes() == b"hacked"
 
     def test_returns_extract_dir_when_multiple_top_dirs(self, tmp_path):
         """Should return extract_dir when multiple top-level directories."""

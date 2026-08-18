@@ -70,7 +70,7 @@ def validate_package(
         if missing:
             warnings.append(
                 f"no sources.lock.yaml entry for: {', '.join(missing)} -- "
-                f"run: make refresh-checksums PACKAGE={name} (see docs/bugs.md BUG-0025)"
+                f"run: make refresh-checksums PACKAGE={name} (see docs/CHANGELOG.md BUG-0025)"
             )
 
         # archives[0] must resolve to a downloadable URL -- later entries may
