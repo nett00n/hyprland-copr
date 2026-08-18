@@ -132,7 +132,7 @@ endef
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-nuke submodules-update submodules-purge sync-hard-reset
+.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle full-cycle-matrix update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-nuke submodules-update submodules-purge sync-hard-reset
 
 save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
 	@mkdir -p logs
@@ -265,12 +265,14 @@ setup-venv: ## Create .venv and install Python dependencies
 	python3 -m venv .venv
 	.venv/bin/pip install -q -r requirements.txt
 
+install-dev: check-image check-venv setup-volumes ## Install dev tooling (requirements-dev.txt) into .venv
+	@$(CONTAINER_PYTHON) -m pip install -q -r requirements-dev.txt
+
 test: check-image check-venv setup-volumes ## Run unit tests for scripts/ using pytest
 	$(call run_with_result,$(CONTAINER_PYTHON) -m pytest tests/ -v,Tests passed,Tests failed)
 
-coverage: check-image check-venv setup-volumes ## Run tests with coverage report (--format html for HTML output)
+coverage: install-dev ## Run tests with coverage report (--format html for HTML output)
 	@mkdir -p "$(MAKE_LOGS_DIR)/coverage"
-	@$(CONTAINER_PYTHON) -m pip install -q pytest-cov || exit 1
 	@echo "$(HIGHLIGHT_PREFIX) Running coverage analysis..."
 	@$(CONTAINER_PYTHON) -m pytest tests/ --cov=scripts --cov-report=term-missing:skip-covered --cov-report=html:.htmlcov -q || exit 1
 	@echo "$(HIGHLIGHT_PREFIX) ✓ Coverage report generated"
@@ -279,26 +281,24 @@ coverage: check-image check-venv setup-volumes ## Run tests with coverage report
 
 lint: lint-ruff lint-flake lint-mypy lint-rpm lint-yaml ## Run all linters inside container
 
-lint-ruff: check-image check-venv setup-volumes ## Run ruff check on scripts
+lint-ruff: install-dev ## Run ruff check on scripts
 	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff check scripts/,Ruff check passed,Ruff check failed)
 
-lint-flake: check-image check-venv setup-volumes ## Run flake8 style checker on scripts
-	$(CONTAINER_PYTHON) -m pip install -q -r requirements-dev.txt
+lint-flake: install-dev ## Run flake8 style checker on scripts
 	$(call run_with_result,$(CONTAINER_PYTHON) -m flake8 scripts/,Flake8 check passed,Flake8 check failed)
 
-lint-mypy: check-image check-venv setup-volumes ## Run mypy type checker on scripts
+lint-mypy: install-dev ## Run mypy type checker on scripts
 	$(call run_with_result,$(CONTAINER_PYTHON) -m mypy scripts/ --ignore-missing-imports --exclude submodules,Mypy check passed,Mypy check failed)
 
-lint-rpm: check-image check-venv setup-volumes ## Run rpmlint on all generated spec files
-	$(CONTAINER_PYTHON) -m pip install -q rpmlint
+lint-rpm: install-dev ## Run rpmlint on all generated spec files
 	$(call run_with_result,$(CONTAINER_RUN) $(RPMLINT) -r $(WORK)/.rpmlintrc --ignore-unused-rpmlintrc packages/*/[a-z]*.spec,Rpmlint check passed,Rpmlint check failed)
 
-lint-yaml: check-image check-venv setup-volumes ## Run yamllint on YAML files
+lint-yaml: install-dev ## Run yamllint on YAML files
 	$(call run_with_result,$(CONTAINER_PYTHON) -m yamllint *.yaml,Yamllint check passed,Yamllint check failed)
 
 fmt: fmt-ruff fmt-yaml normalize-paths sort-lists ## Format and normalize all files
 
-fmt-ruff: check-image check-venv setup-volumes ## Run ruff format on scripts
+fmt-ruff: install-dev ## Run ruff format on scripts
 	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff format scripts/,Ruff format applied,Ruff format failed)
 
 fmt-yaml: check-image check-venv setup-volumes ## Format YAML files with consistent style

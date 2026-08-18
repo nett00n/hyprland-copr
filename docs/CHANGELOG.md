@@ -14,6 +14,11 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-18
 
+- Fixed: dev tooling (ruff/mypy/flake8/yamllint/rpmlint/pytest-cov) is now installed by a
+  dedicated `make install-dev` target that every lint/fmt/coverage target depends on, instead of
+  as a side effect of `lint-flake` -- `make lint` on a fresh `.venv` no longer fails at
+  `lint-ruff` with "ruff: command not found" (BUG-0032). The CI workaround step that installed
+  `requirements-dev.txt` up front is removed.
 - Fixed: the vendor stage no longer reports `reason=cached` for packages that
   have no vendor stage at all (not Go/Rust, or `fedora:<ver>: skip`).
   `full-cycle.py` used to treat any `state="skipped"` vendor row as a cache

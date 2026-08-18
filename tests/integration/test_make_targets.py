@@ -824,6 +824,55 @@ class TestUpdateDailyResilience:
         assert readme_pos < analyze_pos < commit_pos
 
 
+class TestDevToolingPrerequisite:
+    """Coverage for docs/bugs.md BUG-0032: requirements-dev.txt (ruff/mypy/flake8/yamllint/
+    rpmlint/pytest-cov) used to be installed only as a side effect of `lint-flake`'s recipe,
+    which runs *after* `lint-ruff` in the `lint` target's prerequisite list -- so a fresh
+    `.venv` (post `make setup-venv`, which installs only requirements.txt) died at `lint-ruff`
+    with "ruff: command not found". `install-dev` is now a shared prerequisite of every
+    lint/fmt/coverage target, verified here via `make -n` dry-run text so the ordering
+    regression can't silently come back.
+    """
+
+    def _dry_run(self, *args: str) -> str:
+        result = subprocess.run(
+            ["make", "-n", *args],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        return result.stdout
+
+    def test_lint_installs_dev_deps_before_ruff_check(self):
+        stdout = self._dry_run("lint", "NO_CONTAINER=1")
+        assert "requirements-dev.txt" in stdout
+        install_pos = stdout.index("requirements-dev.txt")
+        ruff_pos = stdout.index("ruff check")
+        assert install_pos < ruff_pos
+
+    def test_lint_installs_dev_deps_exactly_once(self):
+        stdout = self._dry_run("lint", "NO_CONTAINER=1")
+        assert stdout.count("requirements-dev.txt") == 1
+
+    def test_fmt_installs_dev_deps(self):
+        stdout = self._dry_run("fmt", "NO_CONTAINER=1")
+        assert "requirements-dev.txt" in stdout
+
+    def test_coverage_installs_dev_deps(self):
+        stdout = self._dry_run("coverage", "NO_CONTAINER=1")
+        assert "requirements-dev.txt" in stdout
+
+    def test_update_daily_does_not_install_dev_deps(self):
+        """The nightly gate is validate-packages+fmt only (TODO-0064) -- fmt needs dev
+        tooling for fmt-ruff, but plain `test` (not part of update-daily) must not."""
+        stdout = self._dry_run(
+            "update-daily", "COPR_REPO=nett00n/hyprland", "NO_CONTAINER=1"
+        )
+        assert "requirements-dev.txt" in stdout  # via fmt's fmt-ruff dependency
+        assert "pytest tests/" not in stdout
+
+
 class TestInfoTargets:
     """Test informational make targets."""
 
