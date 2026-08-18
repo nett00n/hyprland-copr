@@ -79,17 +79,14 @@ disk usage (`make db-usage`/`make db-prune`). Remaining gaps:
 - **TODO-0043** `vendor_golang.py`/`vendor_rust.py` hand-roll subprocess+log-writing instead of using `lib/subprocess_utils.run_cmd`, which already does exactly that #low
 - **TODO-0045** 3 YAML modules (`yaml_config.py`, `yaml_utils.py`, `yaml_format.py`) mix PyYAML-load + ruamel-dump inconsistently with no doc on which to use when -> confusing for newcomers #low
 - **TODO-0046** dead code: `lib/reporting.badge()` (only `badge_short()` is used), `lib/yaml_utils.load_packages` alias (only `get_packages` is used) -> remove #low
-- **TODO-0047** `scripts/set-package-release.py` has a redundant manual `sys.path.insert` that no other script needs -> remove #low
 - **TODO-0048** `scripts/serve.py` (dev HTTP server) has no Makefile target and no tests, only mentioned in docs/operations.md -> confirm still needed or drop #low
 - **TODO-0049** `scripts/pkg-log-analysis.py` imports underscore-prefixed "private" functions directly from `lib.log_analysis` -> either make them public API or move this script's logic into lib/ #low
 - **TODO-0050** `Containerfile` installs cargo/golang/mock/rpmlint with no version pins -> minor reproducibility risk over time #medium
 - **TODO-0052** vendoring is triggered by `build_requires` containing `golang`/`cargo` (two sources of truth with packages.yaml's Source1 + `tar xf %{SOURCE1}`, which must be hand-added and isn't cross-validated) -> silent breakage if the pair drifts #medium
 - **TODO-0053** language selection in `lib/vendor.py` is substring matching on `build_requires` while `lib/detection.py` already detects build systems properly -> a package listing both `golang` and `cargo` silently takes the Rust path (Go is checked first only because of call order) #medium
-- **TODO-0054** dead `except TypeError` Python<3.12 tarfile-filter fallback in `vendor._extract()` #low
 - **TODO-0056** `_log_fn`/`_download`/`_extract` in `lib/vendor.py` are underscore-private but imported directly by `vendor_golang.py`/`vendor_rust.py` -> same smell already noted for `pkg-log-analysis.py` above #low
 - **TODO-0057** `_download()` in `lib/vendor.py` reads the whole archive into memory instead of streaming to disk #low
 - **TODO-0058** vendor stage's `log` field is only recorded on the generate path, not the "tarball already exists" skip path -> inconsistent stage rows #low
-- **TODO-0059** `SOURCES_DIR.mkdir()` only happens in `stage-vendor.py:main()`, not in `run_for_package()` -> the `full-cycle.py` path (which calls `run_for_package` directly) relies on the dir already existing #medium
 
 # Daily update
 

@@ -10,12 +10,8 @@ maintainer's own log and may cite issue numbers. Entries are deleted when fixed 
 - **BUG-0018** — aarch64 Copr chroots still can't be verified locally before submitting (x86_64 now can, via `make full-cycle-matrix`)
 
 - **BUG-0002** make sure copr stage is runned only if rebuilt is really required. If status is still unknown - do not schedule new one #medium
-- **BUG-0003** `lib/github.py:save_release_cache` never evicts old `(url, version)` entries from `cache/github-releases.json`, only TTL-gates read freshness -> file grows forever, one entry per version ever seen for every package #low
 - **BUG-0004** does hyprpolkit increment release on rebuild, when dependency is updated #low
-- **BUG-0005** `make add-submodule` doesn't check PACKAGE is set before use -> raw python KeyError instead of friendly error (unlike add-new/delete-package/set-release which do check) #low
 - **BUG-0006** `make container-enter` doesn't match `$(CONTAINER_RUN)`: no `--privileged`, no `.venv`/mock-conf/copr-config mounts -> manual mock testing inside fails differently than real stages #low
-- **BUG-0007** `save-last-build`, `clean`, `clean-localrepo` skip the `check-image` prereq other targets have -> raw podman/docker error instead of "run make container-build" hint #low
-- **BUG-0008** `.env` `LOG_LEVEL=""` isn't quote-stripped like FEDORA_VERSION/PACKAGE/etc -> make's `$(if $(LOG_LEVEL),...)` sees non-empty `""` and injects `-e LOG_LEVEL=""` into container instead of leaving unset #low
 - **BUG-0009** Makefile `full-cycle` passes `DRY_RUN` env var into the container but nothing in scripts/ reads it -> silent no-op flag, misleading (`FORCE_MOCK` was the other half of this; replaced by a real `FORCE_REBUILD` flag, see docs/operations.md) #low
 - **BUG-0010** `scripts/lib/gitmodules.py` reimplements git subprocess calls 8x instead of using `lib/subprocess_utils.run_git` -> inconsistent timeouts (some unbounded) and error handling; `fetch_tags` doesn't catch `FileNotFoundError` unlike other git callers #medium
 - **BUG-0011** `scripts/lib/yaml_utils.py:update_package_releases` mutates packages.yaml via regex string substitution on raw text instead of load/mutate/dump like the rest of the module -> fragile, depends on exact indentation matching. Concretely: the pattern is `^({pkg}:.*?^  release: )\d+(\n)` compiled with `MULTILINE | DOTALL` -- if a package block has no `release:` key at exactly two-space indent, the non-greedy `.*?` runs straight past the end of that block and rewrites the *next* package's release instead; a `release:` with a trailing comment or different indentation is a silent no-op. Either way `full-cycle.py` still prints `Release updates: {...}` claiming the write happened, so the NVR stays put and Copr rejects the resubmission as a duplicate. Holds together today only because all 45 packages happen to match the pattern exactly #high
@@ -72,14 +68,6 @@ unattended nightly job. Audited end to end 2026-08:
   the whole `copr-cli status` output. Any other terminal state (`canceled`, `skipped`, an import
   that never completes) never reaches `TERMINAL_STATES`, so the row stays `unknown` forever --
   re-polled every night, and (per BUG-0002) resubmitted every night #medium
-- **BUG-0042** `CMD_TIMEOUT=""` in `.env` crashes every subprocess call. The Makefile's
-  quote-stripping covers only `FEDORA_VERSION`/`COPR_REPO`/`PACKAGE`/`SKIP_PACKAGES`, so
-  `CMD_TIMEOUT=""` survives as the literal two-character string `""`; make's
-  `$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),)` sees it as non-empty and emits
-  `CMD_TIMEOUT=""`, the shell strips the quotes, and `run_cmd` does
-  `int(os.environ.get("CMD_TIMEOUT", 3600))` on an empty string -> `ValueError`. Same root cause
-  as BUG-0008 but a hard crash, not a silent no-op flag (`.env.example` quotes every value it
-  ships, so the habit is established) #high
 - **BUG-0043** no concurrency guard on a job documented as cron-driven. Nothing takes a lock: 45
   packages at up to `CMD_TIMEOUT=3600s` *per command* can easily outrun the cron interval, and two
   overlapping runs write the same build-report.db, the same rpmbuild-* podman volumes, the same

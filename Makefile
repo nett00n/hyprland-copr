@@ -5,6 +5,8 @@ FEDORA_VERSION  := $(subst ",,$(FEDORA_VERSION))
 COPR_REPO       := $(subst ",,$(COPR_REPO))
 PACKAGE         := $(subst ",,$(PACKAGE))
 SKIP_PACKAGES   := $(subst ",,$(SKIP_PACKAGES))
+LOG_LEVEL       := $(subst ",,$(LOG_LEVEL))
+CMD_TIMEOUT     := $(subst ",,$(CMD_TIMEOUT))
 # Fallback defaults if not set after stripping
 FEDORA_VERSION  ?= 43
 SUPPORTED        := 43 44 rawhide
@@ -144,7 +146,7 @@ clean-logs: check-image check-venv setup-volumes ## Remove build logs; clears st
 	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --reset || true
 	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned build logs and stage state (artifact ledger preserved)"
 
-clean-localrepo: clean-mock-cache ## Purge local repo for FEDORA_VERSION/MOCK_CHROOT to resolve dependency conflicts
+clean-localrepo: check-image clean-mock-cache ## Purge local repo for FEDORA_VERSION/MOCK_CHROOT to resolve dependency conflicts
 	@rm -rf local-repo/$(MOCK_CHROOT)
 	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --forget-repo $(MOCK_CHROOT) || true
 	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned local repo: local-repo/$(MOCK_CHROOT)"
