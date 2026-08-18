@@ -14,6 +14,19 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-18
 
+- Fixed: `tests/integration/test_make_targets.py`'s `TestCoprGatedByMockFailure`,
+  `TestForceRebuildOverridesProceed`, and `TestCoprGatedByChrootCoverage` classes
+  went stale after BUG-0045's `vendor_decision()` started calling the real
+  `stage-vendor.run_for_package()` for packages with no vendor stage -- these
+  tests' fixture `meta` dicts are empty, so `run_for_package()`'s
+  `meta["version"]` lookup raised `KeyError`. Extracted the three tests' near-
+  identical `patch.object` stacks into a shared `_patched_pipeline()` context
+  manager and added `stage-vendor` to it, alongside the other already-patched
+  stages. While consolidating, also fixed `TestCoprGatedByMockFailure._run`
+  making a live Copr API call and reading the developer's real
+  `REQUIRE_CHROOT_COVERAGE` env var (neither `print_chroot_coverage` nor
+  `os.environ` were patched there, unlike in `TestCoprGatedByChrootCoverage`).
+  No production code changed.
 - Removed: `scripts/set-package-release.py`'s `sys.path.insert(0,
   str(Path(__file__).parent))` -- redundant, since Python already puts the
   running script's own directory at `sys.path[0]` when invoked as `python3
