@@ -14,6 +14,11 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-18
 
+- Fixed: `save_release_cache` now evicts entries older than `CACHE_TTL` (7
+  days) on every write instead of only TTL-gating reads. Previously
+  `cache/github-releases.json` kept one entry per `(url, version)` ever seen
+  for every package, so the file grew unbounded across version bumps
+  (BUG-0003).
 - Fixed: dev tooling (ruff/mypy/flake8/yamllint/rpmlint/pytest-cov) is now installed by a
   dedicated `make install-dev` target that every lint/fmt/coverage target depends on, instead of
   as a side effect of `lint-flake` -- `make lint` on a fresh `.venv` no longer fails at
