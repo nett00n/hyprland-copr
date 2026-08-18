@@ -176,7 +176,7 @@ submodules-purge: ## Deinit and wipe all submodule working trees + cached git da
 	@rm -rf .git/modules/submodules
 	@echo $(HIGHLIGHT_PREFIX) "✓ Purged submodule working trees and cached data"
 
-sync-hard-reset: ## Hard-reset repo+submodules to origin/<current branch>, stashing/reapplying uncommitted main-repo changes (resolves submodule conflicts; confirmation required)
+sync-hard-reset: ## Hard-reset repo+submodules to origin/<current branch>, stashing/reapplying uncommitted main-repo changes; keeps .env* and build-report.db/.yaml (ignored, so `clean -x` would otherwise purge them) (resolves submodule conflicts; confirmation required)
 	@printf "$(HIGHLIGHT_PREFIX) Hard-reset repo and all submodules to origin/$$(git branch --show-current)? [y/N] "; \
 		read ans; \
 		[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "$(HIGHLIGHT_PREFIX) Aborted."; exit 1; }
@@ -188,7 +188,7 @@ sync-hard-reset: ## Hard-reset repo+submodules to origin/<current branch>, stash
 		fi; \
 		git fetch origin || exit 1; \
 		git reset --hard "origin/$$branch" || exit 1; \
-		git clean -ffdx || exit 1; \
+		git clean -ffdx -e '.env' -e '.env.*' -e 'build-report.db' -e 'build-report.db-*' -e 'build-report.yaml' -e 'build-report.*.yaml' || exit 1; \
 		git submodule sync --recursive || exit 1; \
 		git submodule update --init --recursive --force || exit 1; \
 		git submodule foreach --recursive 'git clean -ffdx' || exit 1; \
@@ -267,7 +267,7 @@ setup-venv: ## Create .venv and install Python dependencies
 	python3 -m venv .venv
 	.venv/bin/pip install -q -r requirements.txt
 
-install-dev: check-image check-venv setup-volumes ## Install dev tooling (requirements-dev.txt) into .venv
+install-dev: check-image setup-venv setup-volumes ## Install dev tooling (requirements-dev.txt) into .venv
 	@$(CONTAINER_PYTHON) -m pip install -q -r requirements-dev.txt
 
 test: check-image check-venv setup-volumes ## Run unit tests for scripts/ using pytest
