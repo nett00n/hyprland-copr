@@ -2,6 +2,7 @@
 
 import json
 import sys
+import time
 import urllib.error
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -86,6 +87,24 @@ class TestReleaseCache:
 
         result = load_release_cache("https://github.com/foo/bar", "1.0")
         assert result is None
+
+    def test_save_cache_evicts_expired_entries(self, tmp_path, monkeypatch):
+        """Should drop entries older than CACHE_TTL when saving."""
+        cache_file = tmp_path / "cache.json"
+        monkeypatch.setattr("lib.github.GITHUB_RELEASE_CACHE", cache_file)
+
+        cache_data = {
+            "foo/bar@1.0": {"data": {"tag_name": "v1.0"}, "timestamp": 0},
+            "foo/bar@2.0": {"data": {"tag_name": "v2.0"}, "timestamp": int(time.time())},
+        }
+        cache_file.write_text(json.dumps(cache_data))
+
+        save_release_cache("https://github.com/foo/bar", "3.0", {"tag_name": "v3.0"})
+
+        data = json.loads(cache_file.read_text())
+        assert "foo/bar@1.0" not in data
+        assert "foo/bar@2.0" in data
+        assert "foo/bar@3.0" in data
 
     def test_save_cache_creates_parent_directories(self, tmp_path, monkeypatch):
         """Should create parent directories if they don't exist."""

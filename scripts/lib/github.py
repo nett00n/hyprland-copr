@@ -74,7 +74,13 @@ def save_release_cache(url: str, version: str, release: dict) -> None:
         )
     except (json.JSONDecodeError, OSError):
         data = {}
-    data[_cache_key(url, version)] = {"data": release, "timestamp": int(time.time())}
+    now = time.time()
+    data = {
+        key: entry
+        for key, entry in data.items()
+        if now - entry.get("timestamp", 0) < CACHE_TTL
+    }
+    data[_cache_key(url, version)] = {"data": release, "timestamp": int(now)}
     GITHUB_RELEASE_CACHE.write_text(json.dumps(data, indent=2))
 
 
