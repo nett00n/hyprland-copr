@@ -155,12 +155,26 @@ def generate_spec(
             else None
         )
 
-        # Prepare prep commands (including vendor tarball extraction for cargo)
+        # Prepare prep commands, auto-injecting extraction of the vendor
+        # tarball (if any) -- applies to any build system, not just cargo,
+        # since Go packages are vendored too (docs/bugs.md BUG-0029). Skipped
+        # if a package's own prep already extracts that source itself (e.g.
+        # aylurs-gtk-shell, which needs it inside a `pushd cli` subdirectory
+        # rather than at the top level the auto-inject would use).
         prep_commands = build.get("prep", [])
-        if build_system == "cargo":
-            archives = source.get("archives", [])
-            if len(archives) >= 2 and "vendor" in archives[1]:
-                prep_commands = ["tar xf %{SOURCE1}"] + prep_commands
+        archives = source.get("archives", [])
+        vendor_idx = next(
+            (
+                i
+                for i, a in enumerate(archives)
+                if isinstance(a, str) and a.endswith("-vendor.tar.gz")
+            ),
+            None,
+        )
+        if vendor_idx is not None and not any(
+            f"SOURCE{vendor_idx}" in cmd for cmd in prep_commands
+        ):
+            prep_commands = [f"tar xf %{{SOURCE{vendor_idx}}}"] + prep_commands
 
         context = {
             "name": pkg.lower(),

@@ -45,7 +45,6 @@ Commit:            9f99065e4177820e965f5475503e5c3bdbd74e6a
 %prep
 %autosetup -p1 -n Satty-%{version}
 tar xf %{SOURCE1}
-tar xf %{SOURCE1}
 
 %build
 cargo build --offline --release

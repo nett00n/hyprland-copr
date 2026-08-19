@@ -5,6 +5,7 @@ import subprocess
 import tarfile
 from pathlib import Path
 
+from lib.subprocess_utils import run_cmd
 from lib.toolchain import go_toolchain_skew
 from lib.vendor import VendorError, _log_fn
 
@@ -54,21 +55,9 @@ def generate(
         shutil.rmtree(vendor_dir)
 
     _log("running: go mod vendor")
-    result = subprocess.run(
-        ["go", "mod", "vendor"],
-        cwd=src_dir,
-        capture_output=True,
-        text=True,
-    )
-    if log_path:
-        with open(log_path, "a") as fh:
-            if result.stdout:
-                fh.write(result.stdout)
-            if result.stderr:
-                fh.write(result.stderr)
-            fh.write(f"[exit: {result.returncode}]\n\n")
-    if result.returncode != 0:
-        raise VendorError(f"go mod vendor failed: {result.stderr.strip()}")
+    ok, _, stderr = run_cmd(["go", "mod", "vendor"], log_path=log_path, cwd=src_dir)
+    if not ok:
+        raise VendorError(f"go mod vendor failed: {stderr.strip()}")
 
     if not vendor_dir.exists():
         raise VendorError("go mod vendor produced no vendor/ directory")

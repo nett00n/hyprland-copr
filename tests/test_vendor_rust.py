@@ -1,5 +1,6 @@
 """Tests for vendor_rust module."""
 
+import subprocess
 import sys
 import tempfile
 import tarfile
@@ -508,3 +509,80 @@ class TestCargoUpdate:
 
         # Only cargo --version and cargo vendor -- no update call.
         assert mock_run.call_count == 2
+
+
+class TestTimeout:
+    """docs/bugs.md BUG-0024: `cargo update -p` and `cargo vendor` ran with no
+    timeout at all, so a hung invocation blocked update-daily indefinitely. Both
+    now go through lib.subprocess_utils.run_cmd, which reads CMD_TIMEOUT
+    (default 3600s) and turns a timeout into an (ok=False, ...) result instead
+    of letting subprocess.TimeoutExpired propagate uncaught; generate() wraps
+    that into a VendorError.
+    """
+
+    @patch("lib.vendor_rust.shutil.which", return_value="/usr/bin/cargo")
+    @patch("lib.vendor_rust.subprocess.run")
+    def test_cargo_vendor_timeout(self, mock_run, mock_which, tmp_path):
+        version_result = MagicMock()
+        version_result.returncode = 0
+        mock_run.side_effect = [
+            version_result,
+            subprocess.TimeoutExpired(cmd=["cargo", "vendor"], timeout=3600),
+        ]
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "Cargo.toml").write_text("[package]")
+
+        with pytest.raises(
+            VendorError, match="cargo vendor failed.*timed out after 3600s"
+        ):
+            generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+    @patch("lib.vendor_rust.shutil.which", return_value="/usr/bin/cargo")
+    @patch("lib.vendor_rust.subprocess.run")
+    def test_cargo_update_timeout(self, mock_run, mock_which, tmp_path):
+        version_result = MagicMock()
+        version_result.returncode = 0
+        mock_run.side_effect = [
+            version_result,
+            subprocess.TimeoutExpired(
+                cmd=["cargo", "update", "-p", "foo"], timeout=3600
+            ),
+        ]
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "Cargo.toml").write_text("[package]")
+
+        pkg_meta = {"build": {"cargo_update": ["foo@1.0.0"]}}
+        with pytest.raises(
+            VendorError,
+            match=r"cargo update -p foo@1\.0\.0 failed.*timed out after 3600s",
+        ):
+            generate("pkg", pkg_meta, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+    @patch("lib.vendor_rust.shutil.rmtree")
+    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.vendor_rust.tarfile.open")
+    def test_cargo_vendor_respects_cmd_timeout_env(
+        self, mock_tar, mock_run, mock_rmtree, tmp_path, monkeypatch
+    ):
+        monkeypatch.setenv("CMD_TIMEOUT", "120")
+        version_result = MagicMock()
+        version_result.returncode = 0
+        vendor_result = MagicMock()
+        vendor_result.returncode = 0
+        vendor_result.stdout = ""
+        vendor_result.stderr = ""
+        mock_run.side_effect = [version_result, vendor_result]
+        mock_tar.return_value.__enter__.return_value = MagicMock()
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "Cargo.toml").write_text("[package]")
+        (src_dir / "vendor").mkdir()
+
+        generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+        assert mock_run.call_args_list[1][1]["timeout"] == 120

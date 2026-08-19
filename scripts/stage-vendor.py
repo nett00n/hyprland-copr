@@ -94,13 +94,21 @@ def run_for_package(
         )
         return True
 
-    # Skip if spec stage failed
+    # Skip if the spec stage didn't leave us a usable spec: no row at all
+    # (never run), a failed run, or a config-skip (e.g. fedora:NN skip) --
+    # each gets its own reason so build-report.db doesn't conflate "never
+    # ran" with "ran and failed".
     spec_entry = build_db.get_stage(pkg, "spec", target)
-    spec_state = spec_entry.get("state", "") if spec_entry else ""
-    if spec_state == "failed" or spec_entry is None:
-        status("vendor", pkg, "skip", target, "spec failed")
+    spec_state = spec_entry.get("state") if spec_entry else None
+    if spec_state != "success":
+        reason = {
+            None: "spec not run",
+            "failed": "spec failed",
+            "skipped": "spec skipped",
+        }.get(spec_state, f"spec state: {spec_state}")
+        status("vendor", pkg, "skip", target, reason)
         build_db.set_stage(
-            pkg, "vendor", target, run_id, "skipped", version=ver, reason="spec failed"
+            pkg, "vendor", target, run_id, "skipped", version=ver, reason=reason
         )
         return True
 

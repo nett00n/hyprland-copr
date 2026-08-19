@@ -38,7 +38,6 @@ Commit:            d87c2fdbfdc012e76d229e4e9ea3325bc0f23e89
 %prep
 %autosetup -p1
 tar xf %{SOURCE1}
-tar xf %{SOURCE1}
 cargo update -p time@0.3.34 --offline
 
 %build

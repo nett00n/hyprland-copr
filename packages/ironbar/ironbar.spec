@@ -26,7 +26,7 @@ BuildRequires:  rustc
 
 
 %description
-customisable and feature-rich GTK4 bar for Wayland compositors, written in Rust.
+Customisable and feature-rich GTK4 bar for Wayland compositors, written in Rust.
 Ironbar is designed to support anything from a lightweight bar to a full desktop panel with ease.
 
 Maintainer info:
@@ -41,7 +41,6 @@ Commit:            607e28284b69f9e4089d8908a55aa770634224e3
 
 %prep
 %autosetup -p1
-tar xf %{SOURCE1}
 tar xf %{SOURCE1}
 
 %build

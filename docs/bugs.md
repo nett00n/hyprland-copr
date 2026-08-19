@@ -98,39 +98,6 @@ difficulty. Move an entry into a real section below once it has all three.
   `SKIP_PACKAGES` or `FORCE_REBUILD` through to its per-version `full-cycle` calls, so
   a matrix run silently ignores both [P2/D1]
 
-## stage-vendor
-
-- #BUG-0019 `make stage-vendor` doesn't forward `MOCK_CHROOT` (nor `SKIP_PACKAGES`)
-  into the container, but `stage-vendor.py:194-195,206` reads both -> with a
-  `MOCK_CHROOT` override, vendor rows land under a different `target` than
-  `stage-mock`/`full-cycle` use. Same problem on `stage-copr`, `stage-spec`, and
-  `stage-srpm`: none of them forward `MOCK_CHROOT` either, so any override resolves a
-  different `target` on each of those than on `stage-mock` [P2/D1]
-
-- #BUG-0024 `go mod vendor` (`vendor_golang.py:57-62`), `cargo vendor`
-  (`vendor_rust.py:117-122`), and `cargo update -p` (`vendor_rust.py:92-97`) all run
-  with no timeout at all; the Makefile forwards `CMD_TIMEOUT` and nothing on the
-  vendor path reads it -- neither module imports `lib/subprocess_utils.run_cmd`, the
-  only reader of `CMD_TIMEOUT`. A hung vendor invocation blocks `update-daily`
-  indefinitely [P1/D1]
-
-- #BUG-0027 `stage-vendor.py:98-105`'s `run_for_package` records a missing spec row
-  (`spec_entry is None`) with reason "spec failed" (misleading -- there was no spec
-  run at all), and doesn't special-case spec `state == "skipped"` [P3/D1]
-
-- #BUG-0028 `eww`, `satty`, and `ironbar` each extract their vendor tarball twice: an
-  explicit `tar xf %{SOURCE1}` in `build.prep` in packages.yaml *and*
-  `stage-spec.py`'s auto-inject for any cargo package whose `archives[1]` contains
-  "vendor" -- confirmed committed twice in all three generated specs (e.g.
-  `packages/eww/eww.spec:40-41`). `hyprland-per-window-layout` (also cargo, also
-  vendored) is the one package configured correctly: it has no explicit `prep` line
-  and relies solely on the auto-inject. Fix is to drop the redundant explicit line
-  from the three affected packages' `build.prep`, not to touch the inject [P2/D1]
-
-- #BUG-0029 that auto-inject (`stage-spec.py:158-163`) is cargo-only, positional
-  (`archives[1]`), and substring-matched -> reordering sources, or a Go package with
-  the same two-source layout, silently gets no extraction [P2/D1]
-
 ## Docs / templates
 
 - #BUG-0030 `templates/_contributors.j2`'s `{% if c.github_user %}...{% endif %}` is a
