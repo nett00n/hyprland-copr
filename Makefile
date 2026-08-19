@@ -595,17 +595,20 @@ stage-show-plan: check-image check-venv setup-volumes ## Show build plan - what 
 		FORCE_REBUILD=$(FORCE_REBUILD) \
 		/work/.venv/bin/python3 scripts/stage-show-plan.py,Build plan displayed,Build plan failed)
 
-stage-spec: check-image check-venv setup-volumes ## Run spec generation stage (PACKAGE=<name>, CMD_TIMEOUT, runs in container)
+stage-spec: check-image check-venv setup-volumes ## Run spec generation stage (PACKAGE=<name>, MOCK_CHROOT, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
+		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-spec.py,Spec generation passed,Spec generation failed)
 
-stage-vendor: check-image check-venv setup-volumes ## Run vendor tarball generation stage (Go/Rust packages, PACKAGE=<name>, CMD_TIMEOUT, runs in container)
+stage-vendor: check-image check-venv setup-volumes ## Run vendor tarball generation stage (Go/Rust packages, PACKAGE=<name>, MOCK_CHROOT, SKIP_PACKAGES, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
+		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
+		SKIP_PACKAGES=$(SKIP_PACKAGES) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-vendor.py,Vendor stage passed,Vendor stage failed)
 
@@ -625,9 +628,10 @@ check-checksums: check-image check-venv setup-volumes ## Verify downloaded sourc
 		SKIP_PACKAGES=$(SKIP_PACKAGES) \
 		/work/.venv/bin/python3 scripts/refresh-checksums.py --check,Checksums verified,Checksum verification failed)
 
-stage-srpm: check-image check-venv setup-volumes ## Run SRPM build stage (PACKAGE=<name>, CMD_TIMEOUT, runs in container)
+stage-srpm: check-image check-venv setup-volumes ## Run SRPM build stage (PACKAGE=<name>, MOCK_CHROOT, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
+		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-srpm.py,SRPM stage passed,SRPM stage failed)
@@ -641,9 +645,10 @@ stage-mock: check-image check-venv setup-volumes ## Run mock build stage (PACKAG
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-mock.py,Mock build stage passed,Mock build stage failed)
 
-stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, REQUIRE_CHROOT_COVERAGE, CMD_TIMEOUT, runs in container)
+stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, MOCK_CHROOT, REQUIRE_CHROOT_COVERAGE, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
+		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
 		COPR_REPO=$(COPR_REPO) \
 		REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) \

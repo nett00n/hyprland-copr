@@ -7,7 +7,10 @@ from pathlib import Path
 
 
 def run_cmd(
-    cmd: list[str], log_path: Path | None = None, timeout: int | None = None
+    cmd: list[str],
+    log_path: Path | None = None,
+    timeout: int | None = None,
+    cwd: Path | None = None,
 ) -> tuple[bool, str, str]:
     """Run a command, optionally appending output to log_path.
 
@@ -15,6 +18,7 @@ def run_cmd(
         cmd: Command and arguments
         log_path: Optional path to append output to
         timeout: Timeout in seconds (default 3600/60min, override via CMD_TIMEOUT env var)
+        cwd: Working directory to run the command in
 
     Returns (ok, stdout, stderr).
     """
@@ -23,6 +27,7 @@ def run_cmd(
     try:
         result = subprocess.run(
             cmd,
+            cwd=cwd,
             capture_output=True,
             text=True,
             stdin=subprocess.DEVNULL,

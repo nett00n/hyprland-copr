@@ -12,6 +12,51 @@ entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
 
 History before this file's introduction is not backfilled - see `git log`.
 
+## 2026-08-19
+
+- Fixed: `eww`, `satty`, `ironbar`, and `cliphist` (`packages.yaml`) each
+  extracted their vendor tarball twice -- an explicit `tar xf %{SOURCE1}` in
+  `build.prep` on top of `stage-spec.py`'s auto-inject. Dropped the redundant
+  explicit line for all four (kept `eww`'s `cargo update -p time@0.3.34
+  --offline` prep step); regenerated `packages/{eww,satty,ironbar}/*.spec` to
+  match (`cliphist.spec` was already correct once BUG-0029's build-system gate
+  below was widened, so it needed no regen). `hyprland-per-window-layout` and
+  `aylurs-gtk-shell` were already correct and needed no change. Fixes
+  #BUG-0028.
+- Fixed: `stage-vendor.py`'s `run_for_package` spec-stage gate no longer lumps a
+  missing spec row (never run) together with a failed spec run under one
+  misleading `reason="spec failed"`, and now also special-cases a `skipped` spec
+  state -- previously that fell through and vendored anyway. Reasons are now
+  `"spec not run"` / `"spec failed"` / `"spec skipped"` respectively. Fixes
+  #BUG-0027.
+- Fixed: `go mod vendor` (`vendor_golang.py`), `cargo vendor`, and `cargo update -p`
+  (`vendor_rust.py`) now run with a timeout, reading `CMD_TIMEOUT` (default 3600s,
+  same default as `lib.subprocess_utils.run_cmd`) and raising `VendorError` instead
+  of letting `subprocess.TimeoutExpired` propagate uncaught. Previously they ran
+  with no timeout at all, so a hung vendor invocation blocked `update-daily`
+  indefinitely. Fixes #BUG-0024.
+- Fixed: `Makefile`'s `stage-spec`, `stage-vendor`, `stage-srpm`, and `stage-copr`
+  targets now forward `MOCK_CHROOT` into the container (previously only `stage-mock`
+  did), and `stage-vendor` now forwards `SKIP_PACKAGES` too. Without this, a
+  `MOCK_CHROOT` override resolved a different `target` on those stages than on
+  `stage-mock`/`full-cycle`, splitting build-report.db rows across targets. Fixes
+  #BUG-0019.
+- Fixed: `stage-spec.py`'s vendor-tarball extraction (`generate_spec()`) no
+  longer assumes the vendor archive sits at `archives[1]`, no longer
+  substring-matches on `"vendor"` (now requires an exact `-vendor.tar.gz`
+  suffix), and is no longer cargo-only -- it now scans `source.archives` for
+  any build system and extracts from the matched entry's actual `%{SOURCEn}`
+  index (skipping the inject if a package's own `prep` already references
+  that source itself, e.g. `aylurs-gtk-shell`'s `pushd cli` extraction). Fixes
+  the case that let a Go package with a two-source layout (`cliphist`)
+  silently get no extraction, on top of the existing reordering hazard. Fixes
+  #BUG-0029.
+- Fixed: `scripts/lib/vendor_golang.py` and `scripts/lib/vendor_rust.py` no
+  longer hand-roll their own `CMD_TIMEOUT` lookup, `TimeoutExpired` catch, and
+  log-append block around each subprocess call -- they now go through
+  `lib.subprocess_utils.run_cmd` (extended with a `cwd` parameter), the same
+  helper every other stage script already uses.
+
 ## 2026-08-18
 
 - Changed: groomed `docs/bugs.md`/`docs/todo.md` -- re-verified every entry against

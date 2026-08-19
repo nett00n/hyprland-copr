@@ -703,6 +703,48 @@ class TestSingleContainerTargets:
         assert "--skip-copr-poll" not in render_block
 
 
+class TestMockChrootForwarding:
+    """docs/bugs.md BUG-0019: stage-spec/stage-vendor/stage-srpm/stage-copr didn't
+    forward MOCK_CHROOT into the container (stage-mock did), so a MOCK_CHROOT
+    override resolved a different `target` on those stages than on stage-mock --
+    and stage-vendor separately dropped SKIP_PACKAGES even though it reads it via
+    prepare_stage(). Asserted via `make -n` dry-run text, same approach as
+    TestSingleContainerTargets above.
+    """
+
+    def _dry_run(self, *args: str) -> str:
+        result = subprocess.run(
+            ["make", "-n", *args],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        return result.stdout
+
+    @pytest.mark.parametrize(
+        "target,script",
+        [
+            ("stage-spec", "scripts/stage-spec.py"),
+            ("stage-vendor", "scripts/stage-vendor.py"),
+            ("stage-srpm", "scripts/stage-srpm.py"),
+            ("stage-copr", "scripts/stage-copr.py"),
+        ],
+    )
+    def test_forwards_mock_chroot_override(self, target, script):
+        extra = ["COPR_REPO=nett00n/hyprland"] if target == "stage-copr" else []
+        stdout = self._dry_run(target, "MOCK_CHROOT=fedora-rawhide-x86_64", *extra)
+        line = next(line for line in stdout.splitlines() if script in line)
+        assert "MOCK_CHROOT=fedora-rawhide-x86_64" in line
+
+    def test_stage_vendor_forwards_skip_packages(self):
+        stdout = self._dry_run("stage-vendor", "SKIP_PACKAGES=foo")
+        line = next(
+            line for line in stdout.splitlines() if "scripts/stage-vendor.py" in line
+        )
+        assert "SKIP_PACKAGES=foo" in line
+
+
 class TestMockCacheVolumes:
     """TODO-0014: mock's buildroot cache now persists across --rm containers via
     named volumes instead of being rebuilt from scratch on every run."""

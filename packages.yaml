@@ -1352,8 +1352,7 @@ cliphist:
     - go build -v -ldflags='-s -w' -o %{name} .
     install:
     - install -Dpm755 %{name} %{buildroot}%{_bindir}/%{name}
-    prep:
-    - tar xf %{SOURCE1}
+    prep: []
     system: golang
   build_requires:
   - golang
@@ -1648,7 +1647,6 @@ eww:
     install: []
     no_lto: false
     prep:
-    - tar xf %{SOURCE1}
     - cargo update -p time@0.3.34 --offline
     system: cargo
   build_requires:
@@ -1877,8 +1875,7 @@ satty:
     commands: []
     install: []
     no_lto: false
-    prep:
-    - tar xf %{SOURCE1}
+    prep: []
     system: cargo
   build_requires:
   - cargo
@@ -2034,8 +2031,7 @@ ironbar:
     commands: []
     install: []
     no_lto: false
-    prep:
-    - tar xf %{SOURCE1}
+    prep: []
     system: cargo
   build_requires:
   - cairo-gobject-devel

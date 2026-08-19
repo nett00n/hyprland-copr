@@ -92,6 +92,13 @@ class TestRunCmd:
         assert stdout == ""
         assert stderr == ""
 
+    def test_cwd(self, tmp_path):
+        """Should run the command in the given working directory."""
+        (tmp_path / "marker.txt").write_text("hi")
+        ok, stdout, stderr = run_cmd(["ls"], cwd=tmp_path)
+        assert ok is True
+        assert "marker.txt" in stdout
+
 
 class TestRunGit:
     """Test run_git function."""

@@ -10,6 +10,7 @@ import subprocess
 import tarfile
 from pathlib import Path
 
+from lib.subprocess_utils import run_cmd
 from lib.toolchain import rust_toolchain_skew
 from lib.vendor import VendorError, _log_fn
 
@@ -89,21 +90,11 @@ def generate(
     # so this stays self-healing as crates.io publishes further fixes.
     for spec in pkg_meta.get("build", {}).get("cargo_update", []):
         _log(f"running: cargo update -p {spec}")
-        result = subprocess.run(
-            ["cargo", "update", "-p", spec],
-            cwd=src_dir,
-            capture_output=True,
-            text=True,
+        ok, _, stderr = run_cmd(
+            ["cargo", "update", "-p", spec], log_path=log_path, cwd=src_dir
         )
-        if log_path:
-            with open(log_path, "a") as fh:
-                if result.stdout:
-                    fh.write(result.stdout)
-                if result.stderr:
-                    fh.write(result.stderr)
-                fh.write(f"[exit: {result.returncode}]\n\n")
-        if result.returncode != 0:
-            raise VendorError(f"cargo update -p {spec} failed: {result.stderr.strip()}")
+        if not ok:
+            raise VendorError(f"cargo update -p {spec} failed: {stderr.strip()}")
 
     vendor_dir = src_dir / "vendor"
     if vendor_dir.exists():
@@ -114,21 +105,11 @@ def generate(
         shutil.rmtree(cargo_config_dir)
 
     _log("running: cargo vendor vendor/")
-    result = subprocess.run(
-        ["cargo", "vendor", str(vendor_dir)],
-        cwd=src_dir,
-        capture_output=True,
-        text=True,
+    ok, _, stderr = run_cmd(
+        ["cargo", "vendor", str(vendor_dir)], log_path=log_path, cwd=src_dir
     )
-    if log_path:
-        with open(log_path, "a") as fh:
-            if result.stdout:
-                fh.write(result.stdout)
-            if result.stderr:
-                fh.write(result.stderr)
-            fh.write(f"[exit: {result.returncode}]\n\n")
-    if result.returncode != 0:
-        raise VendorError(f"cargo vendor failed: {result.stderr.strip()}")
+    if not ok:
+        raise VendorError(f"cargo vendor failed: {stderr.strip()}")
 
     if not vendor_dir.exists():
         raise VendorError("cargo vendor produced no vendor/ directory")

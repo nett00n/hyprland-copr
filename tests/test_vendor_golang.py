@@ -302,3 +302,77 @@ class TestToolchainSkewIntegration:
                 (src_dir / "vendor").mkdir()
                 generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
         mock_skew.assert_not_called()
+
+
+class TestTimeout:
+    """docs/bugs.md BUG-0024: `go mod vendor` ran with no timeout at all, so a
+    hung invocation blocked update-daily indefinitely. It now goes through
+    lib.subprocess_utils.run_cmd, which reads CMD_TIMEOUT (default 3600s) and
+    turns a timeout into an (ok=False, ...) result instead of letting
+    subprocess.TimeoutExpired propagate uncaught; generate() wraps that into a
+    VendorError.
+    """
+
+    @patch("lib.vendor_golang.subprocess.run")
+    def test_timeout_raises_vendor_error(self, mock_run, tmp_path):
+        version_result = MagicMock()
+        version_result.returncode = 0
+        mock_run.side_effect = [
+            version_result,
+            subprocess.TimeoutExpired(cmd=["go", "mod", "vendor"], timeout=3600),
+        ]
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "go.mod").write_text("module test")
+
+        with pytest.raises(VendorError, match="go mod vendor failed.*timed out after 3600s"):
+            generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+    @patch("lib.vendor_golang.shutil.rmtree")
+    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.vendor_golang.tarfile.open")
+    def test_default_timeout(
+        self, mock_tar, mock_run, mock_rmtree, tmp_path, monkeypatch
+    ):
+        monkeypatch.delenv("CMD_TIMEOUT", raising=False)
+        version_result = MagicMock()
+        version_result.returncode = 0
+        vendor_result = MagicMock()
+        vendor_result.returncode = 0
+        vendor_result.stdout = ""
+        vendor_result.stderr = ""
+        mock_run.side_effect = [version_result, vendor_result]
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "go.mod").write_text("module test")
+        (src_dir / "vendor").mkdir()
+
+        generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+        assert mock_run.call_args_list[1][1]["timeout"] == 3600
+
+    @patch("lib.vendor_golang.shutil.rmtree")
+    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.vendor_golang.tarfile.open")
+    def test_respects_cmd_timeout_env(
+        self, mock_tar, mock_run, mock_rmtree, tmp_path, monkeypatch
+    ):
+        monkeypatch.setenv("CMD_TIMEOUT", "120")
+        version_result = MagicMock()
+        version_result.returncode = 0
+        vendor_result = MagicMock()
+        vendor_result.returncode = 0
+        vendor_result.stdout = ""
+        vendor_result.stderr = ""
+        mock_run.side_effect = [version_result, vendor_result]
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "go.mod").write_text("module test")
+        (src_dir / "vendor").mkdir()
+
+        generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
+
+        assert mock_run.call_args_list[1][1]["timeout"] == 120
