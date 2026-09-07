@@ -4,7 +4,7 @@
 
 Name:           hyprland-plugins
 Version:        0.56.0^20260905git722f15a
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
@@ -67,6 +67,6 @@ Commit:            722f15a77768eab13f01f5e5dce024bd2f61f270
 %{_prefix}/lib/libhypr*.so
 
 %changelog
-* Sat Sep 05 2026 nett00n <copr@nett00n.org> - 0.56.0^20260905git722f15a-2
+* Sat Sep 05 2026 nett00n <copr@nett00n.org> - 0.56.0^20260905git722f15a-3
 
 - hyprbars: chase hyprland (#702)
