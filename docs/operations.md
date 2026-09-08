@@ -212,7 +212,7 @@ as it's produced:
 
 ```shell
 make db-usage              # disk usage by package × target
-make db-prune               # dry-run: what would be removed (keeps newest per package/target/kind)
+make db-prune               # dry-run: what would be removed (keeps highest version per package/target/kind, mtime breaks ties or covers unversioned rows)
 make db-prune CONFIRM=1     # actually delete
 ```
 

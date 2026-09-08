@@ -3,7 +3,7 @@
 Cleanup, complexity, and unbuilt features. Automation behaving wrong today goes in
 `docs/bugs.md` instead. Entries are deleted when done (the fix gets a
 `docs/CHANGELOG.md` bullet); IDs are never reused or renumbered, so deletions leave
-gaps. Next free ID: **TODO-0087**.
+gaps. Next free ID: **TODO-0090**.
 
 Each entry ends with a `[P#/D#]` marker:
 
@@ -60,12 +60,28 @@ upserts instead of full-file rewrites, and an `artifacts` table tracks disk usag
   needed for on-disk corruption within a target). `artifacts` table
   (`lib/build_db.py:58-69`) has no `sha256` column today; hashing every RPM on every
   run has a real I/O cost, so this needs an mtime/size guard [P2/D3]
-- #TODO-0019 see docs/bugs.md BUG-0017 (`db-prune` is newest-by-mtime only, no real
-  NVR comparison) [P2/D2]
 - #TODO-0020 `db-shell`/`db-usage`/`db-prune` only resolve correctly inside the
   container (artifact paths are container-absolute); no host-side fallback. Can only
   ever be partial: the `rpmbuild-volume` realm lives in a podman named volume with no
   host path at all, so a fix covers the repo and vendor-store realms only [P3/D3]
+- #TODO-0087 `stage_results.reason` (`lib/build_db.py:39`, populated by
+  `lib.pipeline.cache_miss_reason()`) only ever holds the *current* run's
+  explanation for why a stage ran/cached -- the table's `(package, stage,
+  target)` primary key means the next run's `set_stage()`/`finalize_stage()`
+  overwrites it in place, same root cause as TODO-0015. `lib/build_db.py`'s
+  own module docstring already flags "append-only attempt history" as a
+  follow-up. Concrete cost: reconstructing why run N rebuilt a given package
+  requires reading `reason` before run N+1 starts, or falling back to
+  filesystem evidence (artifact mtimes, log files) once it's gone -- done by
+  hand this way investigating why run 64 rebuilt 19 packages
+  (`artifact-missing`) plus one dependency cascade, since run 63's per-package
+  reasons were already overwritten by the time it was asked about. Fits
+  naturally as a small db addition: an append-only `stage_history` table (or
+  similar) written alongside the existing upsert, keyed by
+  `(package, stage, target, run_id)`, holding at least `state`/`reason`/
+  `version`/`completed_at` -- `run_id` already threads through every
+  `set_stage()`/`finalize_stage()` call site, so no caller-side plumbing
+  needed beyond the extra insert [P2/D2]
 - #TODO-0077 when package B depends on A and `is_cached("mock", B, ...)` returns
   true, nothing verifies A's RPM still exists in `local-repo/<target>/` --
   `is_cached()` (`lib/pipeline.py:100-127`) only checks B's own artifact via
@@ -185,6 +201,37 @@ else is still fedora+x86_64-only:
 
 ## Scripts
 
+- #TODO-0089 Ctrl+C is handled inconsistently across the scripts. Confirmed by hand: the
+  long-running orchestration scripts already catch it cleanly --
+  `full-cycle.py:851-853`, `stage-mock.py:441`, `stage-copr.py:306`, `stage-srpm.py:225`,
+  `stage-vendor.py:231`, `stage-spec.py:321`, `stage-validate.py:173`,
+  `refresh-checksums.py:120`, `pkg-build-pop.py:54` and `serve.py:138` all wrap
+  `main()` in `except KeyboardInterrupt: print(...); sys.exit(130)`. And the
+  Makefile layer around them propagates a SIGINT correctly too: the
+  `PIPELINE_LOCK_FILE` flock (`Makefile:151-153`) is scoped to the holding
+  fd, so it releases itself the instant the shell exits, no manual cleanup
+  needed; and `_full-cycle-matrix`'s per-chroot loop (`Makefile` `for v in
+  $(MATRIX_ORDERED_VERSIONS) ... || { overall=1; ... }`) does NOT swallow a
+  Ctrl+C into "chroot marked failed, loop continues" as the `||` shape might
+  suggest -- verified with a standalone repro (`sleep 5 || { ...}` in a
+  three-iteration loop, SIGINT sent to the whole process group mid-sleep):
+  bash re-raises SIGINT on itself and the whole non-interactive script dies
+  outright, `||` notwithstanding, so the remaining matrix chroots are never
+  attempted after an interrupt. What's missing: 16 other top-level scripts
+  have no `KeyboardInterrupt` handler at all -- `db-artifacts.py`,
+  `delete-package.py`, `format-yaml.py`, `gather-requires.py`,
+  `gen-readme-shell.py`, `gen-report.py`, `gen-spec.py`, `list-tags.py`,
+  `pkg-log-analysis.py`, `rpm-dir-prefixes-convert.py`, `scaffold-package.py`,
+  `set-package-release.py`, `sort-yaml-lists.py`, `stage-show-plan.py`,
+  `update-versions.py`, `validate-packages.py`. Ctrl+C still stops them (default
+  Python behavior), but as a raw traceback and exit code 1, not the clean
+  message + exit(130) the rest of the pipeline gives. Most of these are short
+  and low-stakes, but `update-versions.py` is the one that actually matters:
+  it's the first stage of every `make update-daily` run and serially fetches
+  45+ submodules over the network (TODO-0068/-0075), so it's the
+  longest-lived script most likely to be interrupted mid-run. Fix: add the
+  same `except KeyboardInterrupt: sys.exit(130)` wrapper used everywhere
+  else, at minimum to `update-versions.py` [P3/D1]
 - #TODO-0078 `scripts/validate-packages.py` (the `make pre-commit` gate) has no check
   that `docs/bugs.md`/`docs/todo.md` are internally consistent -- specifically, that
   no `#BUG-NNNN`/`#TODO-NNNN` ID is declared twice within a file (the exact class of
@@ -401,6 +448,20 @@ Deliberately deferred, not designed here:
   `full-cycle.py:88-110`'s `preflight_autoheal()` both already init missing
   submodules unconditionally. Remaining substance is only that `git tag -v`
   verification itself isn't implemented [P3/D3]
+- #TODO-0088 build logs are only ever kept for the most recent run: `get_package_log_dir()`
+  (`lib/paths.py:42-44`) resolves to a flat `logs/build/<pkg>/` with no run identifier, and
+  `update-daily` rmtrees that tree before each night's run (BUG-0041's ordering fix
+  runs `make stage-log-analyze` first specifically so this rmtree doesn't eat the
+  logs before they're read once) -- so a failure from two nights ago is simply gone,
+  there is nothing to diff a flaky failure across runs with, and (per TODO-0074) an
+  f43 and f44 build of the same package already overwrite each other's logs today
+  since there's no distro/version segment either. Wanted: nest under both a run
+  identifier and the target chroot, e.g. `logs/<run_id>/<distro>-<version>/<package>/`,
+  so `make update-daily`'s nightly summary (TODO-0066) can link back to the exact
+  per-run, per-os-version log instead of whatever happens to be on disk right now.
+  Needs a retention/prune policy alongside it (unbounded per-run dirs will otherwise
+  grow logs/ forever) and should land together with TODO-0074's distro/version
+  restructure rather than doing the path layout twice [P2/D3]
 - #TODO-0074 mock's three logs (`build.log`/`root.log`/`state.log`) still copy out of
   the `/var/lib/mock` podman-volume resultdir after the fact
   (`stage-mock.py:184-190`'s `copy_mock_results()`) instead of being bind-mounted, so

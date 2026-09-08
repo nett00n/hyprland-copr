@@ -16,9 +16,12 @@ Usage:
 
 import argparse
 import shutil
+from functools import cmp_to_key
 from pathlib import Path
+from typing import Any
 
 from lib import build_db
+from lib.version import compare_evr
 
 # Artifacts that accumulate one-per-build and are safe to prune down to the
 # latest. Logs are deliberately excluded -- `make clean-logs` / --reset is
@@ -67,14 +70,31 @@ def usage_report() -> None:
         print(f"\n{missing} artifact row(s): file missing on disk")
 
 
+_EvrKey = cmp_to_key(compare_evr)
+
+
+def _prune_key(row: dict) -> tuple[Any, int]:
+    """Sort key for prune(): highest RPM version-release wins, mtime breaks
+    ties (and is the whole comparison for unversioned rows, since compare_evr
+    treats None/empty as equal to any other None/empty).
+    """
+    return (_EvrKey(row.get("version")), row.get("mtime") or 0)
+
+
 def prune(confirm: bool) -> None:
-    """Keep only the most recently recorded artifact per (package, target,
+    """Keep only the highest-version recorded artifact per (package, target,
     kind) among prunable kinds (srpm, rpm, vendor); delete the rest.
 
-    "Most recent" is by recorded mtime, matching find_srpm()'s own
-    newest-by-mtime convention elsewhere in the pipeline -- not a real NVR
-    comparison (see docs/bugs.md for the existing mtime-vs-NVR caveat this
-    inherits).
+    "Highest version" compares the recorded artifacts.version column (the
+    version-release-dist label lib.version.nvr() wrote) via
+    lib.version.compare_evr() -- a real RPM version comparison, not
+    wall-clock order, so a rebuild that lands on disk later but is an older
+    version (a pin rollback, a corrected pinned-version) doesn't get kept
+    over a genuinely newer one (docs/CHANGELOG.md 2026-09-08, closes the
+    former docs/bugs.md BUG-0017). Recorded mtime is only the tiebreaker,
+    for equal or unversioned rows -- find_srpm() (`stage-srpm.py`) still
+    picks its build input by mtime alone, a separate, smaller-blast-radius
+    gap.
 
     Dry-run by default (confirm=False): prints what would be removed.
     """
@@ -89,8 +109,8 @@ def prune(confirm: bool) -> None:
     for entries in by_key.values():
         if len(entries) < 2:
             continue
-        entries.sort(key=lambda r: r.get("mtime") or 0)
-        for stale in entries[:-1]:  # newest (highest mtime) is last, kept
+        entries.sort(key=_prune_key)
+        for stale in entries[:-1]:  # highest version (then mtime) is last, kept
             size = stale.get("size_bytes") or 0
             action = "removing" if confirm else "would remove"
             print(f"  {action}: {stale['path']} ({_human_size(size)})")
@@ -156,7 +176,7 @@ def main() -> None:
     parser.add_argument(
         "--prune",
         action="store_true",
-        help="Remove all but the newest artifact per (package, target, kind)",
+        help="Remove all but the highest-version artifact per (package, target, kind)",
     )
     parser.add_argument(
         "--confirm",

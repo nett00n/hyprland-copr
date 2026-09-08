@@ -14,6 +14,13 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-09-08
 
+- Fixed: `make db-prune` now keeps the highest RPM version-release per
+  (package, target, kind) instead of the file with the latest mtime (new
+  `lib.version.rpmvercmp`/`compare_evr`) -- a rebuild that produced an older
+  version (a pin rollback, a corrected `pinned-version`) used to get a later
+  wall-clock mtime and `--prune --confirm` deleted the newer artifact and
+  kept the older one, silently and irreversibly. Mtime is now only the
+  tiebreaker for equal or unversioned rows (docs/bugs.md BUG-0017).
 - Fixed: `make stage-show-plan` (and the plan preview `full-cycle.py` prints
   before every run) now predicts dependency cascades correctly instead of
   showing a dependent package as `cache` when its dependency is about to

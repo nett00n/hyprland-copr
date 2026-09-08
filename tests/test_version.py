@@ -16,6 +16,8 @@ from lib.version import (
     recorded_version,
     versions_for,
     rpm_version_from_tag,
+    rpmvercmp,
+    compare_evr,
 )
 
 
@@ -274,3 +276,80 @@ class TestVersionsFor:
         packages = {"pkg1": {"version": "1.0.0"}, "pkg2": {"version": "2.0.0"}}
         stages = {"spec": {"pkg1": {"version": "1.0.0-1.fc43"}}}
         assert versions_for(packages, stages) == {"pkg1": "1.0.0", "pkg2": "2.0.0"}
+
+
+class TestRpmVerCmp:
+    """Test rpmvercmp against the canonical rpm vercmp vectors, docs/bugs.md BUG-0017."""
+
+    def test_equal(self):
+        assert rpmvercmp("1.0", "1.0") == 0
+
+    def test_simple_numeric(self):
+        assert rpmvercmp("1.0", "1.1") < 0
+        assert rpmvercmp("1.1", "1.0") > 0
+
+    def test_numeric_compares_by_value_not_length(self):
+        """1.05 == 1.5 numerically -- leading zeros are stripped before compare."""
+        assert rpmvercmp("1.05", "1.5") == 0
+
+    def test_longer_numeric_run_wins_on_tie(self):
+        assert rpmvercmp("1.0", "1.0.1") < 0
+
+    def test_extra_trailing_segment_always_wins(self):
+        """A string that is a true prefix of the other loses, regardless of
+        whether the remaining segment is alpha or numeric -- rpm's real rule
+        (e.g. rpm's own test vectors: "2.0.1a" > "2.0.1", "6.0.rc1" > "6.0")."""
+        assert rpmvercmp("1.0", "1.0a") < 0
+        assert rpmvercmp("1.0a", "1.0") > 0
+        assert rpmvercmp("2.0.1", "2.0.1a") < 0
+
+    def test_alpha_run_compared_lexically(self):
+        assert rpmvercmp("1.a", "1.b") < 0
+
+    def test_mixed_alpha_numeric_boundary(self):
+        assert rpmvercmp("1.a", "1a") == 0
+
+    def test_numeric_beats_alpha_at_same_segment(self):
+        """When both sides still have content but one's segment is numeric
+        and the other's is alpha at the same position, numeric wins --
+        distinct from the trailing-segment rule above (both strings still
+        have content left)."""
+        assert rpmvercmp("1.5", "1.a5") > 0
+        assert rpmvercmp("1.a5", "1.5") < 0
+
+    def test_tilde_sorts_below_everything(self):
+        """~ marks a pre-release; it sorts below even the empty/missing segment."""
+        assert rpmvercmp("1.0~rc1", "1.0") < 0
+        assert rpmvercmp("1.0~rc1", "1.0~rc2") < 0
+
+    def test_caret_sorts_above_missing_segment(self):
+        """^ marks a post-release snapshot suffix (this repo's commit versions,
+        e.g. "1.2.3^20240101gitabc1234") -- the opposite of ~."""
+        assert rpmvercmp("1.0^20240101git", "1.0") > 0
+
+
+class TestCompareEvr:
+    """Test compare_evr against real version-release labels this repo writes
+    via lib.version.nvr() into build-report.db's artifacts.version column."""
+
+    def test_release_bump_within_same_version(self):
+        assert compare_evr("0.14.2-1.fc44", "0.14.2-2.fc44") < 0
+
+    def test_version_bump_beats_release(self):
+        assert compare_evr("0.14.2-2.fc44", "0.15.0-1.fc44") < 0
+
+    def test_trailing_zero_component(self):
+        assert compare_evr("1.9-1.fc44", "1.9.0-1.fc44") < 0
+
+    def test_commit_version_vs_plain_version(self):
+        """A latest-commit release_type's version string embeds a caret snapshot
+        suffix (lib.version.COMMIT_VERSION_RELEASE_TYPES) -- still comparable."""
+        assert compare_evr("0.56.0-1.fc44", "0.56.0^20260730git8668a53-1.fc44") < 0
+
+    def test_none_sorts_lowest(self):
+        assert compare_evr(None, "1.0.0-1.fc44") < 0
+        assert compare_evr("1.0.0-1.fc44", None) > 0
+        assert compare_evr(None, None) == 0
+
+    def test_empty_string_sorts_lowest(self):
+        assert compare_evr("", "1.0.0-1.fc44") < 0

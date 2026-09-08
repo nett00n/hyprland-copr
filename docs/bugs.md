@@ -31,12 +31,6 @@ difficulty. Move an entry into a real section below once it has all three.
   case-insensitive lowercase map -- a differently-cased `depends_on` entry fails
   pre-commit but passes build validation [P2/D3]
 
-- #BUG-0017 `db-artifacts.py --prune` keeps the newest artifact per (package, target,
-  kind) by recorded mtime (`db-artifacts.py:92-93`), not a real NVR comparison (same
-  limitation `stage-srpm.py:find_srpm` already has, `stage-srpm.py:55-59`) -> a
-  rebuild that produces an older version could be kept over a newer one if it happens
-  to be written later in wall-clock time [P2/D2]
-
 - #BUG-0018 local mock used to only ever build one `FEDORA_VERSION`/chroot, but a
   `COPR_REPO` project builds every chroot configured on Copr (fedora-43/44/rawhide
   x86_64/aarch64, 6 total for `nett00n/hyprland`) -> a build that passes local mock

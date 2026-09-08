@@ -31,13 +31,22 @@ def build_db_path(tmp_path, monkeypatch):
     build_db.close()
 
 
-def _artifact(tmp_path, name: str, package: str, kind: str, size: int, mtime: float, target: str = TARGET) -> None:
+def _artifact(
+    tmp_path,
+    name: str,
+    package: str,
+    kind: str,
+    size: int,
+    mtime: float,
+    target: str = TARGET,
+    version: str | None = None,
+) -> None:
     f = tmp_path / name
     f.write_bytes(b"x" * size)
     import os
 
     os.utime(f, (mtime, mtime))
-    build_db.record_artifact(str(f), "repo", kind, package, target, None)
+    build_db.record_artifact(str(f), "repo", kind, package, target, version)
 
 
 class TestUsageReport:
@@ -142,6 +151,33 @@ class TestPrune:
         db_artifacts.prune(confirm=False)
 
         assert "Nothing to prune." in capsys.readouterr().out
+
+    def test_higher_version_kept_even_with_older_mtime(self, tmp_path):
+        """docs/bugs.md BUG-0017: a rebuild that produces an older version but
+        lands on disk with a *later* mtime (a pin rollback, a corrected
+        pinned-version) must not get kept over the genuinely newer version."""
+        newer = tmp_path / "a-2.rpm"
+        older = tmp_path / "a-1.rpm"
+        _artifact(tmp_path, "a-2.rpm", "a", "rpm", 100, mtime=1, version="0.14.2-2.fc44")
+        _artifact(tmp_path, "a-1.rpm", "a", "rpm", 100, mtime=2, version="0.14.2-1.fc44")
+
+        db_artifacts.prune(confirm=True)
+
+        assert newer.exists()
+        assert not older.exists()
+
+    def test_unversioned_rows_fall_back_to_mtime(self, tmp_path):
+        """Rows with no recorded version (version=None) compare equal on the
+        version key, so mtime remains the tiebreaker."""
+        older = tmp_path / "a-1.rpm"
+        newer = tmp_path / "a-2.rpm"
+        _artifact(tmp_path, "a-1.rpm", "a", "rpm", 100, mtime=1)
+        _artifact(tmp_path, "a-2.rpm", "a", "rpm", 100, mtime=2)
+
+        db_artifacts.prune(confirm=True)
+
+        assert newer.exists()
+        assert not older.exists()
 
     def test_vendor_store_entry_removes_whole_directory(self, tmp_path):
         """A vendor-store row's path is the tarball inside a <pkg>/<hash>/

@@ -155,6 +155,117 @@ def recorded_version(entries: list[dict | None], meta: dict) -> str:
     return clean_version(str(declared)) if declared else "-"
 
 
+_VERCMP_SEGMENT_RE = re.compile(r"(\d+)|([A-Za-z]+)")
+
+
+def rpmvercmp(a: str, b: str) -> int:
+    """Compare two RPM Version (or Release) strings, rpm's own algorithm.
+
+    Walks both strings left to right, skipping runs of characters that are
+    neither alphanumeric nor `~`/`^` (rpm treats any such run as an
+    equivalent separator), and compares one alternating alpha/numeric
+    segment at a time: numeric segments compare as integers (so "05" ==
+    "5") and always outrank an alpha segment at the same position; alpha
+    segments compare byte-for-byte. `~` sorts below everything, including a
+    missing segment (rpm's pre-release marker, e.g. "1.0~rc1" < "1.0"); `^`
+    sorts above a missing segment (this repo's commit-snapshot suffix, e.g.
+    "1.2.3^20240101gitabc1234" > "1.2.3" -- see COMMIT_VERSION_RELEASE_TYPES).
+    Whichever string still has a segment left after the other is exhausted
+    wins, unless that segment is itself `~` (loses) or `^` (wins).
+
+    Returns negative/zero/positive like `cmp()`, for use as a `functools.
+    cmp_to_key` comparator.
+    """
+    i = j = 0
+    while i < len(a) or j < len(b):
+        # Skip separator runs (anything not alphanumeric/~/^) on both sides.
+        while i < len(a) and not (a[i].isalnum() or a[i] in "~^"):
+            i += 1
+        while j < len(b) and not (b[j].isalnum() or b[j] in "~^"):
+            j += 1
+
+        if i < len(a) and a[i] == "~":
+            if j >= len(b) or b[j] != "~":
+                return -1
+            i += 1
+            j += 1
+            continue
+        if j < len(b) and b[j] == "~":
+            return 1
+
+        if i < len(a) and a[i] == "^":
+            if j >= len(b):
+                return 1
+            if b[j] != "^":
+                return 1
+            i += 1
+            j += 1
+            continue
+        if j < len(b) and b[j] == "^":
+            return -1
+
+        if i >= len(a) or j >= len(b):
+            break
+
+        m_a = _VERCMP_SEGMENT_RE.match(a, i)
+        m_b = _VERCMP_SEGMENT_RE.match(b, j)
+        # a[i]/b[j] are known alnum here (separators/~/^ handled above), so
+        # the digit-or-alpha regex always matches.
+        assert m_a is not None
+        assert m_b is not None
+        seg_a = m_a.group(0)
+        seg_b = m_b.group(0)
+        a_numeric = m_a.group(1) is not None
+        b_numeric = m_b.group(1) is not None
+
+        if a_numeric != b_numeric:
+            return 1 if a_numeric else -1
+        if a_numeric:
+            na, nb = int(seg_a), int(seg_b)
+            if na != nb:
+                return -1 if na < nb else 1
+        elif seg_a != seg_b:
+            return -1 if seg_a < seg_b else 1
+
+        i = m_a.end()
+        j = m_b.end()
+
+    len_a, len_b = len(a) - i, len(b) - j
+    if len_a == len_b == 0:
+        return 0
+    return -1 if len_a < len_b else (1 if len_a > len_b else 0)
+
+
+def compare_evr(a: str | None, b: str | None) -> int:
+    """Compare two "version-release" (or "version-release.dist") labels, the
+    shape lib.version.nvr() writes into build-report.db's artifacts.version
+    column (e.g. "0.14.2-2.fc44"). Splits each on its last "-" into
+    version/release and compares version first, then release, both via
+    rpmvercmp -- same precedence as RPM's own EVR comparison (epoch is
+    always absent/equal here, so it's skipped).
+
+    None/empty sorts lower than any real label, so an unversioned artifacts
+    row never wins a comparison against a versioned one; two Nones/empties
+    compare equal.
+    """
+    if not a and not b:
+        return 0
+    if not a:
+        return -1
+    if not b:
+        return 1
+    ver_a, sep_a, rel_a = a.rpartition("-")
+    ver_b, sep_b, rel_b = b.rpartition("-")
+    if not sep_a:
+        ver_a, rel_a = a, ""
+    if not sep_b:
+        ver_b, rel_b = b, ""
+    result = rpmvercmp(ver_a, ver_b)
+    if result != 0:
+        return result
+    return rpmvercmp(rel_a, rel_b)
+
+
 def versions_for(packages: dict, stages: dict) -> dict[str, str]:
     """Map package name -> display version, for every package in `packages`.
 
