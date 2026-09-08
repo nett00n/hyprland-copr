@@ -320,8 +320,11 @@ BUG-0018) → `validate-packages` again (no `fmt`) → regenerate docs → push 
 `FEDORA_VERSION` roughly triples build time in exchange for catching a chroot-specific
 failure (e.g. a newer libstdc++ requirement) before it ever reaches Copr, rather than only
 after (docs/bugs.md BUG-0018; this tradeoff was TODO-0065). A failing chroot doesn't stop
-the rest of the matrix (each chroot is a real `matrix-chroot-<version>` target, run via
-`make -k`) -- Copr submission still runs afterward for whatever built cleanly, gated per
+the rest of the matrix (each chroot is a real `matrix-chroot-<version>` target, run from a
+plain shell loop in `_full-cycle-matrix` -- previously `make -k` plus an order-only
+prerequisite, which silently skipped every non-canonical chroot whenever the canonical one
+had any package failure; see docs/bugs.md BUG-0053, fixed) -- Copr submission still runs
+afterward for whatever built cleanly, gated per
 package as described above. `full-cycle-matrix`'s own nonzero exit in that case doesn't
 abort `update-daily`: `_update-daily`'s recipe runs it as
 `$(MAKE) full-cycle-matrix || touch logs/.update-daily-failed`, so docs still regenerate and

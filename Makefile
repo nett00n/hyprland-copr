@@ -558,36 +558,34 @@ _full-cycle: check-image check-venv setup-volumes
 		/work/.venv/bin/python3 scripts/full-cycle.py,Full cycle completed,Full cycle failed)
 
 MATRIX_VERSIONS ?= $(SUPPORTED)
-MATRIX_CHROOT_TARGETS := $(addprefix matrix-chroot-,$(MATRIX_VERSIONS))
-# Deliberately NOT declared .PHONY: doing so (even correctly, via this expanded
-# list rather than the unmatchable literal pattern "matrix-chroot-%") makes
-# GNU Make treat the target as already having an explicit rule and stop
-# searching for the matrix-chroot-% pattern rule below to supply a recipe --
-# reproduced in isolation, not a Makefile-specific bug. These targets never
-# correspond to a real file, so they already rebuild unconditionally without
-# .PHONY; it would only matter if a stray file literally named "matrix-chroot-N"
-# existed in the repo root.
-
 # The canonical chroot performs the release auto-increment (SKIP_RELEASE_BUMP,
 # docs/bugs.md BUG-0049) -- every other chroot in this run must build after
 # it, or it could cache its spec/SRPM against the pre-bump release and never
-# regenerate. Order-only (these are .PHONY convenience targets, not real
-# files with timestamps to protect) and only added when the canonical target
-# is actually part of this run's MATRIX_VERSIONS -- if a caller excludes it,
-# no release bump happens that run at all (docs/operations.md), so there is
-# nothing to race.
-ifneq ($(filter matrix-chroot-$(CANONICAL_FEDORA_VERSION),$(MATRIX_CHROOT_TARGETS)),)
-$(filter-out matrix-chroot-$(CANONICAL_FEDORA_VERSION),$(MATRIX_CHROOT_TARGETS)): | matrix-chroot-$(CANONICAL_FEDORA_VERSION)
-endif
+# regenerate. Enforced by building this list in order, NOT by a Make
+# prerequisite: an order-only prereq plus `make -k` silently SKIPS every
+# dependent chroot whenever the canonical one's recipe fails ("Target
+# 'matrix-chroot-44' not remade because of errors" -- documented -k
+# behaviour), which starved fedora-44 and fedora-45 of every nightly run for
+# as long as one package failed on fedora-43 (docs/bugs.md BUG-0053).
+# $(filter) is a no-op when the caller's MATRIX_VERSIONS excludes the
+# canonical version -- no release bump happens that run at all then
+# (docs/operations.md), so there is nothing to order.
+MATRIX_ORDERED_VERSIONS := $(filter $(CANONICAL_FEDORA_VERSION),$(MATRIX_VERSIONS)) \
+                           $(filter-out $(CANONICAL_FEDORA_VERSION),$(MATRIX_VERSIONS))
 
-matrix-chroot-%: ## Build one Fedora chroot of the matrix via full-cycle (internal target used by full-cycle-matrix -- not meant to be invoked directly)
+# Deliberately NOT declared .PHONY: doing so makes GNU Make treat the target
+# as already having an explicit rule and stop searching for this pattern rule
+# to supply a recipe -- reproduced in isolation, not a Makefile-specific bug.
+# These targets never correspond to a real file, so they already rebuild
+# unconditionally without .PHONY.
+matrix-chroot-%: ## Build one Fedora chroot via full-cycle. Normally driven by full-cycle-matrix's loop; safe to invoke by hand (e.g. `make matrix-chroot-45`) to backfill one chroot's coverage. Standalone, it does NOT run the canonical chroot first, so it never bumps releases unless % is the canonical version.
 	@echo $(HIGHLIGHT_PREFIX) "Fedora $*"
 	@if [ "$*" = "$(CANONICAL_FEDORA_VERSION)" ]; then bump=; else bump=true; fi; \
 	$(MAKE) full-cycle FEDORA_VERSION=$* PACKAGE=$(PACKAGE) SKIP_COPR=true \
 		SKIP_PACKAGES=$(SKIP_PACKAGES) FORCE_REBUILD=$(FORCE_REBUILD) \
 		SKIP_RELEASE_BUMP=$$bump
 
-full-cycle-matrix: ## Build every MATRIX_VERSIONS chroot locally (default: all SUPPORTED, x86_64 only; a failing chroot doesn't stop the rest -- see -k), then submit to Copr once for packages that built cleanly everywhere (PACKAGE, COPR_REPO, requires 'make container-build' first)
+full-cycle-matrix: ## Build every MATRIX_VERSIONS chroot locally (default: all SUPPORTED, x86_64 only; a failing chroot doesn't stop the rest), then submit to Copr once for packages that built cleanly everywhere (PACKAGE, COPR_REPO, requires 'make container-build' first)
 	@mkdir -p logs
 	@if [ "$(PIPELINE_LOCK_HELD)" = "1" ] || [ "$(LOCK_DISABLE)" = "1" ]; then \
 		$(MAKE) _full-cycle-matrix; \
@@ -604,16 +602,27 @@ full-cycle-matrix: ## Build every MATRIX_VERSIONS chroot locally (default: all S
 		PIPELINE_LOCK_HELD=1 $(MAKE) _full-cycle-matrix; \
 	fi
 
+# One chroot's failure must never prevent another chroot from being attempted
+# (docs/bugs.md BUG-0053) -- an explicit `|| overall=1` loop, not `make -k`,
+# because -k refuses to attempt any target ordered after a failed one.
+# stage-copr's own exit status is folded into `overall` too, so a failed
+# submission is no longer invisible to update-daily's
+# `|| touch logs/.update-daily-failed` gate (docs/bugs.md BUG-0050).
 _full-cycle-matrix:
-	@$(MAKE) -k $(MATRIX_CHROOT_TARGETS); \
-	matrix_status=$$?; \
+	@overall=0; failed_chroots=; \
+	for v in $(MATRIX_ORDERED_VERSIONS); do \
+		$(MAKE) matrix-chroot-$$v || { overall=1; failed_chroots="$$failed_chroots $$v"; }; \
+	done; \
+	if [ -n "$$failed_chroots" ]; then \
+		echo $(HIGHLIGHT_PREFIX) "✗ chroot(s) with build failures:$$failed_chroots (other chroots and Copr submission still ran)"; \
+	fi; \
 	if [ -n "$(COPR_REPO)" ]; then \
 		$(MAKE) stage-copr FEDORA_VERSION=$(FEDORA_VERSION) PACKAGE=$(PACKAGE) COPR_REPO=$(COPR_REPO) \
-			REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE); \
+			REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) || overall=1; \
 	else \
 		echo $(HIGHLIGHT_PREFIX) "COPR_REPO not set -- skipping Copr submission (local matrix build only)"; \
 	fi; \
-	exit $$matrix_status
+	exit $$overall
 
 update-daily: ## Update versions, validate+format packages.yaml, build (package failures reported but don't block docs/commit), generate docs, push to COPR (requires COPR_REPO), git commit (PUSH=1 to also git push)
 	@mkdir -p logs

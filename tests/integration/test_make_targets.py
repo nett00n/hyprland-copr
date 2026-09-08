@@ -810,14 +810,29 @@ class TestFullCycleMatrixTarget:
 
 
 class TestMatrixNoEarlyAbort:
-    """Coverage for the matrix's -k-compatible rework: a failing chroot must not
-    stop the rest of the matrix, nor skip Copr submission for packages that
-    built cleanly elsewhere. Confirmed for real (not just this dry-run text)
-    by running `make full-cycle-matrix PACKAGE=hyprutils MATRIX_VERSIONS="43 99
-    44" COPR_REPO=`: fedora-99 fails fast (unsupported FEDORA_VERSION), 43 and
-    44 both still complete, the "COPR_REPO not set" branch is still reached
-    afterward, and the overall exit code is nonzero -- exactly the shape
-    these dry-run assertions check without needing a container.
+    """Coverage for the matrix's failure-tolerant rework (docs/bugs.md
+    BUG-0053): a failing chroot must not stop the rest of the matrix, nor
+    skip Copr submission for packages that built cleanly elsewhere. `make -k`
+    plus an order-only prerequisite on the canonical chroot looked like it
+    gave this for free, but GNU Make's `-k` explicitly refuses to attempt a
+    goal whose (even order-only) prerequisite failed -- reproduced in
+    isolation and confirmed live: for as long as any package failed on the
+    canonical chroot, matrix-chroot-44/45 were silently never attempted at
+    all, night after night, blocking every package's Copr submission
+    regardless of relation to the actual failure. Fixed by replacing Make's
+    own scheduling with a plain shell loop (`for v in $(MATRIX_ORDERED_VERSIONS)`)
+    that always continues to the next chroot.
+
+    Confirmed for real (not just this dry-run text) by running `make
+    full-cycle-matrix PACKAGE=hyprutils CANONICAL_FEDORA_VERSION=99
+    MATRIX_VERSIONS="99 43 44" COPR_REPO=`: fedora-99 fails fast (unsupported
+    FEDORA_VERSION), 43 and 44 both still complete ("Full cycle completed"
+    for each, real `runs` rows recorded), the "COPR_REPO not set" branch is
+    still reached afterward, and the overall exit code is nonzero -- exactly
+    the shape these dry-run assertions check without needing a container. The
+    same command against the pre-fix Makefile reproduces the bug verbatim:
+    "Target 'matrix-chroot-43' not remade because of errors." / "Target
+    'matrix-chroot-44' not remade because of errors."
     """
 
     def test_loop_no_longer_contains_early_abort(self):
@@ -838,9 +853,10 @@ class TestMatrixNoEarlyAbort:
                 "SKIP_RELEASE_BUMP="
             ):
                 assert "|| exit 1" not in line
-        assert "make -k matrix-chroot-43 matrix-chroot-44; \\" in result.stdout
+        assert "for v in 43 44; do" in result.stdout
+        assert "overall=0; failed_chroots=" in result.stdout
 
-    def test_uses_make_dash_k_over_matrix_chroot_targets(self):
+    def test_loops_over_matrix_chroot_targets_without_dash_k(self):
         result = subprocess.run(
             ["make", "-n", "full-cycle-matrix", "MATRIX_VERSIONS=43 44", "COPR_REPO="],
             cwd=ROOT,
@@ -849,13 +865,20 @@ class TestMatrixNoEarlyAbort:
         )
 
         assert result.returncode == 0
-        assert "make -k matrix-chroot-43 matrix-chroot-44" in result.stdout
+        # `-k` refuses to attempt a goal whose (even order-only) prerequisite
+        # failed -- exactly the mechanism that starved fedora-44/45 (BUG-0053)
+        # -- so it must be gone entirely from the matrix loop.
+        assert "make -k" not in result.stdout
+        assert "make matrix-chroot-$v" in result.stdout
 
     def test_canonical_chroot_is_ordered_before_others_regardless_of_list_order(self):
         """The canonical chroot performs the release bump (BUG-0049), so every
         other chroot must build after it even if MATRIX_VERSIONS lists it
-        last -- an order-only prerequisite, not list order, must enforce
-        this."""
+        last -- MATRIX_ORDERED_VERSIONS ($(filter)/$(filter-out) on
+        CANONICAL_FEDORA_VERSION), not raw list order, must enforce this. This
+        replaced an order-only Make prerequisite that enforced the same
+        ordering but, combined with `make -k`, silently starved every
+        non-canonical chroot whenever the canonical one failed (BUG-0053)."""
         result = subprocess.run(
             [
                 "make",
@@ -891,11 +914,20 @@ class TestMatrixNoEarlyAbort:
         )
 
         assert result.returncode == 0
-        matrix_call_pos = result.stdout.index("make -k matrix-chroot-43")
-        status_capture_pos = result.stdout.index("matrix_status=$?")
+        matrix_call_pos = result.stdout.index("make matrix-chroot-$v")
+        status_capture_pos = result.stdout.index("overall=0; failed_chroots=")
         copr_call_pos = result.stdout.index("make stage-copr")
-        exit_pos = result.stdout.rindex("exit $matrix_status")
-        assert matrix_call_pos < status_capture_pos < copr_call_pos < exit_pos
+        exit_pos = result.stdout.rindex("exit $overall")
+        assert status_capture_pos < matrix_call_pos < copr_call_pos < exit_pos
+        # stage-copr's own exit status must now be folded into `overall` too
+        # (docs/bugs.md BUG-0050 -- it used to be silently discarded, so a
+        # failed Copr submission was invisible to update-daily's own gate).
+        copr_line = next(
+            line
+            for line in result.stdout.splitlines()
+            if "REQUIRE_CHROOT_COVERAGE=" in line and "make stage-copr" not in line
+        )
+        assert "|| overall=1" in copr_line
 
 
 class TestMatrixSkipsReleaseBumpOnNonCanonicalVersions:

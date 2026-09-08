@@ -152,7 +152,9 @@ else is still fedora+x86_64-only:
   `_PKGS` loop (`Makefile:123`, used by `sources` and `stage-log-analyze`) vs
   pass-PACKAGE-to-python (every `stage-*` target) -> pick one [P3/D1]
 - #TODO-0086 `full-cycle-matrix`'s `matrix-chroot-%` targets (`Makefile`) build every
-  chroot in `MATRIX_VERSIONS` serially via `$(MAKE) -k`, even though the chroots are
+  chroot in `MATRIX_VERSIONS` serially via a plain shell `for` loop in
+  `_full-cycle-matrix` (was `$(MAKE) -k` plus an order-only prerequisite until
+  docs/bugs.md BUG-0053's fix), even though the chroots are
   independent once the canonical one has run. `-j` isn't supported: the canonical
   chroot's release-bump step (`SKIP_RELEASE_BUMP`, BUG-0049) writes the shared
   `packages.yaml` while every other chroot's `full-cycle` call reads it, and the

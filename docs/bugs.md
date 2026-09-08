@@ -4,7 +4,7 @@ Automation behaving wrong today. Complexity/cleanup/features go in `docs/todo.md
 instead. GitHub issues are for reporter-facing items (someone else's bug/request);
 this file is the maintainer's own log and may cite issue numbers. Entries are deleted
 when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are never reused or
-renumbered, so deletions leave gaps. Next free ID: **BUG-0050**.
+renumbered, so deletions leave gaps. Next free ID: **BUG-0054**.
 
 Each entry ends with a `[P#/D#]` marker:
 
@@ -145,10 +145,19 @@ difficulty. Move an entry into a real section below once it has all three.
 ## update-daily
 
 `make update-daily` (Makefile) chains update-versions -> validate-packages+fmt ->
-refresh-checksums -> full-cycle -> validate-packages -> readme+copr-description ->
+refresh-checksums -> full-cycle-matrix -> validate-packages -> readme+copr-description ->
 stage-log-analyze -> git commit -> optional push, and is documented
 (docs/operations.md) as the unattended nightly job. Audited end to end 2026-08,
-re-verified 2026-08-18, revalidation step added 2026-08-29 (BUG-0044):
+re-verified 2026-08-18, revalidation step added 2026-08-29 (BUG-0044). `full-cycle`
+was replaced by `full-cycle-matrix` in ce1d02de (2026-09-08, "run full matrix build
+before pushing to copr") -- see BUG-0051 below for a defect still open, found
+while investigating why three consecutive 2026-09-07/08 runs (commits d303dced,
+f7363082) pushed nothing to Copr despite `update-daily` reporting success and
+committing normally. The actual root cause of that incident (BUG-0053: `make -k`
+plus an order-only prerequisite silently skipped every non-canonical chroot
+whenever the canonical one had any package failure) and BUG-0050 (`stage-copr`'s
+exit code being discarded, found in the same investigation) are both fixed --
+see docs/CHANGELOG.md's 2026-09-08 section:
 
 - #BUG-0039 any package resubmitted tonight is published as `unknown`; only unchanged
   (cached) packages keep showing yesterday's resolved state (as of 2026-08-18,
@@ -157,6 +166,31 @@ re-verified 2026-08-18, revalidation step added 2026-08-29 (BUG-0044):
   never sets `SYNCHRONOUS_COPR_BUILD`, though it is read at `stage-copr.py:184` and
   `full-cycle.py:153`), and `readme`+`copr-description` run seconds later -- the
   publish step is simply one poll too early for whatever was just resubmitted [P2/D3]
+
+- #BUG-0051 `ineligible_packages()`/`chroot_coverage()` (`lib/copr.py:189-327`) treat
+  "no locally-verified mock build yet for this Copr chroot" as a per-package skip,
+  not a run failure -- by design, so that one straggling package/chroot combo doesn't
+  block everyone else's submission. But when a chroot has **zero** packages verified
+  on it yet (a brand-new `SUPPORTED_FEDORA_VERSIONS` entry on its first night, or --
+  as actually happened on 2026-09-07/08, see docs/CHANGELOG.md's 2026-09-08 entry
+  fixing #BUG-0053 -- an existing chroot that a Makefile scheduling bug had kept
+  from ever completing a matrix pass), every single package is "not verified on:
+  <that chroot>" simultaneously, so `ineligible_packages()` blocks 100% of the run --
+  and because none of those are a `run_for_package()` *failure* (they never attempt
+  submission, they're filtered out before the loop, `stage-copr.py:245-258`),
+  `failed` stays `False` and the script still exits 0, silently. BUG-0053's fix
+  means a chroot now gets a fair attempt every night regardless of what else fails,
+  so this can no longer wedge *permanently* -- but the first night any new chroot
+  is added, or after any gap, still goes in cold with zero coverage and zero signal
+  that that's what's blocking everything. Still needs: (a) `stage-copr.py`/
+  `print_chroot_coverage()` should make an all-or-nearly-all-ineligible run loud
+  (non-zero exit, or at least an unmissable summary line) even without
+  `REQUIRE_CHROOT_COVERAGE=true`, since that flag currently only fires on the
+  local-matrix-build-time check, not this one; (b) onboarding a new
+  `SUPPORTED_FEDORA_VERSIONS` entry needs a documented "run `make
+  matrix-chroot-<N>` locally at least once before the next nightly" step
+  (docs/operations.md doesn't mention this) so coverage exists before the gate is
+  live [P2/D2]
 
 ## Packaging metadata
 
@@ -172,6 +206,26 @@ re-verified 2026-08-18, revalidation step added 2026-08-29 (BUG-0044):
   rest of the file [P3/D2]
 
 ## Container / Makefile
+
+- #BUG-0052 `.env` (repo root, gitignored but present on this host) has `SKIP_COPR`
+  and `SYNCHRONOUS_COPR_BUILD` each assigned **twice** (`SKIP_COPR=true` at line 18
+  then `SKIP_COPR=false` at line 20; `SYNCHRONOUS_COPR_BUILD=true` duplicated
+  harmlessly at 17/19) -- found while investigating BUG-0050/BUG-0051, not itself
+  the cause of the 2026-09-08 zero-push incident (`full-cycle-matrix`'s
+  `matrix-chroot-%` recipe always passes `SKIP_COPR=true` as an explicit
+  command-line-style override to the recursive `$(MAKE) full-cycle`, which beats
+  any `-include .env` default regardless). Still a live footgun: Make's `-include
+  .env` (`Makefile:2`) parses `.env` as Makefile syntax where the *last*
+  assignment of a `=` variable wins, so any plain `make full-cycle` (not via the
+  matrix) run without an explicit `SKIP_COPR=` on its own command line silently
+  defaults to `SKIP_COPR=false` -- the opposite of what line 18's value suggests
+  at a glance -- and submits to Copr when the reader of line 18 alone would
+  expect it not to. Also stale in the same file: line 9's comment says "(42, 43,
+  44, or rawhide)" for `FEDORA_VERSION`, but `SUPPORTED`/`SUPPORTED_FEDORA_VERSIONS`
+  have been `43 44 45` since ce1d02de -- neither 42 nor rawhide is valid anymore.
+  Fix: de-duplicate `.env`, drop the `false`/second `true` lines, and refresh the
+  comment. Same class of bug likely worth a one-time `make`-level lint (warn on a
+  repeated key in `.env`) rather than just a manual fix [P3/D1]
 
 - #BUG-0006 `make container-enter` (`Makefile:452-456`) doesn't match
   `$(CONTAINER_RUN)` (`Makefile:98-108`): missing `--privileged`, missing the

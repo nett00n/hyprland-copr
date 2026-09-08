@@ -71,6 +71,36 @@ History before this file's introduction is not backfilled - see `git log`.
   the other chroots reading it, and the pipeline `flock` (BUG-0043) refuses
   a second concurrent `make` invocation by design regardless (docs/todo.md
   TODO-0086).
+- Fixed: the entry directly above was wrong about `make -k`. `-k` does *not*
+  let a target continue past a failed (even order-only) prerequisite -- it
+  explicitly refuses to attempt it ("`Target 'matrix-chroot-44' not remade
+  because of errors.`", documented GNU Make behaviour, reproduced in an
+  isolated sandbox). So for as long as the canonical chroot had any package
+  failure -- in practice, `hyprland-plugins` failing to compile against a
+  renamed Hyprland symbol (`CWindow::isFloating` -> `m_isFloating`), an
+  unrelated real upstream break -- `matrix-chroot-44`/`matrix-chroot-45` were
+  silently never attempted at all, three nights running (2026-09-07/08),
+  which meant *no chroot but the canonical one ever had real coverage*, which
+  meant `lib.copr.ineligible_packages()` (correctly) blocked every package
+  from Copr, including ones with no relation to the actual failure (verified:
+  `aquamarine` built cleanly on fedora-43 the same run, still held back with
+  `blocked: not verified on: fedora-45-x86_64`). Fixed for real this time by
+  replacing `make -k`/the order-only prerequisite with a plain shell loop in
+  `_full-cycle-matrix` (`for v in $(MATRIX_ORDERED_VERSIONS); do ... || {
+  overall=1; ...; }; done`, canonical-first ordering now via
+  `$(filter)`/`$(filter-out)` on `MATRIX_VERSIONS` rather than a Make
+  prerequisite) that always continues to the next chroot regardless of an
+  earlier one's failures. Bundled in the same edit: `stage-copr`'s own exit
+  status is now folded into the loop's overall result too, which it
+  previously wasn't (`stage-copr` failing outright -- bad credentials,
+  `REQUIRE_CHROOT_COVERAGE=true` abort, etc -- used to be invisible to
+  `update-daily`'s `|| touch logs/.update-daily-failed` gate as long as the
+  local matrix build itself came back clean). Verified: `make
+  full-cycle-matrix PACKAGE=hyprutils CANONICAL_FEDORA_VERSION=99
+  MATRIX_VERSIONS="99 43 44" COPR_REPO=` now runs 43 and 44 to completion
+  despite chroot 99 failing immediately -- the same command against the
+  pre-fix Makefile reproduces the original bug verbatim. Fixes #BUG-0053
+  (closes #BUG-0050).
 
 ## 2026-09-07
 
