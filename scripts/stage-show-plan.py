@@ -20,16 +20,11 @@ import os
 from lib import build_db
 from lib.cache import compute_input_hashes
 from lib.config import env_flag
-from lib.deps import effective_deps
+from lib.deps import effective_deps, ordered_packages
 from lib.paths import resolve_target
-from lib.pipeline import compute_forced_stages, is_cached
+from lib.pipeline import STAGE_ORDER, compute_forced_stages, is_cached
 from lib.version import VERSION_STAGE_PRECEDENCE, recorded_version
-from lib.yaml_utils import (
-    STAGES,
-    filter_packages,
-    get_packages,
-    skip_packages,
-)
+from lib.yaml_utils import STAGES, get_packages
 
 
 def show_plan(
@@ -62,9 +57,14 @@ def show_plan(
 
     # Load full package set (needed for compute_input_hashes to resolve deps)
     all_packages_full = get_packages()
-    # Apply filters for display
-    packages_to_show = filter_packages(all_packages_full, package)
-    packages_to_show = skip_packages(packages_to_show, skip_packages_arg)
+    # Apply filters for display, in the same topo-sorted, transitive-deps-expanded
+    # order the real run (full-cycle.py's prepare_packages()) uses -- required for
+    # would_rebuild below to predict a dependency cascade correctly (a dependent
+    # must be evaluated after its dependency's outcome is known). See docs/bugs.md,
+    # formerly BUG-0048.
+    packages_to_show, _dep_reason = ordered_packages(
+        all_packages_full, package, skip_packages_arg
+    )
 
     stages = STAGES if copr_repo else [s for s in STAGES if s != "copr"]
 
@@ -76,8 +76,20 @@ def show_plan(
     )
     print("  " + "-" * (30 + 14 + 10 * len(stages)))
 
+    # Accumulates across the loop, mirroring full-cycle.py's real-run
+    # rebuilt_packages: a dependent evaluated later in topo order sees every
+    # dependency that would_rebuild by then, so compute_forced_stages() can
+    # predict the cascade rule ("if any dependency was rebuilt this run, force
+    # all stages") instead of always seeing an empty set. See docs/bugs.md,
+    # formerly BUG-0048.
+    would_rebuild: set[str] = set()
+
     for pkg in packages_to_show:
         if build_db.get_stage(pkg, "validate", target) is None:
+            # No prior validate row -> first run for this package, which will
+            # certainly execute every stage. Must still count toward
+            # would_rebuild so dependents downstream in topo order cascade.
+            would_rebuild.add(pkg)
             continue
 
         meta = all_packages_full.get(pkg, {})
@@ -85,13 +97,15 @@ def show_plan(
         # Compute input hashes once per package (used across all stages)
         new_hashes = compute_input_hashes(pkg, meta, all_packages_full)
 
-        # Compute forced stages (note: during planning, no packages have been rebuilt yet)
+        # Compute forced stages, threading the accumulated would_rebuild set so a
+        # dependency rebuilt earlier in this same loop forces this package too.
         deps = effective_deps(pkg, meta, all_packages_full)
         forced_stages = compute_forced_stages(
-            pkg, deps, target, set(), force_all=pkg in force_packages
+            pkg, deps, target, would_rebuild, force_all=pkg in force_packages
         )
 
         row = []
+        pkg_would_rebuild = False
         for stage in stages:
             entry = build_db.get_stage(pkg, stage, target)
             entry_state = entry.get("state") if entry else None
@@ -101,12 +115,25 @@ def show_plan(
                 label = "skip"
             elif entry_state == "failed":
                 label = "retry"
+                if stage in STAGE_ORDER:
+                    pkg_would_rebuild = True
             elif is_cached(stage, pkg, target, new_hashes, forced_stages):
                 label = "cache"
             else:
                 label = "run"
+                # "validate" is excluded from STAGE_ORDER (lib.pipeline: "all
+                # stages except validate, which has no cache") -- it always
+                # shows "run" here (stage-validate.py has no caching, full-cycle.py
+                # never adds to rebuilt_packages for it), and must not count
+                # toward would_rebuild or every dependent would falsely cascade
+                # on every run, cached or not. See docs/bugs.md, formerly BUG-0048.
+                if stage in STAGE_ORDER:
+                    pkg_would_rebuild = True
 
             row.append(f"{label:<8}")
+
+        if pkg_would_rebuild:
+            would_rebuild.add(pkg)
 
         version = recorded_version(
             [build_db.get_stage(pkg, s, target) for s in VERSION_STAGE_PRECEDENCE],

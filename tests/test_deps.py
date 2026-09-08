@@ -12,6 +12,7 @@ from lib.deps import (
     declared_deps,
     effective_deps,
     build_dep_graph,
+    ordered_packages,
     reverse_graph,
     topological_sort,
     transitive_deps,
@@ -317,3 +318,78 @@ class TestTransitiveDeps:
         """Missing package returns empty (uses graph.get with default)."""
         graph = {"a": set()}
         assert transitive_deps("nonexistent", graph) == set()
+
+
+class TestOrderedPackages:
+    """Test ordered_packages() -- the shared build-order helper full-cycle.py's
+    prepare_packages() and stage-show-plan.py's show_plan() both call, so the
+    real run and the pre-flight plan always agree on order (docs/bugs.md,
+    formerly BUG-0048)."""
+
+    def test_topo_sorts_regardless_of_declared_order(self):
+        """Declared (dict) order is the opposite of the dependency direction;
+        result must still be dependency-first."""
+        packages = {
+            "b": {"depends_on": ["a"]},
+            "a": {},
+        }
+        result, dep_reason = ordered_packages(packages)
+        assert list(result) == ["a", "b"]
+        assert dep_reason == {}
+
+    def test_no_filter_returns_all_packages(self):
+        packages = {"a": {}, "b": {"depends_on": ["a"]}, "c": {}}
+        result, _ = ordered_packages(packages)
+        assert set(result) == {"a", "b", "c"}
+
+    def test_package_filter_expands_transitive_deps(self):
+        """PACKAGE=c pulls in b and a too (c depends on b depends on a),
+        re-sorted to preserve topological order; dep_reason attributes each
+        pulled-in dep to the requested package that needed it."""
+        packages = {
+            "a": {},
+            "b": {"depends_on": ["a"]},
+            "c": {"depends_on": ["b"]},
+            "d": {},
+        }
+        result, dep_reason = ordered_packages(packages, package_filter="c")
+        assert list(result) == ["a", "b", "c"]
+        assert dep_reason == {"a": "c", "b": "c"}
+
+    def test_package_filter_no_deps_needed(self):
+        """A requested package with no deps isn't added to dep_reason."""
+        packages = {"a": {}, "b": {}}
+        result, dep_reason = ordered_packages(packages, package_filter="a")
+        assert list(result) == ["a"]
+        assert dep_reason == {}
+
+    def test_skip_filter_removes_package(self):
+        packages = {"a": {}, "b": {"depends_on": ["a"]}, "c": {}}
+        result, _ = ordered_packages(packages, skip_filter="b")
+        assert set(result) == {"a", "c"}
+
+    def test_package_and_skip_combined(self):
+        packages = {
+            "a": {},
+            "b": {"depends_on": ["a"]},
+            "c": {"depends_on": ["a"]},
+        }
+        # Request b and c, but skip b before transitive expansion runs.
+        result, dep_reason = ordered_packages(
+            packages, package_filter="b,c", skip_filter="b"
+        )
+        assert list(result) == ["a", "c"]
+        assert dep_reason == {"a": "c"}
+
+    def test_unknown_package_filter_exits(self):
+        packages = {"a": {}}
+        with pytest.raises(SystemExit):
+            ordered_packages(packages, package_filter="nonexistent")
+
+    def test_cycle_exits_with_error(self):
+        packages = {
+            "a": {"depends_on": ["b"]},
+            "b": {"depends_on": ["a"]},
+        }
+        with pytest.raises(SystemExit):
+            ordered_packages(packages)

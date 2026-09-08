@@ -1,6 +1,9 @@
 """Dependency inference and topological sort for packages."""
 
+import sys
 from collections import deque
+
+from lib.yaml_utils import filter_packages, skip_packages
 
 
 def declared_deps(meta: dict) -> list[str]:
@@ -95,3 +98,50 @@ def transitive_deps(name: str, graph: dict[str, set[str]]) -> set[str]:
         visited.add(dep)
         stack.extend(graph.get(dep, set()) - visited)
     return visited
+
+
+def ordered_packages(
+    all_packages: dict, package_filter: str = "", skip_filter: str = ""
+) -> tuple[dict, dict[str, str]]:
+    """Topo-sort, filter, and (for a selective build) transitive-deps-expand packages.
+
+    Single source of truth for build order: `full-cycle.py`'s `prepare_packages()`
+    (the real run) and `stage-show-plan.py`'s `show_plan()` (the pre-flight preview)
+    both call this, so the plan and the real run always visit packages in the same
+    dependency-first order -- a cascade (e.g. a dependency's stage failing and
+    forcing every downstream stage) can only be predicted correctly if the
+    dependent is evaluated after its dependency (see docs/bugs.md, formerly
+    BUG-0048).
+
+    Always topo-sorts. If `package_filter` is set, also expands to include every
+    transitive dependency of each requested package (a selective build still needs
+    its deps available/cached), re-sorted to preserve topological order.
+
+    Returns (packages, dep_reason): `dep_reason` maps a dep-only package name (not
+    itself requested) to the requested package name that pulled it in -- empty
+    when `package_filter` is unset. Callers that don't need it (e.g. show_plan)
+    can ignore the second element.
+    """
+    graph = build_dep_graph(all_packages)
+    try:
+        order = topological_sort(graph)
+    except ValueError as e:
+        sys.exit(f"error: {e}")
+
+    sorted_packages = {k: all_packages[k] for k in order}
+    packages = filter_packages(sorted_packages, package_filter)
+    packages = skip_packages(packages, skip_filter)
+
+    dep_reason: dict[str, str] = {}
+    if package_filter:
+        expanded: dict = {}
+        for name in list(packages):
+            for dep in transitive_deps(name, graph):
+                if dep not in expanded:
+                    expanded[dep] = all_packages[dep]
+                    dep_reason[dep] = name
+            expanded[name] = all_packages[name]
+        # Re-sort the expanded set (preserve topological order)
+        packages = {k: expanded[k] for k in order if k in expanded}
+
+    return packages, dep_reason

@@ -56,39 +56,6 @@ difficulty. Move an entry into a real section below once it has all three.
   logs after the fact for `make stage-log-analyze`, which remains the only diagnostic
   for an aarch64-only failure [P2/D4]
 
-- #BUG-0048 `stage-show-plan.py` (`make stage-show-plan`, and the plan preview
-  `full-cycle.py` prints before running) mislabels a dependent package as `cache`
-  when its dependency is actually about to rebuild this run, so the printed plan
-  and the real run diverge. Concrete case 2026-08-29: `hyprutils`'s `srpm` stage
-  was `FAIL` (`source verify failed`) and retried; `hyprwire`/`hyprlang`, which
-  both `depends_on: [hyprutils]`, showed `mock: cache` in the plan but actually
-  rebuilt `mock` (and every other stage) once the real run reached them, because
-  `compute_forced_stages()`'s cascade rule (`lib/pipeline.py:87-89`: "if any
-  dependency was rebuilt this run, force all stages") fired for real but the
-  plan never predicted it.
-
-  Two compounding causes in `stage-show-plan.py`:
-  1. `show_plan()` (`:79`) iterates `filter_packages(all_packages_full, ...)`
-     directly -- `packages.yaml`'s declared order, alphabetical in practice --
-     not topologically sorted. `full-cycle.py`'s real run order comes from
-     `prepare_packages()` (`:189-204`), which topo-sorts via
-     `build_dep_graph()`/`topological_sort()` first, so `hyprutils` always
-     builds before `hyprwire`/`hyprlang`. Without that ordering a cascade
-     couldn't be predicted correctly even if computed, since a dependent would
-     be evaluated before its dependency's outcome is known.
-  2. `compute_forced_stages(pkg, deps, target, set(), ...)` (`:90-92`) passes a
-     literal fresh `set()` for `rebuilt_packages` on every package,
-     independently -- never accumulated across the loop, unlike the real run's
-     one growing `rebuilt_packages` set threaded through `full-cycle.py`'s loop
-     (`:323`, `.add(pkg)` at `:368` etc). The `:88` comment ("during planning,
-     no packages have been rebuilt yet") describes this as a given, not
-     something planned around.
-
-  Fix needs both: topo-sort `packages_to_show` the same way `prepare_packages()`
-  does, and thread a `would_rebuild: set[str]` through the loop (mirroring
-  `rebuilt_packages`), adding `pkg` to it whenever any of its stages label
-  `run`/`retry` [P2/D2]
-
 ## Docs / templates
 
 - #BUG-0030 `templates/_contributors.j2`'s `{% if c.github_user %}...{% endif %}` is a

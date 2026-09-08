@@ -47,12 +47,7 @@ from lib.copr import (
     preflight,
     print_chroot_coverage,
 )
-from lib.deps import (
-    build_dep_graph,
-    effective_deps,
-    topological_sort,
-    transitive_deps,
-)
+from lib.deps import effective_deps, ordered_packages
 from lib.gitmodules import ensure_initialized, parse_gitmodules
 from lib.log_analysis import report_mock_failures, report_copr_failures
 from lib.pipeline import (
@@ -77,9 +72,7 @@ from lib.version import VERSION_STAGE_PRECEDENCE, nvr, recorded_version, version
 from lib.yaml_utils import (
     STAGES,
     SUPPORTED_FEDORA_VERSIONS,
-    filter_packages,
     get_packages,
-    skip_packages,
     update_package_releases,
 )
 
@@ -200,35 +193,17 @@ def load_config() -> tuple[str, str, str, str, str, bool, bool, bool, bool, bool
 def prepare_packages(package_filter: str, skip_filter: str) -> dict:
     """Load, sort, filter, and expand packages with transitive dependencies.
 
-    Always applies topological sort to ensure correct build order.
+    Always applies topological sort to ensure correct build order (via
+    lib.deps.ordered_packages, shared with stage-show-plan.py's show_plan() so
+    the pre-flight plan and this real run always visit packages in the same
+    order -- see docs/bugs.md, formerly BUG-0048).
     For selective builds (PACKAGE=), also expands transitive dependencies.
     """
     all_packages = get_packages()
-
-    graph = build_dep_graph(all_packages)
-    try:
-        order = topological_sort(graph)
-    except ValueError as e:
-        sys.exit(f"error: {e}")
-
-    # Rebuild all_packages in topological order
-    sorted_packages = {k: all_packages[k] for k in order}
-    packages = filter_packages(sorted_packages, package_filter)
-    packages = skip_packages(packages, skip_filter)
+    packages, dep_reason = ordered_packages(all_packages, package_filter, skip_filter)
 
     if package_filter:
-        # Expand transitive deps for selective build
-        expanded: dict = {}
-        dep_reason: dict[str, str] = {}
-        for name in list(packages):
-            for dep in transitive_deps(name, graph):
-                if dep not in expanded:
-                    expanded[dep] = all_packages[dep]
-                    dep_reason[dep] = name
-            expanded[name] = all_packages[name]
         requested = {n.strip() for n in package_filter.split(",") if n.strip()}
-        # Re-sort the expanded set (preserve topological order)
-        packages = {k: expanded[k] for k in order if k in expanded}
         print(f"\nPackage build plan ({len(packages)} total):")
         name_w = max(len(p) for p in packages) + 2
         for pkg, meta in packages.items():

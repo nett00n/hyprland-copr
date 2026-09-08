@@ -14,6 +14,16 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-09-08
 
+- Fixed: `make stage-show-plan` (and the plan preview `full-cycle.py` prints
+  before every run) now predicts dependency cascades correctly instead of
+  showing a dependent package as `cache` when its dependency is about to
+  rebuild in the same run. Two causes fixed together: `show_plan()` now walks
+  packages in the same topologically-sorted, transitive-deps-expanded order
+  as the real run (new `lib.deps.ordered_packages()`, shared with
+  `full-cycle.py`'s `prepare_packages()`, which now delegates to it), and it
+  threads a `would_rebuild: set[str]` accumulator through the loop instead of
+  passing a fresh `set()` to `compute_forced_stages()` per package, mirroring
+  `full-cycle.py`'s own growing `rebuilt_packages` (docs/bugs.md BUG-0048).
 - Fixed: `stage-copr.py` now fails loud (non-zero exit, unmissable stderr
   summary) when a locally-buildable Copr chroot has zero verified/skipped
   packages -- a "blackout" chroot, new `lib.copr.blackout_chroots()` --

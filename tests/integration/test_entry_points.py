@@ -841,3 +841,186 @@ class TestStageShowPlan:
         assert "run" in lines["pkg-a"]
         assert "cache" in lines["pkg-b"]
         assert "OtherPkg" not in captured.out
+
+
+class TestStageShowPlanPredictsCascade:
+    """Tests that show_plan()'s prediction matches full-cycle.py's real cascade
+    (docs/bugs.md, formerly BUG-0048): a dependent package must show "run", not
+    "cache", when its dependency is about to rebuild in the same run. Requires
+    both fixes together -- topo-sorted iteration (so the dependency is evaluated
+    before its dependent) and a `would_rebuild` accumulator threaded through the
+    loop (so the dependent's compute_forced_stages() call actually sees it).
+    """
+
+    _FIXED_HASHES = {
+        "source_commit": "x",
+        "templates": "x",
+        "package_config": "x",
+        "dependencies": "x",
+        "patches": "x",
+        "content": "x",
+        "package_version": "1.0",
+    }
+
+    def _seed_validate(self, pkg_states: dict) -> None:
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        for pkg, state in pkg_states.items():
+            build_db.set_stage(pkg, "validate", TARGET, run_id, state or "unknown")
+
+    def _seed_cached_stage(self, tmp_path, pkg: str, stage: str) -> None:
+        """Seed a stage row that is_cached() will consider a hit: success state,
+        hashes matching _FIXED_HASHES, and (for vendor/srpm/mock) a real artifact
+        file recorded at the matching version -- see lib.pipeline.artifacts_present."""
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(pkg, stage, TARGET, run_id, "success", version="1.0")
+        build_db.finalize_stage(
+            pkg, stage, TARGET, started_at=1, hashes=self._FIXED_HASHES
+        )
+        kind = {"vendor": "vendor", "srpm": "srpm", "mock": "rpm"}.get(stage)
+        if kind is not None:
+            artifact = tmp_path / f"{pkg}-{stage}-artifact"
+            artifact.write_text("fake artifact")
+            build_db.record_artifact(
+                str(artifact), "repo", kind, pkg, TARGET, "1.0"
+            )
+
+    # Stages the plan table displays (STAGES minus copr, since show_plan() is
+    # called without copr_repo below) -- "validate" is always "run" by design
+    # (stage-validate.py has no cache concept, see full-cycle.py's "Validate
+    # (non-fatal, no caching)" comment), so cascade assertions below look only
+    # at the actually-cacheable stages that follow it.
+    _CACHEABLE_COLUMNS = ("spec", "vendor", "srpm", "mock")
+
+    def _row_for(self, captured_out: str, pkg: str) -> str:
+        for line in captured_out.splitlines():
+            parts = line.split()
+            if parts and parts[0] == pkg:
+                return line
+        raise AssertionError(f"no plan row for {pkg!r} in:\n{captured_out}")
+
+    def _cacheable_labels(self, captured_out: str, pkg: str) -> list[str]:
+        """Return this row's labels for _CACHEABLE_COLUMNS, in order (skips the
+        package name and the always-"run" validate column, and the trailing
+        version field)."""
+        parts = self._row_for(captured_out, pkg).split()
+        # parts: [pkg, validate, spec, vendor, srpm, mock, version]
+        return parts[2 : 2 + len(self._CACHEABLE_COLUMNS)]
+
+    def test_dependency_cascade_shown_as_run_not_cache(self, tmp_path, capsys):
+        """Recorded case (2026-08-29): hyprutils' srpm FAILs, and dependents
+        hyprwire/hyprlang showed 'cache' in the plan but actually rebuilt every
+        stage. Reproduced here with pkg-a (srpm failed) / pkg-b (depends_on
+        pkg-a, otherwise fully cached)."""
+        packages = {
+            "pkg-a": {"version": "1.0"},
+            "pkg-b": {"version": "1.0", "depends_on": ["pkg-a"]},
+        }
+        self._seed_validate({"pkg-a": "success", "pkg-b": "success"})
+
+        # pkg-a's srpm stage failed -- this is what should cascade.
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg-a", "srpm", TARGET, run_id, "failed")
+
+        # pkg-b would otherwise be fully cached on every stage.
+        for stage in ("spec", "vendor", "srpm", "mock"):
+            self._seed_cached_stage(tmp_path, "pkg-b", stage)
+
+        with (
+            patch.object(stage_show_plan, "get_packages") as mock_get,
+            patch.object(
+                stage_show_plan,
+                "compute_input_hashes",
+                return_value=self._FIXED_HASHES,
+            ),
+        ):
+            mock_get.return_value = packages
+            stage_show_plan.show_plan(target=TARGET)
+
+        captured = capsys.readouterr()
+        labels = self._cacheable_labels(captured.out, "pkg-b")
+        assert labels == ["run"] * 4, (
+            f"pkg-b should show 'run' on every stage once its dependency "
+            f"(pkg-a) rebuilds this run, not 'cache': {labels}"
+        )
+
+    def test_no_cascade_when_dependency_fully_cached(self, tmp_path, capsys):
+        """Control case: when the dependency is itself fully cached, the
+        dependent's stages stay 'cache' too -- the fix must not over-cascade."""
+        packages = {
+            "pkg-a": {"version": "1.0"},
+            "pkg-b": {"version": "1.0", "depends_on": ["pkg-a"]},
+        }
+        self._seed_validate({"pkg-a": "success", "pkg-b": "success"})
+
+        for pkg in ("pkg-a", "pkg-b"):
+            for stage in ("spec", "vendor", "srpm", "mock"):
+                self._seed_cached_stage(tmp_path, pkg, stage)
+
+        with (
+            patch.object(stage_show_plan, "get_packages") as mock_get,
+            patch.object(
+                stage_show_plan,
+                "compute_input_hashes",
+                return_value=self._FIXED_HASHES,
+            ),
+        ):
+            mock_get.return_value = packages
+            stage_show_plan.show_plan(target=TARGET)
+
+        captured = capsys.readouterr()
+        assert self._cacheable_labels(captured.out, "pkg-a") == ["cache"] * 4
+        assert self._cacheable_labels(captured.out, "pkg-b") == ["cache"] * 4
+
+    def test_skipped_dependency_does_not_cascade(self, tmp_path, capsys):
+        """A dependency whose stages are all 'skipped' (e.g. not-applicable
+        vendor, formerly BUG-0045) must not force its dependent -- only an
+        actual rebuild (run/retry) should cascade."""
+        packages = {
+            "pkg-a": {"version": "1.0"},
+            "pkg-b": {"version": "1.0", "depends_on": ["pkg-a"]},
+        }
+        self._seed_validate({"pkg-a": "success", "pkg-b": "success"})
+
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        for stage in ("spec", "vendor", "srpm", "mock"):
+            build_db.set_stage("pkg-a", stage, TARGET, run_id, "skipped")
+
+        for stage in ("spec", "vendor", "srpm", "mock"):
+            self._seed_cached_stage(tmp_path, "pkg-b", stage)
+
+        with (
+            patch.object(stage_show_plan, "get_packages") as mock_get,
+            patch.object(
+                stage_show_plan,
+                "compute_input_hashes",
+                return_value=self._FIXED_HASHES,
+            ),
+        ):
+            mock_get.return_value = packages
+            stage_show_plan.show_plan(target=TARGET)
+
+        captured = capsys.readouterr()
+        labels = self._cacheable_labels(captured.out, "pkg-b")
+        assert labels == ["cache"] * 4, (
+            f"pkg-b should not cascade off a 'skip'-only dependency: {labels}"
+        )
+
+    def test_packages_shown_in_topological_order(self, capsys):
+        """Plan rows must be dependency-first, matching full-cycle.py's real run
+        order -- otherwise a cascade can't be predicted even once computed,
+        since the dependent would be evaluated before the dependency's outcome
+        is known. packages.yaml's declared order here is deliberately the
+        opposite of the dependency direction (pkg-b, the dependent, listed
+        first)."""
+        packages = {
+            "pkg-b": {"version": "1.0", "depends_on": ["pkg-a"]},
+            "pkg-a": {"version": "1.0"},
+        }
+        self._seed_validate({"pkg-a": "success", "pkg-b": "success"})
+
+        with patch.object(stage_show_plan, "get_packages") as mock_get:
+            mock_get.return_value = packages
+            stage_show_plan.show_plan(target=TARGET)
+
+        captured = capsys.readouterr()
+        assert captured.out.index("pkg-a") < captured.out.index("pkg-b")
