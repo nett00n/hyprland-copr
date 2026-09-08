@@ -41,6 +41,6 @@ install -Dm755 target/release/%{name} %{buildroot}%{_bindir}/%{name}
 %{_bindir}/%{name}
 
 %changelog
-* Mon Sep 07 2026 nett00n <copr@nett00n.org> - 2.8.1-11
+* Tue Sep 08 2026 nett00n <copr@nett00n.org> - 2.8.1-11
 
 - Update to 2.8.1

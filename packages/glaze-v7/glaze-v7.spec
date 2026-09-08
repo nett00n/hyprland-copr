@@ -59,6 +59,6 @@ Development files for glaze-v7.
 %{_includedir}/glaze-v7/
 
 %changelog
-* Mon Sep 07 2026 nett00n <copr@nett00n.org> - 7.9.1-9
+* Tue Sep 08 2026 nett00n <copr@nett00n.org> - 7.9.1-9
 
 - Update to 7.9.1

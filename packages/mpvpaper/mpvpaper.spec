@@ -56,6 +56,6 @@ Development files for mpvpaper.
 %files devel
 
 %changelog
-* Mon Sep 07 2026 nett00n <copr@nett00n.org> - 1.9-7
+* Tue Sep 08 2026 nett00n <copr@nett00n.org> - 1.9-7
 
 - Update to 1.9

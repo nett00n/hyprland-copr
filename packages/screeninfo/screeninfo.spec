@@ -42,6 +42,6 @@ Package info:
 %license LICENSE.md
 
 %changelog
-* Mon Sep 07 2026 nett00n <copr@nett00n.org> - 0.8.1-13
+* Tue Sep 08 2026 nett00n <copr@nett00n.org> - 0.8.1-13
 
 - Update to 0.8.1
