@@ -31,14 +31,6 @@ difficulty. Move an entry into a real section below once it has all three.
   case-insensitive lowercase map -- a differently-cased `depends_on` entry fails
   pre-commit but passes build validation [P2/D3]
 
-- #BUG-0016 individual `stage-*` Makefile targets (`stage-mock`, `stage-srpm`, etc.)
-  don't forward `PROCEED_BUILD` into the container's `env` the way `full-cycle` does
-  -> `make stage-mock PACKAGE=X PROCEED_BUILD=true` silently drops PROCEED_BUILD, so
-  `prepare_stage()` runs in its default (non-proceed) mode and clears that stage's
-  rows for the packages being built (scoped to PACKAGE since the sqlite migration, no
-  longer whole-stage) even though the operator explicitly tried to opt out of it
-  [P2/D1]
-
 - #BUG-0017 `db-artifacts.py --prune` keeps the newest artifact per (package, target,
   kind) by recorded mtime (`db-artifacts.py:92-93`), not a real NVR comparison (same
   limitation `stage-srpm.py:find_srpm` already has, `stage-srpm.py:55-59`) -> a

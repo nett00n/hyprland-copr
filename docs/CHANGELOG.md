@@ -14,6 +14,13 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-09-08
 
+- Fixed: the six standalone `stage-*` Makefile targets (`stage-validate`,
+  `stage-spec`, `stage-vendor`, `stage-srpm`, `stage-mock`, `stage-copr`) now
+  forward `PROCEED_BUILD` into the container's `env`, matching `_full-cycle`.
+  Previously `make stage-mock PACKAGE=X PROCEED_BUILD=true` silently ran in
+  non-proceed mode, and `lib.yaml_utils.prepare_stage()` cleared that stage's
+  `build-report.db` rows for the packages being built even though the
+  operator explicitly opted out of that (docs/bugs.md BUG-0016).
 - Changed: Copr submission is now gated per package instead of all-or-nothing.
   `lib.copr.ineligible_packages()` holds back any package not yet `verified`
   (or deliberately `skipped`) on every locally-buildable chroot -- the new

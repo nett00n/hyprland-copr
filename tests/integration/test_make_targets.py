@@ -1336,6 +1336,52 @@ class TestMockChrootForwarding:
         assert "SKIP_PACKAGES=foo" in line
 
 
+class TestProceedBuildForwarding:
+    """docs/bugs.md BUG-0016: the standalone stage-* targets never forwarded
+    PROCEED_BUILD into the container's env allowlist the way _full-cycle does
+    (Makefile:549) -- so `make stage-mock PACKAGE=X PROCEED_BUILD=true` ran in
+    non-proceed mode and lib.yaml_utils.prepare_stage() cleared the very rows
+    the operator opted out of clearing (docs/operations.md "Rules"). Asserted
+    via `make -n` dry-run text, same approach as TestMockChrootForwarding
+    above.
+    """
+
+    def _dry_run(self, *args: str) -> str:
+        result = subprocess.run(
+            ["make", "-n", *args],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        return result.stdout
+
+    @pytest.mark.parametrize(
+        "target,script",
+        [
+            ("stage-validate", "scripts/stage-validate.py"),
+            ("stage-spec", "scripts/stage-spec.py"),
+            ("stage-vendor", "scripts/stage-vendor.py"),
+            ("stage-srpm", "scripts/stage-srpm.py"),
+            ("stage-mock", "scripts/stage-mock.py"),
+            ("stage-copr", "scripts/stage-copr.py"),
+        ],
+    )
+    def test_forwards_proceed_build(self, target, script):
+        extra = ["COPR_REPO=nett00n/hyprland"] if target == "stage-copr" else []
+        stdout = self._dry_run(target, "PROCEED_BUILD=true", *extra)
+        line = next(line for line in stdout.splitlines() if script in line)
+        assert "PROCEED_BUILD=true" in line
+
+    def test_unset_proceed_build_is_not_truthy(self):
+        stdout = self._dry_run("stage-mock")
+        line = next(
+            line for line in stdout.splitlines() if "scripts/stage-mock.py" in line
+        )
+        assert "PROCEED_BUILD=true" not in line
+        assert "PROCEED_BUILD=" in line
+
+
 class TestMockCacheVolumes:
     """TODO-0014: mock's buildroot cache now persists across --rm containers via
     named volumes instead of being rebuilt from scratch on every run."""
