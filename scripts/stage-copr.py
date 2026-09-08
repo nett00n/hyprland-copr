@@ -30,6 +30,7 @@ from typing import Any
 from lib import build_db
 from lib.config import env_flag, setup_logging
 from lib.copr import (
+    blackout_chroots,
     block_transitive_dependents,
     fetch_failed_chroot_logs,
     ineligible_packages,
@@ -233,6 +234,7 @@ def main() -> None:
     blocked = block_transitive_dependents(sorted(ineligible), packages, all_packages)
 
     failed = False
+    submitted = 0
     for pkg, meta in packages.items():
         # Overrides no longer touch version/release (see docs/packaging.md
         # "Per-Fedora-version spec differences") -- only run_for_package needs
@@ -255,10 +257,42 @@ def main() -> None:
             build_db.set_stage(pkg, "copr", target, run_id, "skipped", reason=reason)
             continue
 
+        submitted += 1
         if not run_for_package(
             pkg, meta, fedora_version, copr_repo, proceed, target, run_id, synchronous
         ):
             failed = True
+
+    # A per-package hold-back (ineligible/blocked above) is normal and stays
+    # quiet -- that's the gate working as designed, including a run where
+    # every package happens to be held back for its own genuine reason (a
+    # real mock failure and its dependents, say). What must be loud is
+    # specifically a *blackout chroot* -- one with zero verified/skipped
+    # packages at all (docs/bugs.md BUG-0051: a brand-new
+    # SUPPORTED_FEDORA_VERSIONS entry, or a chroot whose matrix pass never
+    # completed) -- because that silently vetoes the entire run and gives no
+    # signal why. Gate on blackout_chroots(), not merely `submitted == 0`.
+    blackout = blackout_chroots(copr_repo, packages) if packages else []
+    if blackout and submitted == 0 and not env_flag("ALLOW_EMPTY_COPR_SUBMISSION"):
+        print(
+            "\nerror: every package was held back this run -- nothing was "
+            "submitted to Copr.",
+            file=sys.stderr,
+        )
+        print(
+            "  zero local coverage on: "
+            + ", ".join(blackout)
+            + " -- run `make matrix-chroot-<version>` to backfill before "
+            "the next nightly.",
+            file=sys.stderr,
+        )
+        print(
+            "  set ALLOW_EMPTY_COPR_SUBMISSION=true to allow a deliberate "
+            "nothing-to-submit run.",
+            file=sys.stderr,
+        )
+        build_db.finish_run(run_id, "failed")
+        sys.exit(1)
 
     build_db.finish_run(run_id, "failed" if failed else "ok")
     if failed:

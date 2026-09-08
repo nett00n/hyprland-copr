@@ -234,6 +234,50 @@ def _project_chroots(copr_repo: str) -> tuple[list[str], bool]:
     return sorted(f"fedora-{v}-{ARCH}" for v in SUPPORTED_FEDORA_VERSIONS), True
 
 
+def _coverage_by_chroot(
+    chroots: list[str], packages: dict
+) -> dict[str, dict[str, int]]:
+    """Tally each verdict (see chroot_coverage()) per chroot, across `packages`."""
+    by_chroot: dict[str, dict[str, int]] = {
+        chroot: {
+            COVERAGE_VERIFIED: 0,
+            COVERAGE_FAILED: 0,
+            COVERAGE_UNBUILT: 0,
+            COVERAGE_SKIPPED: 0,
+            COVERAGE_UNVERIFIABLE: 0,
+        }
+        for chroot in chroots
+    }
+    for pkg in packages:
+        verdicts = chroot_coverage(pkg, chroots)
+        for chroot, verdict in verdicts.items():
+            by_chroot[chroot][verdict] += 1
+    return by_chroot
+
+
+def blackout_chroots(copr_repo: str, packages: dict) -> list[str]:
+    """Return locally-buildable chroots with zero verified/skipped packages.
+
+    A chroot in this list will hold back *every* package in `packages` via
+    `ineligible_packages()` -- not one straggler, all of them. That's the
+    signal `stage-copr.py` uses to fail loud instead of silently submitting
+    nothing (see docs/bugs.md BUG-0051). A chroot outside `local_chroots()`
+    (aarch64, or unsupported here) never counts -- there's no local way to
+    close that gap, so it must never be treated as a blackout.
+    """
+    if not packages:
+        return []
+    chroots, _ = _project_chroots(copr_repo)
+    by_chroot = _coverage_by_chroot(chroots, packages)
+    return [
+        chroot
+        for chroot, counts in by_chroot.items()
+        if not counts[COVERAGE_UNVERIFIABLE]
+        and not counts[COVERAGE_VERIFIED]
+        and not counts[COVERAGE_SKIPPED]
+    ]
+
+
 def print_chroot_coverage(copr_repo: str, packages: dict) -> bool:
     """Print a per-chroot local-mock coverage table before a Copr submission.
 
@@ -259,22 +303,10 @@ def print_chroot_coverage(copr_repo: str, packages: dict) -> bool:
             "aarch64 chroots are not represented here)"
         )
 
-    by_chroot: dict[str, dict[str, int]] = {
-        chroot: {
-            COVERAGE_VERIFIED: 0,
-            COVERAGE_FAILED: 0,
-            COVERAGE_UNBUILT: 0,
-            COVERAGE_SKIPPED: 0,
-            COVERAGE_UNVERIFIABLE: 0,
-        }
-        for chroot in chroots
-    }
-    for pkg in packages:
-        verdicts = chroot_coverage(pkg, chroots)
-        for chroot, verdict in verdicts.items():
-            by_chroot[chroot][verdict] += 1
+    by_chroot = _coverage_by_chroot(chroots, packages)
 
     ok = True
+    blackout = False
     for chroot in chroots:
         counts = by_chroot[chroot]
         if counts[COVERAGE_UNVERIFIABLE]:
@@ -290,9 +322,22 @@ def print_chroot_coverage(copr_repo: str, packages: dict) -> bool:
             )
             if counts[COVERAGE_FAILED] or counts[COVERAGE_UNBUILT]:
                 ok = False
+            if (
+                packages
+                and not counts[COVERAGE_VERIFIED]
+                and not counts[COVERAGE_SKIPPED]
+            ):
+                note += " -- !! zero local coverage, every package will be held back"
+                blackout = True
         print(f"  {chroot}: {note}")
 
-    if not ok:
+    if blackout:
+        print(
+            "  -> at least one chroot has zero verified/skipped packages -- this "
+            "run will submit nothing on it. Run `make matrix-chroot-<version>` to "
+            "backfill coverage before the next nightly."
+        )
+    elif not ok:
         print(
             "  -> some chroots have no verified local mock build. "
             "Run `make full-cycle-matrix` to cover them before submitting, "

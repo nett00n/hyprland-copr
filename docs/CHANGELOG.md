@@ -14,6 +14,21 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-09-08
 
+- Fixed: `stage-copr.py` now fails loud (non-zero exit, unmissable stderr
+  summary) when a locally-buildable Copr chroot has zero verified/skipped
+  packages -- a "blackout" chroot, new `lib.copr.blackout_chroots()` --
+  because that silently holds back every package in the run. Previously
+  `ineligible_packages()`'s per-package gate filtered all of them out before
+  the submission loop and the script exited 0 with nothing submitted and no
+  signal why (docs/bugs.md BUG-0051, fixed -- the last open item from the
+  2026-09-07/08 zero-push incident, see BUG-0050/BUG-0053 above). The gate
+  fires only on a genuine coverage gap, not merely "everyone happened to be
+  held back this run" (e.g. a real mock failure and its dependents) --
+  `print_chroot_coverage()`'s table now also calls out a blackout chroot by
+  name. `ALLOW_EMPTY_COPR_SUBMISSION=true` opts out for a deliberate
+  nothing-to-submit run. `docs/operations.md` documents backfilling a new
+  `SUPPORTED_FEDORA_VERSIONS` entry with `make matrix-chroot-<N>` before its
+  first nightly, to avoid hitting this on a version's first night.
 - Fixed: the six standalone `stage-*` Makefile targets (`stage-validate`,
   `stage-spec`, `stage-vendor`, `stage-srpm`, `stage-mock`, `stage-copr`) now
   forward `PROCEED_BUILD` into the container's `env`, matching `_full-cycle`.

@@ -50,6 +50,16 @@ applies both to a plain `full-cycle` run and to standalone `make stage-copr` (th
 back a failed package's dependents, `stage-copr` did not. By default COPR builds are submitted
 with `--nowait` (async); `SYNCHRONOUS_COPR_BUILD=true` waits for completion instead.
 
+If a locally-buildable chroot has **zero** verified/skipped packages at all — a `blackout`
+chroot, `lib.copr.blackout_chroots()` — every package in the run gets held back at once, and
+`stage-copr` now fails loudly instead of silently exiting 0 with nothing submitted (docs/bugs.md
+BUG-0051, fixed): it prints which chroot(s) have no coverage and exits 1. This only fires when
+*every* package was held back and the cause is a genuine coverage gap — a run where every
+package happens to be held back for its own real reason (e.g. everyone's dependency actually
+failed mock) is the per-package gate working as intended and stays a normal (exit 0) run.
+`ALLOW_EMPTY_COPR_SUBMISSION=true` downgrades the blackout failure to a warning, for a
+deliberate "nothing to submit tonight" run.
+
 Before submitting, `full-cycle`/`stage-copr` also print a per-chroot local-mock coverage table
 (queried from the Copr project's actual chroot list): each chroot is `verified` (this package's
 local mock succeeded for it), `failed`, `unbuilt` (never tried locally), `skipped` (a deliberate
@@ -88,6 +98,15 @@ duplicate builds. That final submission is gated per package (see "`full-cycle` 
 only a package verified (or deliberately skipped) on every version in the matrix, and not a
 dependent of one that isn't, actually gets submitted. aarch64 chroots are still not covered by
 this (no cross-arch build path locally yet).
+
+#### Adding a new Fedora version
+
+When adding a new entry to `SUPPORTED_FEDORA_VERSIONS`, run `make matrix-chroot-<N>` (see
+`Makefile`'s `matrix-chroot-%` target — safe to invoke by hand, e.g. `make matrix-chroot-45`) at
+least once for it *before* the next `make update-daily`. A freshly-added version has zero local
+mock history, which `lib.copr.blackout_chroots()` scores as a blackout chroot: the very first
+nightly to see it would otherwise hold back every single package and fail loud (see the blackout
+paragraph in "`full-cycle` flags" above) instead of just that one chroot warming up gradually.
 
 Only the `CANONICAL_FEDORA_VERSION` chroot's `full-cycle` call runs the pre-build release
 auto-increment step -- every other chroot in the loop gets `SKIP_RELEASE_BUMP=true`, so a

@@ -20,6 +20,7 @@ from lib.copr import (
     COVERAGE_UNVERIFIABLE,
     COVERAGE_VERIFIED,
     TERMINAL_STATES,
+    blackout_chroots,
     check_copr_credentials,
     chroot_coverage,
     download_chroot_log,
@@ -594,6 +595,88 @@ class TestPrintChrootCoverage:
         from SUPPORTED_FEDORA_VERSIONS rather than reporting no coverage gap at all."""
         mock_chroots.return_value = []
         assert print_chroot_coverage("nett00n/hyprland", {"hyprutils": {}}) is False
+
+    @patch("lib.copr.get_project_chroots")
+    def test_zero_coverage_chroot_prints_blackout_line(self, mock_chroots, capsys):
+        """A locally-buildable chroot with no verified/skipped package must be
+        called out explicitly, not just folded into the generic '0 verified'
+        count -- this is the BUG-0051 case: every package will be held back."""
+        mock_chroots.return_value = ["fedora-44-x86_64"]
+        assert print_chroot_coverage("nett00n/hyprland", {"hyprutils": {}}) is False
+        out = capsys.readouterr().out
+        assert "zero local coverage" in out
+        assert "matrix-chroot-<version>" in out
+
+    @patch("lib.copr.get_project_chroots")
+    def test_aarch64_only_gap_has_no_blackout_line(self, mock_chroots, capsys):
+        """An unverifiable-only gap must not be reported as a blackout -- there's
+        no local way to close it, so it can't be actionable advice."""
+        mock_chroots.return_value = ["fedora-44-aarch64"]
+        assert print_chroot_coverage("nett00n/hyprland", {"hyprutils": {}}) is True
+        out = capsys.readouterr().out
+        assert "zero local coverage" not in out
+
+    @patch("lib.copr.get_project_chroots")
+    def test_partial_coverage_has_no_blackout_line(self, mock_chroots, capsys):
+        """One of two packages verified on a chroot is the per-package gate
+        working as designed, not a blackout -- must stay quiet (though the
+        generic "some chroots have no verified" advice still fires, since
+        hyprlang is unbuilt there)."""
+        mock_chroots.return_value = ["fedora-44-x86_64"]
+        run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "mock", "fedora-44-x86_64", run_id, "success")
+
+        assert (
+            print_chroot_coverage(
+                "nett00n/hyprland", {"hyprutils": {}, "hyprlang": {}}
+            )
+            is False
+        )
+        out = capsys.readouterr().out
+        assert "zero local coverage" not in out
+
+
+class TestBlackoutChroots:
+    """Tests for blackout_chroots() -- the chroots that would hold back every
+    package this run (docs/bugs.md BUG-0051)."""
+
+    @patch("lib.copr.get_project_chroots")
+    def test_zero_coverage_chroot_is_a_blackout(self, mock_chroots):
+        mock_chroots.return_value = ["fedora-44-x86_64"]
+        assert blackout_chroots("nett00n/hyprland", {"hyprutils": {}}) == [
+            "fedora-44-x86_64"
+        ]
+
+    @patch("lib.copr.get_project_chroots")
+    def test_verified_chroot_is_not_a_blackout(self, mock_chroots):
+        mock_chroots.return_value = ["fedora-44-x86_64"]
+        run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "mock", "fedora-44-x86_64", run_id, "success")
+
+        assert blackout_chroots("nett00n/hyprland", {"hyprutils": {}}) == []
+
+    @patch("lib.copr.get_project_chroots")
+    def test_aarch64_only_gap_is_not_a_blackout(self, mock_chroots):
+        """Unverifiable chroots can never be closed locally, so they must never
+        appear in the blackout list (that would make the gate un-satisfiable)."""
+        mock_chroots.return_value = ["fedora-44-aarch64"]
+        assert blackout_chroots("nett00n/hyprland", {"hyprutils": {}}) == []
+
+    @patch("lib.copr.get_project_chroots")
+    def test_partial_coverage_is_not_a_blackout(self, mock_chroots):
+        mock_chroots.return_value = ["fedora-44-x86_64"]
+        run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "mock", "fedora-44-x86_64", run_id, "success")
+
+        assert (
+            blackout_chroots("nett00n/hyprland", {"hyprutils": {}, "hyprlang": {}})
+            == []
+        )
+
+    @patch("lib.copr.get_project_chroots")
+    def test_no_packages_is_not_a_blackout(self, mock_chroots):
+        mock_chroots.return_value = ["fedora-44-x86_64"]
+        assert blackout_chroots("nett00n/hyprland", {}) == []
 
 
 class TestIneligiblePackages:

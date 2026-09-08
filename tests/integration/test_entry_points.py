@@ -576,12 +576,20 @@ class TestStageCoprMainGating:
     def test_ineligible_package_skipped_others_still_submitted(self, monkeypatch):
         """A package not yet verified on every locally-buildable chroot gets a
         skipped row naming the chroot, while an eligible, unrelated package
-        still submits -- the strict default this whole step adds."""
+        still submits -- the strict default this whole step adds.
+
+        Here both packages happen to be ineligible (empty build_db -> every
+        chroot UNBUILT), which is also a genuine BUG-0051 blackout (zero
+        verified/skipped packages on every chroot) -- ALLOW_EMPTY_COPR_SUBMISSION
+        opts out of that separate loud-failure path so this test can stay
+        focused on the per-package skip reason; see
+        TestStageCoprBlackoutGate below for the blackout path itself."""
         packages = {
             "hyprutils": {"version": "1.0", "release": 1, "depends_on": []},
             "Hyprland": {"version": "1.0", "release": 1, "depends_on": []},
         }
         build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
+        monkeypatch.setenv("ALLOW_EMPTY_COPR_SUBMISSION", "true")
 
         submitted = self._run_main(packages, monkeypatch)
 
@@ -605,6 +613,57 @@ class TestStageCoprMainGating:
         submitted = self._run_main(packages, monkeypatch)
 
         assert submitted == ["hyprutils"]
+
+
+class TestStageCoprBlackoutGate:
+    """docs/bugs.md BUG-0051: a chroot with zero verified/skipped packages
+    holds back the entire run silently unless main() fails loud. Exercises
+    main() itself (reusing TestStageCoprMainGating's harness) since the pure
+    helper (blackout_chroots()) is already covered in tests/test_copr.py."""
+
+    _run_main = TestStageCoprMainGating._run_main
+
+    def test_zero_coverage_run_exits_nonzero(self, monkeypatch):
+        """Empty build_db -> every chroot UNBUILT for every package -> a
+        genuine blackout, previously a silent exit 0 with nothing submitted."""
+        packages = {"hyprutils": {"version": "1.0", "release": 1, "depends_on": []}}
+        build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
+
+        with pytest.raises(SystemExit) as exc_info:
+            self._run_main(packages, monkeypatch)
+
+        assert exc_info.value.code == 1
+        run = build_db.get_stage("hyprutils", "copr", TARGET)
+        assert run["state"] == "skipped"
+
+    def test_allow_empty_copr_submission_downgrades_to_success(self, monkeypatch):
+        """The documented escape hatch for a deliberate nothing-to-submit run."""
+        packages = {"hyprutils": {"version": "1.0", "release": 1, "depends_on": []}}
+        build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
+        monkeypatch.setenv("ALLOW_EMPTY_COPR_SUBMISSION", "true")
+
+        submitted = self._run_main(packages, monkeypatch)
+
+        assert submitted == []
+
+    def test_real_failure_with_full_coverage_does_not_trigger_blackout_gate(
+        self, monkeypatch
+    ):
+        """Every package held back for its own genuine reason (a real mock
+        failure and its dependent) is the per-package gate working as
+        designed -- not a blackout -- and must not exit non-zero."""
+        packages = {
+            "hyprutils": {"version": "1.0", "release": 1, "depends_on": []},
+            "Hyprland": {"version": "1.0", "release": 1, "depends_on": ["hyprutils"]},
+        }
+        run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
+        for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+            build_db.set_stage("hyprutils", "mock", chroot, run_id, "failed")
+            build_db.set_stage("Hyprland", "mock", chroot, run_id, "success")
+
+        submitted = self._run_main(packages, monkeypatch)
+
+        assert submitted == []
 
 
 class TestStageShowPlan:
