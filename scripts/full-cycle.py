@@ -43,6 +43,7 @@ from lib.config import env_flag
 from lib.copr import (
     copr_blocked_packages,
     mock_failed_packages,
+    poll_copr_status,
     preflight,
     print_chroot_coverage,
 )
@@ -615,6 +616,13 @@ def run_build_pipeline(
                 file=sys.stderr,
             )
 
+    # Resolve any build left "unknown" (async submission, not yet terminal)
+    # from a prior run before deciding what to (re)submit below -- otherwise
+    # a build that has since finished on Copr's side would still read as
+    # "unknown" here and get treated as a cache miss (docs/bugs.md BUG-0002).
+    if not skip_copr and copr_repo:
+        poll_copr_status(target, list(packages))
+
     for pkg, meta in packages.items():
         pkg_ver = (
             nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
@@ -670,6 +678,24 @@ def run_build_pipeline(
         forced_stages = compute_forced_stages(
             pkg, deps, target, rebuilt_packages, force_all=pkg in force_packages
         )
+
+        # A build still genuinely in progress on Copr (state stayed "unknown"
+        # even after the poll_copr_status() call above) must not be
+        # resubmitted -- is_cached() can't tell "in progress" apart from
+        # "stuck", so that distinction is made here instead. Only applies
+        # when nothing forces a fresh submission (force_run, or a dependency
+        # rebuilt this run): those mean a new version is in play, so the old
+        # build_id no longer matters (docs/bugs.md BUG-0002).
+        if "copr" not in forced_stages:
+            prior_copr = build_db.get_stage(pkg, "copr", target)
+            if (
+                prior_copr
+                and prior_copr.get("state") == "unknown"
+                and prior_copr.get("build_id")
+            ):
+                event("copr", target, pkg, "skip", reason="in-progress", ver=pkg_ver)
+                build_db.update_reason(pkg, "copr", target, "in-progress")
+                continue
 
         if is_cached("copr", pkg, target, new_hashes, forced_stages):
             event("copr", target, pkg, "skip", reason="cached", ver=pkg_ver)

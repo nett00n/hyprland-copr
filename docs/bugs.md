@@ -22,20 +22,6 @@ difficulty. Move an entry into a real section below once it has all three.
 
 ## Copr / cache
 
-- #BUG-0002 make sure copr stage is run only if a rebuild is really required. If prior
-  status is `unknown`, it is currently treated the same as "no cache" and resubmitted
-  every night -- `lib/pipeline.py:125`'s `is_cached()` requires `state == "success"`,
-  so `unknown` always misses and `cache_miss_reason()` (`lib/pipeline.py:246-248`)
-  literally returns `"prior-unknown"` as the resubmit reason. BUG-0040 (fixed
-  2026-08-24, see CHANGELOG) was a precondition and is now closed: `unknown` no
-  longer gets permanently stuck there for `canceled`/`skipped`/`forked` builds.
-  What's left to verify: a build that is still genuinely non-terminal
-  (`running`/`pending`/etc, i.e. actually in progress on Copr) is also `unknown`
-  in build-report.db and would still be resubmitted nightly by this same
-  `is_cached()` check -- that's a live duplicate-submission risk, not just a
-  stuck-state one, and needs its own re-check now that BUG-0040 no longer masks
-  it [P1/D2]
-
 - #BUG-0012 `scripts/validate-packages.py` (the pre-commit gate) and
   `lib/validation.py` (used by `stage-validate`, the actual build) are two
   independent, already-diverged validators for packages.yaml/.gitmodules -> a package

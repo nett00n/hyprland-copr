@@ -201,6 +201,9 @@ def cache_miss_reason(
         - "prior-skipped" — prior state was "skipped"
         - "first-run" — no prior entry exists
         - "proceed-skip" — PROCEED_BUILD=true, prior state success (full-cycle.py)
+        - "in-progress" — copr stage only: prior submission is still "unknown"
+          (non-terminal) on Copr's side after polling, so it is left alone
+          instead of resubmitted (full-cycle.py, see docs/bugs.md BUG-0002)
         - "SKIP_MOCK" / "SKIP_COPR" — env var skip (full-cycle.py)
         - "config: skip" — fedora:<ver>: skip: true in packages.yaml (stage scripts)
         - "not-vendored" — vendor skipped, package is not Go/Rust (stage-vendor.py).

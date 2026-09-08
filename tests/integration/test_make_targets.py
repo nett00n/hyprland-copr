@@ -295,6 +295,7 @@ def _patched_pipeline(
                 full_cycle._stage["stage-copr"], "run_for_package", return_value=True
             )
         )
+        enter(patch.object(full_cycle, "poll_copr_status", return_value=False))
         enter(
             patch.object(full_cycle, "print_chroot_coverage", return_value=coverage_ok)
         )
@@ -510,6 +511,98 @@ class TestCoprGatedByMockFailure:
         copr_mock.assert_not_called()
         entry = build_db.get_stage("hyprutils", "copr", TARGET)
         assert entry["reason"] == "SKIP_COPR"
+
+
+class TestCoprInProgressNotResubmitted:
+    """Regression coverage for docs/bugs.md BUG-0002: a copr stage row still
+    "unknown" (async submission, non-terminal) must not be resubmitted on the
+    next run just because is_cached() can't treat "unknown" as a cache hit.
+    """
+
+    def _run(self, packages, mock_outcomes, is_cached_side_effect=None):
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+
+        def fake_mock_run_for_package(
+            pkg,
+            meta,
+            fedora_version,
+            target,
+            proceed,
+            mock_failed,
+            all_pkgs,
+            run_id_,
+            repo_dir,
+        ):
+            ok = mock_outcomes[pkg]
+            build_db.set_stage(
+                pkg, "mock", target, run_id_, "success" if ok else "failed"
+            )
+            mock_failed[pkg] = not ok
+            return ok
+
+        with (
+            patch.object(full_cycle, "get_packages", return_value=packages),
+            _patched_pipeline(
+                fake_mock_run_for_package, is_cached_side_effect=is_cached_side_effect
+            ) as (copr_mock, _),
+        ):
+            full_cycle.run_build_pipeline(
+                packages,
+                TARGET,
+                run_id,
+                fedora_version="44",
+                copr_repo="nett00n/hyprland",
+                proceed=False,
+            )
+
+        return run_id, copr_mock
+
+    def test_still_unknown_after_poll_is_not_resubmitted(self):
+        """A build left "unknown" (still non-terminal after poll_copr_status)
+        must be left alone, not treated as a cache miss and resubmitted."""
+        packages = {"hyprutils": {}}
+        seed_run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(
+            "hyprutils", "copr", TARGET, seed_run_id, "unknown", build_id=12345
+        )
+
+        # The harness's default is_cached_side_effect already says "not
+        # cached" for copr here (matches real is_cached() behavior for a
+        # non-"success" state) -- the in-progress short-circuit in
+        # run_build_pipeline must catch it before that cache-miss path runs.
+        run_id, copr_mock = self._run(packages, {"hyprutils": True})
+
+        copr_mock.assert_not_called()
+        entry = build_db.get_stage("hyprutils", "copr", TARGET)
+        assert entry["reason"] == "in-progress"
+        assert entry["state"] == "unknown"
+
+    def test_unknown_without_build_id_still_resubmitted(self):
+        """No build_id (e.g. submission itself never confirmed) means there's
+        nothing to poll/track -- must fall through to a normal resubmission,
+        not be treated as in-progress."""
+        packages = {"hyprutils": {}}
+        seed_run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("hyprutils", "copr", TARGET, seed_run_id, "unknown")
+
+        run_id, copr_mock = self._run(packages, {"hyprutils": True})
+
+        copr_mock.assert_called_once()
+
+    def test_forced_stage_resubmits_even_if_prior_unknown(self):
+        """A dependency-rebuild/force_run forcing the copr stage means a new
+        version is in play -- the old in-flight build_id no longer matters,
+        so this must still submit."""
+        packages = {"hyprutils": {}}
+        seed_run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(
+            "hyprutils", "copr", TARGET, seed_run_id, "unknown", build_id=12345
+        )
+
+        with patch.object(full_cycle, "compute_forced_stages", return_value={"copr"}):
+            run_id, copr_mock = self._run(packages, {"hyprutils": True})
+
+        copr_mock.assert_called_once()
 
 
 class TestResolveForcePackages:

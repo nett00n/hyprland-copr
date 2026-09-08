@@ -101,6 +101,16 @@ History before this file's introduction is not backfilled - see `git log`.
   despite chroot 99 failing immediately -- the same command against the
   pre-fix Makefile reproduces the original bug verbatim. Fixes #BUG-0053
   (closes #BUG-0050).
+- Fixed: a package whose Copr build is still genuinely in progress (state
+  `unknown`, non-terminal even after polling) is no longer resubmitted the
+  next `full-cycle` run just because `is_cached()` can't tell "in progress"
+  apart from "stuck". `run_build_pipeline()`'s copr pass now calls
+  `lib.copr.poll_copr_status()` once up front to resolve any build that has
+  since finished, then skips resubmission (reason `in-progress`) for any
+  package whose row is still `unknown` and has a `build_id` -- unless the
+  copr stage itself is forced (force_run, or a dependency rebuilt this run),
+  in which case a new version is in play and the old build_id no longer
+  applies. Fixes #BUG-0002.
 
 ## 2026-09-07
 
