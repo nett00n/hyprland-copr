@@ -258,6 +258,27 @@ class TestStageValidate:
 
         assert exc_info.value.code == 1
 
+    def test_main_exits_on_per_package_failure_alone(self, monkeypatch):
+        """Regression test for BUG-0054: a per-package validation error must
+        fail the run even when run_global_checks() finds nothing wrong --
+        previously main() discarded run_for_package()'s bool return in the
+        loop, so a package with errors was printed/recorded as `failed` but
+        never flipped the overall exit code."""
+        monkeypatch.delenv("PROCEED_BUILD", raising=False)
+        with (
+            patch.object(stage_validate, "prepare_stage") as mock_prepare,
+            patch.object(stage_validate, "run_for_package") as mock_run,
+            patch.object(stage_validate, "run_global_checks") as mock_global,
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            mock_prepare.return_value = ({}, {"bad-pkg": {}})
+            mock_run.return_value = False
+            mock_global.return_value = True
+
+            main()
+
+        assert exc_info.value.code == 1
+
     def test_main_handles_keyboard_interrupt(self):
         """Test main() handles KeyboardInterrupt with exit code 130."""
         with patch.object(stage_validate, "setup_logging"):

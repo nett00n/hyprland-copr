@@ -14,6 +14,14 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-09-09
 
+- Fixed: `make stage-validate` now exits non-zero when any single package fails
+  validation, not just on global checks (group membership/duplicate URLs/
+  `.gitmodules`). `stage-validate.py`'s per-package loop discarded
+  `run_for_package()`'s bool return, so a package with errors (missing
+  required field, invalid `depends_on`, bad `fedora:` override key, etc.) was
+  printed and recorded as a `failed` build-db row but never flipped the run's
+  exit code (docs/bugs.md formerly BUG-0054).
+
 - Fixed: `make validate-packages` (the pre-commit gate) and `make stage-validate`
   (the real build's stage 0) now share a single validator (`lib.validation`) instead
   of two independently-diverged ones, so a package can no longer pass one and fail the

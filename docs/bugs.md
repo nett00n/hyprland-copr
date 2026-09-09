@@ -4,7 +4,7 @@ Automation behaving wrong today. Complexity/cleanup/features go in `docs/todo.md
 instead. GitHub issues are for reporter-facing items (someone else's bug/request);
 this file is the maintainer's own log and may cite issue numbers. Entries are deleted
 when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are never reused or
-renumbered, so deletions leave gaps. Next free ID: **BUG-0055**.
+renumbered, so deletions leave gaps. Next free ID: **BUG-0056**.
 
 Each entry ends with a `[P#/D#]` marker:
 
@@ -40,20 +40,6 @@ difficulty. Move an entry into a real section below once it has all three.
   bite. `lib.copr.fetch_failed_chroot_logs` still downloads failed chroots' builder
   logs after the fact for `make stage-log-analyze`, which remains the only diagnostic
   for an aarch64-only failure [P2/D4]
-
-## Validation
-
-- #BUG-0054 `stage-validate.py:159-160` calls `run_for_package()` for every package in
-  a plain loop and discards its `bool` return value, so a package with validation
-  *errors* only ever fails the run via `run_global_checks()`'s separate group/duplicate-
-  url/`.gitmodules` checks (`:162-166`) -- a per-package error (missing required field,
-  invalid `depends_on`, bad `fedora:` override key, etc.) is printed and recorded as a
-  `failed` build-db row but does **not** make `make stage-validate` exit non-zero on its
-  own. Found 2026-09-09 while unifying the two validators (formerly BUG-0012); not
-  itself part of that fix. `docs/CONTRIBUTING.md`'s PR checklist says "`make
-  stage-validate PACKAGE=<name>` passes with no errors" -- today it can print `error:`
-  lines and still exit 0, misleading anyone checking by exit code alone. Fix: OR every
-  `run_for_package()` result into the same `global_ok` gate [P2/D1]
 
 ## Docs / templates
 
@@ -123,6 +109,25 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
   opposed to `/usr/lib64/x`) falls through to `%{_prefix}/lib/x` on the reverse pass
   too. Cosmetic only -- both forms are valid RPM spec syntax -- but inconsistent with the
   rest of the file [P3/D2]
+
+## Tests
+
+- #BUG-0055 `tests/test_stage_mock.py::TestOfflineGate::
+  test_addrepo_still_added_when_local_repo_has_repodata` fails on a host
+  without `createrepo_c` installed (`FileNotFoundError: [Errno 2] No such
+  file or directory: 'createrepo_c'`). The test patches `stage_mock.run_cmd`
+  and `update_local_repo`, but `regenerate_repo_metadata()`
+  (`scripts/stage-mock.py:57-72`) calls `subprocess.run(["createrepo_c", ...])`
+  directly rather than through `run_cmd`, so it's never mocked -- the test's
+  empty `repodata/` dir trips `stage-mock.py:318-322`'s "repodata is
+  empty/corrupt -- regenerating" path, which shells out to the real binary.
+  Confirmed pre-existing (fails identically on `main` before/after
+  #BUG-0054, via `git stash`); every other test in the suite passes on this
+  host (1449 passed, this 1 failed). Normally invisible because `make test`
+  runs inside the toolbox container where `createrepo_c` is installed; only
+  bites a bare `pytest tests/` on the host. Fix: patch
+  `regenerate_repo_metadata` (or the `subprocess.run` call inside it) in the
+  test, same as `run_cmd` is patched elsewhere [P3/D1]
 
 ## Container / Makefile
 
