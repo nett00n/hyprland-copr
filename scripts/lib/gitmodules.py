@@ -7,7 +7,13 @@ from pathlib import Path
 
 
 def parse_gitmodules(path: Path) -> list[dict]:
-    """Parse .gitmodules and return list of {name, path, url} dicts."""
+    """Parse .gitmodules and return list of {name, path, url, ignore} dicts.
+
+    `ignore` is `None` when the section has no `ignore =` line at all (as
+    opposed to `""`, which would mean an explicit-but-empty value) -- callers
+    that check for "missing ignore=dirty" (see lib.validation.validate_gitmodules,
+    docs/bugs.md formerly BUG-0012) need to tell the two apart.
+    """
     parser = configparser.ConfigParser(strict=False)
     parser.read(path)
     modules = []
@@ -18,6 +24,7 @@ def parse_gitmodules(path: Path) -> list[dict]:
                 "name": name,
                 "path": parser[section].get("path", ""),
                 "url": parser[section].get("url", ""),
+                "ignore": parser[section].get("ignore", None),
             }
         )
     return modules

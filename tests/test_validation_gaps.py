@@ -257,6 +257,29 @@ class TestValidatePackage:
         # Should find dep-pkg case-insensitively
         assert not any("unknown" in e.lower() and "depend" in e.lower() for e in errors)
 
+    def test_detects_self_dependency(self):
+        """A package depending on itself should be an error (formerly only
+        checked by scripts/validate-packages.py, see docs/bugs.md formerly
+        BUG-0012)."""
+        meta = self.get_minimal_package()
+        meta["depends_on"] = ["test-pkg"]
+        all_packages = {"test-pkg": meta}
+
+        errors, warnings = validate_package("test-pkg", meta, all_packages)
+
+        assert any("self-dependency" in e.lower() or "itself" in e.lower() for e in errors)
+
+    def test_detects_self_dependency_case_insensitive(self):
+        """Self-dependency detection matches the case-insensitive resolution
+        used for every other depends_on entry."""
+        meta = self.get_minimal_package()
+        meta["depends_on"] = ["Test-Pkg"]
+        all_packages = {"test-pkg": meta}
+
+        errors, warnings = validate_package("test-pkg", meta, all_packages)
+
+        assert any("self-dependency" in e.lower() or "itself" in e.lower() for e in errors)
+
     def test_warns_build_requires_devel_without_depends_on(self):
         """Should warn when -devel build_require is not covered by depends_on."""
         meta = self.get_minimal_package()
@@ -370,6 +393,24 @@ class TestValidatePackage:
 
         # Should have error about unknown override key
         assert any("invalid_key" in e or "unknown" in e.lower() for e in errors)
+
+    @pytest.mark.parametrize("key", ["build", "build_requires", "requires"])
+    def test_rejects_merge_style_fedora_override_keys(self, key):
+        """`fedora:` only resolves `skip` (lib.yaml_utils.apply_os_overrides) --
+        `build`/`build_requires`/`requires` used to be accepted here (silently
+        dropped by the build) even though scripts/validate-packages.py already
+        rejected them, one of the two divergences behind docs/bugs.md formerly
+        BUG-0012. A per-version difference belongs in build.prep/commands/install
+        as a literal `%if 0%{?fedora} == N ... %endif` conditional instead."""
+        meta = self.get_minimal_package()
+        meta["fedora"] = {"43": {key: ["something"]}}
+
+        all_packages = {"test-pkg": meta}
+
+        errors, warnings = validate_package("test-pkg", meta, all_packages)
+
+        assert any(key in e and "unknown" in e.lower() for e in errors)
+        assert any("%if 0%{?fedora}" in e for e in errors)
 
 
 class TestValidatePackageSourceLock:

@@ -4,7 +4,7 @@ Automation behaving wrong today. Complexity/cleanup/features go in `docs/todo.md
 instead. GitHub issues are for reporter-facing items (someone else's bug/request);
 this file is the maintainer's own log and may cite issue numbers. Entries are deleted
 when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are never reused or
-renumbered, so deletions leave gaps. Next free ID: **BUG-0054**.
+renumbered, so deletions leave gaps. Next free ID: **BUG-0055**.
 
 Each entry ends with a `[P#/D#]` marker:
 
@@ -21,15 +21,6 @@ difficulty. Move an entry into a real section below once it has all three.
 (empty as of the 2026-08-18 grooming pass)
 
 ## Copr / cache
-
-- #BUG-0012 `scripts/validate-packages.py` (the pre-commit gate) and
-  `lib/validation.py` (used by `stage-validate`, the actual build) are two
-  independent, already-diverged validators for packages.yaml/.gitmodules -> a package
-  can pass pre-commit and still fail build validation, or vice versa. Concrete case
-  found 2026-08-18: `validate-packages.py:109-113` checks a `depends_on` reference
-  case-**sensitively**, while `lib/validation.py:129-134` resolves it through a
-  case-insensitive lowercase map -- a differently-cased `depends_on` entry fails
-  pre-commit but passes build validation [P2/D3]
 
 - #BUG-0018 local mock used to only ever build one `FEDORA_VERSION`/chroot, but a
   `COPR_REPO` project builds every chroot configured on Copr (fedora-43/44/rawhide
@@ -49,6 +40,20 @@ difficulty. Move an entry into a real section below once it has all three.
   bite. `lib.copr.fetch_failed_chroot_logs` still downloads failed chroots' builder
   logs after the fact for `make stage-log-analyze`, which remains the only diagnostic
   for an aarch64-only failure [P2/D4]
+
+## Validation
+
+- #BUG-0054 `stage-validate.py:159-160` calls `run_for_package()` for every package in
+  a plain loop and discards its `bool` return value, so a package with validation
+  *errors* only ever fails the run via `run_global_checks()`'s separate group/duplicate-
+  url/`.gitmodules` checks (`:162-166`) -- a per-package error (missing required field,
+  invalid `depends_on`, bad `fedora:` override key, etc.) is printed and recorded as a
+  `failed` build-db row but does **not** make `make stage-validate` exit non-zero on its
+  own. Found 2026-09-09 while unifying the two validators (formerly BUG-0012); not
+  itself part of that fix. `docs/CONTRIBUTING.md`'s PR checklist says "`make
+  stage-validate PACKAGE=<name>` passes with no errors" -- today it can print `error:`
+  lines and still exit 0, misleading anyone checking by exit code alone. Fix: OR every
+  `run_for_package()` result into the same `global_ok` gate [P2/D1]
 
 ## Docs / templates
 

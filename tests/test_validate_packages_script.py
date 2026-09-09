@@ -1,12 +1,13 @@
 """Tests for scripts/validate-packages.py (the pre-commit gate).
 
-Covers the new url/.gitmodules resolution warning added alongside the
-BUG-0013 fix -- collect_gitmodules_urls()/validate_submodule_urls() mirror
-update-versions.py's exact-match `url_to_module` lookup so a mismatch (a
-stray or missing trailing ".git") is visible before commit, not silently
-discovered weeks later. The rest of this script (self-dependency /
-depends_on / ignore=dirty checks) had zero prior test coverage
-(docs/todo.md TODO-0041); not expanding that here, only testing the delta.
+Since the lib.validation unification (docs/bugs.md, formerly BUG-0012),
+scripts/validate-packages.py is a thin front-end over lib.validation -- the
+same validator scripts/stage-validate.py's stage 0 runs. These tests only
+cover main()'s *wiring*: does it call the right lib functions, does it exit
+non-zero when any of them report errors, does it print warnings without
+exiting. Each lib.validation function's own behavior has its own dedicated
+tests in tests/test_validation_gaps.py and
+tests/integration/test_validation_pipeline.py -- not duplicated here.
 """
 
 import importlib
@@ -20,54 +21,67 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 validate_packages = importlib.import_module("scripts.validate-packages")
 
 
-class TestCollectGitmodulesUrls:
-    def test_collects_all_submodule_urls(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        (tmp_path / ".gitmodules").write_text(
-            '[submodule "submodules/org/a"]\n'
-            "\tpath = submodules/org/a\n"
-            "\turl = https://github.com/org/a\n"
-            '[submodule "submodules/org/b"]\n'
-            "\tpath = submodules/org/b\n"
-            "\turl = https://github.com/org/b.git\n"
-        )
-
-        urls = validate_packages.collect_gitmodules_urls()
-
-        assert urls == {"https://github.com/org/a", "https://github.com/org/b.git"}
-
-    def test_missing_gitmodules_returns_empty_set(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-
-        assert validate_packages.collect_gitmodules_urls() == set()
+def _minimal_package(**overrides):
+    """A package dict that passes validate_package() cleanly by default."""
+    pkg = {
+        "version": "1.0",
+        "license": "MIT",
+        "summary": "Test package",
+        "description": "A test package",
+        "url": "https://github.com/org/a",
+        "source": {"archives": ["https://github.com/org/a/archive/1.0.tar.gz"]},
+        "build": {"system": "cmake"},
+        "depends_on": [],
+    }
+    pkg.update(overrides)
+    return pkg
 
 
-class TestValidateSubmoduleUrls:
-    def test_matching_url_produces_no_warning(self):
-        packages = {"pkg-a": {"url": "https://github.com/org/a"}}
-        gitmodules_urls = {"https://github.com/org/a"}
+@pytest.fixture
+def stub_environment(monkeypatch, tmp_path):
+    """Stub every global check main() runs besides per-package validate_package
+    (group membership, duplicate urls, submodule url resolution, .gitmodules
+    conventions) so a test can exercise real per-package validation without a
+    real groups.yaml/.gitmodules on disk. Individual tests that care about one
+    of these can un-stub it.
+    """
+    monkeypatch.setattr(
+        validate_packages, "validate_group_membership", lambda pkgs: ([], [])
+    )
+    monkeypatch.setattr(
+        validate_packages, "validate_no_duplicate_urls", lambda pkgs: ([], [])
+    )
+    monkeypatch.setattr(
+        validate_packages,
+        "validate_submodule_url_resolution",
+        lambda pkgs, mods: ([], []),
+    )
+    monkeypatch.setattr(validate_packages, "validate_gitmodules", lambda: ([], []))
+    # No .gitmodules on disk -> main()'s `GITMODULES.exists()` guard short-circuits
+    # to an empty module list without needing a real file.
+    monkeypatch.setattr(
+        validate_packages, "GITMODULES", tmp_path / ".gitmodules-missing"
+    )
 
-        warnings = validate_packages.validate_submodule_urls(packages, gitmodules_urls)
 
-        assert warnings == []
+def _set_packages(monkeypatch, packages):
+    monkeypatch.setattr(validate_packages, "get_packages", lambda: packages)
 
-    def test_mismatched_url_warns(self):
-        """Regression case: Waybar-git's url was missing .git that .gitmodules had."""
-        packages = {"Waybar-git": {"url": "https://github.com/Alexays/Waybar"}}
-        gitmodules_urls = {"https://github.com/Alexays/Waybar.git"}
 
-        warnings = validate_packages.validate_submodule_urls(packages, gitmodules_urls)
+class TestSelfDependency:
+    """Self-dependency detection moved into lib.validation.validate_package
+    (formerly only checked by this script) as part of the BUG-0012 unification."""
 
-        assert len(warnings) == 1
-        assert "Waybar-git" in warnings[0]
+    def test_self_dependency_exits_nonzero(self, stub_environment, monkeypatch, capsys):
+        _set_packages(monkeypatch, {"pkg-a": _minimal_package(depends_on=["pkg-a"])})
 
-    def test_missing_url_ignored(self):
-        packages = {"pkg-a": {}}
-        gitmodules_urls = {"https://github.com/org/a"}
+        with pytest.raises(SystemExit) as exc_info:
+            validate_packages.main()
 
-        warnings = validate_packages.validate_submodule_urls(packages, gitmodules_urls)
-
-        assert warnings == []
+        assert exc_info.value.code != 0
+        captured = capsys.readouterr()
+        assert "pkg-a" in captured.err
+        assert "self-dependency" in captured.err.lower()
 
 
 class TestReleaseTypeValidation:
@@ -76,24 +90,13 @@ class TestReleaseTypeValidation:
     update-versions.py.
     """
 
-    def _write_repo(self, tmp_path, release_type):
-        (tmp_path / "packages.yaml").write_text(
-            "pkg-a:\n"
-            "  depends_on: []\n"
-            "  url: https://github.com/org/a\n"
-            "  auto_update:\n"
-            f"    release_type: {release_type}\n"
+    def test_unknown_release_type_exits_nonzero(
+        self, stub_environment, monkeypatch, capsys
+    ):
+        _set_packages(
+            monkeypatch,
+            {"pkg-a": _minimal_package(auto_update={"release_type": "latest-tagg"})},
         )
-        (tmp_path / ".gitmodules").write_text(
-            '[submodule "submodules/org/a"]\n'
-            "\tpath = submodules/org/a\n"
-            "\turl = https://github.com/org/a\n"
-            "\tignore = dirty\n"
-        )
-
-    def test_unknown_release_type_exits_nonzero(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.chdir(tmp_path)
-        self._write_repo(tmp_path, "latest-tagg")
 
         with pytest.raises(SystemExit) as exc_info:
             validate_packages.main()
@@ -103,9 +106,11 @@ class TestReleaseTypeValidation:
         assert "pkg-a" in captured.err
         assert "latest-tagg" in captured.err
 
-    def test_latest_tag_is_valid(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.chdir(tmp_path)
-        self._write_repo(tmp_path, "latest-tag")
+    def test_latest_tag_is_valid(self, stub_environment, monkeypatch, capsys):
+        _set_packages(
+            monkeypatch,
+            {"pkg-a": _minimal_package(auto_update={"release_type": "latest-tag"})},
+        )
 
         validate_packages.main()  # must not raise SystemExit
 
@@ -116,32 +121,23 @@ class TestReleaseTypeValidation:
 class TestFedoraOverrideValidation:
     """A single spec is now shared across every chroot (see docs/operations.md), so
     lib.yaml_utils.apply_os_overrides() only resolves `skip` from a `fedora:` block
-    -- any other key used to be silently merged and would now be silently dropped
-    instead, which is worse. A per-version spec difference belongs in
-    build.prep/commands/install as a literal `%if 0%{?fedora} == N ... %endif`
-    conditional. This gate must catch a non-`skip` key before it can reappear.
+    -- any other key is silently dropped by the build instead of applied. A
+    per-version spec difference belongs in build.prep/commands/install as a literal
+    `%if 0%{?fedora} == N ... %endif` conditional. This gate must catch a non-`skip`
+    key before it can reappear (docs/bugs.md formerly BUG-0012: lib.validation used
+    to accept `build`/`build_requires`/`requires` here even though this script
+    rejected them -- stage-validate silently passed a block the build ignored).
     """
 
-    def _write_repo(self, tmp_path, fedora_block):
-        (tmp_path / "packages.yaml").write_text(
-            "pkg-a:\n"
-            "  depends_on: []\n"
-            "  url: https://github.com/org/a\n"
-            f"  fedora:\n{fedora_block}\n"
+    def test_build_override_key_rejected(self, stub_environment, monkeypatch, capsys):
+        _set_packages(
+            monkeypatch,
+            {
+                "pkg-a": _minimal_package(
+                    fedora={"43": {"build": {"prep": ["echo hi"]}}}
+                )
+            },
         )
-        (tmp_path / ".gitmodules").write_text(
-            '[submodule "submodules/org/a"]\n'
-            "\tpath = submodules/org/a\n"
-            "\turl = https://github.com/org/a\n"
-            "\tignore = dirty\n"
-        )
-
-    def test_build_override_key_rejected(self, tmp_path, monkeypatch, capsys):
-        self._write_repo(
-            tmp_path,
-            "    '43':\n      build:\n        prep:\n        - echo hi\n",
-        )
-        monkeypatch.chdir(tmp_path)
 
         with pytest.raises(SystemExit) as exc_info:
             validate_packages.main()
@@ -152,26 +148,18 @@ class TestFedoraOverrideValidation:
         assert "build" in captured.err
         assert "%if 0%{?fedora}" in captured.err
 
-    def test_skip_key_is_valid(self, tmp_path, monkeypatch, capsys):
-        self._write_repo(tmp_path, "    '43':\n      skip: true\n")
-        monkeypatch.chdir(tmp_path)
+    def test_skip_key_is_valid(self, stub_environment, monkeypatch, capsys):
+        _set_packages(
+            monkeypatch, {"pkg-a": _minimal_package(fedora={"43": {"skip": True}})}
+        )
 
         validate_packages.main()  # must not raise SystemExit
 
         captured = capsys.readouterr()
         assert "✓ packages.yaml validation passed" in captured.out
 
-    def test_no_fedora_block_is_valid(self, tmp_path, monkeypatch, capsys):
-        (tmp_path / "packages.yaml").write_text(
-            "pkg-a:\n  depends_on: []\n  url: https://github.com/org/a\n"
-        )
-        (tmp_path / ".gitmodules").write_text(
-            '[submodule "submodules/org/a"]\n'
-            "\tpath = submodules/org/a\n"
-            "\turl = https://github.com/org/a\n"
-            "\tignore = dirty\n"
-        )
-        monkeypatch.chdir(tmp_path)
+    def test_no_fedora_block_is_valid(self, stub_environment, monkeypatch, capsys):
+        _set_packages(monkeypatch, {"pkg-a": _minimal_package()})
 
         validate_packages.main()  # must not raise SystemExit
 
@@ -180,42 +168,129 @@ class TestFedoraOverrideValidation:
 
 
 class TestMainWiring:
-    """Confirm main() surfaces url mismatches as warnings, not commit-blocking errors."""
+    """Confirm main() surfaces global-check results correctly: errors from any
+    lib.validation call block the commit (nonzero exit), warnings don't.
+    """
 
-    def _write_repo(self, tmp_path, pkg_url, gitmodules_url):
-        (tmp_path / "packages.yaml").write_text(
-            f"pkg-a:\n  url: {pkg_url}\n  depends_on: []\n"
+    def test_global_error_exits_nonzero(self, stub_environment, monkeypatch, capsys):
+        """A .gitmodules convention error (surfaced via validate_gitmodules,
+        stubbed here to simulate one) must fail the gate the same way a
+        per-package error does."""
+        monkeypatch.setattr(
+            validate_packages,
+            "validate_gitmodules",
+            lambda: (["submodule 'x' missing 'ignore = dirty'"], []),
         )
-        (tmp_path / ".gitmodules").write_text(
+        _set_packages(monkeypatch, {"pkg-a": _minimal_package()})
+
+        with pytest.raises(SystemExit) as exc_info:
+            validate_packages.main()
+
+        assert exc_info.value.code != 0
+        captured = capsys.readouterr()
+        assert "ignore = dirty" in captured.err
+
+    def test_global_warning_does_not_exit(self, stub_environment, monkeypatch, capsys):
+        """A duplicate-url warning (see validate_no_duplicate_urls) is printed
+        but doesn't block the commit."""
+        monkeypatch.setattr(
+            validate_packages,
+            "validate_no_duplicate_urls",
+            lambda pkgs: ([], ["url 'https://x' is shared by packages: pkg-a, pkg-b"]),
+        )
+        _set_packages(monkeypatch, {"pkg-a": _minimal_package()})
+
+        validate_packages.main()  # must not raise SystemExit
+
+        captured = capsys.readouterr()
+        assert "shared by packages" in captured.err
+        assert "✓ packages.yaml validation passed" in captured.out
+
+    def test_submodule_url_mismatch_warns_but_does_not_exit(
+        self, stub_environment, monkeypatch, capsys
+    ):
+        """Real end-to-end wiring for the BUG-0013 url-mismatch check: main()
+        passes GITMODULES's parsed modules through to
+        validate_submodule_url_resolution (un-stubbed here) rather than
+        swallowing them."""
+        import lib.validation as lib_validation
+
+        monkeypatch.setattr(
+            validate_packages,
+            "validate_submodule_url_resolution",
+            lib_validation.validate_submodule_url_resolution,
+        )
+        gitmodules = validate_packages.GITMODULES.parent / ".gitmodules-real"
+        gitmodules.write_text(
             '[submodule "submodules/org/a"]\n'
             "\tpath = submodules/org/a\n"
-            f"\turl = {gitmodules_url}\n"
-            "\tignore = dirty\n"
+            "\turl = https://github.com/org/a.git\n"
         )
-
-    def test_url_mismatch_warns_but_does_not_exit(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.chdir(tmp_path)
-        self._write_repo(
-            tmp_path,
-            pkg_url="https://github.com/org/a",
-            gitmodules_url="https://github.com/org/a.git",
+        monkeypatch.setattr(validate_packages, "GITMODULES", gitmodules)
+        _set_packages(
+            monkeypatch,
+            {"pkg-a": _minimal_package(url="https://github.com/org/a")},
         )
 
         validate_packages.main()  # must not raise SystemExit
 
         captured = capsys.readouterr()
         assert "pkg-a" in captured.err
+        assert "does not match any .gitmodules" in captured.err
         assert "✓ packages.yaml validation passed" in captured.out
 
-    def test_matching_url_prints_no_warning(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.chdir(tmp_path)
-        self._write_repo(
-            tmp_path,
-            pkg_url="https://github.com/org/a",
-            gitmodules_url="https://github.com/org/a",
+
+class TestParity:
+    """The point of the BUG-0012 unification: every lib.validation global check
+    scripts/stage-validate.py runs must also be wired into this script's main(),
+    so the two can never silently diverge again (one adding a check the other
+    doesn't call). Spies on each lib function main() is documented to call and
+    asserts every one actually fires exactly once per run.
+    """
+
+    def test_main_calls_every_global_check_exactly_once(
+        self, stub_environment, monkeypatch
+    ):
+        calls: dict[str, int] = {}
+
+        def _spy(name, result=([], [])):
+            def _fn(*args, **kwargs):
+                calls[name] = calls.get(name, 0) + 1
+                return result
+
+            return _fn
+
+        monkeypatch.setattr(
+            validate_packages,
+            "validate_group_membership",
+            _spy("validate_group_membership"),
         )
+        monkeypatch.setattr(
+            validate_packages,
+            "validate_no_duplicate_urls",
+            _spy("validate_no_duplicate_urls"),
+        )
+        monkeypatch.setattr(
+            validate_packages,
+            "validate_submodule_url_resolution",
+            _spy("validate_submodule_url_resolution"),
+        )
+        monkeypatch.setattr(
+            validate_packages, "validate_gitmodules", _spy("validate_gitmodules")
+        )
+        monkeypatch.setattr(
+            validate_packages,
+            "validate_package",
+            _spy("validate_package", result=([], [])),
+        )
+        _set_packages(monkeypatch, {"pkg-a": _minimal_package()})
 
         validate_packages.main()
 
-        captured = capsys.readouterr()
-        assert "don't match .gitmodules" not in captured.err
+        assert calls == {
+            "validate_package": 1,
+            "validate_group_membership": 1,
+            "validate_no_duplicate_urls": 1,
+            "validate_submodule_url_resolution": 1,
+            "validate_gitmodules": 1,
+        }

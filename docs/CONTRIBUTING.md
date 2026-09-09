@@ -94,6 +94,10 @@ Run `make pre-commit` before and after any change. It's also what CI runs on eve
 just `validate-packages` + `fmt`, so an unrelated `scripts/` lint regression never blocks a
 Copr publish; see `docs/operations.md` "`update-daily`".
 
+`validate-packages` runs the exact same validator (`lib.validation`) as the real build's
+`stage-validate`, just without a container — a passing `make validate-packages` implies
+`make stage-validate` will pass too (see `docs/bugs.md`, formerly BUG-0012).
+
 ## Checklist before opening a PR
 
 - [ ] `packages.yaml` entry is complete and correct

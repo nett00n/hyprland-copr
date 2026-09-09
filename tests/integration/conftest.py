@@ -59,6 +59,7 @@ def fake_repo(tmp_path, monkeypatch):
     (tmp_path / ".gitmodules").write_text("""[submodule "valid-pkg"]
 	path = submodules/valid-pkg
 	url = https://github.com/example/valid-pkg.git
+	ignore = dirty
 """)
 
     # Create templates dir

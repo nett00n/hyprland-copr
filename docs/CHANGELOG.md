@@ -12,6 +12,23 @@ entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
 
 History before this file's introduction is not backfilled - see `git log`.
 
+## 2026-09-09
+
+- Fixed: `make validate-packages` (the pre-commit gate) and `make stage-validate`
+  (the real build's stage 0) now share a single validator (`lib.validation`) instead
+  of two independently-diverged ones, so a package can no longer pass one and fail the
+  other. Two concrete disagreements fixed as part of the unification: `depends_on`
+  reference checking is now case-insensitive everywhere, matching
+  `lib.deps.effective_deps` (the actual dependency-DAG resolver) rather than the old
+  pre-commit gate's case-sensitive check; and `lib.validation.VALID_FEDORA_OVERRIDE_KEYS`
+  now matches `lib.yaml_utils.apply_os_overrides` in only recognizing `fedora: {skip:
+  ...}` -- previously `stage-validate` silently accepted a `fedora.<ver>.build`/
+  `build_requires`/`requires` override block that the build then silently dropped.
+  `scripts/validate-packages.py` is now a thin front-end over `lib.validation`; it also
+  gained self-dependency and `.gitmodules` `ignore = dirty` checks in `lib.validation`
+  itself (`.gitmodules` parsing's `parse_gitmodules()` now also returns each section's
+  `ignore` value). (docs/bugs.md formerly BUG-0012)
+
 ## 2026-09-08
 
 - Fixed: `make db-prune` now keeps the highest RPM version-release per

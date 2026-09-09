@@ -331,7 +331,9 @@ make update-daily COPR_REPO=nett00n/hyprland PUSH=1      # commit and push
 
 Runs: bump versions → `validate-packages` + `fmt` (packages.yaml sanity/formatting only —
 **not** the full `pre-commit` gate; `scripts/` lint/test health is already CI's job on every
-push/PR, an unrelated regression there shouldn't block tonight's Copr publish) →
+push/PR, an unrelated regression there shouldn't block tonight's Copr publish; `validate-packages`
+itself now shares the same `lib.validation` check set as `stage-validate`, formerly two
+independently-diverged validators, see docs/bugs.md formerly BUG-0012) →
 `full-cycle-matrix` (builds every `MATRIX_VERSIONS` chroot locally -- default all of
 `SUPPORTED`, i.e. 43/44/45 -- before a single Copr submission; see docs/bugs.md
 BUG-0018) → `validate-packages` again (no `fmt`) → regenerate docs → push COPR description →

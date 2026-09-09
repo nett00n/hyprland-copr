@@ -45,9 +45,9 @@ package-name:
 | `pinned-tag` | Pins the checkout to a specific non-semver tag | `tag` | `0.53.0^20240101gitabc1234` |
 | *(absent)* | Default: try semver, fall back to commit | `branch` | `1.2.3` or `0^20240101gitabc1234` |
 
-`release_type` must match one of the types above (or be absent) -- `make validate-packages` and
-`make stage-validate` both reject anything else, rather than silently falling through to the
-default resolution path.
+`release_type` must match one of the types above (or be absent) -- both `make validate-packages`
+and `make stage-validate` run the same `lib.validation` checks and reject anything else, rather
+than silently falling through to the default resolution path.
 
 For `latest-commit`/`pinned-tag`, versions use the nearest reachable semver tag as a prefix:
 `0.53.0^20240101gitabc1234` (commit after `v0.53.0`) or `0^20240101gitabc1234` (no semver tag

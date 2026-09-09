@@ -1,150 +1,64 @@
 #!/usr/bin/env python3
 """Validate packages.yaml and .gitmodules for configuration issues.
 
-Checks for:
-- Self-dependencies (package depends on itself)
-- Invalid dependency references (depends_on references non-existent packages)
+Thin front-end over lib.validation -- the same validator scripts/stage-validate.py
+runs as the real build's stage 0. The two used to be independently-diverged
+validators (docs/bugs.md, formerly BUG-0012): a package could pass this fast,
+no-container pre-commit gate and still fail build validation, or vice versa. Now
+a passing `make validate-packages` implies `make stage-validate` will pass too.
+
+Checks (see lib.validation for the authoritative list):
+- Required fields, source.archives, build system, devel-file placement
+- Self-dependencies and invalid depends_on references (case-insensitive)
 - Unknown auto_update.release_type values
-- Missing ignore=dirty in .gitmodules (all submodules must have it)
+- fedora: override blocks only using the supported `skip` key
+- Group membership
+- .gitmodules conventions: submodules/ path prefix, https:// urls,
+  ignore = dirty
 - A package's url not matching any .gitmodules submodule url (warning only)
 """
 
 import sys
-from configparser import ConfigParser
 
-import yaml
-
-from lib.version import RELEASE_TYPES
-
-
-def validate_gitmodules() -> list[str]:
-    """Validate .gitmodules for missing ignore=dirty settings.
-
-    Returns:
-        List of error messages (empty if all valid)
-    """
-    errors = []
-    try:
-        config = ConfigParser()
-        config.read(".gitmodules")
-    except Exception as e:
-        errors.append(f"  Failed to parse .gitmodules: {e}")
-        return errors
-
-    for section in config.sections():
-        if not section.startswith("submodule "):
-            continue
-
-        # Check if ignore = dirty is set
-        if not config.has_option(section, "ignore"):
-            submodule_name = section.replace('submodule "', "").replace('"', "")
-            errors.append(
-                f"  {submodule_name}: missing 'ignore = dirty' in .gitmodules"
-            )
-        elif config.get(section, "ignore") != "dirty":
-            submodule_name = section.replace('submodule "', "").replace('"', "")
-            current = config.get(section, "ignore")
-            errors.append(
-                f"  {submodule_name}: ignore={current}, should be 'ignore = dirty'"
-            )
-
-    return errors
-
-
-def collect_gitmodules_urls() -> set[str]:
-    """Return the set of submodule urls declared in .gitmodules."""
-    config = ConfigParser()
-    config.read(".gitmodules")
-    return {
-        config.get(section, "url")
-        for section in config.sections()
-        if config.has_option(section, "url")
-    }
-
-
-def validate_submodule_urls(packages: dict, gitmodules_urls: set[str]) -> list[str]:
-    """Warn when a package's url won't resolve to any .gitmodules submodule.
-
-    update-versions.py resolves each package's submodule via an EXACT string
-    match against .gitmodules urls -- a stray or missing trailing `.git`
-    means the package's auto_update silently never fires, with no error or
-    warning at update time (see docs/bugs.md BUG-0013: two packages went
-    weeks with no update before this was noticed by hand). Warning only,
-    since not every packages.yaml entry necessarily tracks a live submodule.
-
-    Returns:
-        List of warning messages (empty if all urls resolve)
-    """
-    warnings = []
-    for pkg, meta in packages.items():
-        url = (meta or {}).get("url", "")
-        if url and url not in gitmodules_urls:
-            warnings.append(
-                f"  {pkg}: url '{url}' does not match any .gitmodules submodule url"
-            )
-    return warnings
+from lib.gitmodules import parse_gitmodules
+from lib.paths import GITMODULES
+from lib.validation import (
+    validate_gitmodules,
+    validate_group_membership,
+    validate_no_duplicate_urls,
+    validate_package,
+    validate_submodule_url_resolution,
+)
+from lib.yaml_utils import get_packages
 
 
 def main() -> None:
     """Validate packages.yaml and .gitmodules."""
-    with open("packages.yaml") as f:
-        packages = yaml.safe_load(f)
+    packages = get_packages()
 
-    if not packages:
-        print("error: packages.yaml is empty or invalid")
-        sys.exit(1)
+    errors: list[str] = []
+    warnings: list[str] = []
 
-    errors = []
+    for pkg, meta in packages.items():
+        pkg_errors, pkg_warnings = validate_package(pkg, meta, packages)
+        errors.extend(f"  {pkg}: {e}" for e in pkg_errors)
+        warnings.extend(f"  {pkg}: {w}" for w in pkg_warnings)
 
-    for pkg, config in packages.items():
-        deps = config.get("depends_on", [])
+    grp_errors, grp_warnings = validate_group_membership(packages)
+    errors.extend(f"  {e}" for e in grp_errors)
+    warnings.extend(f"  {w}" for w in grp_warnings)
 
-        # Check for self-dependency
-        if pkg in deps:
-            errors.append(
-                f"  {pkg}: self-dependency detected (remove '{pkg}' from depends_on)"
-            )
+    dup_errors, dup_warnings = validate_no_duplicate_urls(packages)
+    errors.extend(f"  {e}" for e in dup_errors)
+    warnings.extend(f"  {w}" for w in dup_warnings)
 
-        # Check for invalid dependencies
-        for dep in deps:
-            if dep not in packages:
-                errors.append(
-                    f"  {pkg}: invalid dependency '{dep}' (not found in packages.yaml)"
-                )
+    modules = parse_gitmodules(GITMODULES) if GITMODULES.exists() else []
+    url_errors, url_warnings = validate_submodule_url_resolution(packages, modules)
+    errors.extend(f"  {e}" for e in url_errors)
+    warnings.extend(f"  {w}" for w in url_warnings)
 
-        # Check auto_update.release_type -- an unrecognized type used to match
-        # no dispatch branch in update-versions.py and silently fall through
-        # to the default (semver-or-commit) path instead of erroring here
-        # (see docs/bugs.md BUG-0014, e.g. mpvpaper's `latest-tag`).
-        release_type = ((config or {}).get("auto_update") or {}).get("release_type")
-        if release_type and release_type not in RELEASE_TYPES:
-            errors.append(
-                f"  {pkg}: unknown auto_update.release_type '{release_type}' "
-                f"(valid: {', '.join(sorted(RELEASE_TYPES))})"
-            )
-
-        # A single spec is now shared across every chroot (see docs/operations.md),
-        # so lib.yaml_utils.apply_os_overrides() only resolves `skip` from a
-        # `fedora:` block -- any other key would silently be ignored rather than
-        # merged, which is worse than erroring here. A per-version spec
-        # difference belongs in build.prep/commands/install as a literal
-        # `%if 0%{?fedora} == N ... %endif` conditional instead.
-        fedora_blocks = (config or {}).get("fedora") or {}
-        for ver, override in fedora_blocks.items():
-            bad_keys = sorted((override or {}).keys() - {"skip"})
-            if bad_keys:
-                errors.append(
-                    f"  {pkg}: fedora.'{ver}' has unsupported key(s) "
-                    f"{', '.join(bad_keys)} (only 'skip' is supported -- write a "
-                    f"per-version difference as a literal '%if 0%{{?fedora}} == "
-                    f"{ver} ... %endif' conditional in build.prep/commands/install "
-                    "instead)"
-                )
-
-    # Validate .gitmodules
-    gitmodules_errors = validate_gitmodules()
-    gitmodules_urls = collect_gitmodules_urls()
-    url_warnings = validate_submodule_urls(packages, gitmodules_urls)
+    gitmodules_errors, gitmodules_warnings = validate_gitmodules()
+    warnings.extend(f"  {w}" for w in gitmodules_warnings)
 
     if errors:
         print("error: packages.yaml validation failed:", file=sys.stderr)
@@ -155,12 +69,14 @@ def main() -> None:
     if gitmodules_errors:
         print("error: .gitmodules validation failed:", file=sys.stderr)
         for err in gitmodules_errors:
-            print(err, file=sys.stderr)
+            print(f"  {err}", file=sys.stderr)
         sys.exit(1)
 
-    if url_warnings:
-        print("warning: package url(s) don't match .gitmodules:", file=sys.stderr)
-        for warn in url_warnings:
+    if warnings:
+        print(
+            "warning: packages.yaml/.gitmodules validation warning(s):", file=sys.stderr
+        )
+        for warn in warnings:
             print(warn, file=sys.stderr)
 
     print("✓ packages.yaml validation passed")

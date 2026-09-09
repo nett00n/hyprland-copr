@@ -72,38 +72,65 @@ class TestValidationPipeline:
         errors, warnings = validate_group_membership(packages)
         assert any("orphan-pkg" in e and "not listed in any group" in e for e in errors)
 
-    def test_gitmodules_http_url_fails(self, fake_repo, monkeypatch):
+    def test_gitmodules_http_url_fails(self, fake_repo):
         """HTTP URL in .gitmodules fails validation."""
-        import lib.validation
         bad_gitmodules = fake_repo["root"] / ".gitmodules"
 
-        # Write bad .gitmodules with http URL
+        # Write bad .gitmodules with http URL (also missing ignore = dirty,
+        # but the http:// check is what this test is pinning)
         bad_gitmodules.write_text("""[submodule "bad-pkg"]
 \tpath = submodules/bad-pkg
 \turl = http://github.com/example/bad-pkg.git
+\tignore = dirty
 """)
 
-        # Monkeypatch GITMODULES in validation module to use our test file
-        monkeypatch.setattr(lib.validation, "GITMODULES", bad_gitmodules)
-
+        # validate_gitmodules reads root_path / ".gitmodules" directly -- no
+        # monkeypatch needed (formerly the root_path arg was dead and every
+        # caller had to monkeypatch the module-level GITMODULES constant
+        # instead, see docs/bugs.md formerly BUG-0012)
         errors, warnings = validate_gitmodules(fake_repo["root"])
         assert any("not https://" in e for e in errors)
 
-    def test_gitmodules_wrong_path_prefix_fails(self, fake_repo, monkeypatch):
+    def test_gitmodules_wrong_path_prefix_fails(self, fake_repo):
         """Wrong path prefix in .gitmodules fails."""
-        import lib.validation
         bad_gitmodules = fake_repo["root"] / ".gitmodules"
 
         bad_gitmodules.write_text("""[submodule "bad-pkg"]
 \tpath = pkgs/bad-pkg
 \turl = https://github.com/example/bad-pkg.git
+\tignore = dirty
 """)
-
-        # Monkeypatch GITMODULES in validation module to use our test file
-        monkeypatch.setattr(lib.validation, "GITMODULES", bad_gitmodules)
 
         errors, warnings = validate_gitmodules(fake_repo["root"])
         assert any("does not start with submodules/" in e for e in errors)
+
+    def test_gitmodules_missing_ignore_dirty_fails(self, fake_repo):
+        """Submodule missing `ignore = dirty` fails (formerly only checked by
+        scripts/validate-packages.py, docs/bugs.md formerly BUG-0012)."""
+        bad_gitmodules = fake_repo["root"] / ".gitmodules"
+
+        bad_gitmodules.write_text("""[submodule "bad-pkg"]
+\tpath = submodules/bad-pkg
+\turl = https://github.com/example/bad-pkg.git
+""")
+
+        errors, warnings = validate_gitmodules(fake_repo["root"])
+        assert any("missing 'ignore = dirty'" in e for e in errors)
+
+    def test_gitmodules_wrong_ignore_value_fails(self, fake_repo):
+        """Submodule with `ignore = <not dirty>` fails."""
+        bad_gitmodules = fake_repo["root"] / ".gitmodules"
+
+        bad_gitmodules.write_text("""[submodule "bad-pkg"]
+\tpath = submodules/bad-pkg
+\turl = https://github.com/example/bad-pkg.git
+\tignore = all
+""")
+
+        errors, warnings = validate_gitmodules(fake_repo["root"])
+        assert any(
+            "ignore=all" in e and "should be 'ignore = dirty'" in e for e in errors
+        )
 
     def test_unknown_depends_on_fails(self, fake_repo, minimal_package):
         """Package with unknown dependency fails."""
@@ -149,23 +176,15 @@ class TestValidationPipeline:
         assert any("license" in e for e in errors_no_lic)
         assert any("source.archives" in e for e in errors_no_arc)
 
-    def test_gitmodules_valid_passes(self, fake_repo, monkeypatch):
-        """Valid .gitmodules passes validation."""
-        import lib.validation
-        gitmodules = fake_repo["root"] / ".gitmodules"
-        monkeypatch.setattr(lib.validation, "GITMODULES", gitmodules)
-
+    def test_gitmodules_valid_passes(self, fake_repo):
+        """Valid .gitmodules (fake_repo's fixture already sets ignore = dirty)
+        passes validation."""
         errors, warnings = validate_gitmodules(fake_repo["root"])
         assert errors == []
 
-    def test_gitmodules_missing_returns_empty(self, fake_repo, monkeypatch):
+    def test_gitmodules_missing_returns_empty(self, fake_repo):
         """Missing .gitmodules returns no errors (allowed)."""
-        import lib.validation
-        missing_path = fake_repo["root"] / ".gitmodules-missing"
         (fake_repo["root"] / ".gitmodules").unlink()
-
-        # Point to a non-existent file
-        monkeypatch.setattr(lib.validation, "GITMODULES", missing_path)
 
         errors, warnings = validate_gitmodules(fake_repo["root"])
         assert errors == []

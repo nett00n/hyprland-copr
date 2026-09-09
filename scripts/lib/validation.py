@@ -6,7 +6,7 @@ Validates package.yaml entries, group membership, and .gitmodules conventions.
 from pathlib import Path
 
 from lib.gitmodules import parse_gitmodules
-from lib.paths import GITMODULES, ROOT
+from lib.paths import ROOT
 from lib.version import RELEASE_TYPES
 from lib.yaml_utils import SUPPORTED_FEDORA_VERSIONS, load_groups_yaml
 
@@ -22,7 +22,7 @@ VALID_BUILD_SYSTEMS = {
     "python",
 }
 DEVEL_INDICATORS = ["%{_includedir}", "pkgconfig/", "/cmake/"]
-VALID_FEDORA_OVERRIDE_KEYS = {"skip", "build_requires", "requires", "build"}
+VALID_FEDORA_OVERRIDE_KEYS = {"skip"}
 
 
 def validate_package(
@@ -132,7 +132,12 @@ def validate_package(
     depends_on = meta.get("depends_on")
     if depends_on is not None:
         for dep in depends_on:
-            if dep.lower() not in pkg_by_lower:
+            if dep.lower() == name.lower():
+                errors.append(
+                    f"depends_on: self-dependency detected (remove '{dep}' "
+                    "from depends_on)"
+                )
+            elif dep.lower() not in pkg_by_lower:
                 errors.append(f"depends_on: '{dep}' is not a known package")
 
     # Warn if build_requires has local refs not covered by depends_on
@@ -169,7 +174,11 @@ def validate_package(
             unknown_keys = set(override) - VALID_FEDORA_OVERRIDE_KEYS
             if unknown_keys:
                 errors.append(
-                    f"fedora.{ver_key}: unknown override key(s): {', '.join(sorted(unknown_keys))}"
+                    f"fedora.{ver_key}: unknown override key(s) "
+                    f"{', '.join(sorted(unknown_keys))} (only 'skip' is supported -- write a "
+                    f"per-version difference as a literal '%if 0%{{?fedora}} == "
+                    f"{ver_key} ... %endif' conditional in build.prep/commands/install "
+                    "instead)"
                 )
 
     return errors, warnings
@@ -281,16 +290,22 @@ def validate_gitmodules(root_path: Path = ROOT) -> tuple[list[str], list[str]]:
     Checks:
     - Submodule paths start with "submodules/"
     - URLs use https://
+    - Every submodule has `ignore = dirty` set (formerly only checked by
+      scripts/validate-packages.py, one of the two divergences behind
+      docs/bugs.md formerly BUG-0012 -- a submodule missing it shows as
+      locally "dirty" in `git status` on every commit its upstream makes,
+      even with nothing checked out differently)
 
     Args:
-        root_path: Path to repository root
+        root_path: Path to repository root (the .gitmodules file is read from
+            `root_path / ".gitmodules"`)
 
     Returns:
         Tuple of (errors, warnings) as lists of strings
     """
     errors: list[str] = []
     warnings: list[str] = []
-    gitmodules_path = GITMODULES
+    gitmodules_path = root_path / ".gitmodules"
     if not gitmodules_path.exists():
         return errors, warnings
 
@@ -298,6 +313,7 @@ def validate_gitmodules(root_path: Path = ROOT) -> tuple[list[str], list[str]]:
     for mod in modules:
         path = mod.get("path", "")
         url = mod.get("url", "")
+        ignore = mod.get("ignore")
         if path and not path.startswith("submodules/"):
             errors.append(
                 f".gitmodules: submodule '{mod['name']}' path '{path}' does not start with submodules/"
@@ -305,6 +321,14 @@ def validate_gitmodules(root_path: Path = ROOT) -> tuple[list[str], list[str]]:
         if url and not url.startswith("https://"):
             errors.append(
                 f".gitmodules: submodule '{mod['name']}' URL '{url}' is not https://"
+            )
+        if ignore is None:
+            errors.append(
+                f".gitmodules: submodule '{mod['name']}' missing 'ignore = dirty'"
+            )
+        elif ignore != "dirty":
+            errors.append(
+                f".gitmodules: submodule '{mod['name']}' ignore={ignore}, should be 'ignore = dirty'"
             )
 
     return errors, warnings
