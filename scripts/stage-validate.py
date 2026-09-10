@@ -158,7 +158,9 @@ def main() -> None:
 
     packages_ok = True
     for pkg, meta in packages.items():
-        packages_ok &= run_for_package(pkg, meta, all_packages, fedora_version, target, run_id)
+        packages_ok &= run_for_package(
+            pkg, meta, all_packages, fedora_version, target, run_id
+        )
 
     global_ok = run_global_checks(all_packages, target) and packages_ok
     build_db.finish_run(run_id, "ok" if global_ok else "failed")

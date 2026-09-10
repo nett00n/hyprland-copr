@@ -1,7 +1,9 @@
 """Tests for lib.subprocess_utils module."""
 
+import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
@@ -178,3 +180,24 @@ class TestRunGit:
         assert hasattr(result, "returncode")
         assert hasattr(result, "stdout")
         assert hasattr(result, "stderr")
+
+    def test_git_missing_binary_does_not_raise(self):
+        """A missing git binary should be reported, not raised (returncode=127)."""
+        with patch("lib.subprocess_utils.subprocess.run", side_effect=FileNotFoundError):
+            result = run_git("status")
+        assert isinstance(result, subprocess.CompletedProcess)
+        assert result.returncode == 127
+        assert result.stdout == ""
+        assert "not found" in result.stderr
+
+    def test_git_timeout_does_not_raise(self):
+        """A timed-out git command should be reported, not raised (returncode=124)."""
+        with patch(
+            "lib.subprocess_utils.subprocess.run",
+            side_effect=subprocess.TimeoutExpired(cmd="git status", timeout=5),
+        ):
+            result = run_git("status", timeout=5)
+        assert isinstance(result, subprocess.CompletedProcess)
+        assert result.returncode == 124
+        assert result.stdout == ""
+        assert "timed out after 5s" in result.stderr

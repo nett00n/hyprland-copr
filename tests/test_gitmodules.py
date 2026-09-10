@@ -3,11 +3,12 @@
 import subprocess
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from scripts.lib.gitmodules import (
+    ensure_initialized,
     fetch_tags,
     get_changelog_info,
     get_commit_info,
@@ -18,6 +19,11 @@ from scripts.lib.gitmodules import (
     parse_gitmodules,
     resolve_module,
 )
+
+
+def _cp(returncode=0, stdout="", stderr=""):
+    """Build a CompletedProcess the way run_git() would return it."""
+    return subprocess.CompletedProcess(["git"], returncode, stdout, stderr)
 
 
 class TestParseGitmodules:
@@ -78,17 +84,17 @@ class TestParseGitmodules:
 class TestFetchTags:
     """Tests for fetch_tags function."""
 
-    @patch("scripts.lib.gitmodules.subprocess.run")
+    @patch("scripts.lib.gitmodules.run_git")
     def test_fetch_tags_success(self, mock_run):
         """Test successful tag fetch."""
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = (
-            "abc123\trefs/tags/v1.0.0\n"
-            "def456\trefs/tags/v2.0.0\n"
-            "ghi789\trefs/tags/v2.0.0^{}\n"
+        mock_run.return_value = _cp(
+            returncode=0,
+            stdout=(
+                "abc123\trefs/tags/v1.0.0\n"
+                "def456\trefs/tags/v2.0.0\n"
+                "ghi789\trefs/tags/v2.0.0^{}\n"
+            ),
         )
-        mock_run.return_value = mock_result
 
         result = fetch_tags("https://github.com/hyprwm/hyprland.git")
 
@@ -97,13 +103,10 @@ class TestFetchTags:
         # Dereferenced tag (^{}) should not be in results
         assert not any("^{}" in tag for tag in result)
 
-    @patch("scripts.lib.gitmodules.subprocess.run")
+    @patch("scripts.lib.gitmodules.run_git")
     def test_fetch_tags_command_failure(self, mock_run, capsys):
         """Test handling of git command failure."""
-        mock_result = MagicMock()
-        mock_result.returncode = 128
-        mock_result.stdout = ""
-        mock_run.return_value = mock_result
+        mock_run.return_value = _cp(returncode=128, stdout="")
 
         result = fetch_tags("https://invalid.git")
 
@@ -111,10 +114,12 @@ class TestFetchTags:
         captured = capsys.readouterr()
         assert "warning" in captured.err
 
-    @patch("scripts.lib.gitmodules.subprocess.run")
+    @patch("scripts.lib.gitmodules.run_git")
     def test_fetch_tags_timeout(self, mock_run, capsys):
-        """Test handling of timeout."""
-        mock_run.side_effect = subprocess.TimeoutExpired("git", 30)
+        """Test handling of timeout (run_git reports it as returncode=124)."""
+        mock_run.return_value = _cp(
+            returncode=124, stdout="", stderr="command timed out after 30s: git ls-remote"
+        )
 
         result = fetch_tags("https://slow-repo.git")
 
@@ -123,22 +128,76 @@ class TestFetchTags:
         assert "warning" in captured.err
         assert "timeout" in captured.err
 
-    @patch("scripts.lib.gitmodules.subprocess.run")
+    @patch("scripts.lib.gitmodules.run_git")
     def test_fetch_tags_malformed_output(self, mock_run):
         """Test handling of malformed output."""
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = (
-            "malformed line\n"
-            "abc123\trefs/tags/v1.0.0\n"
-            "another bad line\n"
+        mock_run.return_value = _cp(
+            returncode=0,
+            stdout=(
+                "malformed line\n"
+                "abc123\trefs/tags/v1.0.0\n"
+                "another bad line\n"
+            ),
         )
-        mock_run.return_value = mock_result
 
         result = fetch_tags("https://example.com/repo.git")
 
         # Should only have the properly formatted line
         assert "v1.0.0" in result
+
+
+class TestEnsureInitialized:
+    """Tests for ensure_initialized function."""
+
+    def test_no_matching_urls_returns_empty(self):
+        """No module matches urls -> no subprocess calls, empty result."""
+        modules = [{"path": "submodules/org/pkg1", "url": "https://x/pkg1.git"}]
+        assert ensure_initialized(Path("/repo"), modules, {"https://x/other.git"}) == []
+
+    @patch("scripts.lib.gitmodules.run_git")
+    def test_status_failure_returns_empty(self, mock_run):
+        """`git submodule status` failing (e.g. timeout) yields [] rather than raising."""
+        mock_run.return_value = _cp(returncode=124, stderr="command timed out after 300s")
+        modules = [{"path": "submodules/org/pkg1", "url": "https://x/pkg1.git"}]
+
+        result = ensure_initialized(Path("/repo"), modules, {"https://x/pkg1.git"})
+
+        assert result == []
+
+    @patch("scripts.lib.gitmodules.run_git")
+    def test_already_initialized_returns_empty(self, mock_run):
+        """No leading '-' lines -> nothing to init, update is never called."""
+        mock_run.return_value = _cp(returncode=0, stdout=" abc123 submodules/org/pkg1 (v1.0)\n")
+        modules = [{"path": "submodules/org/pkg1", "url": "https://x/pkg1.git"}]
+
+        result = ensure_initialized(Path("/repo"), modules, {"https://x/pkg1.git"})
+
+        assert result == []
+        mock_run.assert_called_once()  # only the status call
+
+    @patch("scripts.lib.gitmodules.run_git")
+    def test_initializes_uninitialized_submodule(self, mock_run):
+        """A leading '-' line triggers `submodule update --init` for that path."""
+        status = _cp(returncode=0, stdout="-0000000000000000000000000000000000000000 submodules/org/pkg1\n")
+        update = _cp(returncode=0)
+        mock_run.side_effect = [status, update]
+        modules = [{"path": "submodules/org/pkg1", "url": "https://x/pkg1.git"}]
+
+        result = ensure_initialized(Path("/repo"), modules, {"https://x/pkg1.git"})
+
+        assert result == ["submodules/org/pkg1"]
+        assert mock_run.call_count == 2
+
+    @patch("scripts.lib.gitmodules.run_git")
+    def test_update_failure_raises(self, mock_run):
+        """`submodule update --init` failing must fail loud, not silently return []."""
+        status = _cp(returncode=0, stdout="-0000000000000000000000000000000000000000 submodules/org/pkg1\n")
+        update = _cp(returncode=1, stderr="fatal: unable to fetch")
+        mock_run.side_effect = [status, update]
+        modules = [{"path": "submodules/org/pkg1", "url": "https://x/pkg1.git"}]
+
+        with pytest.raises(RuntimeError, match="unable to fetch"):
+            ensure_initialized(Path("/repo"), modules, {"https://x/pkg1.git"})
 
 
 class TestResolveModule:
@@ -176,41 +235,27 @@ class TestResolveModule:
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_tag_info_not_found(mock_run):
     """Test get_tag_info when tag doesn't exist."""
-    check = MagicMock()
-    check.stdout = ""
-
-    mock_run.return_value = check
+    mock_run.return_value = _cp(returncode=0, stdout="")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_tag_info(Path(tmpdir), "1.0.0")
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_tag_info_with_lightweight_tag(mock_run):
     """Test get_tag_info with lightweight tag (no annotated info)."""
     # First call: git tag -l (tag exists)
-    check1 = MagicMock()
-    check1.returncode = 0
-    check1.stdout = "v1.0.0\n"
-
+    check1 = _cp(returncode=0, stdout="v1.0.0\n")
     # Second call: git cat-file tag (lightweight tag, fails)
-    cat = MagicMock()
-    cat.returncode = 1
-    cat.stdout = ""
-
+    cat = _cp(returncode=1, stdout="")
     # Third call: git log (fallback for date/body)
-    log = MagicMock()
-    log.returncode = 0
-    log.stdout = "2024-01-01T00:00:00+00:00\nRelease v1.0.0\n"
-
+    log = _cp(returncode=0, stdout="2024-01-01T00:00:00+00:00\nRelease v1.0.0\n")
     # Fourth call: git rev-list for commit hash
-    rev = MagicMock()
-    rev.returncode = 0
-    rev.stdout = "abc123def456\n"
+    rev = _cp(returncode=0, stdout="abc123def456\n")
 
     mock_run.side_effect = [check1, cat, log, rev]
 
@@ -223,17 +268,13 @@ def test_get_tag_info_with_lightweight_tag(mock_run):
         assert result["commit"] == "abc123def456"
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_commit_info_success(mock_run):
     """Test get_commit_info with valid commit."""
-    log = MagicMock()
-    log.returncode = 0
-    log.stdout = (
-        "abc123def456\n"
-        "2024-01-01T00:00:00+00:00\n"
-        "Commit message\nwith body\n"
+    mock_run.return_value = _cp(
+        returncode=0,
+        stdout="abc123def456\n2024-01-01T00:00:00+00:00\nCommit message\nwith body\n",
     )
-    mock_run.return_value = log
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_commit_info(Path(tmpdir), "HEAD")
@@ -243,13 +284,10 @@ def test_get_commit_info_success(mock_run):
         assert "Commit message" in result["body"]
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_commit_info_failure(mock_run):
     """Test get_commit_info when git command fails."""
-    log = MagicMock()
-    log.returncode = 128
-    log.stdout = ""
-    mock_run.return_value = log
+    mock_run.return_value = _cp(returncode=128, stdout="")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_commit_info(Path(tmpdir), "invalid")
@@ -291,13 +329,10 @@ def test_get_changelog_info_fallback_to_commit(mock_tag_info, mock_commit_info):
         assert "Commit message" in result["body"]
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_submodule_commit_success(mock_run):
     """Test get_submodule_commit with valid commit."""
-    result_mock = MagicMock()
-    result_mock.returncode = 0
-    result_mock.stdout = "abc123def456 20240101\n"
-    mock_run.return_value = result_mock
+    mock_run.return_value = _cp(returncode=0, stdout="abc123def456 20240101\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_submodule_commit(Path(tmpdir))
@@ -307,10 +342,10 @@ def test_get_submodule_commit_success(mock_run):
         assert result[2] == "20240101"  # date
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_submodule_commit_failure(mock_run):
-    """Test get_submodule_commit with command failure."""
-    mock_run.side_effect = subprocess.CalledProcessError(1, "git")
+    """Test get_submodule_commit with command failure (e.g. a timeout)."""
+    mock_run.return_value = _cp(returncode=124, stderr="command timed out after 300s")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_submodule_commit(Path(tmpdir))
@@ -318,15 +353,11 @@ def test_get_submodule_commit_failure(mock_run):
 
 
 @patch("scripts.lib.gitmodules.get_submodule_commit")
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_submodule_commit_with_base_success(mock_run, mock_get_commit):
     """Test get_submodule_commit_with_base finds base semver."""
     mock_get_commit.return_value = ("abc123def456", "abc123d", "20240101")
-
-    describe = MagicMock()
-    describe.returncode = 0
-    describe.stdout = "v1.5.0\n"
-    mock_run.return_value = describe
+    mock_run.return_value = _cp(returncode=0, stdout="v1.5.0\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_submodule_commit_with_base(Path(tmpdir))
@@ -335,39 +366,33 @@ def test_get_submodule_commit_with_base_success(mock_run, mock_get_commit):
         assert result[3] == "1.5.0"  # v-prefix stripped
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_submodule_commit_accepts_ref(mock_run):
     """A ref other than HEAD (e.g. origin/<branch>) must reach `git log`, so
     version resolution doesn't depend on the working tree's checked-out
     commit (see docs/bugs.md BUG-0033)."""
-    result_mock = MagicMock()
-    result_mock.returncode = 0
-    result_mock.stdout = "abc123def456 20240101\n"
-    mock_run.return_value = result_mock
+    mock_run.return_value = _cp(returncode=0, stdout="abc123def456 20240101\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         get_submodule_commit(Path(tmpdir), ref="origin/main")
 
-    argv = mock_run.call_args[0][0]
+    argv = mock_run.call_args[0]
     assert argv[-1] == "origin/main"
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_submodule_commit_defaults_to_head(mock_run):
-    result_mock = MagicMock()
-    result_mock.returncode = 0
-    result_mock.stdout = "abc123def456 20240101\n"
-    mock_run.return_value = result_mock
+    mock_run.return_value = _cp(returncode=0, stdout="abc123def456 20240101\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         get_submodule_commit(Path(tmpdir))
 
-    argv = mock_run.call_args[0][0]
+    argv = mock_run.call_args[0]
     assert argv[-1] == "HEAD"
 
 
 @patch("scripts.lib.gitmodules.get_submodule_commit")
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_submodule_commit_with_base_threads_ref(mock_run, mock_get_commit):
     """get_submodule_commit_with_base must pass `ref` through to
     get_submodule_commit, and describe the nearest semver tag from the
@@ -375,35 +400,23 @@ def test_get_submodule_commit_with_base_threads_ref(mock_run, mock_get_commit):
     disagree with get_submodule_commit if a remote-tracking ref moves
     between the two subprocess calls."""
     mock_get_commit.return_value = ("abc123def456", "abc123d", "20240101")
-
-    describe = MagicMock()
-    describe.returncode = 0
-    describe.stdout = "v1.5.0\n"
-    mock_run.return_value = describe
+    mock_run.return_value = _cp(returncode=0, stdout="v1.5.0\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_submodule_commit_with_base(Path(tmpdir), ref="origin/main")
 
     mock_get_commit.assert_called_once_with(Path(tmpdir), "origin/main")
-    describe_argv = mock_run.call_args[0][0]
+    describe_argv = mock_run.call_args[0]
     assert describe_argv[-1] == "abc123def456"
     assert result[3] == "1.5.0"
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_tag_commit_success(mock_run):
     """Test get_tag_commit with valid tag."""
-    rev = MagicMock()
-    rev.returncode = 0
-    rev.stdout = "abc123def456\n"
-
-    date_result = MagicMock()
-    date_result.returncode = 0
-    date_result.stdout = "20240101\n"
-
-    describe = MagicMock()
-    describe.returncode = 0
-    describe.stdout = "v1.5.0\n"
+    rev = _cp(returncode=0, stdout="abc123def456\n")
+    date_result = _cp(returncode=0, stdout="20240101\n")
+    describe = _cp(returncode=0, stdout="v1.5.0\n")
 
     mock_run.side_effect = [rev, date_result, describe]
 
@@ -416,44 +429,33 @@ def test_get_tag_commit_success(mock_run):
         assert result[3] == "1.5.0"
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_tag_commit_invalid_tag(mock_run):
     """Test get_tag_commit with invalid tag."""
-    rev = MagicMock()
-    rev.returncode = 128
-    rev.stdout = ""
-    mock_run.return_value = rev
+    mock_run.return_value = _cp(returncode=128, stdout="")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_tag_commit(Path(tmpdir), "invalid")
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_tag_info_with_tagger_timestamp(mock_run):
     """Test extracting timestamp from tagger line."""
-    check = MagicMock()
-    check.returncode = 0
-    check.stdout = "v1.0.0\n"
-
-    cat = MagicMock()
-    cat.returncode = 0
-    cat.stdout = (
-        "object abc123\n"
-        "type commit\n"
-        "tag v1.0.0\n"
-        "tagger John Doe <john@example.com> 1704067200 +0000\n"
-        "\n"
-        "Release\n"
+    check = _cp(returncode=0, stdout="v1.0.0\n")
+    cat = _cp(
+        returncode=0,
+        stdout=(
+            "object abc123\n"
+            "type commit\n"
+            "tag v1.0.0\n"
+            "tagger John Doe <john@example.com> 1704067200 +0000\n"
+            "\n"
+            "Release\n"
+        ),
     )
-
-    log = MagicMock()
-    log.returncode = 1
-    log.stdout = ""
-
-    rev = MagicMock()
-    rev.returncode = 0
-    rev.stdout = "abc123def456\n"
+    log = _cp(returncode=1, stdout="")
+    rev = _cp(returncode=0, stdout="abc123def456\n")
 
     mock_run.side_effect = [check, cat, log, rev]
 
@@ -464,24 +466,13 @@ def test_get_tag_info_with_tagger_timestamp(mock_run):
         assert "2024-01-01" in result["published_at"]
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_tag_info_no_tagger_uses_log(mock_run):
     """Test fallback to log when tagger line missing."""
-    check = MagicMock()
-    check.returncode = 0
-    check.stdout = "v1.0.0\n"
-
-    cat = MagicMock()
-    cat.returncode = 0
-    cat.stdout = "object abc123\ntype commit\n\n"
-
-    log = MagicMock()
-    log.returncode = 0
-    log.stdout = "2024-01-01T10:00:00+00:00\nRelease message\n"
-
-    rev = MagicMock()
-    rev.returncode = 0
-    rev.stdout = "abc123def456\n"
+    check = _cp(returncode=0, stdout="v1.0.0\n")
+    cat = _cp(returncode=0, stdout="object abc123\ntype commit\n\n")
+    log = _cp(returncode=0, stdout="2024-01-01T10:00:00+00:00\nRelease message\n")
+    rev = _cp(returncode=0, stdout="abc123def456\n")
 
     mock_run.side_effect = [check, cat, log, rev]
 
@@ -491,26 +482,20 @@ def test_get_tag_info_no_tagger_uses_log(mock_run):
         assert "2024-01-01" in result["published_at"]
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_commit_info_invalid_date(mock_run):
     """Test get_commit_info with invalid ISO date."""
-    log = MagicMock()
-    log.returncode = 0
-    log.stdout = "abc123\ninvalid-date\nbody\n"
-    mock_run.return_value = log
+    mock_run.return_value = _cp(returncode=0, stdout="abc123\ninvalid-date\nbody\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_commit_info(Path(tmpdir), "HEAD")
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_commit_info_missing_fields(mock_run):
     """Test get_commit_info with missing fields."""
-    log = MagicMock()
-    log.returncode = 0
-    log.stdout = "abc123\n"  # Only commit, missing date and body
-    mock_run.return_value = log
+    mock_run.return_value = _cp(returncode=0, stdout="abc123\n")  # missing date and body
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_commit_info(Path(tmpdir), "HEAD")
@@ -529,13 +514,10 @@ def test_get_changelog_info_no_tag_no_commit(mock_tag_info, mock_commit_info):
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_submodule_commit_with_multiple_fields(mock_run):
     """Test get_submodule_commit with output containing multiple fields."""
-    result_mock = MagicMock()
-    result_mock.returncode = 0
-    result_mock.stdout = "abc123def456 20240101 extra stuff\n"
-    mock_run.return_value = result_mock
+    mock_run.return_value = _cp(returncode=0, stdout="abc123def456 20240101 extra stuff\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_submodule_commit(Path(tmpdir))
@@ -545,23 +527,20 @@ def test_get_submodule_commit_with_multiple_fields(mock_run):
         assert result[2] == "20240101"
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_submodule_commit_empty_output(mock_run):
     """Test get_submodule_commit with empty output."""
-    result_mock = MagicMock()
-    result_mock.returncode = 0
-    result_mock.stdout = ""
-    mock_run.return_value = result_mock
+    mock_run.return_value = _cp(returncode=0, stdout="")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_submodule_commit(Path(tmpdir))
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_submodule_commit_with_base_no_commit(mock_run):
     """Test get_submodule_commit_with_base when commit call fails."""
-    mock_run.side_effect = subprocess.CalledProcessError(1, "git")
+    mock_run.return_value = _cp(returncode=128, stdout="")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_submodule_commit_with_base(Path(tmpdir))
@@ -569,15 +548,11 @@ def test_get_submodule_commit_with_base_no_commit(mock_run):
 
 
 @patch("scripts.lib.gitmodules.get_submodule_commit")
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_submodule_commit_with_base_no_semver(mock_run, mock_get_commit):
     """Test get_submodule_commit_with_base when no semver tag found."""
     mock_get_commit.return_value = ("abc123def456", "abc123d", "20240101")
-
-    describe = MagicMock()
-    describe.returncode = 128  # Tag not found
-    describe.stdout = ""
-    mock_run.return_value = describe
+    mock_run.return_value = _cp(returncode=128, stdout="")  # tag not found
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_submodule_commit_with_base(Path(tmpdir))
@@ -585,16 +560,11 @@ def test_get_submodule_commit_with_base_no_semver(mock_run, mock_get_commit):
         assert result[3] is None  # base_semver should be None
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
+@patch("scripts.lib.gitmodules.run_git")
 def test_get_tag_commit_date_failure(mock_run):
     """Test get_tag_commit when date retrieval fails."""
-    rev = MagicMock()
-    rev.returncode = 0
-    rev.stdout = "abc123def456\n"
-
-    date_result = MagicMock()
-    date_result.returncode = 1
-    date_result.stdout = ""
+    rev = _cp(returncode=0, stdout="abc123def456\n")
+    date_result = _cp(returncode=1, stdout="")
 
     mock_run.side_effect = [rev, date_result]
 
@@ -603,10 +573,10 @@ def test_get_tag_commit_date_failure(mock_run):
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.subprocess.run")
-def test_get_tag_commit_with_exception(mock_run):
-    """Test get_tag_commit when exception occurs."""
-    mock_run.side_effect = OSError("Disk error")
+@patch("scripts.lib.gitmodules.run_git")
+def test_get_tag_commit_with_timeout(mock_run):
+    """A run_git timeout (returncode=124) on the first call must not raise."""
+    mock_run.return_value = _cp(returncode=124, stderr="command timed out after 10s")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_tag_commit(Path(tmpdir), "v1.0.0")

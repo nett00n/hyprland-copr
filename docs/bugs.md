@@ -163,10 +163,3 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
   empty) -> silent no-op flag, misleading. `FORCE_REBUILD` is the real flag that
   replaced it (`full-cycle.py:154,219,790`; `stage-show-plan.py:116`;
   `lib/pipeline.py:81-82`), see docs/operations.md [P3/D1]
-
-- #BUG-0010 `lib/gitmodules.py` reimplements raw git subprocess calls **15x**
-  (re-counted 2026-08-18, was 8x) instead of using `lib/subprocess_utils.run_git` ->
-  inconsistent timeouts (**9** of the 15 call sites have none at all: lines 68, 84,
-  110, 123, 135, 160, 176, 194, 242) and error handling; `fetch_tags`
-  (`lib/gitmodules.py:26-50`) catches only `subprocess.TimeoutExpired`, unlike
-  `run_git` which also catches `FileNotFoundError` [P2/D3]

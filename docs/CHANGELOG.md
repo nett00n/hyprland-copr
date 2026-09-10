@@ -14,6 +14,15 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-09-09
 
+- Fixed: `lib.subprocess_utils.run_git` no longer raises `FileNotFoundError`/
+  `subprocess.TimeoutExpired` on a missing `git` binary or a timed-out command --
+  it now returns a synthetic `CompletedProcess` (`returncode=127`/`124`) the same
+  way `run_cmd()` already reported those cases. `scripts/lib/gitmodules.py`'s 15
+  raw `subprocess.run(["git", ...])` calls (9 of them with no timeout at all,
+  including the network-hitting `git submodule update --init`) now all go
+  through `run_git`, so a hung git call during `update-daily` times out instead
+  of hanging the nightly run indefinitely (docs/bugs.md formerly BUG-0010).
+
 - Fixed: `make stage-validate` now exits non-zero when any single package fails
   validation, not just on global checks (group membership/duplicate URLs/
   `.gitmodules`). `stage-validate.py`'s per-package loop discarded

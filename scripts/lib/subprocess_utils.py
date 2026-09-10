@@ -77,21 +77,38 @@ def run_cmd(
 def run_git(
     *args: str, cwd: Path | None = None, timeout: int = 300
 ) -> subprocess.CompletedProcess:
-    """Run a git command, returning the CompletedProcess.
+    """Run a git command, returning the CompletedProcess. Never raises.
 
     Args:
         *args: git command arguments
         cwd: Working directory for git command
-        timeout: Timeout in seconds (default 300)
+        timeout: Timeout in seconds (default 300 -- callers doing network work,
+            e.g. `fetch`/`ls-remote`, should pass a shorter one, e.g. 30; callers
+            doing local-only work, e.g. `rev-list`/`describe`, may tighten to 10)
 
     Returns:
-        CompletedProcess with returncode, stdout, stderr
+        A CompletedProcess with returncode, stdout, stderr -- always, even on
+        failure. A missing `git` binary or a timeout is reported the same way
+        run_cmd() reports them, as a synthetic CompletedProcess rather than a
+        raised exception:
+          - git not found: returncode=127, stderr="command not found: git"
+          - timed out: returncode=124, stderr="command timed out after {timeout}s: ..."
+        Both cases leave stdout="". Callers should check returncode rather than
+        wrap this call in try/except.
     """
-    return subprocess.run(
-        ["git", *args],
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        stdin=subprocess.DEVNULL,
-        timeout=timeout,
-    )
+    cmd = ["git", *args]
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            stdin=subprocess.DEVNULL,
+            timeout=timeout,
+        )
+    except FileNotFoundError:
+        return subprocess.CompletedProcess(cmd, 127, "", "command not found: git")
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(
+            cmd, 124, "", f"command timed out after {timeout}s: {shlex.join(cmd)}"
+        )

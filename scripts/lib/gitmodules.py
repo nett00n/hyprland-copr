@@ -1,9 +1,15 @@
-"""Gitmodules parsing and submodule utilities."""
+"""Gitmodules parsing and submodule utilities.
+
+All git subprocess access goes through lib.subprocess_utils.run_git rather than
+calling subprocess.run directly, so it inherits run_git's timeout defaults and
+its no-raise contract (see that function's docstring).
+"""
 
 import configparser
-import subprocess
 import sys
 from pathlib import Path
+
+from .subprocess_utils import run_git
 
 
 def parse_gitmodules(path: Path) -> list[dict]:
@@ -32,29 +38,23 @@ def parse_gitmodules(path: Path) -> list[dict]:
 
 def fetch_tags(url: str) -> list[str]:
     """Fetch all tags from a remote git URL."""
-    try:
-        result = subprocess.run(
-            ["git", "ls-remote", "--tags", url],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        if result.returncode != 0:
-            print(f"  warning: failed to fetch tags from {url}", file=sys.stderr)
-            return []
-        tags = []
-        for line in result.stdout.splitlines():
-            parts = line.split("\t", 1)
-            if len(parts) != 2:
-                continue
-            ref = parts[1]
-            if ref.endswith("^{}"):
-                continue
-            tags.append(ref.removeprefix("refs/tags/"))
-        return tags
-    except subprocess.TimeoutExpired:
+    result = run_git("ls-remote", "--tags", url, timeout=30)
+    if result.returncode == 124:
         print(f"  warning: timeout fetching tags from {url}", file=sys.stderr)
         return []
+    if result.returncode != 0:
+        print(f"  warning: failed to fetch tags from {url}", file=sys.stderr)
+        return []
+    tags = []
+    for line in result.stdout.splitlines():
+        parts = line.split("\t", 1)
+        if len(parts) != 2:
+            continue
+        ref = parts[1]
+        if ref.endswith("^{}"):
+            continue
+        tags.append(ref.removeprefix("refs/tags/"))
+    return tags
 
 
 def ensure_initialized(root: Path, modules: list[dict], urls: set[str]) -> list[str]:
@@ -72,11 +72,7 @@ def ensure_initialized(root: Path, modules: list[dict], urls: set[str]) -> list[
     if not paths:
         return []
 
-    status = subprocess.run(
-        ["git", "-C", str(root), "submodule", "status", "--", *paths],
-        capture_output=True,
-        text=True,
-    )
+    status = run_git("-C", str(root), "submodule", "status", "--", *paths)
     if status.returncode != 0:
         return []
 
@@ -88,10 +84,14 @@ def ensure_initialized(root: Path, modules: list[dict], urls: set[str]) -> list[
     if not uninitialized:
         return []
 
-    subprocess.run(
-        ["git", "-C", str(root), "submodule", "update", "--init", "--", *uninitialized],
-        check=True,
+    update = run_git(
+        "-C", str(root), "submodule", "update", "--init", "--", *uninitialized
     )
+    if update.returncode != 0:
+        raise RuntimeError(
+            f"git submodule update --init failed (exit {update.returncode}): "
+            f"{update.stderr.strip()}"
+        )
     return uninitialized
 
 
@@ -114,24 +114,11 @@ def get_tag_info(repo: Path, version: str) -> dict | None:
 
     tag = f"v{version}"
 
-    check = subprocess.run(
-        ["git", "-C", str(repo), "tag", "-l", tag],
-        capture_output=True,
-        text=True,
-    )
+    check = run_git("-C", str(repo), "tag", "-l", tag)
     if not check.stdout.strip():
         # Tag not found locally — try fetching it from the remote
-        subprocess.run(
-            ["git", "-C", str(repo), "fetch", "origin", "tag", tag],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        check = subprocess.run(
-            ["git", "-C", str(repo), "tag", "-l", tag],
-            capture_output=True,
-            text=True,
-        )
+        run_git("-C", str(repo), "fetch", "origin", "tag", tag, timeout=30)
+        check = run_git("-C", str(repo), "tag", "-l", tag)
         if not check.stdout.strip():
             return None
 
@@ -139,11 +126,7 @@ def get_tag_info(repo: Path, version: str) -> dict | None:
     body = None
 
     # Try annotated tag first
-    cat = subprocess.run(
-        ["git", "-C", str(repo), "cat-file", "tag", tag],
-        capture_output=True,
-        text=True,
-    )
+    cat = run_git("-C", str(repo), "cat-file", "tag", tag)
     if cat.returncode == 0 and cat.stdout:
         lines = cat.stdout.splitlines()
         blank = next((i for i, line in enumerate(lines) if line == ""), len(lines))
@@ -164,11 +147,7 @@ def get_tag_info(repo: Path, version: str) -> dict | None:
 
     # Fall back to commit log for missing date or body
     if not published_at or not body:
-        log = subprocess.run(
-            ["git", "-C", str(repo), "log", "-1", "--format=%aI%n%B", tag],
-            capture_output=True,
-            text=True,
-        )
+        log = run_git("-C", str(repo), "log", "-1", "--format=%aI%n%B", tag)
         if log.returncode == 0 and log.stdout:
             log_lines = log.stdout.splitlines()
             if not published_at and log_lines:
@@ -180,11 +159,7 @@ def get_tag_info(repo: Path, version: str) -> dict | None:
         return None
 
     # Resolve tag to its commit hash (dereferences annotated tags)
-    rev = subprocess.run(
-        ["git", "-C", str(repo), "rev-list", "-n1", tag],
-        capture_output=True,
-        text=True,
-    )
+    rev = run_git("-C", str(repo), "rev-list", "-n1", tag)
     commit = rev.stdout.strip() if rev.returncode == 0 else None
 
     return {"published_at": published_at, "body": body, "tag": tag, "commit": commit}
@@ -198,11 +173,7 @@ def get_commit_info(repo: Path, ref: str = "HEAD") -> dict | None:
     """
     import datetime
 
-    log = subprocess.run(
-        ["git", "-C", str(repo), "log", "-1", "--format=%H%n%aI%n%B", ref],
-        capture_output=True,
-        text=True,
-    )
+    log = run_git("-C", str(repo), "log", "-1", "--format=%H%n%aI%n%B", ref)
     if log.returncode != 0 or not log.stdout:
         return None
     lines = log.stdout.splitlines()
@@ -245,29 +216,16 @@ def get_submodule_commit(repo: Path, ref: str = "HEAD") -> tuple[str, str, str] 
     tree happens to sit (a pinned sibling can share the same checkout without
     its version resolution being affected -- see docs/bugs.md BUG-0033).
     """
-    try:
-        result = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(repo),
-                "log",
-                "-1",
-                "--format=%H %cd",
-                "--date=format:%Y%m%d",
-                ref,
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        parts = result.stdout.strip().split()
-        if len(parts) < 2:
-            return None
-        full_hash, date_str = parts[0], parts[1]
-        return full_hash, full_hash[:7], date_str
-    except (subprocess.CalledProcessError, OSError, ValueError):
+    result = run_git(
+        "-C", str(repo), "log", "-1", "--format=%H %cd", "--date=format:%Y%m%d", ref
+    )
+    if result.returncode != 0:
         return None
+    parts = result.stdout.strip().split()
+    if len(parts) < 2:
+        return None
+    full_hash, date_str = parts[0], parts[1]
+    return full_hash, full_hash[:7], date_str
 
 
 def get_submodule_commit_with_base(
@@ -287,28 +245,20 @@ def get_submodule_commit_with_base(
     # `ref` itself, so this can't disagree with get_submodule_commit() above if
     # a remote-tracking ref moves between the two subprocess calls.
     base_semver: str | None = None
-    try:
-        result = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(repo),
-                "describe",
-                "--tags",
-                "--match",
-                "v*.*.*",
-                "--abbrev=0",
-                full_hash,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            tag = result.stdout.strip()
-            base_semver = tag.lstrip("v")
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
-        pass
+    result = run_git(
+        "-C",
+        str(repo),
+        "describe",
+        "--tags",
+        "--match",
+        "v*.*.*",
+        "--abbrev=0",
+        full_hash,
+        timeout=10,
+    )
+    if result.returncode == 0 and result.stdout.strip():
+        tag = result.stdout.strip()
+        base_semver = tag.lstrip("v")
 
     return full_hash, short_hash, date_str, base_semver
 
@@ -318,70 +268,46 @@ def get_tag_commit(repo: Path, tag: str) -> tuple[str, str, str, str | None] | N
 
     Resolves the tag to its commit and extracts commit info and nearest semver base.
     """
-    try:
-        # Resolve tag to full commit hash
-        rev_result = subprocess.run(
-            ["git", "-C", str(repo), "rev-list", "-n1", f"refs/tags/{tag}"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        if rev_result.returncode != 0 or not rev_result.stdout.strip():
-            return None
-
-        full_hash = rev_result.stdout.strip()
-
-        # Get date of the commit
-        date_result = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(repo),
-                "log",
-                "-1",
-                "--format=%cd",
-                "--date=format:%Y%m%d",
-                full_hash,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        if date_result.returncode != 0 or not date_result.stdout.strip():
-            return None
-
-        date_str = date_result.stdout.strip()
-
-        # Find nearest semver tag from this commit
-        base_semver: str | None = None
-        try:
-            describe_result = subprocess.run(
-                [
-                    "git",
-                    "-C",
-                    str(repo),
-                    "describe",
-                    "--tags",
-                    "--match",
-                    "v*.*.*",
-                    "--abbrev=0",
-                    full_hash,
-                ],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            if describe_result.returncode == 0 and describe_result.stdout.strip():
-                base_tag = describe_result.stdout.strip()
-                base_semver = base_tag.lstrip("v")
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
-            pass
-
-        return full_hash, full_hash[:7], date_str, base_semver
-    except (
-        subprocess.CalledProcessError,
-        subprocess.TimeoutExpired,
-        OSError,
-        ValueError,
-    ):
+    # Resolve tag to full commit hash
+    rev_result = run_git(
+        "-C", str(repo), "rev-list", "-n1", f"refs/tags/{tag}", timeout=10
+    )
+    if rev_result.returncode != 0 or not rev_result.stdout.strip():
         return None
+
+    full_hash = rev_result.stdout.strip()
+
+    # Get date of the commit
+    date_result = run_git(
+        "-C",
+        str(repo),
+        "log",
+        "-1",
+        "--format=%cd",
+        "--date=format:%Y%m%d",
+        full_hash,
+        timeout=10,
+    )
+    if date_result.returncode != 0 or not date_result.stdout.strip():
+        return None
+
+    date_str = date_result.stdout.strip()
+
+    # Find nearest semver tag from this commit
+    base_semver: str | None = None
+    describe_result = run_git(
+        "-C",
+        str(repo),
+        "describe",
+        "--tags",
+        "--match",
+        "v*.*.*",
+        "--abbrev=0",
+        full_hash,
+        timeout=10,
+    )
+    if describe_result.returncode == 0 and describe_result.stdout.strip():
+        base_tag = describe_result.stdout.strip()
+        base_semver = base_tag.lstrip("v")
+
+    return full_hash, full_hash[:7], date_str, base_semver
