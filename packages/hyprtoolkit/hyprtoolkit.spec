@@ -1,11 +1,11 @@
 
 Name:           hyprtoolkit
-Version:        0.5.4
-Release:        18%{?dist}
+Version:        0.6.0
+Release:        1%{?dist}
 Summary:        A modern C++ Wayland-native GUI toolkit
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprtoolkit
-Source0:        https://github.com/hyprwm/hyprtoolkit/archive/refs/tags/v0.5.4.tar.gz#/hyprtoolkit-0.5.4.tar.gz
+Source0:        https://github.com/hyprwm/hyprtoolkit/archive/refs/tags/v0.6.0.tar.gz#/hyprtoolkit-0.6.0.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -39,8 +39,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.5.4
-Commit:            795d06e76434a951855762104f2b0c8c3842e052
+Tag:               v0.6.0
+Commit:            f8cbaf42e1f7fdc9c7565d7be3e935f6d56c7a39
 
 %prep
 %autosetup -p1
@@ -68,6 +68,6 @@ Development files for hyprtoolkit.
 %{_libdir}/pkgconfig/hyprtoolkit.pc
 
 %changelog
-* Sat May 02 2026 nett00n <copr@nett00n.org> - 0.5.4-18
+* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.6.0-1
 
-- version: bump to 0.5.4
+- version: bump to 0.6.0

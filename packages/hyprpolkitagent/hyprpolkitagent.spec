@@ -1,11 +1,11 @@
 
 Name:           hyprpolkitagent
-Version:        0.1.3
-Release:        14%{?dist}
+Version:        0.2.0
+Release:        1%{?dist}
 Summary:        A polkit authentication agent written in QT/QML
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpolkitagent
-Source0:        https://github.com/hyprwm/hyprpolkitagent/archive/refs/tags/v0.1.3.tar.gz#/hyprpolkitagent-0.1.3.tar.gz
+Source0:        https://github.com/hyprwm/hyprpolkitagent/archive/refs/tags/v0.2.0.tar.gz#/hyprpolkitagent-0.2.0.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -28,8 +28,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.1.3
-Commit:            7e4054410f6d6331b239fea1c659ad6a917fbf6a
+Tag:               v0.2.0
+Commit:            0e4492994e211b9af9365f16a9fda35d32e106bb
 
 %prep
 %autosetup -p1
@@ -49,6 +49,6 @@ Commit:            7e4054410f6d6331b239fea1c659ad6a917fbf6a
 %{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service
 
 %changelog
-* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.3-14
+* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.2.0-1
 
-- version: bump to 0.1.3
+- version: bump to 0.2.0
