@@ -1,25 +1,28 @@
 
 Name:           hyprpolkitagent
 Version:        0.2.0
-Release:        1%{?dist}
-Summary:        A polkit authentication agent written in QT/QML
+Release:        4%{?dist}
+Summary:        A polkit authentication agent written with hyprtoolkit
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpolkitagent
 Source0:        https://github.com/hyprwm/hyprpolkitagent/archive/refs/tags/v0.2.0.tar.gz#/hyprpolkitagent-0.2.0.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
+BuildRequires:  hyprgraphics-devel
+BuildRequires:  hyprlang-devel
+BuildRequires:  hyprtoolkit-devel
 BuildRequires:  hyprutils-devel
 BuildRequires:  ninja-build
+BuildRequires:  pkgconfig(libdrm)
+BuildRequires:  pkgconfig(pixman-1)
 BuildRequires:  pkgconfig(polkit-agent-1)
-BuildRequires:  pkgconfig(polkit-qt6-1)
-BuildRequires:  qt6-qtdeclarative-devel
-BuildRequires:  qt6-qtquickcontrols2-devel
+BuildRequires:  pkgconfig(sdbus-c++) >= 2
 
 
 
 %description
-A simple polkit authentication agent for Hyprland, written in QT/QML
+A simple polkit authentication agent for Hyprland, written with hyprtoolkit
 
 Maintainer info:
 
@@ -49,6 +52,6 @@ Commit:            0e4492994e211b9af9365f16a9fda35d32e106bb
 %{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service
 
 %changelog
-* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.2.0-1
+* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.2.0-4
 
 - version: bump to 0.2.0

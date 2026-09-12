@@ -440,7 +440,7 @@ hyprland-guiutils:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprland-*'
   license: BSD-3-Clause
-  release: 13
+  release: 14
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -451,6 +451,15 @@ hyprland-plugins:
   auto_update:
     release_type: latest-commit
   build:
+    prep:
+    - |
+      # hyprfocus: chase hyprland desktop/view refactor (m_isFloating is a
+      # plain member on the CWindow shipped by our packaged Hyprland version;
+      # the isFloating() accessor lands in a later Hyprland release)
+      sed -i \
+        -e 's|window->isFloating()|window->m_isFloating|' \
+        -e 's|w->isFloating()|w->m_isFloating|g' \
+        hyprfocus/main.cpp
     system: cmake
   build_requires:
   - cmake
@@ -487,15 +496,13 @@ hyprland-plugins:
   - '%license LICENSE'
   - '%{_prefix}/lib/libhypr*.so'
   license: BSD-3-Clause
-  release: 3
+  release: 7
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
       date: '20260905'
       full: 722f15a77768eab13f01f5e5dce024bd2f61f270
-    patches:
-    - hyprland-0.54-exclude-incompatible-plugins.patch
   summary: Official plugins for Hyprland
   url: https://github.com/hyprwm/hyprland-plugins
   version: 0.56.0^20260905git722f15a
@@ -636,7 +643,7 @@ hyprlauncher:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprlauncher'
   license: BSD-3-Clause
-  release: 19
+  release: 20
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -726,7 +733,7 @@ hyprpaper:
   - '%{_bindir}/hyprpaper'
   - '%{_userunitdir}/hyprpaper.service'
   license: BSD-3-Clause
-  release: 19
+  release: 20
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -772,16 +779,22 @@ hyprpolkitagent:
   build_requires:
   - cmake
   - gcc-c++
+  - hyprgraphics-devel
+  - hyprlang-devel
+  - hyprtoolkit-devel
   - hyprutils-devel
   - ninja-build
+  - pkgconfig(libdrm)
+  - pkgconfig(pixman-1)
   - pkgconfig(polkit-agent-1)
-  - pkgconfig(polkit-qt6-1)
-  - qt6-qtdeclarative-devel
-  - qt6-qtquickcontrols2-devel
+  - pkgconfig(sdbus-c++) >= 2
   depends_on:
+  - hyprgraphics
+  - hyprlang
+  - hyprtoolkit
   - hyprutils
   description: |
-    A simple polkit authentication agent for Hyprland, written in QT/QML
+    A simple polkit authentication agent for Hyprland, written with hyprtoolkit
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -789,11 +802,11 @@ hyprpolkitagent:
   - '%{_prefix}/libexec/hyprpolkitagent'
   - '%{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service'
   license: BSD-3-Clause
-  release: 1
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: A polkit authentication agent written in QT/QML
+  summary: A polkit authentication agent written with hyprtoolkit
   url: https://github.com/hyprwm/hyprpolkitagent
   version: 0.2.0
 hyprpwcenter:
@@ -823,7 +836,7 @@ hyprpwcenter:
   - '%{_prefix}/bin/hyprpwcenter'
   - '%{_prefix}/share/applications/hyprpwcenter.desktop'
   license: BSD-3-Clause
-  release: 19
+  release: 20
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -934,7 +947,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 23
+  release: 24
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1012,7 +1025,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 23
+  release: 24
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1023,6 +1036,7 @@ hyprtoolkit:
   build:
     system: cmake
   build_requires:
+  - abseil-cpp-devel
   - aquamarine-devel
   - cmake
   - gcc-c++
@@ -1057,7 +1071,7 @@ hyprtoolkit:
   - '%license LICENSE'
   - '%{_libdir}/libhyprtoolkit.so*'
   license: BSD-3-Clause
-  release: 1
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'

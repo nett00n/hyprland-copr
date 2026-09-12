@@ -100,7 +100,7 @@ New packages: snappy switcher, mpvpaper. Added a `recommends` field to package c
 - `hyprlock` — A gpu-accelerated screen lock for Hyprland
 - `hyprpaper` — A blazing fast Wayland wallpaper utility
 - `hyprpicker` — A wlroots-compatible Wayland color picker that does not suck
-- `hyprpolkitagent` — A polkit authentication agent written in QT/QML
+- `hyprpolkitagent` — A polkit authentication agent written with hyprtoolkit
 - `hyprpwcenter` — Volume management center for Hyprland
 - `hyprqt6engine` — QT6 Theme Provider for Hyprland
 - `hyprshot` — Utility to easily take screenshots in Hyprland using your mouse
@@ -166,7 +166,7 @@ New packages: snappy switcher, mpvpaper. Added a `recommends` field to package c
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-09-10
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-09-12
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

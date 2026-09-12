@@ -4,12 +4,11 @@
 
 Name:           hyprland-plugins
 Version:        0.56.0^20260905git722f15a
-Release:        3%{?dist}
+Release:        7%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
 Source0:        https://github.com/hyprwm/hyprland-plugins/archive/722f15a77768eab13f01f5e5dce024bd2f61f270/hyprland-plugins-722f15a.tar.gz
-Patch0:         hyprland-0.54-exclude-incompatible-plugins.patch
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -53,6 +52,14 @@ Commit:            722f15a77768eab13f01f5e5dce024bd2f61f270
 
 %prep
 %autosetup -p1 -n %{name}-%{commit}
+# hyprfocus: chase hyprland desktop/view refactor (m_isFloating is a
+# plain member on the CWindow shipped by our packaged Hyprland version;
+# the isFloating() accessor lands in a later Hyprland release)
+sed -i \
+  -e 's|window->isFloating()|window->m_isFloating|' \
+  -e 's|w->isFloating()|w->m_isFloating|g' \
+  hyprfocus/main.cpp
+
 
 %build
 %cmake
@@ -67,6 +74,6 @@ Commit:            722f15a77768eab13f01f5e5dce024bd2f61f270
 %{_prefix}/lib/libhypr*.so
 
 %changelog
-* Sat Sep 05 2026 nett00n <copr@nett00n.org> - 0.56.0^20260905git722f15a-3
+* Sat Sep 05 2026 nett00n <copr@nett00n.org> - 0.56.0^20260905git722f15a-7
 
 - hyprbars: chase hyprland (#702)
