@@ -50,6 +50,6 @@ Package info:
 %license LICENSE
 
 %changelog
-* Sat Sep 12 2026 nett00n <copr@nett00n.org> - 2.9-2
+* Sun Sep 13 2026 nett00n <copr@nett00n.org> - 2.9-2
 
 - Update to 2.9

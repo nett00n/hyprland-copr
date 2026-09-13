@@ -382,6 +382,9 @@ Hyprland:
     files:
     - '%{_includedir}/hyprland/'
     - '%{_prefix}/share/pkgconfig/hyprland.pc'
+    requires:
+    - glslang-devel
+    - lua-devel
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -404,7 +407,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 11
+  release: 13
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -449,7 +452,7 @@ hyprland-guiutils:
   version: 0.2.2
 hyprland-plugins:
   auto_update:
-    release_type: latest-commit
+    release_type: pinned-commit
   build:
     prep:
     - |
@@ -464,7 +467,9 @@ hyprland-plugins:
   build_requires:
   - cmake
   - gcc-c++
+  - glslang-devel
   - hyprland-devel
+  - lua-devel
   - ninja-build
   - pkgconfig(libdrm)
   - pkgconfig(libinput)
@@ -494,18 +499,21 @@ hyprland-plugins:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/lib/libhypr*.so'
+  - '%{_prefix}/lib/libborders-plus-plus.so'
+  - '%{_prefix}/lib/libcsgo-vulkan-fix.so'
+  - '%{_prefix}/lib/libhyprbars.so'
+  - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 7
+  release: 2
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
     commit:
-      date: '20260905'
-      full: 722f15a77768eab13f01f5e5dce024bd2f61f270
+      date: '20260805'
+      full: 00862ca3e2908857f9660adbba1b2d55796aaa43
   summary: Official plugins for Hyprland
   url: https://github.com/hyprwm/hyprland-plugins
-  version: 0.56.0^20260905git722f15a
+  version: 0.56.0^20260805git00862ca
 hyprland-protocols:
   build:
     system: meson

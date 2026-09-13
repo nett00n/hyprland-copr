@@ -1,18 +1,20 @@
-%global commit 722f15a77768eab13f01f5e5dce024bd2f61f270
+%global commit 00862ca3e2908857f9660adbba1b2d55796aaa43
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
-%global commitdate 20260905
+%global commitdate 20260805
 
 Name:           hyprland-plugins
-Version:        0.56.0^20260905git722f15a
-Release:        7%{?dist}
+Version:        0.56.0^20260805git00862ca
+Release:        2%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
-Source0:        https://github.com/hyprwm/hyprland-plugins/archive/722f15a77768eab13f01f5e5dce024bd2f61f270/hyprland-plugins-722f15a.tar.gz
+Source0:        https://github.com/hyprwm/hyprland-plugins/archive/00862ca3e2908857f9660adbba1b2d55796aaa43/hyprland-plugins-00862ca.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
+BuildRequires:  glslang-devel
 BuildRequires:  hyprland-devel
+BuildRequires:  lua-devel
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(libdrm)
 BuildRequires:  pkgconfig(libinput)
@@ -48,7 +50,7 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Commit:            722f15a77768eab13f01f5e5dce024bd2f61f270
+Commit:            00862ca3e2908857f9660adbba1b2d55796aaa43
 
 %prep
 %autosetup -p1 -n %{name}-%{commit}
@@ -71,9 +73,12 @@ sed -i \
 %files
 %doc README.md
 %license LICENSE
-%{_prefix}/lib/libhypr*.so
+%{_prefix}/lib/libborders-plus-plus.so
+%{_prefix}/lib/libcsgo-vulkan-fix.so
+%{_prefix}/lib/libhyprbars.so
+%{_prefix}/lib/libhyprfocus.so
 
 %changelog
-* Sat Sep 05 2026 nett00n <copr@nett00n.org> - 0.56.0^20260905git722f15a-7
+* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.56.0^20260805git00862ca-2
 
-- hyprbars: chase hyprland (#702)
+- hyprpm: add pin for 0.56.2

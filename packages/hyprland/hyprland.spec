@@ -1,7 +1,7 @@
 
 Name:           hyprland
 Version:        0.56.2
-Release:        11%{?dist}
+Release:        13%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -109,6 +109,8 @@ return (... || check(prefixes));' src/helpers/MiscFunctions.cpp
 %package devel
 Summary:        Development files for A Modern C++ Wayland Compositor
 Requires:       %{name} = %{version}-%{release}
+Requires:       glslang-devel
+Requires:       lua-devel
 
 %description devel
 Development files for hyprland.
@@ -118,6 +120,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.56.2-11
+* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.56.2-13
 
 - [gha] Nix: update inputs
