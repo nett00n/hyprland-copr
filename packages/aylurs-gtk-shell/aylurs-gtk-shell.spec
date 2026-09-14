@@ -53,6 +53,6 @@ popd
 %{_prefix}/share/ags/
 
 %changelog
-* Sun Sep 13 2026 nett00n <copr@nett00n.org> - 3.1.2-12
+* Mon Sep 14 2026 nett00n <copr@nett00n.org> - 3.1.2-12
 
 - Update to 3.1.2
