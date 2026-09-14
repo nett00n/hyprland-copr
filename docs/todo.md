@@ -3,7 +3,7 @@
 Cleanup, complexity, and unbuilt features. Automation behaving wrong today goes in
 `docs/bugs.md` instead. Entries are deleted when done (the fix gets a
 `docs/CHANGELOG.md` bullet); IDs are never reused or renumbered, so deletions leave
-gaps. Next free ID: **TODO-0090**.
+gaps. Next free ID: **TODO-0094**.
 
 Each entry ends with a `[P#/D#]` marker:
 
@@ -205,7 +205,7 @@ else is still fedora+x86_64-only:
   long-running orchestration scripts already catch it cleanly --
   `full-cycle.py:851-853`, `stage-mock.py:441`, `stage-copr.py:306`, `stage-srpm.py:225`,
   `stage-vendor.py:231`, `stage-spec.py:321`, `stage-validate.py:173`,
-  `refresh-checksums.py:120`, `pkg-build-pop.py:54` and `serve.py:138` all wrap
+  `refresh-checksums.py:120` and `pkg-build-pop.py:54` all wrap
   `main()` in `except KeyboardInterrupt: print(...); sys.exit(130)`. And the
   Makefile layer around them propagates a SIGINT correctly too: the
   `PIPELINE_LOCK_FILE` flock (`Makefile:151-153`) is scoped to the holding
@@ -263,17 +263,50 @@ else is still fedora+x86_64-only:
   `stage-vendor.py:70-75`) -> extract to a small helper (the old `lib/stage_utils.py`
   was removed in the sqlite migration; a new home is needed, e.g.
   `lib/stage_common.py`) [P3/D1]
-- #TODO-0041 8 top-level scripts have zero tests (re-verified 2026-08-23; membership
-  changed -- `pkg-log-analysis.py` and `validate-packages.py` are now tested and drop
-  off this list; `serve.py` and `gen-readme-shell.py` are added; `rpm-dir-prefixes-convert.py`
-  now has `tests/test_rpm_dir_prefixes_convert.py` and drops off too, alongside its
-  regex-over-raw-text rewrite -- see docs/CHANGELOG.md 2026-08-23): `format-yaml.py`,
-  `gather-requires.py`, `gen-readme-shell.py`, `list-tags.py`, `pkg-build-pop.py`,
-  `serve.py`, `set-package-release.py`, `sort-yaml-lists.py` -> violates the project's
-  own TDD rule; worst offender remaining is the one regex-based YAML block parser,
-  `sort-yaml-lists.py`. `gather-requires`/`list-tags` have Makefile-level `make -n`
+- #TODO-0041 3 top-level scripts have zero tests (re-verified 2026-09-14; membership
+  changed -- `format-yaml.py`, `pkg-build-pop.py`, `set-package-release.py`, and
+  `sort-yaml-lists.py` are now tested and drop off this list (see docs/CHANGELOG.md
+  2026-09-14's Phase 1); `serve.py` is removed from the repo (formerly TODO-0048)
+  and drops off too): `gather-requires.py`, `gen-readme-shell.py`, `list-tags.py`
+  -> violates the coverage rule now stated in `docs/CONTRIBUTING.md` "Code quality
+  and linting". `gather-requires`/`list-tags` have Makefile-level `make -n`
   coverage only (`tests/integration/test_make_targets.py:583,605-616`), which never
-  executes the script [P1/D4]
+  executes the script; all three need a network or subprocess fake (`rpm`,
+  `git ls-remote`, or the jinja/git-log pair) rather than being pure-logic
+  [P2/D3]
+- #TODO-0090 `lib/yaml_utils.get_packages(path: Path = PACKAGES_YAML)`
+  (`lib/yaml_utils.py:118`) binds its default at import time, so a caller that
+  invokes it bare -- `set-package-release.py:53`, `pkg-build-pop.py:24` -- is not
+  redirected by `tests/conftest.py`'s `fake_repo` fixture monkeypatching
+  `lib.paths.PACKAGES_YAML`; both scripts' own tests work around this by also
+  patching the script module's `get_packages` reference directly. Found while
+  writing tests for TODO-0041. Fix: `get_packages(path: Path | None = None)` with
+  `path = path or PACKAGES_YAML` resolved inside the function body [P2/D1]
+- #TODO-0093 `tests/conftest.py`'s `fake_repo` fixture (`:15-77`) writes a
+  `packages.yaml` that is not valid YAML: `{\n  valid-pkg:\n    version: ...`
+  mixes a flow-mapping open brace with block-style indented content, which
+  `yaml.safe_load` rejects (`yaml.parser.ParserError: while parsing a flow
+  mapping ... expected ',' or '}', but got ':'`). Never caught before because
+  no existing test actually parses this default content via
+  `get_packages()`/`load_packages_yaml()` -- every prior `fake_repo` consumer
+  either overwrites `packages.yaml` itself first or never calls a YAML-parsing
+  function on it. Found while writing `tests/test_pkg_build_pop.py` for
+  TODO-0041, worked around there by writing a fresh valid `packages.yaml` in
+  each test rather than relying on the fixture default. Fix: drop the leading
+  `{`/trailing `}` so the fixture is plain block-style YAML [P2/D1]
+- #TODO-0091 `format-yaml.py:get_formatting_rules()` (`:63-97`) computes
+  `indent_spaces` from `.yamllint`'s `indentation` rule, but
+  `format_yaml_file()` (`:121-166`) never reads it -- it calls
+  `detect_indentation(content)` on the file's own existing content instead
+  (`:142`). Dead config path; found while writing tests for TODO-0041.
+  Either wire `indent_spaces` in as a fallback when detection is ambiguous, or
+  drop it from `get_formatting_rules()`'s return value [P3/D1]
+- #TODO-0092 `set-package-release.py:36`'s `lock = "--lock" in sys.argv` detects
+  the flag by membership anywhere in argv, so
+  `set-package-release.py --lock hyprlang 5` silently treats `--lock` as the
+  package-name positional (`sys.argv[1]`) instead of erroring -- found while
+  writing tests for TODO-0041. Switch to real flag parsing (argparse, or at
+  least filter `--lock` out of the positionals before indexing) [P3/D1]
 - #TODO-0042 `lib/log_analysis.py` is 1257 lines (re-verified 2026-08-18, grown from
   944) of ~41 copy-pasted `if m: issues.append(...); continue` blocks from
   hand-written regexes -> a data table of (regex, formatter) pairs would cut it by
@@ -293,9 +326,6 @@ else is still fedora+x86_64-only:
   outside `tests/test_reporting.py`; the live badge rendering is the Jinja macro
   `templates/_badge.j2`, unrelated to either function. Also `lib/yaml_utils.py:128`'s
   `load_packages = get_packages` alias has zero references -> remove all three [P3/D1]
-- #TODO-0048 `scripts/serve.py` (dev HTTP server, 144 lines) has no Makefile target
-  and no tests, only mentioned in `docs/operations.md:323` -> confirm still needed or
-  drop [P3/D1]
 - #TODO-0049 `scripts/pkg-log-analysis.py:6-15` imports eight underscore-prefixed
   "private" functions directly from `lib.log_analysis`, and redefines
   `HIGHLIGHT_PREFIX` locally (`:18`) as a third copy of that constant -> either make

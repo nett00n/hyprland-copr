@@ -84,6 +84,137 @@ aylurs-gtk-shell:
   summary: Scaffolding CLI for Astal+Gnim
   url: https://github.com/Aylur/ags
   version: 3.1.2
+cliphist:
+  build:
+    commands:
+    - go build -v -ldflags='-s -w' -o %{name} .
+    install:
+    - install -Dpm755 %{name} %{buildroot}%{_bindir}/%{name}
+    prep: []
+    system: golang
+  build_requires:
+  - golang
+  depends_on: []
+  description: |
+    Clipboard history “manager” for Wayland
+    - Write clipboard changes to a history file.
+    - Recall history with dmenu, rofi, wofi (or whatever other picker you like).
+    - Both text and images are supported.
+    - Clipboard is preserved byte-for-byte.
+        - Leading/trailing whitespace, no whitespace, or newlines are preserved.
+        - Won’t break fancy editor selections like Vim wordwise, linewise, or block mode.
+    - No concept of a picker, only pipes.
+
+    Requires Go, wl-clipboard, xdg-utils (for image MIME inference)."
+  devel:
+    files: []
+  files:
+  - '%doc readme.md'
+  - '%license LICENSE'
+  - '%{_bindir}/cliphist'
+  license: GPL-3.0-or-later
+  release: 10
+  requires:
+  - wl-clipboard
+  - xdg-utils
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+    bundled_deps: []
+  summary: Wayland clipboard manager with support for multimedia
+  url: https://github.com/sentriz/cliphist
+  version: 0.7.0
+cpptrace:
+  build:
+    commands:
+    - '%cmake -DCPPTRACE_USE_EXTERNAL_ZSTD=ON -DCPPTRACE_USE_EXTERNAL_LIBDWARF=ON -DCPPTRACE_FIND_LIBDWARF_WITH_PKGCONFIG=ON -DCPPTRACE_UNWIND_WITH_LIBUNWIND=ON'
+    - '%cmake_build'
+    install: []
+    no_lto: false
+    prep: []
+    system: cmake
+  build_requires:
+  - cmake
+  - gcc-c++
+  - libdwarf-code
+  - libdwarf-code-devel
+  - libzstd-devel
+  - ninja-build
+  - pkgconfig(libdwarf)
+  - pkgconfig(libunwind)
+  depends_on:
+  - libdwarf-code
+  description: |
+    Cpptrace is a simple and portable C++ stacktrace library supporting C++11 and greater on Linux, macOS, and Windows including MinGW and Cygwin environments. The goal: Make stack traces simple for once.
+
+    In addition to providing access to stack traces, cpptrace also provides a mechanism for getting stacktraces from thrown exceptions which is immensely valuable for debugging and triaging
+  devel:
+    files:
+    - '%{_includedir}/cpptrace/*.hpp'
+    - '%{_includedir}/ctrace/ctrace.h'
+    - '%{_libdir}/cmake/cpptrace/cpptrace-*.cmake'
+    - '%{_libdir}/cmake/cpptrace/Findzstd.cmake'
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_libdir}/libcpptrace.so*'
+  license: MIT
+  release: 40
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    bundled_deps: []
+  summary: Simple, portable, and self-contained stacktrace library for C++11 and newer
+  url: https://github.com/jeremy-rifkin/cpptrace
+  version: 1.0.4
+eww:
+  build:
+    cargo_update:
+    - time@0.3.34
+    commands: []
+    install: []
+    no_lto: false
+    prep:
+    - cargo update -p time@0.3.34 --offline
+    system: cargo
+  build_requires:
+  - atk-devel
+  - cairo-devel
+  - cargo
+  - dbus-devel
+  - gdk-pixbuf2-devel
+  - glib2-devel
+  - gtk-layer-shell-devel
+  - gtk3-devel
+  - libdbusmenu-gtk3-devel
+  - pango-devel
+  - rustc
+  depends_on: []
+  description: Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/eww'
+  license: MIT
+  release: 15
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+  summary: Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
+  url: https://github.com/elkowar/eww
+  version: 0.6.0
 glaze:
   build:
     commands:
@@ -450,6 +581,37 @@ hyprland-guiutils:
   summary: Hyprland GUI utilities
   url: https://github.com/hyprwm/hyprland-guiutils
   version: 0.2.2
+hyprland-per-window-layout:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    system: cargo
+  build_requires:
+  - cargo
+  - rustc
+  depends_on: []
+  description: |
+    Per-window keyboard layout (language) for Hyprland wayland compositor.
+    Automatically switches keyboard layout based on the active window.
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/%{name}'
+  license: MIT
+  release: 11
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+    source_dir: '%{name}-%{version}'
+  summary: Per-window keyboard layout daemon for Hyprland
+  url: https://github.com/coffebar/hyprland-per-window-layout.git
+  version: 2.8.1
 hyprland-plugins:
   auto_update:
     release_type: pinned-commit
@@ -1169,527 +1331,72 @@ hyprwire:
   summary: A fast and consistent wire protocol for IPC
   url: https://github.com/hyprwm/hyprwire
   version: 0.3.1
-pyprland:
+imageio-ffmpeg:
+  auto_update:
+    release_type: latest-tag
   build:
-    commands:
-    - python3 -m hatchling build -t wheel
-    install:
-    - python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --prefix /usr dist/*.whl
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: imageio_ffmpeg
     system: python
   build_requires:
+  - pyproject-rpm-macros
   - python3-devel
-  - python3-hatchling
   - python3-pip
-  description: |
-    Power up your desktop
-
-    A plugin system that extends your graphical
-    environment with features like scratchpads, dynamic popup nested menus,
-    custom notifications, easy monitor settings and moreThink of it as a Gnome
-    tweak tool for Hyprland, with options that can run on any desktop.
-    With a fully plugin-based architecture, it's lightweight and easy to
-    customize
+  - python3-setuptools
+  depends_on: []
+  description: FFMPEG wrapper for Python. Uses the system ffmpeg binary rather than the platform-specific binary that upstream normally bundles into its wheels.
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_bindir}/pypr'
-  - '%{_bindir}/pypr-gui'
-  - '%{_bindir}/pypr-quickstart'
-  - '%{python3_sitelib}/pyprland'
-  - '%{python3_sitelib}/pyprland-%{version}.dist-info'
-  license: MIT
-  release: 2
+  license: BSD-2-Clause
+  release: 9
   requires:
-  - python3-aiofiles
-  - python3-aiohttp
-  - python3-pillow
-  - qt6-qtdeclarative-devel
-  - qt6-qtquickcontrols2-devel
+  - ffmpeg-free
   rpm:
     buildarch: noarch
-    no_debug_package: false
+    no_debug_package: true
   source:
     archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: Scratchpads & many goodies for Hyprland
-  url: https://github.com/hyprland-community/pyprland
-  version: 3.4.4
-sndio:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: FFMPEG wrapper for Python
+  url: https://github.com/imageio/imageio-ffmpeg
+  version: 0.6.0
+ironbar:
   build:
-    configure_flags:
-    - --prefix=%{_prefix}
-    - --exec-prefix=%{_exec_prefix}
-    - --bindir=%{_bindir}
-    - --datadir=%{_datadir}
-    - --includedir=%{_includedir}
-    - --libdir=%{_libdir}
-    - --mandir=%{_mandir}
-    - --enable-alsa
-    system: configure
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    system: cargo
   build_requires:
-  - alsa-lib-devel
-  - gcc
-  - make
-  description: Portable version of OpenBSD's lightweight audio & MIDI sub-system
-  devel:
-    files:
-    - '%{_prefix}/include/sndio.h'
-    - '%{_prefix}/lib64/pkgconfig/sndio.pc'
-  files:
-  - '%license LICENSE'
-  - '%{_prefix}/bin/aucat'
-  - '%{_prefix}/bin/midicat'
-  - '%{_prefix}/bin/sndioctl'
-  - '%{_prefix}/bin/sndiod'
-  - '%{_prefix}/lib64/libsndio.so*'
-  - '%{_prefix}/share/man/*/*.gz'
-  license: ISC
-  release: 11
-  rpm:
-    no_debug_package: false
-  source:
-    archives:
-    - https://sndio.org/sndio-%{version}.tar.gz
-  summary: Portable version of OpenBSD's lightweight audio & MIDI sub-system
-  url: https://sndio.org/git/sndio
-  version: 1.10.0
-Waybar:
-  build:
-    commands:
-    - '%meson'
-    - '%meson_build'
-    system: meson
-  build_requires:
-  - catch-devel
-  - gcc-c++
-  - gpsd-devel
-  - jack-audio-connection-kit-devel
-  - libcava-v0-devel
-  - libdbusmenu-gtk3-devel
-  - libevdev-devel
+  - cairo-gobject-devel
+  - cargo
+  - dh-autoreconf
+  - gtk4-layer-shell-devel
   - libinput-devel
-  - libmpdclient-devel
-  - libnl3-devel
-  - meson
-  - ninja-build
-  - pipewire-devel
-  - pkgconfig(fmt)
-  - pkgconfig(gio-unix-2.0)
-  - pkgconfig(gtk-layer-shell-0)
-  - pkgconfig(gtkmm-3.0)
-  - pkgconfig(jsoncpp)
-  - pkgconfig(sigc++-2.0)
-  - pkgconfig(spdlog)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-cursor)
-  - pkgconfig(wayland-protocols)
-  - pkgconfig(xkbregistry)
-  - playerctl-devel
+  - luajit-devel
   - pulseaudio-libs-devel
-  - scdoc
-  - sndio-devel
-  - systemd
-  - upower-devel
-  - wireplumber-devel
-  depends_on:
-  - libcava-v0
-  - sndio
-  description: |
-    Highly customizable Wayland bar for Sway and Wlroots based compositors
-  devel:
-    files: []
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/waybar'
-  - '%{_mandir}/man5/waybar*.gz'
-  - '%{_sysconfdir}/xdg/waybar/'
-  - '%{_userunitdir}/waybar.service'
-  license: MIT
-  release: 18
-  rpm:
-    buildarch: ''
-    no_debug_package: false
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    name: Waybar
-  summary: Highly customizable Wayland bar for Sway and Wlroots based compositors
-  url: https://github.com/Alexays/Waybar
-  version: 0.15.0
-xdg-desktop-portal-hyprland:
-  build:
-    system: cmake
-  build_requires:
-  - cmake
-  - gcc-c++
-  - hyprland-protocols-devel
-  - hyprlang-devel
-  - hyprutils-devel
-  - hyprwayland-scanner-devel
-  - libeis-devel
-  - libuuid-devel
-  - ninja-build
-  - pkgconfig(gbm)
-  - pkgconfig(libdrm)
-  - pkgconfig(libpipewire-0.3)
-  - pkgconfig(libspa-0.2)
-  - pkgconfig(libsystemd)
-  - pkgconfig(Qt6Widgets)
-  - pkgconfig(sdbus-c++)
-  - pkgconfig(systemd)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-protocols)
-  - pkgconfig(wayland-scanner)
-  - qt6-qtbase-devel
-  - qt6-qtwayland-devel
-  - sdbus-cpp
-  - systemd-rpm-macros
-  depends_on:
-  - hyprland-protocols
-  - hyprlang
-  - hyprutils
-  - hyprwayland-scanner
-  description: xdg-desktop-portal backend for Hyprland
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/hyprland-share-picker'
-  - '%{_datadir}/dbus-1/services/org.freedesktop.impl.portal.desktop.hyprland.service'
-  - '%{_datadir}/xdg-desktop-portal/portals/hyprland.portal'
-  - '%{_libexecdir}/%{name}'
-  - '%{_userunitdir}/%{name}.service'
-  license: BSD-3-Clause
-  release: 9
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: An XDG-Destop-Portal backend for Hyprland (and wlroots)
-  url: https://github.com/hyprwm/xdg-desktop-portal-hyprland
-  version: 1.4.1
-cliphist:
-  build:
-    commands:
-    - go build -v -ldflags='-s -w' -o %{name} .
-    install:
-    - install -Dpm755 %{name} %{buildroot}%{_bindir}/%{name}
-    prep: []
-    system: golang
-  build_requires:
-  - golang
-  depends_on: []
-  description: |
-    Clipboard history “manager” for Wayland
-    - Write clipboard changes to a history file.
-    - Recall history with dmenu, rofi, wofi (or whatever other picker you like).
-    - Both text and images are supported.
-    - Clipboard is preserved byte-for-byte.
-        - Leading/trailing whitespace, no whitespace, or newlines are preserved.
-        - Won’t break fancy editor selections like Vim wordwise, linewise, or block mode.
-    - No concept of a picker, only pipes.
-
-    Requires Go, wl-clipboard, xdg-utils (for image MIME inference)."
-  devel:
-    files: []
-  files:
-  - '%doc readme.md'
-  - '%license LICENSE'
-  - '%{_bindir}/cliphist'
-  license: GPL-3.0-or-later
-  release: 10
-  requires:
-  - wl-clipboard
-  - xdg-utils
-  rpm:
-    no_debug_package: true
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    - '%{name}-%{version}-vendor.tar.gz'
-    bundled_deps: []
-  summary: Wayland clipboard manager with support for multimedia
-  url: https://github.com/sentriz/cliphist
-  version: 0.7.0
-uwsm:
-  build:
-    commands: []
-    install: []
-    no_lto: false
-    prep: []
-    system: meson
-  build_requires:
-  - gcc-c++
-  - meson
-  - ninja-build
-  - python3-dbus
-  - python3-pyxdg
-  - scdoc
-  - systemd-rpm-macros
-  depends_on: []
-  description: |
-    Universal Wayland Session Manager
-
-    Provides a set of Systemd units and helpers to set up the environment and manage standalone Wayland compositor sessions.
-
-    Aside from environment setup/cleanup, it makes Systemd do most of the work and does not require any extra daemons running in background (except for a tiny waitpid process and a simple shell signal handler in the lightest case).
-
-    This setup provides robust session management, overridable compositor- and session-aware environment management, XDG autostart, bi-directional binding with login session, clean shutdown, solutions for a set of small but annoying gotchas of systemd session management.
-
-    For compositors this is an opportunity to offload: Systemd integration, session/XDG autostart management, Systemd/DBus activation environment interaction with its caveats.
-  devel:
-    files: []
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/uwsm'
-  - '%{_datadir}/uwsm/modules/uwsm/'
-  - '%{_datadir}/uwsm/plugins'
-  - '%{_docdir}/uwsm/'
-  - '%{_libexecdir}/uwsm/prepare-env.sh'
-  - '%{_libexecdir}/uwsm/signal-handler.sh'
-  - '%{_mandir}/man*/uwsm*.gz'
-  - '%{_userunitdir}/app-graphical.slice'
-  - '%{_userunitdir}/background-graphical.slice'
-  - '%{_userunitdir}/session-graphical.slice'
-  - '%{_userunitdir}/wayland-session-bindpid@.service'
-  - '%{_userunitdir}/wayland-session-envelope@.target'
-  - '%{_userunitdir}/wayland-session-pre@.target'
-  - '%{_userunitdir}/wayland-session-shutdown.target'
-  - '%{_userunitdir}/wayland-session-waitenv.service'
-  - '%{_userunitdir}/wayland-session-xdg-autostart@.target'
-  - '%{_userunitdir}/wayland-session@.target'
-  - '%{_userunitdir}/wayland-wm-app-daemon.service'
-  - '%{_userunitdir}/wayland-wm-env@.service'
-  - '%{_userunitdir}/wayland-wm@.service'
-  license: MIT
-  release: 2
-  requires: []
-  rpm:
-    no_debug_package: true
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    bundled_deps: []
-  summary: Universal Wayland Session Manager
-  url: https://github.com/Vladimir-csp/uwsm
-  version: 0.26.7
-quickshell:
-  build:
-    commands:
-    - '%cmake -GNinja -DCRASH_REPORTER=OFF'
-    - '%cmake_build'
-    install: []
-    no_lto: false
-    prep: []
-    system: cmake
-  build_requires:
-  - cli11-devel
-  - cmake
-  - cpptrace-devel
-  - gcc-c++
-  - glib2-devel
-  - glslang-devel
-  - libdrm-devel
-  - libzstd-devel
-  - mesa-libgbm-devel
-  - ninja-build
-  - pam-devel
-  - pipewire-devel
-  - pkgconfig(jemalloc)
-  - polkit-devel
-  - qt6-qtbase-devel
-  - qt6-qtbase-private-devel
-  - qt6-qtdeclarative-devel
-  - qt6-qtdeclarative-private-devel
-  - qt6-qtshadertools-devel
-  - wayland-protocols-devel
-  depends_on:
-  - cpptrace
-  description: |
-    Quickshell is a toolkit for building status bars, widgets, lockscreens, and other desktop components using QtQuick. It can be used alongside your wayland compositor or window manager to build a complete desktop environment.
-  devel:
-    files: []
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/qs'
-  - '%{_bindir}/quickshell'
-  - '%{_datadir}/applications/org.quickshell.desktop'
-  - '%{_datadir}/icons/hicolor/scalable/apps/org.quickshell.svg'
-  license: LGPL-3.0-or-later
-  release: 2
-  requires: []
-  rpm:
-    no_debug_package: false
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz'
-    bundled_deps: []
-  source_dir: quickshell
-  summary: Flexible QtQuick based desktop shell toolkit
-  url: https://git.outfoxxed.me/quickshell/quickshell.git
-  version: 0.3.1
-hyprland-per-window-layout:
-  build:
-    commands: []
-    install: []
-    no_lto: false
-    prep: []
-    system: cargo
-  build_requires:
-  - cargo
+  - rust-gdk-pixbuf+default-devel
+  - rust-gdk4-wayland-sys+default-devel
+  - rust-glib-sys+default-devel
+  - rust-graphene-rs-devel
+  - rust-libdbus-sys+default-devel
+  - rust-pango-devel
   - rustc
-  depends_on: []
-  description: |
-    Per-window keyboard layout (language) for Hyprland wayland compositor.
-    Automatically switches keyboard layout based on the active window.
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/%{name}'
-  license: MIT
-  release: 11
-  requires: []
-  rpm:
-    no_debug_package: false
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    - '%{name}-%{version}-vendor.tar.gz'
-    source_dir: '%{name}-%{version}'
-  summary: Per-window keyboard layout daemon for Hyprland
-  url: https://github.com/coffebar/hyprland-per-window-layout.git
-  version: 2.8.1
-cpptrace:
-  build:
-    commands:
-    - '%cmake -DCPPTRACE_USE_EXTERNAL_ZSTD=ON -DCPPTRACE_USE_EXTERNAL_LIBDWARF=ON -DCPPTRACE_FIND_LIBDWARF_WITH_PKGCONFIG=ON -DCPPTRACE_UNWIND_WITH_LIBUNWIND=ON'
-    - '%cmake_build'
-    install: []
-    no_lto: false
-    prep: []
-    system: cmake
-  build_requires:
-  - cmake
-  - gcc-c++
-  - libdwarf-code
-  - libdwarf-code-devel
-  - libzstd-devel
-  - ninja-build
-  - pkgconfig(libdwarf)
-  - pkgconfig(libunwind)
   depends_on:
-  - libdwarf-code
+  - gtk4-layer-shell
   description: |
-    Cpptrace is a simple and portable C++ stacktrace library supporting C++11 and greater on Linux, macOS, and Windows including MinGW and Cygwin environments. The goal: Make stack traces simple for once.
-
-    In addition to providing access to stack traces, cpptrace also provides a mechanism for getting stacktraces from thrown exceptions which is immensely valuable for debugging and triaging
-  devel:
-    files:
-    - '%{_includedir}/cpptrace/*.hpp'
-    - '%{_includedir}/ctrace/ctrace.h'
-    - '%{_libdir}/cmake/cpptrace/cpptrace-*.cmake'
-    - '%{_libdir}/cmake/cpptrace/Findzstd.cmake'
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_libdir}/libcpptrace.so*'
-  license: MIT
-  release: 40
-  requires: []
-  rpm:
-    no_debug_package: false
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    bundled_deps: []
-  summary: Simple, portable, and self-contained stacktrace library for C++11 and newer
-  url: https://github.com/jeremy-rifkin/cpptrace
-  version: 1.0.4
-libdwarf-code:
-  build:
-    commands:
-    - '%cmake -DBUILD_SHARED=ON -DBUILD_NON_SHARED=OFF'
-    - '%cmake_build'
-    - cmake -B build-static -DBUILD_SHARED=OFF -DBUILD_NON_SHARED=ON -DPIC_ALWAYS=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_DWARFDUMP=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo
-    - cmake --build build-static --parallel %{_smp_build_ncpus}
-    install:
-    - '%cmake_install'
-    - install -m 644 build-static/src/lib/libdwarf/libdwarf.a %{buildroot}%{_libdir}/
-    no_lto: false
-    prep: []
-    system: cmake
-  build_requires:
-  - cmake
-  - gcc-c++
-  - ninja-build
-  depends_on: []
-  description: |
-    Libdwarf has been focused for years on both providing access to DWARF2 through DWARF5 data in a portable way while also detecting and reporting if the DWARF is corrupted and avoiding run-time crashes or memory leakage regardless how corrupted the DWARF being read may be. The intent is to provide ABI independent access to DWARF data and ensure that data returned by the library is meaningful.
-
-    When the DWARF6 standard is released by the DWARF committee support will be added (as soon as reasonably possible) to libdwarf for all changes/additions while continuing to support previous versions.
-
-    Libdwarf reads files from disk, it does not read running programs or running shared objects.
-  devel:
-    files:
-    - '%{_includedir}/dwarf.h'
-    - '%{_includedir}/libdwarf.h'
-    - '%{_libdir}/cmake/libdwarf/Findzstd.cmake'
-    - '%{_libdir}/cmake/libdwarf/libdwarf-targets-noconfig.cmake'
-    - '%{_libdir}/cmake/libdwarf/libdwarf-targets.cmake'
-    - '%{_libdir}/cmake/libdwarf/libdwarfConfig.cmake'
-    - '%{_libdir}/cmake/libdwarf/libdwarfConfigVersion.cmake'
-    - '%{_libdir}/libdwarf.a'
-    - '%{_libdir}/libdwarf.so'
-    - '%{_libdir}/pkgconfig/libdwarf.pc'
-  files:
-  - '%doc README.md'
-  - '%{_bindir}/dwarfdump'
-  - '%{_datadir}/dwarfdump/dwarfdump.conf'
-  - '%{_libdir}/libdwarf.so.*'
-  - '%{_mandir}/man1/dwarfdump.1.gz'
-  license: LGPL 2.1
-  release: 5
-  requires: []
-  rpm:
-    no_debug_package: false
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    bundled_deps: []
-  summary: Library to access DWARF debugging information
-  url: https://github.com/davea42/libdwarf-code
-  version: 2.3.2
-eww:
-  build:
-    cargo_update:
-    - time@0.3.34
-    commands: []
-    install: []
-    no_lto: false
-    prep:
-    - cargo update -p time@0.3.34 --offline
-    system: cargo
-  build_requires:
-  - atk-devel
-  - cairo-devel
-  - cargo
-  - dbus-devel
-  - gdk-pixbuf2-devel
-  - glib2-devel
-  - gtk-layer-shell-devel
-  - gtk3-devel
-  - libdbusmenu-gtk3-devel
-  - pango-devel
-  - rustc
-  depends_on: []
-  description: Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
+    Customisable and feature-rich GTK4 bar for Wayland compositors, written in Rust.
+    Ironbar is designed to support anything from a lightweight bar to a full desktop panel with ease.
   devel:
     files: []
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_bindir}/eww'
+  - '%{_bindir}/ironbar'
   license: MIT
   release: 15
   requires: []
@@ -1699,97 +1406,9 @@ eww:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
     - '%{name}-%{version}-vendor.tar.gz'
-  summary: Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
-  url: https://github.com/elkowar/eww
-  version: 0.6.0
-snappy-switcher:
-  build:
-    commands:
-    - make %{?_smp_mflags}
-    install:
-    - '%make_install PREFIX=%{_prefix}'
-    no_lto: false
-    prep:
-    - sed -i 's/BINDIR = \$(PREFIX)\/bin/BINDIR = $(DESTDIR)$(PREFIX)\/bin/; s/DATADIR = \$(PREFIX)\/share/DATADIR = $(DESTDIR)$(PREFIX)\/share/; s/DOCDIR = \$(PREFIX)\/share/DOCDIR = $(DESTDIR)$(PREFIX)\/share/; s/SYSCONFDIR = \/etc/SYSCONFDIR = $(DESTDIR)\/etc/' Makefile
-    system: make
-  build_requires:
-  - gcc
-  - make
-  - pkgconfig(cairo)
-  - pkgconfig(glib-2.0)
-  - pkgconfig(gobject-2.0)
-  - pkgconfig(json-c)
-  - pkgconfig(librsvg-2.0)
-  - pkgconfig(pango)
-  - pkgconfig(pangocairo)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-cursor)
-  - pkgconfig(wayland-scanner)
-  - pkgconfig(xkbcommon)
-  - wayland-protocols-devel
-  depends_on: []
-  description: |
-    The window switcher that actually understands your workflow
-
-    Pure C · Wayland Layer Shell · Zero dependencies on Electron or GTK runtimes
-  files:
-  - '%doc README.md'
-  - '%{_bindir}/snappy-install-config'
-  - '%{_bindir}/snappy-switcher'
-  - '%{_bindir}/snappy-wrapper'
-  - '%{_datadir}/snappy-switcher/themes/*.ini'
-  - '%{_docdir}/snappy-switcher/config.ini.example'
-  - '%{_sysconfdir}/xdg/snappy-switcher/config.ini'
-  license: GPL-3.0
-  release: 2
-  requires: []
-  rpm:
-    no_debug_package: true
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: alt-tab switch window for wayland compositor
-  url: https://github.com/OpalAayan/snappy-switcher
-  version: 4.5.0
-mpvpaper:
-  auto_update:
-    release_type: latest-tag
-  build:
-    commands: []
-    install: []
-    no_lto: false
-    prep: []
-    system: meson
-  build_requires:
-  - gcc-c++
-  - meson
-  - mpv-devel
-  - ninja-build
-  - pkgconfig(egl)
-  - pkgconfig(mpv)
-  - pkgconfig(wayland-client)
-  - pkgconfig(wayland-egl)
-  - pkgconfig(wayland-protocols)
-  depends_on: []
-  description: mpvpaper is a wallpaper program for wlroots based wayland compositors, such as sway. That allows you to play videos with mpv as your wallpaper.
-  devel:
-    files: []
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  - '%{_bindir}/mpvpaper'
-  - '%{_bindir}/mpvpaper-holder'
-  license: GPL-3.0-or-later
-  release: 7
-  requires: []
-  rpm:
-    no_debug_package: false
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: A video wallpaper program for wlroots based wayland compositors.
-  url: https://github.com/GhostNaN/mpvpaper
-  version: '1.9'
+  summary: Customisable Wayland GTK4 bar written in Rust
+  url: https://github.com/JakeStanger/ironbar
+  version: 0.19.0
 libcava:
   build:
     commands:
@@ -1891,6 +1510,200 @@ libcava-v0:
   summary: cava built as a shared library
   url: https://github.com/LukashonakV/cava
   version: 0.10.7
+libdwarf-code:
+  build:
+    commands:
+    - '%cmake -DBUILD_SHARED=ON -DBUILD_NON_SHARED=OFF'
+    - '%cmake_build'
+    - cmake -B build-static -DBUILD_SHARED=OFF -DBUILD_NON_SHARED=ON -DPIC_ALWAYS=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_DWARFDUMP=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    - cmake --build build-static --parallel %{_smp_build_ncpus}
+    install:
+    - '%cmake_install'
+    - install -m 644 build-static/src/lib/libdwarf/libdwarf.a %{buildroot}%{_libdir}/
+    no_lto: false
+    prep: []
+    system: cmake
+  build_requires:
+  - cmake
+  - gcc-c++
+  - ninja-build
+  depends_on: []
+  description: |
+    Libdwarf has been focused for years on both providing access to DWARF2 through DWARF5 data in a portable way while also detecting and reporting if the DWARF is corrupted and avoiding run-time crashes or memory leakage regardless how corrupted the DWARF being read may be. The intent is to provide ABI independent access to DWARF data and ensure that data returned by the library is meaningful.
+
+    When the DWARF6 standard is released by the DWARF committee support will be added (as soon as reasonably possible) to libdwarf for all changes/additions while continuing to support previous versions.
+
+    Libdwarf reads files from disk, it does not read running programs or running shared objects.
+  devel:
+    files:
+    - '%{_includedir}/dwarf.h'
+    - '%{_includedir}/libdwarf.h'
+    - '%{_libdir}/cmake/libdwarf/Findzstd.cmake'
+    - '%{_libdir}/cmake/libdwarf/libdwarf-targets-noconfig.cmake'
+    - '%{_libdir}/cmake/libdwarf/libdwarf-targets.cmake'
+    - '%{_libdir}/cmake/libdwarf/libdwarfConfig.cmake'
+    - '%{_libdir}/cmake/libdwarf/libdwarfConfigVersion.cmake'
+    - '%{_libdir}/libdwarf.a'
+    - '%{_libdir}/libdwarf.so'
+    - '%{_libdir}/pkgconfig/libdwarf.pc'
+  files:
+  - '%doc README.md'
+  - '%{_bindir}/dwarfdump'
+  - '%{_datadir}/dwarfdump/dwarfdump.conf'
+  - '%{_libdir}/libdwarf.so.*'
+  - '%{_mandir}/man1/dwarfdump.1.gz'
+  license: LGPL 2.1
+  release: 5
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    bundled_deps: []
+  summary: Library to access DWARF debugging information
+  url: https://github.com/davea42/libdwarf-code
+  version: 2.3.2
+mpvpaper:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    system: meson
+  build_requires:
+  - gcc-c++
+  - meson
+  - mpv-devel
+  - ninja-build
+  - pkgconfig(egl)
+  - pkgconfig(mpv)
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-egl)
+  - pkgconfig(wayland-protocols)
+  depends_on: []
+  description: mpvpaper is a wallpaper program for wlroots based wayland compositors, such as sway. That allows you to play videos with mpv as your wallpaper.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/mpvpaper'
+  - '%{_bindir}/mpvpaper-holder'
+  license: GPL-3.0-or-later
+  release: 7
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: A video wallpaper program for wlroots based wayland compositors.
+  url: https://github.com/GhostNaN/mpvpaper
+  version: '1.9'
+pyprland:
+  build:
+    commands:
+    - python3 -m hatchling build -t wheel
+    install:
+    - python3 -m pip install --no-deps --no-build-isolation --root %{buildroot} --prefix /usr dist/*.whl
+    system: python
+  build_requires:
+  - python3-devel
+  - python3-hatchling
+  - python3-pip
+  description: |
+    Power up your desktop
+
+    A plugin system that extends your graphical
+    environment with features like scratchpads, dynamic popup nested menus,
+    custom notifications, easy monitor settings and moreThink of it as a Gnome
+    tweak tool for Hyprland, with options that can run on any desktop.
+    With a fully plugin-based architecture, it's lightweight and easy to
+    customize
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/pypr'
+  - '%{_bindir}/pypr-gui'
+  - '%{_bindir}/pypr-quickstart'
+  - '%{python3_sitelib}/pyprland'
+  - '%{python3_sitelib}/pyprland-%{version}.dist-info'
+  license: MIT
+  release: 2
+  requires:
+  - python3-aiofiles
+  - python3-aiohttp
+  - python3-pillow
+  - qt6-qtdeclarative-devel
+  - qt6-qtquickcontrols2-devel
+  rpm:
+    buildarch: noarch
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: Scratchpads & many goodies for Hyprland
+  url: https://github.com/hyprland-community/pyprland
+  version: 3.4.4
+quickshell:
+  build:
+    commands:
+    - '%cmake -GNinja -DCRASH_REPORTER=OFF'
+    - '%cmake_build'
+    install: []
+    no_lto: false
+    prep: []
+    system: cmake
+  build_requires:
+  - cli11-devel
+  - cmake
+  - cpptrace-devel
+  - gcc-c++
+  - glib2-devel
+  - glslang-devel
+  - libdrm-devel
+  - libzstd-devel
+  - mesa-libgbm-devel
+  - ninja-build
+  - pam-devel
+  - pipewire-devel
+  - pkgconfig(jemalloc)
+  - polkit-devel
+  - qt6-qtbase-devel
+  - qt6-qtbase-private-devel
+  - qt6-qtdeclarative-devel
+  - qt6-qtdeclarative-private-devel
+  - qt6-qtshadertools-devel
+  - wayland-protocols-devel
+  depends_on:
+  - cpptrace
+  description: |
+    Quickshell is a toolkit for building status bars, widgets, lockscreens, and other desktop components using QtQuick. It can be used alongside your wayland compositor or window manager to build a complete desktop environment.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/qs'
+  - '%{_bindir}/quickshell'
+  - '%{_datadir}/applications/org.quickshell.desktop'
+  - '%{_datadir}/icons/hicolor/scalable/apps/org.quickshell.svg'
+  license: LGPL-3.0-or-later
+  release: 2
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz'
+    bundled_deps: []
+  source_dir: quickshell
+  summary: Flexible QtQuick based desktop shell toolkit
+  url: https://git.outfoxxed.me/quickshell/quickshell.git
+  version: 0.3.1
 satty:
   build:
     commands: []
@@ -1939,6 +1752,253 @@ satty:
   summary: Satty - Modern Screenshot Annotation
   url: https://github.com/gabm/satty
   version: 0.22.0
+screeninfo:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: screeninfo
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-pip
+  - python3-poetry-core
+  depends_on: []
+  description: Python module for fetching location and size of physical screens, useful for placing GUI elements.
+  files:
+  - '%doc README.md'
+  - '%license LICENSE.md'
+  license: MIT
+  release: 13
+  requires: []
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: Fetch location and size of physical screens
+  url: https://github.com/rr-/screeninfo
+  version: 0.8.1
+snappy-switcher:
+  build:
+    commands:
+    - make %{?_smp_mflags}
+    install:
+    - '%make_install PREFIX=%{_prefix}'
+    no_lto: false
+    prep:
+    - sed -i 's/BINDIR = \$(PREFIX)\/bin/BINDIR = $(DESTDIR)$(PREFIX)\/bin/; s/DATADIR = \$(PREFIX)\/share/DATADIR = $(DESTDIR)$(PREFIX)\/share/; s/DOCDIR = \$(PREFIX)\/share/DOCDIR = $(DESTDIR)$(PREFIX)\/share/; s/SYSCONFDIR = \/etc/SYSCONFDIR = $(DESTDIR)\/etc/' Makefile
+    system: make
+  build_requires:
+  - gcc
+  - make
+  - pkgconfig(cairo)
+  - pkgconfig(glib-2.0)
+  - pkgconfig(gobject-2.0)
+  - pkgconfig(json-c)
+  - pkgconfig(librsvg-2.0)
+  - pkgconfig(pango)
+  - pkgconfig(pangocairo)
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-cursor)
+  - pkgconfig(wayland-scanner)
+  - pkgconfig(xkbcommon)
+  - wayland-protocols-devel
+  depends_on: []
+  description: |
+    The window switcher that actually understands your workflow
+
+    Pure C · Wayland Layer Shell · Zero dependencies on Electron or GTK runtimes
+  files:
+  - '%doc README.md'
+  - '%{_bindir}/snappy-install-config'
+  - '%{_bindir}/snappy-switcher'
+  - '%{_bindir}/snappy-wrapper'
+  - '%{_datadir}/snappy-switcher/themes/*.ini'
+  - '%{_docdir}/snappy-switcher/config.ini.example'
+  - '%{_sysconfdir}/xdg/snappy-switcher/config.ini'
+  license: GPL-3.0
+  release: 2
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: alt-tab switch window for wayland compositor
+  url: https://github.com/OpalAayan/snappy-switcher
+  version: 4.5.0
+sndio:
+  build:
+    configure_flags:
+    - --prefix=%{_prefix}
+    - --exec-prefix=%{_exec_prefix}
+    - --bindir=%{_bindir}
+    - --datadir=%{_datadir}
+    - --includedir=%{_includedir}
+    - --libdir=%{_libdir}
+    - --mandir=%{_mandir}
+    - --enable-alsa
+    system: configure
+  build_requires:
+  - alsa-lib-devel
+  - gcc
+  - make
+  description: Portable version of OpenBSD's lightweight audio & MIDI sub-system
+  devel:
+    files:
+    - '%{_prefix}/include/sndio.h'
+    - '%{_prefix}/lib64/pkgconfig/sndio.pc'
+  files:
+  - '%license LICENSE'
+  - '%{_prefix}/bin/aucat'
+  - '%{_prefix}/bin/midicat'
+  - '%{_prefix}/bin/sndioctl'
+  - '%{_prefix}/bin/sndiod'
+  - '%{_prefix}/lib64/libsndio.so*'
+  - '%{_prefix}/share/man/*/*.gz'
+  license: ISC
+  release: 11
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - https://sndio.org/sndio-%{version}.tar.gz
+  summary: Portable version of OpenBSD's lightweight audio & MIDI sub-system
+  url: https://sndio.org/git/sndio
+  version: 1.10.0
+uwsm:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    system: meson
+  build_requires:
+  - gcc-c++
+  - meson
+  - ninja-build
+  - python3-dbus
+  - python3-pyxdg
+  - scdoc
+  - systemd-rpm-macros
+  depends_on: []
+  description: |
+    Universal Wayland Session Manager
+
+    Provides a set of Systemd units and helpers to set up the environment and manage standalone Wayland compositor sessions.
+
+    Aside from environment setup/cleanup, it makes Systemd do most of the work and does not require any extra daemons running in background (except for a tiny waitpid process and a simple shell signal handler in the lightest case).
+
+    This setup provides robust session management, overridable compositor- and session-aware environment management, XDG autostart, bi-directional binding with login session, clean shutdown, solutions for a set of small but annoying gotchas of systemd session management.
+
+    For compositors this is an opportunity to offload: Systemd integration, session/XDG autostart management, Systemd/DBus activation environment interaction with its caveats.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/uwsm'
+  - '%{_datadir}/uwsm/modules/uwsm/'
+  - '%{_datadir}/uwsm/plugins'
+  - '%{_docdir}/uwsm/'
+  - '%{_libexecdir}/uwsm/prepare-env.sh'
+  - '%{_libexecdir}/uwsm/signal-handler.sh'
+  - '%{_mandir}/man*/uwsm*.gz'
+  - '%{_userunitdir}/app-graphical.slice'
+  - '%{_userunitdir}/background-graphical.slice'
+  - '%{_userunitdir}/session-graphical.slice'
+  - '%{_userunitdir}/wayland-session-bindpid@.service'
+  - '%{_userunitdir}/wayland-session-envelope@.target'
+  - '%{_userunitdir}/wayland-session-pre@.target'
+  - '%{_userunitdir}/wayland-session-shutdown.target'
+  - '%{_userunitdir}/wayland-session-waitenv.service'
+  - '%{_userunitdir}/wayland-session-xdg-autostart@.target'
+  - '%{_userunitdir}/wayland-session@.target'
+  - '%{_userunitdir}/wayland-wm-app-daemon.service'
+  - '%{_userunitdir}/wayland-wm-env@.service'
+  - '%{_userunitdir}/wayland-wm@.service'
+  license: MIT
+  release: 2
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    bundled_deps: []
+  summary: Universal Wayland Session Manager
+  url: https://github.com/Vladimir-csp/uwsm
+  version: 0.26.7
+Waybar:
+  build:
+    commands:
+    - '%meson'
+    - '%meson_build'
+    system: meson
+  build_requires:
+  - catch-devel
+  - gcc-c++
+  - gpsd-devel
+  - jack-audio-connection-kit-devel
+  - libcava-v0-devel
+  - libdbusmenu-gtk3-devel
+  - libevdev-devel
+  - libinput-devel
+  - libmpdclient-devel
+  - libnl3-devel
+  - meson
+  - ninja-build
+  - pipewire-devel
+  - pkgconfig(fmt)
+  - pkgconfig(gio-unix-2.0)
+  - pkgconfig(gtk-layer-shell-0)
+  - pkgconfig(gtkmm-3.0)
+  - pkgconfig(jsoncpp)
+  - pkgconfig(sigc++-2.0)
+  - pkgconfig(spdlog)
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-cursor)
+  - pkgconfig(wayland-protocols)
+  - pkgconfig(xkbregistry)
+  - playerctl-devel
+  - pulseaudio-libs-devel
+  - scdoc
+  - sndio-devel
+  - systemd
+  - upower-devel
+  - wireplumber-devel
+  depends_on:
+  - libcava-v0
+  - sndio
+  description: |
+    Highly customizable Wayland bar for Sway and Wlroots based compositors
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/waybar'
+  - '%{_mandir}/man5/waybar*.gz'
+  - '%{_sysconfdir}/xdg/waybar/'
+  - '%{_userunitdir}/waybar.service'
+  license: MIT
+  release: 18
+  rpm:
+    buildarch: ''
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: Waybar
+  summary: Highly customizable Wayland bar for Sway and Wlroots based compositors
+  url: https://github.com/Alexays/Waybar
+  version: 0.15.0
 waypaper:
   auto_update:
     release_type: latest-tag
@@ -1982,113 +2042,53 @@ waypaper:
   summary: GUI wallpaper manager for Wayland and Xorg Linux systems
   url: https://github.com/anufrievroman/waypaper
   version: '2.9'
-screeninfo:
-  auto_update:
-    release_type: latest-tag
+xdg-desktop-portal-hyprland:
   build:
-    commands: []
-    install: []
-    no_lto: false
-    prep: []
-    save_files: screeninfo
-    system: python
+    system: cmake
   build_requires:
-  - pyproject-rpm-macros
-  - python3-devel
-  - python3-pip
-  - python3-poetry-core
-  depends_on: []
-  description: Python module for fetching location and size of physical screens, useful for placing GUI elements.
-  files:
-  - '%doc README.md'
-  - '%license LICENSE.md'
-  license: MIT
-  release: 13
-  requires: []
-  rpm:
-    buildarch: noarch
-    no_debug_package: true
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: Fetch location and size of physical screens
-  url: https://github.com/rr-/screeninfo
-  version: 0.8.1
-imageio-ffmpeg:
-  auto_update:
-    release_type: latest-tag
-  build:
-    commands: []
-    install: []
-    no_lto: false
-    prep: []
-    save_files: imageio_ffmpeg
-    system: python
-  build_requires:
-  - pyproject-rpm-macros
-  - python3-devel
-  - python3-pip
-  - python3-setuptools
-  depends_on: []
-  description: FFMPEG wrapper for Python. Uses the system ffmpeg binary rather than the platform-specific binary that upstream normally bundles into its wheels.
-  files:
-  - '%doc README.md'
-  - '%license LICENSE'
-  license: BSD-2-Clause
-  release: 9
-  requires:
-  - ffmpeg-free
-  rpm:
-    buildarch: noarch
-    no_debug_package: true
-  source:
-    archives:
-    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-  summary: FFMPEG wrapper for Python
-  url: https://github.com/imageio/imageio-ffmpeg
-  version: 0.6.0
-ironbar:
-  build:
-    commands: []
-    install: []
-    no_lto: false
-    prep: []
-    system: cargo
-  build_requires:
-  - cairo-gobject-devel
-  - cargo
-  - dh-autoreconf
-  - gtk4-layer-shell-devel
-  - libinput-devel
-  - luajit-devel
-  - pulseaudio-libs-devel
-  - rust-gdk-pixbuf+default-devel
-  - rust-gdk4-wayland-sys+default-devel
-  - rust-glib-sys+default-devel
-  - rust-graphene-rs-devel
-  - rust-libdbus-sys+default-devel
-  - rust-pango-devel
-  - rustc
+  - cmake
+  - gcc-c++
+  - hyprland-protocols-devel
+  - hyprlang-devel
+  - hyprutils-devel
+  - hyprwayland-scanner-devel
+  - libeis-devel
+  - libuuid-devel
+  - ninja-build
+  - pkgconfig(gbm)
+  - pkgconfig(libdrm)
+  - pkgconfig(libpipewire-0.3)
+  - pkgconfig(libspa-0.2)
+  - pkgconfig(libsystemd)
+  - pkgconfig(Qt6Widgets)
+  - pkgconfig(sdbus-c++)
+  - pkgconfig(systemd)
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-protocols)
+  - pkgconfig(wayland-scanner)
+  - qt6-qtbase-devel
+  - qt6-qtwayland-devel
+  - sdbus-cpp
+  - systemd-rpm-macros
   depends_on:
-  - gtk4-layer-shell
-  description: |
-    Customisable and feature-rich GTK4 bar for Wayland compositors, written in Rust.
-    Ironbar is designed to support anything from a lightweight bar to a full desktop panel with ease.
-  devel:
-    files: []
+  - hyprland-protocols
+  - hyprlang
+  - hyprutils
+  - hyprwayland-scanner
+  description: xdg-desktop-portal backend for Hyprland
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_bindir}/ironbar'
-  license: MIT
-  release: 15
-  requires: []
-  rpm:
-    no_debug_package: false
+  - '%{_bindir}/hyprland-share-picker'
+  - '%{_datadir}/dbus-1/services/org.freedesktop.impl.portal.desktop.hyprland.service'
+  - '%{_datadir}/xdg-desktop-portal/portals/hyprland.portal'
+  - '%{_libexecdir}/%{name}'
+  - '%{_userunitdir}/%{name}.service'
+  license: BSD-3-Clause
+  release: 9
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
-    - '%{name}-%{version}-vendor.tar.gz'
-  summary: Customisable Wayland GTK4 bar written in Rust
-  url: https://github.com/JakeStanger/ironbar
-  version: 0.19.0
+  summary: An XDG-Destop-Portal backend for Hyprland (and wlroots)
+  url: https://github.com/hyprwm/xdg-desktop-portal-hyprland
+  version: 1.4.1

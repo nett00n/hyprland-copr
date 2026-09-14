@@ -8,6 +8,8 @@ Arguments:
     packages    Package name(s): single name or comma-separated list (case-insensitive)
     release     Release number (integer)
     --lock      Set release_lock: true to prevent auto-increment (optional)
+                Omitting --lock removes an existing release_lock key, if
+                present, re-enabling auto-increment for that package.
 
 Examples:
     python3 scripts/set-package-release.py hyprlang 5

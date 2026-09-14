@@ -2,11 +2,20 @@
 """Sort string lists and dict keys in packages.yaml.
 
 Sorts build_requires, requires, and files lists alphabetically within each
-package. Also sorts dict keys alphabetically within all mappings, including
-the top-level packages dict (package names are sorted alphabetically).
-Lists of dicts (sources, bundled_deps) are left untouched.
+package, deduplicating entries as it goes. Also sorts dict keys alphabetically
+within all mappings, including the top-level packages dict (package names are
+sorted alphabetically). Lists of dicts (sources, bundled_deps) are left
+untouched.
+
+Sorting and dedup of list items (_item_sort_key) are case-insensitive and
+ignore a leading "- " and surrounding quote characters, so "Foo", "foo", and
+'"foo"' are treated as the same item and only the first-encountered spelling
+is kept.
 
 Comment lines within a sorted list block are floated to the top of the block.
+
+--dry-run prints what would change but skips the write path's YAML re-parse
+validation (process_content's output is not re-validated in dry-run mode).
 
 Usage:
     python3 scripts/sort-yaml-lists.py           # sort in-place
@@ -174,9 +183,16 @@ def _collect_dict_block(
 
 
 def process_content(content: str) -> tuple[str, list[str]]:
-    """Return (new_content, sorted_key_names)."""
+    """Return (new_content, sorted_key_names).
+
+    Top-level package entries are collected and sorted by name the same way
+    _process_dict_body sorts nested dict keys; any content before the first
+    top-level key (e.g. a `---` document start marker) is preserved verbatim
+    and excluded from sorting.
+    """
     lines = content.splitlines(keepends=True)
-    result: list[str] = []
+    prefix: list[str] = []
+    top_entries: list[tuple[str, list[str]]] = []
     sorted_keys: list[str] = []
     i = 0
     while i < len(lines):
@@ -185,7 +201,7 @@ def process_content(content: str) -> tuple[str, list[str]]:
         if m:
             key = m.group(2)
             child_indent = len(m.group(1)) + 2
-            result.append(line)
+            entry_lines: list[str] = [line]
             i += 1
 
             if key in SORTABLE_KEYS:
@@ -193,7 +209,7 @@ def process_content(content: str) -> tuple[str, list[str]]:
                 sorted_block = _sort_block(block)
                 if sorted_block != block:
                     sorted_keys.append(key)
-                result.extend(sorted_block)
+                entry_lines.extend(sorted_block)
             else:
                 block, trailing, i = _collect_dict_block(lines, i, child_indent)
                 if (
@@ -202,13 +218,28 @@ def process_content(content: str) -> tuple[str, list[str]]:
                     and key not in PRESERVE_DICT_ORDER
                 ):
                     sorted_block = _process_dict_body(block, child_indent, sorted_keys)
-                    result.extend(sorted_block)
+                    entry_lines.extend(sorted_block)
                 else:
-                    result.extend(block)
-                result.extend(trailing)
-        else:
-            result.append(line)
+                    entry_lines.extend(block)
+                entry_lines.extend(trailing)
+
+            top_entries.append((key, entry_lines))
+        elif top_entries:
+            # A non-key line encountered after the first top-level entry
+            # (e.g. a stray blank/comment line between packages) stays
+            # attached to the entry just emitted, so it travels with that
+            # entry if top-level order changes.
+            top_entries[-1][1].append(line)
             i += 1
+        else:
+            prefix.append(line)
+            i += 1
+
+    sorted_top = sorted(top_entries, key=lambda entry: entry[0].lower())
+    if [key for key, _ in sorted_top] != [key for key, _ in top_entries]:
+        sorted_keys.append("dict")
+
+    result = prefix + [ln for _, entry_lines in sorted_top for ln in entry_lines]
     return "".join(result), sorted_keys
 
 

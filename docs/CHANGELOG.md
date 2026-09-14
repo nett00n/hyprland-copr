@@ -12,6 +12,33 @@ entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
 
 History before this file's introduction is not backfilled - see `git log`.
 
+## 2026-09-14
+
+- Fixed: `sort-yaml-lists.py`'s `process_content()` never actually sorted
+  top-level package names -- despite its own docstring claiming it does, the
+  main loop walked top-level `key:` blocks sequentially and only ever
+  reordered *within* each block (via `_process_dict_body`), never the blocks
+  themselves. Hidden until now because the real `packages.yaml` already
+  happened to be alphabetically ordered at the top level. Found while writing
+  `tests/test_sort_yaml_lists.py` for TODO-0041; fixed by collecting
+  top-level entries and sorting them the same way nested dict keys already
+  are, while preserving any leading content (a `---` document start marker)
+  outside the sort.
+- Added: test coverage for `sort-yaml-lists.py`, `format-yaml.py`,
+  `set-package-release.py`, and `pkg-build-pop.py` (`tests/test_sort_yaml_lists.py`,
+  `tests/test_format_yaml.py`, `tests/test_set_package_release.py`,
+  `tests/test_pkg_build_pop.py`) -- Phase 1 of `docs/todo.md` TODO-0041; their
+  module docstrings were also expanded to state the contracts the new tests pin
+  (dedup/case-insensitivity in `sort-yaml-lists.py`, the `--lock` removal
+  semantics in `set-package-release.py`, and others).
+- Added: an explicit test-coverage rule in `docs/CONTRIBUTING.md` "Code quality
+  and linting" -- every `scripts/` executable needs a matching test file, added
+  in the same change. TODO-0041 previously referenced this rule without it
+  being written down anywhere.
+- Removed: `scripts/serve.py` (dev file server) -- unused, no Makefile target,
+  no `lib` imports, nothing imports it (`docs/todo.md`, formerly TODO-0048).
+  Its one mention in `docs/operations.md` "Utility commands" is removed too.
+
 ## 2026-09-09
 
 - Fixed: `lib.subprocess_utils.run_git` no longer raises `FileNotFoundError`/

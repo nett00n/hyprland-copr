@@ -400,11 +400,6 @@ rpmbuild dirs):
 make delete-package PACKAGE=<name>   # PKG=<name> also works
 ```
 
-**Dev file server** for build artifacts (not wired into any Makefile target):
-```shell
-.venv/bin/python3 scripts/serve.py
-```
-
 ## Logging
 
 `LOG_LEVEL` env var on any script/stage: `DEBUG`, `INFO` (default), `WARNING`, `ERROR`,

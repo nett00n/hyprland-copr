@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """Format YAML files following .yamllint rules.
 
+Rewrites each file matching the glob pattern in place. Reads formatting/ignore
+rules from ROOT/.yamllint (a missing or unparsable file falls back to
+defaults); the `ignore:` key is parsed as a newline-delimited block of
+filenames, not a YAML list. Indentation width is detected per-file from its
+existing content (detect_indentation), not taken from .yamllint's
+`indentation` rule. A file that fails to parse or write is reported and
+skipped rather than aborting the whole run; main() returns 1 if any file
+failed, or if the glob matched no files, else 0.
+
 Usage:
     python3 scripts/format-yaml.py '*.yaml'  # Format all YAML files matching pattern
 """

@@ -5,6 +5,13 @@ Environment variables:
   PACKAGE         Comma-separated list of packages (optional; all packages if empty)
   FEDORA_VERSION  Fedora version to target (default: 44)
   MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
+
+Exit/output semantics:
+  - An unknown name in PACKAGE exits non-zero, naming every unresolved query.
+  - An empty package selection (PACKAGE unset and no packages defined) prints
+    "nothing to do" on stderr and exits 0.
+  - Otherwise prints which packages actually had mock/copr rows cleared, or
+    "nothing to clear" if none of the resolved packages had any.
 """
 
 import os

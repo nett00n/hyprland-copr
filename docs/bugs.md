@@ -4,7 +4,7 @@ Automation behaving wrong today. Complexity/cleanup/features go in `docs/todo.md
 instead. GitHub issues are for reporter-facing items (someone else's bug/request);
 this file is the maintainer's own log and may cite issue numbers. Entries are deleted
 when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are never reused or
-renumbered, so deletions leave gaps. Next free ID: **BUG-0056**.
+renumbered, so deletions leave gaps. Next free ID: **BUG-0057**.
 
 Each entry ends with a `[P#/D#]` marker:
 
@@ -109,6 +109,35 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
   opposed to `/usr/lib64/x`) falls through to `%{_prefix}/lib/x` on the reverse pass
   too. Cosmetic only -- both forms are valid RPM spec syntax -- but inconsistent with the
   rest of the file [P3/D2]
+
+- #BUG-0056 a `depends_on` package on `auto_update.release_type: latest-commit`
+  (e.g. `hyprland-plugins`) can silently outrun a tag-pinned dependency (`Hyprland`
+  at `v0.56.2`): upstream's `722f15a` (2026-09-05) chased Hyprland's unreleased
+  `main` API (`window->presentation()/metadata()/backend()`, `WindowPresentation.hpp`,
+  `WINDOW_STATE_PINNED`, `S*RenderData`), which doesn't exist in the packaged 0.56.2
+  headers, and mock failed on all three chroots (fedora-43/44/45-x86_64, runs 76-78)
+  before anyone noticed. Nothing in `make validate-packages`/`stage-validate` flags a
+  `latest-commit` package tracking a compositor API ahead of a sibling package's
+  pinned version -- the drift is only caught by mock actually failing to compile.
+  Fixed for now by pinning `hyprland-plugins` to `00862ca` ("hyprpm: add pin for
+  0.56.2", `pinned-commit`) -- the first candidate tried, `faf5ef1`, turned out to
+  already carry two more rounds of the same drift (`keybinds/Manager.hpp` replacing
+  `managers/KeybindManager.hpp`, `g_layoutManager` drag targets), only surfacing once
+  `glslang-devel` was also fixed and the build got further; `00862ca` was verified by
+  checking every `hyprland/src/...` header it includes against the `v0.56.2` tag tree
+  directly, since upstream's own `hyprpm.toml` pin hash for 0.56.2 has since been
+  rewritten and no longer resolves. Unpin back to `latest-commit` once Hyprland 0.57
+  is packaged. Also fixed in the same pass, both pre-existing and independent of the
+  version pin: `hyprland-devel` was missing `Requires: glslang-devel`/`lua-devel` for
+  headers (`ShaderLoader.hpp`, `LuaBindings.hpp`) it ships but doesn't declare
+  (fixed via `Hyprland`'s new `devel.requires`, which every future `hyprland-devel`
+  consumer now inherits); and `hyprland-plugins`' `files:` glob
+  (`%{_prefix}/lib/libhypr*.so`) never matched `libborders-plus-plus.so`/
+  `libcsgo-vulkan-fix.so` (non-`libhypr*`-named), so a clean build would have failed
+  rpmbuild's unpackaged-files check -- this had never been hit before because no
+  `hyprland-plugins` mock build in `build-report.db` had ever reached that far. What
+  remains: no automated check for the `latest-commit`-outruns-a-pinned-`depends_on`
+  class of drift across any other package pair [P2/D3]
 
 ## Tests
 
