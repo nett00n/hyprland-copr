@@ -393,7 +393,7 @@ class TestGenerateDispatch:
 class TestNoSubmoduleAccess:
     """Vendoring always downloads a hash-verified tarball into a scratch
     tmpdir; nothing here may read or write the live submodules/ checkout
-    (see docs/todo.md TODO-0001, TODO-0060).
+    (see docs/TODO.md TODO-0001, TODO-0060).
     """
 
     @pytest.mark.parametrize(

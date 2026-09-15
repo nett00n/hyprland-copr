@@ -320,7 +320,7 @@ def _patched_pipeline(
 
 
 class TestCoprGatedByMockFailure:
-    """Regression coverage for issue #8 and docs/todo.md TODO-0084.
+    """Regression coverage for issue #8 and docs/TODO.md TODO-0084.
 
     Per-package pipelines used to submit each package to Copr as soon as its
     own mock succeeded, so a healthy early package (hyprutils) could already be
@@ -514,7 +514,7 @@ class TestCoprGatedByMockFailure:
 
 
 class TestCoprInProgressNotResubmitted:
-    """Regression coverage for docs/bugs.md BUG-0002: a copr stage row still
+    """Regression coverage for docs/BUGS.md BUG-0002: a copr stage row still
     "unknown" (async submission, non-terminal) must not be resubmitted on the
     next run just because is_cached() can't treat "unknown" as a cache hit.
     """
@@ -737,7 +737,7 @@ class TestFullCyclePreflight:
 
 
 class TestSkipReleaseBumpFlag:
-    """full-cycle.py's own handling of SKIP_RELEASE_BUMP (docs/bugs.md BUG-0049;
+    """full-cycle.py's own handling of SKIP_RELEASE_BUMP (docs/BUGS.md BUG-0049;
     the Makefile wiring that sets it per-chroot is covered by
     TestMatrixSkipsReleaseBumpOnNonCanonicalVersions above). update_package_releases()
     must run when the flag is unset, and must not run at all when it's true.
@@ -784,7 +784,7 @@ class TestSkipReleaseBumpFlag:
 
 
 class TestCoprGatedByChrootCoverage:
-    """Coverage for docs/bugs.md BUG-0018's pre-submit gate: REQUIRE_CHROOT_COVERAGE=true
+    """Coverage for docs/BUGS.md BUG-0018's pre-submit gate: REQUIRE_CHROOT_COVERAGE=true
     must block Copr submission the same way a mock failure already does, while the
     default (unset) behavior only warns and still submits.
     """
@@ -848,7 +848,7 @@ class TestCoprGatedByChrootCoverage:
 
 class TestFullCycleMatrixTarget:
     """`make -n` dry-run coverage for the full-cycle-matrix target added for
-    docs/bugs.md BUG-0018: it must loop per-version full-cycle with SKIP_COPR=true,
+    docs/BUGS.md BUG-0018: it must loop per-version full-cycle with SKIP_COPR=true,
     then submit to Copr exactly once (only when COPR_REPO is set).
     """
 
@@ -903,7 +903,7 @@ class TestFullCycleMatrixTarget:
 
 
 class TestMatrixNoEarlyAbort:
-    """Coverage for the matrix's failure-tolerant rework (docs/bugs.md
+    """Coverage for the matrix's failure-tolerant rework (docs/BUGS.md
     BUG-0053): a failing chroot must not stop the rest of the matrix, nor
     skip Copr submission for packages that built cleanly elsewhere. `make -k`
     plus an order-only prerequisite on the canonical chroot looked like it
@@ -1013,7 +1013,7 @@ class TestMatrixNoEarlyAbort:
         exit_pos = result.stdout.rindex("exit $overall")
         assert status_capture_pos < matrix_call_pos < copr_call_pos < exit_pos
         # stage-copr's own exit status must now be folded into `overall` too
-        # (docs/bugs.md BUG-0050 -- it used to be silently discarded, so a
+        # (docs/BUGS.md BUG-0050 -- it used to be silently discarded, so a
         # failed Copr submission was invisible to update-daily's own gate).
         copr_line = next(
             line
@@ -1024,7 +1024,7 @@ class TestMatrixNoEarlyAbort:
 
 
 class TestMatrixSkipsReleaseBumpOnNonCanonicalVersions:
-    """Coverage for docs/bugs.md BUG-0049: update_package_releases() reads its
+    """Coverage for docs/BUGS.md BUG-0049: update_package_releases() reads its
     rebuild signal from the *spec* stage's row for the run's own `target`
     (lib.yaml_utils.py), so a matrix run that called it once per chroot would
     bump a package's release once per chroot too -- up to 3x in one nightly,
@@ -1088,7 +1088,7 @@ class TestMatrixSkipsReleaseBumpOnNonCanonicalVersions:
 
 
 class TestSkipPackagesForceRebuildForwarding:
-    """Coverage for docs/bugs.md BUG-0046: full-cycle-matrix's per-version loop
+    """Coverage for docs/BUGS.md BUG-0046: full-cycle-matrix's per-version loop
     didn't forward SKIP_PACKAGES/FORCE_REBUILD to its nested full-cycle calls, and
     full-cycle's own container recipe never forwarded SKIP_PACKAGES into the script
     env at all (only FORCE_REBUILD was present there) -- so even a plain `make
@@ -1136,7 +1136,7 @@ class TestSkipPackagesForceRebuildForwarding:
 
 
 class TestPackageVarSemantics:
-    """Coverage for docs/todo.md TODO-0029: PACKAGE meant three different things across
+    """Coverage for docs/TODO.md TODO-0029: PACKAGE meant three different things across
     targets with no validation. Single-package-only targets now reject a comma-separated
     PACKAGE with a clear error instead of a confusing downstream one, and gather-requires
     (a filesystem path to a built .rpm, not a packages.yaml key) now takes RPM= instead.
@@ -1295,7 +1295,7 @@ class TestSingleContainerTargets:
 
 
 class TestMockChrootForwarding:
-    """docs/bugs.md BUG-0019: stage-spec/stage-vendor/stage-srpm/stage-copr didn't
+    """docs/BUGS.md BUG-0019: stage-spec/stage-vendor/stage-srpm/stage-copr didn't
     forward MOCK_CHROOT into the container (stage-mock did), so a MOCK_CHROOT
     override resolved a different `target` on those stages than on stage-mock --
     and stage-vendor separately dropped SKIP_PACKAGES even though it reads it via
@@ -1337,7 +1337,7 @@ class TestMockChrootForwarding:
 
 
 class TestProceedBuildForwarding:
-    """docs/bugs.md BUG-0016: the standalone stage-* targets never forwarded
+    """docs/BUGS.md BUG-0016: the standalone stage-* targets never forwarded
     PROCEED_BUILD into the container's env allowlist the way _full-cycle does
     (Makefile:549) -- so `make stage-mock PACKAGE=X PROCEED_BUILD=true` ran in
     non-proceed mode and lib.yaml_utils.prepare_stage() cleared the very rows
@@ -1413,7 +1413,7 @@ class TestMockCacheVolumes:
         assert "volume rm mock-root-44" in stdout
 
     def test_clean_localrepo_also_drops_mock_cache(self):
-        """A stale local-repo can poison the persisted dnf cache too (docs/todo.md
+        """A stale local-repo can poison the persisted dnf cache too (docs/TODO.md
         TODO-0014's stated worry) -- the two must be reset together."""
         stdout = self._dry_run("clean-localrepo", "FEDORA_VERSION=44")
         assert "volume rm mock-cache-44" in stdout
@@ -1448,7 +1448,7 @@ class TestMockCacheVolumes:
 
 
 class TestUpdateDailyResilience:
-    """Coverage for docs/todo.md TODO-0061 (a failed package build must not abort readme/
+    """Coverage for docs/TODO.md TODO-0061 (a failed package build must not abort readme/
     copr-description/git commit) and TODO-0064 (nightly gate is validate-packages+fmt only,
     not the full pre-commit test+lint+fmt gate) via `make -n update-daily` dry-run text.
     """
@@ -1486,7 +1486,7 @@ class TestUpdateDailyResilience:
         assert "mkdir -p logs && rm -f logs/.update-daily-failed" in stdout
 
     def test_packages_yaml_revalidated_after_release_bump_before_docs(self):
-        """Coverage for docs/bugs.md BUG-0044: full-cycle.py's update_package_releases()
+        """Coverage for docs/BUGS.md BUG-0044: full-cycle.py's update_package_releases()
         rewrites packages.yaml (release bumps/resets) *after* the pre-build
         validate-packages+fmt gate has already run, so the file that gets committed
         and rendered into the docs was never re-checked. A second, fmt-less
@@ -1507,7 +1507,7 @@ class TestUpdateDailyResilience:
         assert "fmt" not in stdout[second_validate_pos:line_end]
 
     def test_stage_log_analyze_runs_after_readme_before_commit(self):
-        """Coverage for docs/bugs.md BUG-0041: full-cycle.py's next run rmtree's
+        """Coverage for docs/BUGS.md BUG-0041: full-cycle.py's next run rmtree's
         logs/build/<pkg> before building, so any night's mock/Copr failure logs
         must be analyzed *this* night or they're destroyed unread. Must run after
         readme (whose gen-report.py poll fetches newly-failed Copr chroot logs)
@@ -1523,7 +1523,7 @@ class TestUpdateDailyResilience:
 
 
 class TestDevToolingPrerequisite:
-    """Coverage for docs/bugs.md BUG-0032: requirements-dev.txt (ruff/mypy/flake8/yamllint/
+    """Coverage for docs/BUGS.md BUG-0032: requirements-dev.txt (ruff/mypy/flake8/yamllint/
     rpmlint/pytest-cov) used to be installed only as a side effect of `lint-flake`'s recipe,
     which runs *after* `lint-ruff` in the `lint` target's prerequisite list -- so a fresh
     `.venv` (post `make setup-venv`, which installs only requirements.txt) died at `lint-ruff`
@@ -1610,7 +1610,7 @@ class TestSrpmBlocking:
 
 
 class TestPipelineLock:
-    """Coverage for docs/bugs.md BUG-0043: update-daily/full-cycle/full-cycle-matrix
+    """Coverage for docs/BUGS.md BUG-0043: update-daily/full-cycle/full-cycle-matrix
     share a non-blocking flock (default path logs/.pipeline.lock, overridden here to
     a tmp_path file via PIPELINE_LOCK_FILE= so tests never touch real repo state) so
     two overlapping runs (e.g. a slow nightly cron job still going when the next one

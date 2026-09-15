@@ -1,6 +1,6 @@
 """Tests for lib.vendor_store: the content-addressed vendor tarball cache
 that replaces "does a file happen to exist in ~/rpmbuild/SOURCES" (see
-docs/todo.md TODO-0002/TODO-0006, docs/bugs.md BUG-0023).
+docs/TODO.md TODO-0002/TODO-0006, docs/BUGS.md BUG-0023).
 """
 
 import sys

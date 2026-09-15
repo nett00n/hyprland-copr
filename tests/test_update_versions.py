@@ -45,7 +45,7 @@ class TestCheckoutPin:
         """Exact membership, not startswith("pinned-"): a genuinely unknown/
         typo'd release_type must degrade the same way here as in the
         version-resolution loop (falls through to default) instead of
-        freezing the checkout. See docs/bugs.md BUG-0014.
+        freezing the checkout. See docs/BUGS.md BUG-0014.
         """
         pkg_data = {"auto_update": {"release_type": "bogus-type"}}
         assert uv.checkout_pin("pkg", pkg_data) is None
@@ -987,7 +987,7 @@ class TestMain:
         package and its "-git" sibling) must each get their own release_type
         applied. Keying by url instead of package name let the "-git" sibling's
         config silently shadow the stable package's, freezing it forever
-        (see docs/bugs.md / issue #8).
+        (see docs/BUGS.md / issue #8).
         """
         gitmodules = tmp_path / ".gitmodules"
         gitmodules.write_text(

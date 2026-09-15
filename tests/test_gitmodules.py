@@ -370,7 +370,7 @@ def test_get_submodule_commit_with_base_success(mock_run, mock_get_commit):
 def test_get_submodule_commit_accepts_ref(mock_run):
     """A ref other than HEAD (e.g. origin/<branch>) must reach `git log`, so
     version resolution doesn't depend on the working tree's checked-out
-    commit (see docs/bugs.md BUG-0033)."""
+    commit (see docs/BUGS.md BUG-0033)."""
     mock_run.return_value = _cp(returncode=0, stdout="abc123def456 20240101\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:

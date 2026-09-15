@@ -305,7 +305,7 @@ class TestToolchainSkewIntegration:
 
 
 class TestTimeout:
-    """docs/bugs.md BUG-0024: `go mod vendor` ran with no timeout at all, so a
+    """docs/BUGS.md BUG-0024: `go mod vendor` ran with no timeout at all, so a
     hung invocation blocked update-daily indefinitely. It now goes through
     lib.subprocess_utils.run_cmd, which reads CMD_TIMEOUT (default 3600s) and
     turns a timeout into an (ok=False, ...) result instead of letting

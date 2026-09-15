@@ -157,7 +157,7 @@ def generate_spec(
 
         # Prepare prep commands, auto-injecting extraction of the vendor
         # tarball (if any) -- applies to any build system, not just cargo,
-        # since Go packages are vendored too (docs/bugs.md BUG-0029). Skipped
+        # since Go packages are vendored too (docs/BUGS.md BUG-0029). Skipped
         # if a package's own prep already extracts that source itself (e.g.
         # aylurs-gtk-shell, which needs it inside a `pushd cli` subdirectory
         # rather than at the top level the auto-inject would use).

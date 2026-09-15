@@ -486,7 +486,7 @@ class TestStageCoprBlocking:
         pkg = "test-pkg"
         meta = {"version": "1.0.0", "release": 1}
         # Must exist on disk: stage-copr.py now refuses a recorded-but-missing
-        # SRPM before ever calling copr-cli (docs/bugs.md BUG-0015).
+        # SRPM before ever calling copr-cli (docs/BUGS.md BUG-0015).
         srpm_path = tmp_path / "path.src.rpm"
         srpm_path.write_bytes(b"srpm")
         build_db.set_stage(
@@ -637,7 +637,7 @@ class TestStageCoprMainGating:
 
 
 class TestStageCoprBlackoutGate:
-    """docs/bugs.md BUG-0051: a chroot with zero verified/skipped packages
+    """docs/BUGS.md BUG-0051: a chroot with zero verified/skipped packages
     holds back the entire run silently unless main() fails loud. Exercises
     main() itself (reusing TestStageCoprMainGating's harness) since the pure
     helper (blackout_chroots()) is already covered in tests/test_copr.py."""
@@ -866,7 +866,7 @@ class TestStageShowPlan:
 
 class TestStageShowPlanPredictsCascade:
     """Tests that show_plan()'s prediction matches full-cycle.py's real cascade
-    (docs/bugs.md, formerly BUG-0048): a dependent package must show "run", not
+    (docs/BUGS.md, formerly BUG-0048): a dependent package must show "run", not
     "cache", when its dependency is about to rebuild in the same run. Requires
     both fixes together -- topo-sorted iteration (so the dependency is evaluated
     before its dependent) and a `would_rebuild` accumulator threaded through the

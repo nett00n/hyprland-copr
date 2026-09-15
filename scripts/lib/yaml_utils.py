@@ -190,13 +190,13 @@ def prepare_stage(
     Returns `packages`, or `(all_packages, packages)` if include_all=True.
 
     Scoped to `packages` -- unlike the old init_stage(), which wiped the
-    WHOLE stage regardless of the PACKAGE filter (see docs/bugs.md/#8).
+    WHOLE stage regardless of the PACKAGE filter (see docs/BUGS.md/#8).
 
     This is the `make stage-<x>` standalone entry-point helper: its six
     callers are exactly the six `stage-*.py` `main()` functions, where
     starting each requested package's row from scratch is the point.
     `full-cycle.py` deliberately never calls this (for any stage, not just
-    vendor -- see docs/bugs.md, formerly BUG-0020): it filters packages via
+    vendor -- see docs/BUGS.md, formerly BUG-0020): it filters packages via
     its own `prepare_packages()` instead (which additionally topo-sorts and
     expands transitive deps), and calling `build_db.clear_stage()` here
     would delete `hashes_json` off the very rows `lib.pipeline.is_cached()`
@@ -316,7 +316,7 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
             continue
         # Full input hash set -- same one lib.pipeline.is_cached() compares,
         # so this decides "needs a release bump" from exactly the same inputs
-        # that decide "needs an actual rebuild" (see docs/bugs.md BUG-0035).
+        # that decide "needs an actual rebuild" (see docs/BUGS.md BUG-0035).
         new_hashes = compute_input_hashes(pkg_name, pkg_dict, packages)
 
         # Read stored state

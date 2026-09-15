@@ -259,7 +259,7 @@ class TestValidatePackage:
 
     def test_detects_self_dependency(self):
         """A package depending on itself should be an error (formerly only
-        checked by scripts/validate-packages.py, see docs/bugs.md formerly
+        checked by scripts/validate-packages.py, see docs/BUGS.md formerly
         BUG-0012)."""
         meta = self.get_minimal_package()
         meta["depends_on"] = ["test-pkg"]
@@ -399,7 +399,7 @@ class TestValidatePackage:
         """`fedora:` only resolves `skip` (lib.yaml_utils.apply_os_overrides) --
         `build`/`build_requires`/`requires` used to be accepted here (silently
         dropped by the build) even though scripts/validate-packages.py already
-        rejected them, one of the two divergences behind docs/bugs.md formerly
+        rejected them, one of the two divergences behind docs/BUGS.md formerly
         BUG-0012. A per-version difference belongs in build.prep/commands/install
         as a literal `%if 0%{?fedora} == N ... %endif` conditional instead."""
         meta = self.get_minimal_package()
@@ -416,7 +416,7 @@ class TestValidatePackage:
 class TestValidatePackageSourceLock:
     """validate_package() warns (never errors -- must not break a fresh
     checkout) when a package's remote sources have no sources.lock.yaml
-    entry yet (see docs/bugs.md BUG-0025)."""
+    entry yet (see docs/BUGS.md BUG-0025)."""
 
     def get_minimal_package(self):
         return {
@@ -525,7 +525,7 @@ class TestValidateNoDuplicateUrls:
 class TestValidateSubmoduleUrlResolution:
     """Test validate_submodule_url_resolution function.
 
-    Regression coverage for docs/bugs.md BUG-0013: Waybar-git's and
+    Regression coverage for docs/BUGS.md BUG-0013: Waybar-git's and
     hyprland-plugins-git's packages.yaml url didn't exactly match their
     .gitmodules submodule's url (one missing a trailing ".git", the other
     with a stray one), so update-versions.py's exact-match `url_to_module`

@@ -1,6 +1,6 @@
 """Tests for scripts/validate-packages.py (the pre-commit gate).
 
-Since the lib.validation unification (docs/bugs.md, formerly BUG-0012),
+Since the lib.validation unification (docs/BUGS.md, formerly BUG-0012),
 scripts/validate-packages.py is a thin front-end over lib.validation -- the
 same validator scripts/stage-validate.py's stage 0 runs. These tests only
 cover main()'s *wiring*: does it call the right lib functions, does it exit
@@ -124,7 +124,7 @@ class TestFedoraOverrideValidation:
     -- any other key is silently dropped by the build instead of applied. A
     per-version spec difference belongs in build.prep/commands/install as a literal
     `%if 0%{?fedora} == N ... %endif` conditional. This gate must catch a non-`skip`
-    key before it can reappear (docs/bugs.md formerly BUG-0012: lib.validation used
+    key before it can reappear (docs/BUGS.md formerly BUG-0012: lib.validation used
     to accept `build`/`build_requires`/`requires` here even though this script
     rejected them -- stage-validate silently passed a block the build ignored).
     """

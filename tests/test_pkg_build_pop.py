@@ -36,8 +36,8 @@ def _write_packages_yaml(root, *names):
 def _redirect_get_packages(fake_repo, monkeypatch):
     """get_packages()'s `path` default is bound at import time to the real
     PACKAGES_YAML, so fake_repo's monkeypatch of lib.paths.PACKAGES_YAML does
-    not redirect pkg-build-pop.py's bare get_packages() call (docs/todo.md
-    TODO-0090). Patch the script module's own reference instead.
+    not redirect pkg-build-pop.py's bare get_packages() call (docs/TODO.md
+    BUG-0079). Patch the script module's own reference instead.
     """
     monkeypatch.setattr(
         pkg_build_pop,

@@ -323,7 +323,7 @@ class TestTransitiveDeps:
 class TestOrderedPackages:
     """Test ordered_packages() -- the shared build-order helper full-cycle.py's
     prepare_packages() and stage-show-plan.py's show_plan() both call, so the
-    real run and the pre-flight plan always agree on order (docs/bugs.md,
+    real run and the pre-flight plan always agree on order (docs/BUGS.md,
     formerly BUG-0048)."""
 
     def test_topo_sorts_regardless_of_declared_order(self):

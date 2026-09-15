@@ -6,11 +6,24 @@ changes. Routine package adds/version bumps/release increments are NOT logged
 here (see `packages.yaml` git history, `docs/full-report.md`, or `blog/`
 instead).
 
-Newest first. One `## YYYY-MM-DD` section per day with changes; one bullet per
-entry as `- <Added|Changed|Fixed|Removed>: <what changed>`. Full ruleset in
-`docs/CONTRIBUTING.md` "Changelog".
+**Format (2026-09-15 on, per `docs/DOCS-DRIVEN-DEVELOPMENT.md`):** newest first;
+within `## Unreleased`, newest entries first. One bullet per feature as
+`- <PREFIX>-NNNN: <one-line summary>` — the linked feature doc under
+`docs/features/` carries the details, so this file stays scannable. On release,
+rename `## Unreleased` to the date/version and start a new `## Unreleased` above it.
 
-History before this file's introduction is not backfilled - see `git log`.
+History before 2026-09-15 predates DDD adoption and uses the old format: one
+`## YYYY-MM-DD` section per day, one bullet per entry as
+`- <Added|Changed|Fixed|Removed>: <what changed>` (full paragraph, no feature-doc
+link). It is left as originally written, not reformatted. Full ruleset for both eras
+in `docs/CONTRIBUTING.md` "Changelog".
+
+History before this file's introduction (2026-08-02) is not backfilled - see
+`git log`.
+
+## Unreleased
+
+(none yet)
 
 ## 2026-09-14
 
@@ -27,7 +40,7 @@ History before this file's introduction is not backfilled - see `git log`.
 - Added: test coverage for `sort-yaml-lists.py`, `format-yaml.py`,
   `set-package-release.py`, and `pkg-build-pop.py` (`tests/test_sort_yaml_lists.py`,
   `tests/test_format_yaml.py`, `tests/test_set_package_release.py`,
-  `tests/test_pkg_build_pop.py`) -- Phase 1 of `docs/todo.md` TODO-0041; their
+  `tests/test_pkg_build_pop.py`) -- Phase 1 of `docs/TODO.md` TODO-0041; their
   module docstrings were also expanded to state the contracts the new tests pin
   (dedup/case-insensitivity in `sort-yaml-lists.py`, the `--lock` removal
   semantics in `set-package-release.py`, and others).
@@ -36,7 +49,7 @@ History before this file's introduction is not backfilled - see `git log`.
   in the same change. TODO-0041 previously referenced this rule without it
   being written down anywhere.
 - Removed: `scripts/serve.py` (dev file server) -- unused, no Makefile target,
-  no `lib` imports, nothing imports it (`docs/todo.md`, formerly TODO-0048).
+  no `lib` imports, nothing imports it (`docs/TODO.md`, formerly TODO-0048).
   Its one mention in `docs/operations.md` "Utility commands" is removed too.
 
 ## 2026-09-09
@@ -48,7 +61,7 @@ History before this file's introduction is not backfilled - see `git log`.
   raw `subprocess.run(["git", ...])` calls (9 of them with no timeout at all,
   including the network-hitting `git submodule update --init`) now all go
   through `run_git`, so a hung git call during `update-daily` times out instead
-  of hanging the nightly run indefinitely (docs/bugs.md formerly BUG-0010).
+  of hanging the nightly run indefinitely (docs/BUGS.md formerly BUG-0010).
 
 - Fixed: `make stage-validate` now exits non-zero when any single package fails
   validation, not just on global checks (group membership/duplicate URLs/
@@ -56,7 +69,7 @@ History before this file's introduction is not backfilled - see `git log`.
   `run_for_package()`'s bool return, so a package with errors (missing
   required field, invalid `depends_on`, bad `fedora:` override key, etc.) was
   printed and recorded as a `failed` build-db row but never flipped the run's
-  exit code (docs/bugs.md formerly BUG-0054).
+  exit code (docs/BUGS.md formerly BUG-0054).
 
 - Fixed: `make validate-packages` (the pre-commit gate) and `make stage-validate`
   (the real build's stage 0) now share a single validator (`lib.validation`) instead
@@ -71,7 +84,7 @@ History before this file's introduction is not backfilled - see `git log`.
   `scripts/validate-packages.py` is now a thin front-end over `lib.validation`; it also
   gained self-dependency and `.gitmodules` `ignore = dirty` checks in `lib.validation`
   itself (`.gitmodules` parsing's `parse_gitmodules()` now also returns each section's
-  `ignore` value). (docs/bugs.md formerly BUG-0012)
+  `ignore` value). (docs/BUGS.md formerly BUG-0012)
 
 ## 2026-09-08
 
@@ -81,7 +94,7 @@ History before this file's introduction is not backfilled - see `git log`.
   version (a pin rollback, a corrected `pinned-version`) used to get a later
   wall-clock mtime and `--prune --confirm` deleted the newer artifact and
   kept the older one, silently and irreversibly. Mtime is now only the
-  tiebreaker for equal or unversioned rows (docs/bugs.md BUG-0017).
+  tiebreaker for equal or unversioned rows (docs/BUGS.md BUG-0017).
 - Fixed: `make stage-show-plan` (and the plan preview `full-cycle.py` prints
   before every run) now predicts dependency cascades correctly instead of
   showing a dependent package as `cache` when its dependency is about to
@@ -91,14 +104,14 @@ History before this file's introduction is not backfilled - see `git log`.
   `full-cycle.py`'s `prepare_packages()`, which now delegates to it), and it
   threads a `would_rebuild: set[str]` accumulator through the loop instead of
   passing a fresh `set()` to `compute_forced_stages()` per package, mirroring
-  `full-cycle.py`'s own growing `rebuilt_packages` (docs/bugs.md BUG-0048).
+  `full-cycle.py`'s own growing `rebuilt_packages` (docs/BUGS.md BUG-0048).
 - Fixed: `stage-copr.py` now fails loud (non-zero exit, unmissable stderr
   summary) when a locally-buildable Copr chroot has zero verified/skipped
   packages -- a "blackout" chroot, new `lib.copr.blackout_chroots()` --
   because that silently holds back every package in the run. Previously
   `ineligible_packages()`'s per-package gate filtered all of them out before
   the submission loop and the script exited 0 with nothing submitted and no
-  signal why (docs/bugs.md BUG-0051, fixed -- the last open item from the
+  signal why (docs/BUGS.md BUG-0051, fixed -- the last open item from the
   2026-09-07/08 zero-push incident, see BUG-0050/BUG-0053 above). The gate
   fires only on a genuine coverage gap, not merely "everyone happened to be
   held back this run" (e.g. a real mock failure and its dependents) --
@@ -113,14 +126,14 @@ History before this file's introduction is not backfilled - see `git log`.
   Previously `make stage-mock PACKAGE=X PROCEED_BUILD=true` silently ran in
   non-proceed mode, and `lib.yaml_utils.prepare_stage()` cleared that stage's
   `build-report.db` rows for the packages being built even though the
-  operator explicitly opted out of that (docs/bugs.md BUG-0016).
+  operator explicitly opted out of that (docs/BUGS.md BUG-0016).
 - Changed: Copr submission is now gated per package instead of all-or-nothing.
   `lib.copr.ineligible_packages()` holds back any package not yet `verified`
   (or deliberately `skipped`) on every locally-buildable chroot -- the new
   `COVERAGE_SKIPPED` coverage verdict, and a new `local_chroots()` helper that
   fixes a real deadlock: `chroot_coverage()` used to call any same-arch
   chroot outside `SUPPORTED_FEDORA_VERSIONS` (e.g. a Copr project still
-  listing `fedora-rawhide-x86_64` after the matrix dropped it, docs/todo.md
+  listing `fedora-rawhide-x86_64` after the matrix dropped it, docs/TODO.md
   TODO-0085's neighbor) `unbuilt` rather than `unverifiable`, which would have
   permanently blocked every package under the new strict gate. `lib.copr`
   also gained `block_transitive_dependents()`, the dependency-cascade
@@ -169,7 +182,7 @@ History before this file's introduction is not backfilled - see `git log`.
   overall. `-j` (parallel chroots) is deliberately not attempted yet: the
   canonical phase's `packages.yaml` rewrite isn't concurrency-safe against
   the other chroots reading it, and the pipeline `flock` (BUG-0043) refuses
-  a second concurrent `make` invocation by design regardless (docs/todo.md
+  a second concurrent `make` invocation by design regardless (docs/TODO.md
   TODO-0086).
 - Fixed: the entry directly above was wrong about `make -k`. `-k` does *not*
   let a target continue past a failed (even order-only) prerequisite -- it
@@ -219,7 +232,7 @@ History before this file's introduction is not backfilled - see `git log`.
   chroot (default all of `SUPPORTED`: 43/44/45) locally before a single
   Copr submission -- roughly triples nightly build time in exchange for
   catching a chroot-specific failure before it reaches Copr instead of only
-  after (see docs/bugs.md BUG-0018). Closes TODO-0065.
+  after (see docs/BUGS.md BUG-0018). Closes TODO-0065.
 - Fixed: `full-cycle`'s container recipe now forwards `SKIP_PACKAGES` into
   `full-cycle.py`'s environment (it already forwarded `FORCE_REBUILD`), and
   `full-cycle-matrix`'s per-version loop now forwards both `SKIP_PACKAGES` and
@@ -245,7 +258,7 @@ History before this file's introduction is not backfilled - see `git log`.
   needed for that target's own `stage-mock` to find the SRPM once its own `srpm`
   stage had recorded a row for it. `mock-cache-<ver>`/`mock-root-<ver>` stay
   per-version deliberately (mock already namespaces those internally; see
-  docs/todo.md TODO-0023). See docs/FRD.md COPR-0011, docs/todo.md TODO-0085 for a
+  docs/TODO.md TODO-0023). See docs/FRD.md COPR-0011, docs/TODO.md TODO-0085 for a
   related cosmetic bookkeeping gap this surfaced (not a correctness bug).
 - Changed: `lib.yaml_utils.apply_os_overrides()` no longer merges a `fedora:`
   override block's `build_requires`/`requires`/`build.*`/`source.patches` into
@@ -333,7 +346,7 @@ History before this file's introduction is not backfilled - see `git log`.
   `serve.py`, `lib/cache.py`, `lib/yaml_config.py`, `lib/validation.py`,
   `lib/reporting.py`, `lib/vendor.py`, `stage-vendor.py`, and
   `rpm-dir-prefixes-convert.py`. `disallow_any_generics` and `warn_return_any` stay
-  off for now, each commented with the `docs/todo.md` entry (TODO-0079/-0081) that
+  off for now, each commented with the `docs/TODO.md` entry (TODO-0079/-0081) that
   turns it on.
 - Fixed: `mpvpaper`/`waypaper`'s `version:` in `packages.yaml` were unquoted YAML
   scalars (`1.9`, `2.8`) that loaded as Python `float`, not `str`. Harmless today
@@ -370,7 +383,7 @@ History before this file's introduction is not backfilled - see `git log`.
   the result before writing, and emitted double quotes into a file where every
   `files:` entry is single-quoted. This script runs unattended every night via `make
   update-daily` -> `fmt` -> `normalize-paths`. Added `tests/test_rpm_dir_prefixes_convert.py`
-  (previously untested, docs/todo.md #TODO-0041).
+  (previously untested, docs/TODO.md #TODO-0041).
 - Added: `lib.yaml_utils.write_yaml_file()`, a shared writer that preserves a YAML
   file's existing `---` document start (previously every packages.yaml/groups.yaml
   writer using `dump_yaml_pretty()`/`yaml_config.DEFAULT` silently dropped it, since
@@ -425,7 +438,7 @@ History before this file's introduction is not backfilled - see `git log`.
 
 ## 2026-08-18
 
-- Changed: groomed `docs/bugs.md`/`docs/todo.md` -- re-verified every entry against
+- Changed: groomed `docs/BUGS.md`/`docs/TODO.md` -- re-verified every entry against
   current code, added a `[P#/D#]` priority/difficulty marker to each (documented in
   both file headers, plus a next-free-ID line to stop future re-allocation), and
   reformatted entry IDs from `**BUG-0000**` to `#BUG-0000` to match how they're
@@ -443,7 +456,7 @@ History before this file's introduction is not backfilled - see `git log`.
   concurrency half) and TODO-0076 (gen-spec staleness, split out of TODO-0073), and
   filed BUG-0046 (`full-cycle-matrix` drops `SKIP_PACKAGES`/`FORCE_REBUILD`). Corrected
   stale figures across a dozen entries (line counts, package counts, git-call counts)
-  and repointed 5 dangling `docs/bugs.md BUG-0025`/`BUG-0041` references (both fixed
+  and repointed 5 dangling `docs/BUGS.md BUG-0025`/`BUG-0041` references (both fixed
   and deleted from bugs.md already) to `docs/CHANGELOG.md` instead, in
   `refresh-checksums.py`, `lib/validation.py`, `lib/pipeline.py`, `Makefile`, and
   `docs/packaging.md`. No production code changed.
@@ -470,7 +483,7 @@ History before this file's introduction is not backfilled - see `git log`.
   ever runs Fedora 43/44/rawhide, all of which ship Python >=3.12, so
   `tarfile.extractall(..., filter="data")` never raises `TypeError` here --
   the fallback was unreachable (TODO-0054).
-- Removed: `docs/todo.md` TODO-0059 (`SOURCES_DIR.mkdir()` only in
+- Removed: `docs/TODO.md` TODO-0059 (`SOURCES_DIR.mkdir()` only in
   `stage-vendor.py:main()`) -- already fixed 2026-08-12, stale entry, no code
   change.
 - Fixed: `.env` `LOG_LEVEL=""`/`CMD_TIMEOUT=""` are now quote-stripped by the
@@ -490,7 +503,7 @@ History before this file's introduction is not backfilled - see `git log`.
   `clean` from the same report turned out not to need this -- `save-last-build`
   never touches the container, and `clean` already gets `check-image`
   transitively through its `clean-logs` prerequisite).
-- Removed: `docs/bugs.md` BUG-0005 (`add-submodule` PACKAGE check) was already
+- Removed: `docs/BUGS.md` BUG-0005 (`add-submodule` PACKAGE check) was already
   fixed in the code (Makefile, since 2026-04-05) -- stale entry, no code change.
 - Fixed: `save_release_cache` now evicts entries older than `CACHE_TTL` (7
   days) on every write instead of only TTL-gating reads. Previously
@@ -514,7 +527,7 @@ History before this file's introduction is not backfilled - see `git log`.
   stuck at `state="skipped", reason="spec failed"` (BUG-0020) is no longer
   permanent once the spec is fixed. The summary table and
   `docs/full-report.md` render this case as `n/a` instead of `cached`/
-  `Skipped`. See `docs/bugs.md` (BUG-0045 removed, BUG-0020 narrowed).
+  `Skipped`. See `docs/BUGS.md` (BUG-0045 removed, BUG-0020 narrowed).
 - Changed: retired BUG-0020's remaining "`full-cycle.py` never calls
   `prepare_stage()` for the vendor stage" half after verifying it is a
   non-bug, not a fix. `prepare_stage()` is the `make stage-<x>` standalone
@@ -592,7 +605,7 @@ History before this file's introduction is not backfilled - see `git log`.
 - Added: mock's buildroot cache (`/var/cache/mock`, `/var/lib/mock`) now persists across
   `--rm` containers via the new `mock-cache-<ver>`/`mock-root-<ver>` volumes, so
   `make full-cycle`/nightly `update-daily` no longer re-bootstrap every chroot from scratch
-  (docs/todo.md TODO-0014, resolved). `make clean-mock-cache` (also run by
+  (docs/TODO.md TODO-0014, resolved). `make clean-mock-cache` (also run by
   `clean-localrepo`/`clean-all`/`container-volume-clean`) drops them if a stale local-repo
   poisons the persisted dnf cache. `stage-mock.py` now clears `/var/lib/mock/<chroot>/result`
   before each build so a crash mid-run can't leak a prior package's RPMs into the next one.
@@ -600,7 +613,7 @@ History before this file's introduction is not backfilled - see `git log`.
   whole `PACKAGE` list instead of one container per package (`scripts/pkg-log-analysis.py`
   gained a multi-package CLI). `make readme` renders all three templates
   (README.md/docs/README.copr.md/docs/full-report.md) from one container and one Copr poll
-  instead of three (docs/todo.md TODO-0067, resolved) -- `scripts/gen-report.py`'s
+  instead of three (docs/TODO.md TODO-0067, resolved) -- `scripts/gen-report.py`'s
   `--format`/`--output` are now repeatable, paired positionally.
 
 - Added: `FORCE_REBUILD=1` for `make full-cycle`/`make stage-show-plan` -- ignores the cache
@@ -608,7 +621,7 @@ History before this file's introduction is not backfilled - see `git log`.
   if `PACKAGE` is unset. Scoped to the packages named explicitly; transitive deps pulled into
   the run still respect the cache. Takes precedence over `PROCEED_BUILD` for the packages it
   applies to. See `docs/operations.md` "Build cache and forcing a re-run".
-- Removed: the `FORCE_MOCK` Makefile flag (docs/bugs.md BUG-0009 -- it was passed into the
+- Removed: the `FORCE_MOCK` Makefile flag (docs/BUGS.md BUG-0009 -- it was passed into the
   container but nothing ever read it); replaced by the real `FORCE_REBUILD` above.
 - Added: `scripts/lib/log_analysis.py` now recognizes gmake's `No rule to make target 'X',
   needed by 'Y'` error (e.g. quickshell's `dbus_objectmanager.cpp` missing from
@@ -664,7 +677,7 @@ History before this file's introduction is not backfilled - see `git log`.
   `lib/vendor_rust.py` from a scratch tmpdir; a package listing both `golang` and `cargo` in
   `build_requires` now fails loudly instead of silently taking the Rust path. `lib/validation.py`
   now rejects any package whose `source.archives[0]` doesn't resolve to an `https://` URL --
-  closes docs/todo.md TODO-0001/TODO-0003/TODO-0044/TODO-0055/TODO-0060 and docs/bugs.md
+  closes docs/TODO.md TODO-0001/TODO-0003/TODO-0044/TODO-0055/TODO-0060 and docs/BUGS.md
   BUG-0021/BUG-0022/BUG-0026
 - Added: `stage-vendor.py` now checks a content-addressed vendor tarball store
   (`lib/vendor_store.py`, `.cache/vendor/<pkg>/<input-hash>/`) before running `cargo
@@ -672,20 +685,20 @@ History before this file's introduction is not backfilled - see `git log`.
   stage's cache uses. Unlike the per-`FEDORA_VERSION` `~/rpmbuild/SOURCES` volume, this store is
   shared across every target, so `make full-cycle-matrix` vendors a given tree once instead of
   once per Fedora version. Store entries are recorded in the `artifacts` table under
-  `realm="vendor-store"` and reclaimed by `make db-prune` -- closes docs/todo.md
-  TODO-0002/TODO-0006 and docs/bugs.md BUG-0023
+  `realm="vendor-store"` and reclaimed by `make db-prune` -- closes docs/TODO.md
+  TODO-0002/TODO-0006 and docs/BUGS.md BUG-0023
 - Added: `make stage-mock` now runs mock with `rpmbuild_networking=False`/`use_host_resolv=False`,
   reproducing COPR's offline `%build` step locally, so an incomplete vendor tree fails locally
-  instead of only on COPR -- closes docs/todo.md TODO-0004
+  instead of only on COPR -- closes docs/TODO.md TODO-0004
 - Added: `stage-vendor` now fails a Rust package's vendor stage if `cargo vendor` produces any
   crate without a registry checksum (`.cargo-checksum.json`'s `"package": null`, the signature of
   a git/path source unresolvable offline) instead of reporting success and letting the build fail
-  two stages later -- closes docs/todo.md TODO-0005
+  two stages later -- closes docs/TODO.md TODO-0005
 - Added: `lib/toolchain.py` compares a vendored package's `go.mod` `toolchain` directive or
   `Cargo.toml` `rust-version` (vendoring runs against the container's own `go`/`cargo`) against
   what the target Fedora release's repos would install into the mock chroot, via `dnf repoquery`,
   and fails the vendor stage loud on skew instead of letting the chroot build fail offline later
-  -- closes docs/todo.md TODO-0007
+  -- closes docs/TODO.md TODO-0007
 
 ## 2026-08-02
 
@@ -772,7 +785,7 @@ History before this file's introduction is not backfilled - see `git log`.
 - Fixed: Makefile help text and moved/rewritten CONTRIBUTING both called Rust vendoring
   "ABANDONED"/"Go packages only", though `vendor_rust.py` is live for 2 packages (closes
   TODO-0051)
-- Changed: `docs/bugs.md`/`docs/todo.md` got a scope rule, a `## Next` section, and an
+- Changed: `docs/BUGS.md`/`docs/TODO.md` got a scope rule, a `## Next` section, and an
   ID-reuse rule; deleted 4 entries that verbatim-duplicated the other file (TODO-0061/0062 vs.
   BUG-0028/0029) and TODO-0034/TODO-0051 (both fixed above)
 - Fixed: `requirements.txt`/`requirements-dev.txt` now pin `~=X.Y.Z` (PEP 440 compatible-release:

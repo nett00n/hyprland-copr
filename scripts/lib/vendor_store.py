@@ -3,12 +3,12 @@
 Distro/arch-independent by construction: unlike SOURCES_DIR (one podman volume
 per FEDORA_VERSION), this store lives on the repo's own /work mount, so one
 entry serves every target and `make full-cycle-matrix` builds a given vendor
-tree once instead of once per Fedora version (docs/todo.md TODO-0006).
+tree once instead of once per Fedora version (docs/TODO.md TODO-0006).
 
 Keyed by lib.cache.compute_input_hashes -- the same mechanism every other
 stage's cache uses -- so editing go_subdir/rust_subdir, the source URL, or a
 patch invalidates the store exactly like it invalidates a normal stage cache,
-instead of "does a file happen to exist" (docs/bugs.md BUG-0023).
+instead of "does a file happen to exist" (docs/BUGS.md BUG-0023).
 
 Ownership/GC piggybacks on the existing `artifacts` table: stage-vendor.py
 records store hits/writes under realm="vendor-store" with a sentinel target,
@@ -47,7 +47,7 @@ def _tool_version(language: str) -> str:
     """Best-effort tool version string recorded in meta.json.
 
     Informational only -- not part of the cache key. Reserved for the
-    toolchain-skew check deferred to Phase 3 (docs/todo.md TODO-0007).
+    toolchain-skew check deferred to Phase 3 (docs/TODO.md TODO-0007).
     """
     cmd = _TOOL_VERSION_CMD.get(language)
     if cmd is None:

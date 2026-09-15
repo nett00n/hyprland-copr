@@ -153,7 +153,7 @@ class TestPrune:
         assert "Nothing to prune." in capsys.readouterr().out
 
     def test_higher_version_kept_even_with_older_mtime(self, tmp_path):
-        """docs/bugs.md BUG-0017: a rebuild that produces an older version but
+        """docs/BUGS.md BUG-0017: a rebuild that produces an older version but
         lands on disk with a *later* mtime (a pin rollback, a corrected
         pinned-version) must not get kept over the genuinely newer version."""
         newer = tmp_path / "a-2.rpm"

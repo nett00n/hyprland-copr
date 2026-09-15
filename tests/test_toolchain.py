@@ -1,4 +1,4 @@
-"""Tests for lib.toolchain (docs/todo.md TODO-0007)."""
+"""Tests for lib.toolchain (docs/TODO.md TODO-0007)."""
 
 import sys
 from pathlib import Path

@@ -1,9 +1,9 @@
 """SQLite storage for build-report data: run history, per-stage results, artifacts.
 
 Replaces build-report.yaml. Schema key is `target` (the mock chroot triple, e.g.
-`fedora-44-x86_64`), not `fedora_version` -- see docs/todo.md "Build matrix" for why.
+`fedora-44-x86_64`), not `fedora_version` -- see docs/TODO.md "Build matrix" for why.
 
-See docs/todo.md "Build report db" for follow-ups (append-only attempt history,
+See docs/TODO.md "Build report db" for follow-ups (append-only attempt history,
 artifact sha256, etc).
 """
 

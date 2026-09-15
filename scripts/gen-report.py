@@ -216,7 +216,7 @@ def main() -> None:
         help="Output format: github (table), copr (list), or full-report (detailed). "
         "Repeatable -- pair each with an --output to render several templates from "
         "one build-report.db read/Copr poll instead of one process per format "
-        "(see docs/todo.md TODO-0067). Defaults to a single 'github' render.",
+        "(see docs/TODO.md TODO-0067). Defaults to a single 'github' render.",
     )
     parser.add_argument(
         "--output",

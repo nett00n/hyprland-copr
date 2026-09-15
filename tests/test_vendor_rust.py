@@ -512,7 +512,7 @@ class TestCargoUpdate:
 
 
 class TestTimeout:
-    """docs/bugs.md BUG-0024: `cargo update -p` and `cargo vendor` ran with no
+    """docs/BUGS.md BUG-0024: `cargo update -p` and `cargo vendor` ran with no
     timeout at all, so a hung invocation blocked update-daily indefinitely. Both
     now go through lib.subprocess_utils.run_cmd, which reads CMD_TIMEOUT
     (default 3600s) and turns a timeout into an (ok=False, ...) result instead

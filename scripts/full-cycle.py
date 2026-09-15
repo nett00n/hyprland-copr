@@ -23,10 +23,10 @@ Environment variables:
   SKIP_RELEASE_BUMP          If 'true', skip the pre-build release auto-increment step
                               (set by full-cycle-matrix for every non-canonical chroot,
                               so a matrix run bumps each package's release once, not once
-                              per chroot -- see docs/bugs.md BUG-0049)
+                              per chroot -- see docs/BUGS.md BUG-0049)
   SYNCHRONOUS_COPR_BUILD     If 'true', wait for COPR builds; default is async (--nowait)
   REQUIRE_CHROOT_COVERAGE    If 'true', block Copr submission instead of warning when a
-                             chroot has no verified local mock build (see docs/bugs.md
+                             chroot has no verified local mock build (see docs/BUGS.md
                              BUG-0018). Default: warn and submit anyway.
   LOG_LEVEL                  Logging level: DEBUG, INFO (default), WARNING, ERROR
 """
@@ -196,7 +196,7 @@ def prepare_packages(package_filter: str, skip_filter: str) -> dict:
     Always applies topological sort to ensure correct build order (via
     lib.deps.ordered_packages, shared with stage-show-plan.py's show_plan() so
     the pre-flight plan and this real run always visit packages in the same
-    order -- see docs/bugs.md, formerly BUG-0048).
+    order -- see docs/BUGS.md, formerly BUG-0048).
     For selective builds (PACKAGE=), also expands transitive dependencies.
     """
     all_packages = get_packages()
@@ -300,7 +300,7 @@ def run_build_pipeline(
     rebuilt_packages: set[str] = set()
 
     # NOTE: no lib.yaml_utils.prepare_stage() call anywhere in this file, for
-    # any stage (see docs/bugs.md, formerly BUG-0020). `packages` here already
+    # any stage (see docs/BUGS.md, formerly BUG-0020). `packages` here already
     # came from prepare_packages() (topo-sorted, transitive deps expanded --
     # strictly more than prepare_stage()'s filtering). prepare_stage()'s other
     # effect, build_db.clear_stage(), DELETEs the stage_results row including
@@ -399,7 +399,7 @@ def run_build_pipeline(
             # "config: skip") every run. Never touch update_reason/finalize_stage
             # here, and never add to rebuilt_packages: doing either previously
             # made this look like a genuine cache hit and cascaded rebuilds onto
-            # dependents (see docs/bugs.md, formerly BUG-0045).
+            # dependents (see docs/BUGS.md, formerly BUG-0045).
             _stage["stage-vendor"].run_for_package(
                 pkg, meta, fedora_version, target, run_id, all_packages
             )
@@ -575,7 +575,7 @@ def run_build_pipeline(
             msg += f" -- also holding back dependent(s): {', '.join(held_back)}"
         print(msg, file=sys.stderr)
 
-    # Pre-submission chroot coverage gate (docs/bugs.md BUG-0018): warns by
+    # Pre-submission chroot coverage gate (docs/BUGS.md BUG-0018): warns by
     # default, blocks (like the mock-failure `blocked` case above) only under
     # REQUIRE_CHROOT_COVERAGE=true.
     coverage_blocked = False
@@ -587,14 +587,14 @@ def run_build_pipeline(
             print(
                 "\n  ✗ REQUIRE_CHROOT_COVERAGE=true and some chroots lack a "
                 "verified local mock build -- skipping Copr submission for "
-                "all packages this run (see docs/bugs.md BUG-0018)",
+                "all packages this run (see docs/BUGS.md BUG-0018)",
                 file=sys.stderr,
             )
 
     # Resolve any build left "unknown" (async submission, not yet terminal)
     # from a prior run before deciding what to (re)submit below -- otherwise
     # a build that has since finished on Copr's side would still read as
-    # "unknown" here and get treated as a cache miss (docs/bugs.md BUG-0002).
+    # "unknown" here and get treated as a cache miss (docs/BUGS.md BUG-0002).
     if not skip_copr and copr_repo:
         poll_copr_status(target, list(packages))
 
@@ -660,7 +660,7 @@ def run_build_pipeline(
         # "stuck", so that distinction is made here instead. Only applies
         # when nothing forces a fresh submission (force_run, or a dependency
         # rebuilt this run): those mean a new version is in play, so the old
-        # build_id no longer matters (docs/bugs.md BUG-0002).
+        # build_id no longer matters (docs/BUGS.md BUG-0002).
         if "copr" not in forced_stages:
             prior_copr = build_db.get_stage(pkg, "copr", target)
             if (
@@ -730,7 +730,7 @@ def finalize_report(
     Scoped to `packages` (this run's package set) -- unlike the old
     finalize_report(), which scanned the WHOLE persisted report and so one
     stale failed row from an unrelated package made every future run exit
-    non-zero (see docs/bugs.md / issue #23).
+    non-zero (see docs/BUGS.md / issue #23).
     """
     stages = build_db.stage_map(target)
     print_summary(packages, stages, copr_repo)
@@ -815,7 +815,7 @@ def main() -> None:
     # without this flag every chroot after the first would see no row yet,
     # call it a rebuild, and bump the release again -- up to once per matrix
     # chroot in one nightly, each rewriting the shared packages.yaml (see
-    # docs/bugs.md BUG-0049). The canonical chroot's full-cycle call is the
+    # docs/BUGS.md BUG-0049). The canonical chroot's full-cycle call is the
     # only one that runs this.
     if skip_release_bump:
         print("\nSKIP_RELEASE_BUMP=true -- release auto-increment skipped this run")

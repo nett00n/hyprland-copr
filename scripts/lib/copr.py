@@ -44,7 +44,7 @@ _COPR_STATE_RE = re.compile(
 # canceled/skipped/forked are terminal -- the build will never resolve itself
 # -- so they're treated the same as a real failure: is_cached() only trusts
 # "success", so anything else naturally gets resubmitted the next run (see
-# docs/bugs.md BUG-0002). running/starting/pending/importing/waiting are
+# docs/BUGS.md BUG-0002). running/starting/pending/importing/waiting are
 # intentionally absent: they're non-terminal, so the row is left alone and
 # polled again next time.
 _COPR_TERMINAL_STATE_MAP = {
@@ -60,7 +60,8 @@ _COPR_TERMINAL_STATE_MAP = {
 # a deliberate opt-out (packages.yaml's fedora: '<ver>': skip: true, see
 # docs/packaging.md "Per-Fedora-version spec differences") and, like "verified",
 # must never block a submission; "unverifiable" is a different-arch chroot
-# (aarch64) mock can never build here -- see docs/todo.md TODO-0024.
+# (aarch64) mock can never build here -- see
+# docs/features/COPR-0020-aarch64-local-builds.md.
 COVERAGE_VERIFIED = "verified"
 COVERAGE_FAILED = "failed"
 COVERAGE_UNBUILT = "unbuilt"
@@ -197,8 +198,9 @@ def chroot_coverage(pkg: str, chroots: list[str]) -> dict[str, str]:
     _UNBUILT/_SKIPPED/_UNVERIFIABLE (see the module-level constants' docstring).
 
     A chroot outside `local_chroots()` -- aarch64 (mock can't cross-build here,
-    TODO-0024), or an x86_64 chroot for a Fedora version this host's
-    SUPPORTED_FEDORA_VERSIONS no longer builds (e.g. a Copr project still
+    see docs/features/COPR-0020-aarch64-local-builds.md), or an x86_64 chroot for
+    a Fedora version this host's SUPPORTED_FEDORA_VERSIONS no longer builds (e.g.
+    a Copr project still
     listing a since-dropped chroot) -- is UNVERIFIABLE either way: there is no
     local mock row that could ever satisfy it, so it must never gate a
     submission. Without this, a stale Copr-side chroot would score every
@@ -261,7 +263,7 @@ def blackout_chroots(copr_repo: str, packages: dict) -> list[str]:
     A chroot in this list will hold back *every* package in `packages` via
     `ineligible_packages()` -- not one straggler, all of them. That's the
     signal `stage-copr.py` uses to fail loud instead of silently submitting
-    nothing (see docs/bugs.md BUG-0051). A chroot outside `local_chroots()`
+    nothing (see docs/BUGS.md BUG-0051). A chroot outside `local_chroots()`
     (aarch64, or unsupported here) never counts -- there's no local way to
     close that gap, so it must never be treated as a blackout.
     """
@@ -285,7 +287,7 @@ def print_chroot_coverage(copr_repo: str, packages: dict) -> bool:
     mock succeeded), failed, unbuilt (never tried locally), skipped
     (deliberate opt-out), or unverifiable (not in `local_chroots()` -- aarch64,
     or a Fedora version this host's SUPPORTED_FEDORA_VERSIONS no longer
-    builds, see docs/todo.md TODO-0024).
+    builds, see docs/features/COPR-0020-aarch64-local-builds.md).
 
     Returns False only if some locally-buildable chroot has any package that
     is failed or unbuilt -- i.e. something `make full-cycle-matrix` could
@@ -311,7 +313,7 @@ def print_chroot_coverage(copr_repo: str, packages: dict) -> bool:
         counts = by_chroot[chroot]
         if counts[COVERAGE_UNVERIFIABLE]:
             note = (
-                "not verifiable locally (aarch64, or unsupported here, see TODO-0024)"
+                "not verifiable locally (aarch64, or unsupported here, see COPR-0020)"
             )
         else:
             note = (
@@ -380,7 +382,7 @@ def mock_failed_packages(packages: dict, target: str) -> list[str]:
     own mock succeeded, so a healthy early package (e.g. hyprutils) could
     already be public on Copr by the time a later, dependent package (e.g.
     Hyprland) failed mock -- publishing a dependency set that doesn't
-    actually work together. See docs/bugs.md / issue #8.
+    actually work together. See docs/BUGS.md / issue #8.
     """
     return sorted(
         pkg
@@ -400,7 +402,7 @@ def block_transitive_dependents(
     (already published, unaffected) and not unrelated packages. Never
     special-cased on whether a dependent's own state happened to look fine --
     it may have built against a stale, already-published copy of a `names`
-    ancestor. See docs/todo.md TODO-0084.
+    ancestor. See docs/TODO.md TODO-0084.
 
     Graph is built over `all_packages` (not the filtered `packages`) so
     dependents resolve correctly on a PACKAGE=-filtered run; the result is

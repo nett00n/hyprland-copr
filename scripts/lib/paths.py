@@ -23,7 +23,7 @@ SOURCES_DIR = Path.home() / "rpmbuild" / "SOURCES"
 # lives on the repo's own /work mount, so one entry serves every target.
 VENDOR_STORE_DIR = ROOT / ".cache" / "vendor"
 
-# The build matrix is fedora+x86_64-only today; see docs/todo.md "Build matrix"
+# The build matrix is fedora+x86_64-only today; see docs/TODO.md "Build matrix"
 # for what else needs to change before that's not true.
 DISTRO = "fedora"
 ARCH = "x86_64"

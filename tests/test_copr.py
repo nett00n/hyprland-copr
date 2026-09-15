@@ -517,7 +517,7 @@ class TestChrootCoverage:
         assert result == {"fedora-44-x86_64": COVERAGE_UNBUILT}
 
     def test_unverifiable_for_different_arch(self):
-        """aarch64 chroots are never locally buildable -- see TODO-0024."""
+        """aarch64 chroots are never locally buildable -- see COPR-0020."""
         result = chroot_coverage("hyprutils", ["fedora-44-aarch64"])
         assert result == {"fedora-44-aarch64": COVERAGE_UNVERIFIABLE}
 
@@ -585,7 +585,7 @@ class TestPrintChrootCoverage:
     @patch("lib.copr.get_project_chroots")
     def test_aarch64_only_gap_returns_true(self, mock_chroots):
         """An aarch64-only gap must never flip the return to False -- there is no
-        local way to close it (TODO-0024), so it can't gate a submission."""
+        local way to close it (COPR-0020), so it can't gate a submission."""
         mock_chroots.return_value = ["fedora-44-aarch64"]
         assert print_chroot_coverage("nett00n/hyprland", {"hyprutils": {}}) is True
 
@@ -638,7 +638,7 @@ class TestPrintChrootCoverage:
 
 class TestBlackoutChroots:
     """Tests for blackout_chroots() -- the chroots that would hold back every
-    package this run (docs/bugs.md BUG-0051)."""
+    package this run (docs/BUGS.md BUG-0051)."""
 
     @patch("lib.copr.get_project_chroots")
     def test_zero_coverage_chroot_is_a_blackout(self, mock_chroots):
@@ -735,7 +735,7 @@ class TestIneligiblePackages:
 
     @patch("lib.copr.get_project_chroots")
     def test_aarch64_gap_is_eligible(self, mock_chroots):
-        """aarch64 is never in local_chroots() -- it can never block (TODO-0024)."""
+        """aarch64 is never in local_chroots() -- it can never block (COPR-0020)."""
         mock_chroots.return_value = ["fedora-44-x86_64", "fedora-44-aarch64"]
         run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
         build_db.set_stage("hyprutils", "mock", "fedora-44-x86_64", run_id, "success")

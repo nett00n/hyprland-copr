@@ -18,7 +18,7 @@ def parse_gitmodules(path: Path) -> list[dict]:
     `ignore` is `None` when the section has no `ignore =` line at all (as
     opposed to `""`, which would mean an explicit-but-empty value) -- callers
     that check for "missing ignore=dirty" (see lib.validation.validate_gitmodules,
-    docs/bugs.md formerly BUG-0012) need to tell the two apart.
+    docs/BUGS.md formerly BUG-0012) need to tell the two apart.
     """
     parser = configparser.ConfigParser(strict=False)
     parser.read(path)
@@ -214,7 +214,7 @@ def get_submodule_commit(repo: Path, ref: str = "HEAD") -> tuple[str, str, str] 
     `ref` defaults to the checked-out HEAD; update-versions.py passes
     "origin/<branch>" so a package's version never depends on where the working
     tree happens to sit (a pinned sibling can share the same checkout without
-    its version resolution being affected -- see docs/bugs.md BUG-0033).
+    its version resolution being affected -- see docs/BUGS.md BUG-0033).
     """
     result = run_git(
         "-C", str(repo), "log", "-1", "--format=%H %cd", "--date=format:%Y%m%d", ref

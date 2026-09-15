@@ -279,7 +279,7 @@ class TestVersionsFor:
 
 
 class TestRpmVerCmp:
-    """Test rpmvercmp against the canonical rpm vercmp vectors, docs/bugs.md BUG-0017."""
+    """Test rpmvercmp against the canonical rpm vercmp vectors, docs/BUGS.md BUG-0017."""
 
     def test_equal(self):
         assert rpmvercmp("1.0", "1.0") == 0

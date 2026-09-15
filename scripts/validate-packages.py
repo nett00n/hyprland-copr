@@ -3,7 +3,7 @@
 
 Thin front-end over lib.validation -- the same validator scripts/stage-validate.py
 runs as the real build's stage 0. The two used to be independently-diverged
-validators (docs/bugs.md, formerly BUG-0012): a package could pass this fast,
+validators (docs/BUGS.md, formerly BUG-0012): a package could pass this fast,
 no-container pre-commit gate and still fail build validation, or vice versa. Now
 a passing `make validate-packages` implies `make stage-validate` will pass too.
 

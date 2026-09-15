@@ -13,7 +13,7 @@ TAG_RE = re.compile(r"^v?(\d+(?:\.\d+)*)(?:[-.]([0-9A-Za-z.]+))?$")
 _PRERELEASE_PART_RE = re.compile(r"(\d+)|([A-Za-z]+)")
 
 # The complete set of release_type values scripts/update-versions.py and the
-# validators understand. Single source of truth -- see docs/bugs.md BUG-0014:
+# validators understand. Single source of truth -- see docs/BUGS.md BUG-0014:
 # a release_type outside this set used to match no dispatch branch and fall
 # through to the default (semver-or-commit) path silently instead of erroring.
 RELEASE_TYPES = frozenset(
@@ -30,7 +30,7 @@ RELEASE_TYPES = frozenset(
 # Types that pin the *checkout*, not just the version string. Exact membership
 # on purpose, never startswith("pinned-"): an unknown/misspelled type must
 # behave identically here and in the version-resolution loop below, which
-# falls through to the default path. See docs/bugs.md BUG-0014 (mpvpaper's
+# falls through to the default path. See docs/BUGS.md BUG-0014 (mpvpaper's
 # `latest-tag`); docs/packaging.md holds the canonical release_type table.
 PINNED_RELEASE_TYPES = frozenset({"pinned-version", "pinned-commit", "pinned-tag"})
 
@@ -44,7 +44,7 @@ COMMIT_VERSION_RELEASE_TYPES = frozenset({"latest-commit", "pinned-tag"})
 # archive URL is templated as `%{url}/archive/%{commit}.tar.gz`, with
 # source.commit.full written by update-versions.py). Every other release_type
 # builds from a fixed version/tag tarball URL that has no commit in it at all.
-# See docs/bugs.md BUG-0033, BUG-0034.
+# See docs/BUGS.md BUG-0033, BUG-0034.
 COMMIT_TRACKED_RELEASE_TYPES = frozenset({"latest-commit", "pinned-commit"})
 
 

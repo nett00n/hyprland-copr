@@ -1,4 +1,4 @@
-"""Toolchain-skew detection (docs/todo.md TODO-0007).
+"""Toolchain-skew detection (docs/TODO.md TODO-0007).
 
 Vendoring runs in the container against the container's own `go`/`cargo`;
 the actual build runs in the mock chroot against whatever `golang`/`rust`

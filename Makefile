@@ -77,7 +77,7 @@ RPMBUILD_MOUNT   := $(RPMBUILD_VOLUME):/root/rpmbuild:z
 # chroot internally, so sharing these across versions would be redundant
 # nesting, not a correctness requirement the way RPMBUILD above is -- and
 # de-versioning them would discard every host's existing warm buildroot cache
-# for no benefit. Left alone deliberately (see docs/todo.md TODO-0023).
+# for no benefit. Left alone deliberately (see docs/features/COPR-0019-build-target.md).
 MOCKCACHE_VOLUME := mock-cache-$(FEDORA_VERSION)
 MOCKCACHE_MOUNT  := $(MOCKCACHE_VOLUME):/var/cache/mock:z
 MOCKROOT_VOLUME  := mock-root-$(FEDORA_VERSION)
@@ -127,7 +127,7 @@ endif
 ALL_PACKAGES := $(shell grep -oP '^[a-zA-Z][a-zA-Z0-9_-]+(?=:)' packages.yaml)
 # PACKAGE is comma-separated everywhere else (stage-*, full-cycle, build-pop, set-release);
 # normalize commas to spaces here too so sources/stage-log-analyze's shell `for` loop accepts
-# the same shape instead of treating "a,b" as one bogus package name (see docs/todo.md TODO-0029).
+# the same shape instead of treating "a,b" as one bogus package name (see docs/TODO.md TODO-0029).
 comma        := ,
 empty        :=
 space        := $(empty) $(empty)
@@ -143,7 +143,7 @@ define run_with_result
 	@$1 && echo $(HIGHLIGHT_PREFIX) "✓ $2" || (echo $(HIGHLIGHT_PREFIX) "✗ $3"; exit 1)
 endef
 
-# Concurrency guard (docs/bugs.md BUG-0043): update-daily/full-cycle/full-cycle-matrix
+# Concurrency guard (docs/BUGS.md BUG-0043): update-daily/full-cycle/full-cycle-matrix
 # each flock this file before doing any work, so two overlapping runs refuse instead
 # of corrupting build-report.db, the shared podman volumes, or the git index. Not a
 # shared $(call ...) macro: make only recurses under `-n` when "$(MAKE)" is literal
@@ -171,7 +171,7 @@ clean-localrepo: check-image clean-mock-cache ## Purge local repo for FEDORA_VER
 	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --forget-repo $(MOCK_CHROOT) || true
 	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned local repo: local-repo/$(MOCK_CHROOT)"
 
-clean-mock-cache: ## Drop the persisted mock buildroot cache for FEDORA_VERSION (forces a full re-bootstrap next build; see docs/todo.md TODO-0014)
+clean-mock-cache: ## Drop the persisted mock buildroot cache for FEDORA_VERSION (forces a full re-bootstrap next build; see docs/TODO.md TODO-0014)
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKCACHE_VOLUME) >/dev/null 2>&1 && \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKCACHE_VOLUME) || true
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKROOT_VOLUME) >/dev/null 2>&1 && \
@@ -559,14 +559,14 @@ _full-cycle: check-image check-venv setup-volumes
 
 MATRIX_VERSIONS ?= $(SUPPORTED)
 # The canonical chroot performs the release auto-increment (SKIP_RELEASE_BUMP,
-# docs/bugs.md BUG-0049) -- every other chroot in this run must build after
+# docs/BUGS.md BUG-0049) -- every other chroot in this run must build after
 # it, or it could cache its spec/SRPM against the pre-bump release and never
 # regenerate. Enforced by building this list in order, NOT by a Make
 # prerequisite: an order-only prereq plus `make -k` silently SKIPS every
 # dependent chroot whenever the canonical one's recipe fails ("Target
 # 'matrix-chroot-44' not remade because of errors" -- documented -k
 # behaviour), which starved fedora-44 and fedora-45 of every nightly run for
-# as long as one package failed on fedora-43 (docs/bugs.md BUG-0053).
+# as long as one package failed on fedora-43 (docs/BUGS.md BUG-0053).
 # $(filter) is a no-op when the caller's MATRIX_VERSIONS excludes the
 # canonical version -- no release bump happens that run at all then
 # (docs/operations.md), so there is nothing to order.
@@ -603,11 +603,11 @@ full-cycle-matrix: ## Build every MATRIX_VERSIONS chroot locally (default: all S
 	fi
 
 # One chroot's failure must never prevent another chroot from being attempted
-# (docs/bugs.md BUG-0053) -- an explicit `|| overall=1` loop, not `make -k`,
+# (docs/BUGS.md BUG-0053) -- an explicit `|| overall=1` loop, not `make -k`,
 # because -k refuses to attempt any target ordered after a failed one.
 # stage-copr's own exit status is folded into `overall` too, so a failed
 # submission is no longer invisible to update-daily's
-# `|| touch logs/.update-daily-failed` gate (docs/bugs.md BUG-0050).
+# `|| touch logs/.update-daily-failed` gate (docs/BUGS.md BUG-0050).
 _full-cycle-matrix:
 	@overall=0; failed_chroots=; \
 	for v in $(MATRIX_ORDERED_VERSIONS); do \
@@ -650,7 +650,7 @@ _update-daily:
 	$(MAKE) full-cycle-matrix || touch logs/.update-daily-failed
 	@# full-cycle.py's update_package_releases() rewrites packages.yaml after the
 	@# pre-build gate ran, so re-validate the file that actually gets committed and
-	@# rendered into the docs below (docs/bugs.md BUG-0044). No re-fmt: the rewrite
+	@# rendered into the docs below (docs/BUGS.md BUG-0044). No re-fmt: the rewrite
 	@# already goes through write_yaml_file's FORMAT_FILE, same as format-yaml.py.
 	$(MAKE) validate-packages || exit 1
 	$(MAKE) readme copr-description || exit 1

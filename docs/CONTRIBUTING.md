@@ -5,6 +5,16 @@ files are generated from it (via `templates/spec.j2`) and committed, editable. E
 — maintainer runbook, `packages.yaml` schema reference, `scripts/lib/` internals (every module
 has a docstring) — run `make help` or see `docs/operations.md` / `docs/packaging.md`.
 
+## Docs-driven development
+
+This repo's automation behavior is documented docs-first: `docs/DOCS-DRIVEN-DEVELOPMENT.md`
+defines the rules, and `docs/FRD.md` + `docs/features/` are the result — one doc per feature,
+written before its tests, which are written before its code. Changed behavior edits the
+existing feature doc; new behavior gets a new `#COPR-NNNN` doc and an `FRD.md` entry before
+the implementing code lands. Defects/debt/chores on shipped behavior go in `docs/BUGS.md`;
+not-yet-built ideas go in `docs/TODO.md` until they're substantial enough to promote to a
+feature doc.
+
 ## Setup (one-time)
 
 ```shell
@@ -96,11 +106,11 @@ Copr publish; see `docs/operations.md` "`update-daily`".
 
 `validate-packages` runs the exact same validator (`lib.validation`) as the real build's
 `stage-validate`, just without a container — a passing `make validate-packages` implies
-`make stage-validate` will pass too (see `docs/bugs.md`, formerly BUG-0012).
+`make stage-validate` will pass too (see `docs/BUGS.md`, formerly BUG-0012).
 
 Every executable in `scripts/` has a matching `tests/test_<snake_case_name>.py` —
 a new script lands with its tests in the same change, not as follow-up. `make
-coverage` reports per-script coverage; see `docs/todo.md` TODO-0041 for the
+coverage` reports per-script coverage; see `docs/BUGS.md` BUG-0078 for the
 remaining gap.
 
 ## Checklist before opening a PR
@@ -118,6 +128,9 @@ remaining gap.
       info + packager identity — not `CHANGELOG.md`)
 - [ ] `docs/CHANGELOG.md` entry added if this PR changes automation behavior (see below)
 - [ ] Tests added or updated for any `scripts/` change
+- [ ] Feature doc created (new behavior) or updated (changed behavior) under
+      `docs/features/`, with a matching `docs/FRD.md` entry — see "Docs-driven
+      development" above
 
 ## Changelog
 
@@ -126,6 +139,10 @@ behavior, `packages.yaml` schema, build pipeline stages, breaking contributor-fa
 It does **not** track routine package adds/version bumps/release increments (that's
 `update-daily`'s job — see `packages.yaml` git history or `docs/full-report.md` instead).
 
-Format: newest section first, dated `## YYYY-MM-DD` headings, one bullet per entry as
-`- <Added|Changed|Fixed|Removed>: <what changed>`. Add an entry whenever your PR changes
-automation behavior; skip it for docs-only fixes, package additions, and version bumps.
+Format (per `docs/DOCS-DRIVEN-DEVELOPMENT.md`, adopted 2026-09-15): newest first,
+within `## Unreleased` newest entries first; one bullet per feature as
+`- <PREFIX>-NNNN: <one-line summary>` — link the summary to the feature doc for
+detail, don't restate it here. Add an entry whenever your PR changes automation
+behavior; skip it for docs-only fixes, package additions, and version bumps. History
+before 2026-09-15 predates this and uses the older `- <Added|Changed|Fixed|Removed>:
+<what changed>` paragraph form — left as written, not reformatted.

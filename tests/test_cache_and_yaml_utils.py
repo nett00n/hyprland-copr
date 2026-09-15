@@ -463,7 +463,7 @@ class TestPrepareStage:
     # NOTE: get_packages()'s `path: Path = PACKAGES_YAML` default binds at
     # import time, so monkeypatching `paths.PACKAGES_YAML` does not isolate
     # prepare_stage() from the real repo packages.yaml (pre-existing gap,
-    # out of scope for this migration -- see docs/todo.md). These tests use
+    # out of scope for this migration -- see docs/TODO.md). These tests use
     # "hyprutils", a real, stable package in the committed packages.yaml,
     # rather than assuming isolation that doesn't actually happen.
 
@@ -532,7 +532,7 @@ class TestPrepareStage:
         """full-cycle.py must never call prepare_stage() (or build_db.clear_stage()
         directly), for any stage -- not just vendor.
 
-        Regression guard for docs/bugs.md's (verified non-bug, formerly
+        Regression guard for docs/BUGS.md's (verified non-bug, formerly
         BUG-0020) "full-cycle.py never calls prepare_stage() for the vendor
         stage": prepare_stage()'s only effect beyond what full-cycle.py's own
         prepare_packages() already does is build_db.clear_stage(), which

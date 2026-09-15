@@ -87,7 +87,7 @@ class TestValidationPipeline:
         # validate_gitmodules reads root_path / ".gitmodules" directly -- no
         # monkeypatch needed (formerly the root_path arg was dead and every
         # caller had to monkeypatch the module-level GITMODULES constant
-        # instead, see docs/bugs.md formerly BUG-0012)
+        # instead, see docs/BUGS.md formerly BUG-0012)
         errors, warnings = validate_gitmodules(fake_repo["root"])
         assert any("not https://" in e for e in errors)
 
@@ -106,7 +106,7 @@ class TestValidationPipeline:
 
     def test_gitmodules_missing_ignore_dirty_fails(self, fake_repo):
         """Submodule missing `ignore = dirty` fails (formerly only checked by
-        scripts/validate-packages.py, docs/bugs.md formerly BUG-0012)."""
+        scripts/validate-packages.py, docs/BUGS.md formerly BUG-0012)."""
         bad_gitmodules = fake_repo["root"] / ".gitmodules"
 
         bad_gitmodules.write_text("""[submodule "bad-pkg"]

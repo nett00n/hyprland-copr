@@ -36,7 +36,7 @@ def artifacts_present(stage: str, pkg: str, target: str, version: str | None) ->
     Version-scoped deliberately: stage-mock.py's prune_local_repo() deletes
     stale-NVR RPMs from local-repo/ without deleting their artifacts rows, so
     dangling rows for older NVRs are normal and must not satisfy this check --
-    that's exactly the shape of the bug this guards against (see docs/bugs.md
+    that's exactly the shape of the bug this guards against (see docs/BUGS.md
     BUG-0015: a stage stayed "cached" while the current version's file was gone).
     """
     kind = _STAGE_ARTIFACT_KINDS.get(stage)
@@ -144,7 +144,7 @@ def vendor_decision(
     reason "not-vendored"/"config: skip"; callers must let that row stand (never
     call update_reason/finalize_stage on it) and must not add the package to
     rebuilt_packages, so dependents don't cascade-rebuild over a stage that never
-    ran (see docs/bugs.md, formerly BUG-0045).
+    ran (see docs/BUGS.md, formerly BUG-0045).
 
     A package that *does* need vendoring but has a "skipped" row for some other
     reason (e.g. "spec failed", formerly BUG-0020) is deliberately NOT treated as
@@ -203,14 +203,14 @@ def cache_miss_reason(
         - "proceed-skip" — PROCEED_BUILD=true, prior state success (full-cycle.py)
         - "in-progress" — copr stage only: prior submission is still "unknown"
           (non-terminal) on Copr's side after polling, so it is left alone
-          instead of resubmitted (full-cycle.py, see docs/bugs.md BUG-0002)
+          instead of resubmitted (full-cycle.py, see docs/BUGS.md BUG-0002)
         - "SKIP_MOCK" / "SKIP_COPR" — env var skip (full-cycle.py)
         - "config: skip" — fedora:<ver>: skip: true in packages.yaml (stage scripts)
         - "not-vendored" — vendor skipped, package is not Go/Rust (stage-vendor.py).
           Terminal for that package: vendor_decision() re-derives "not-applicable"
           from packages.yaml every run, so full-cycle.py never calls
           cache_miss_reason()/update_reason() for it and this reason is never
-          overwritten with "cached" (see docs/bugs.md, formerly BUG-0045).
+          overwritten with "cached" (see docs/BUGS.md, formerly BUG-0045).
         - "vendor-store hit" — vendor tarball copied from the content-addressed
           store (lib/vendor_store.py) instead of rebuilt (stage-vendor.py)
         - "spec failed" — spec stage failed (vendor/srpm downstream) (stage scripts)
@@ -218,7 +218,7 @@ def cache_miss_reason(
           doesn't match, sources.lock.yaml (stage-srpm.py, see docs/CHANGELOG.md BUG-0025)
         - "srpm {state}" — srpm upstream (mock/copr) (stage scripts)
         - "srpm artifact missing" — srpm row is success but its recorded file is
-          gone from disk (stage-mock.py/stage-copr.py, see docs/bugs.md BUG-0015)
+          gone from disk (stage-mock.py/stage-copr.py, see docs/BUGS.md BUG-0015)
         - "mock {state}" — mock upstream (copr) (stage scripts)
         - "local dep failed: <name>" — local dep failed in mock (stage-mock.py)
 

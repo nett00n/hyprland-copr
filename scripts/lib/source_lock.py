@@ -17,7 +17,7 @@ that use it:
 Trust model is TOFU (trust-on-first-use): the lock proves the bytes have not
 changed since the hash was first recorded and reviewed in a diff, not that
 upstream was honest at record time. Signature verification is out of scope
-here -- see docs/todo.md.
+here -- see docs/TODO.md.
 """
 
 import hashlib

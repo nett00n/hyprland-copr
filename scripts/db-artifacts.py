@@ -25,7 +25,7 @@ from lib.version import compare_evr
 
 # Artifacts that accumulate one-per-build and are safe to prune down to the
 # latest. Logs are deliberately excluded -- `make clean-logs` / --reset is
-# the tool for those, not NVR/recency-based pruning (see docs/todo.md).
+# the tool for those, not NVR/recency-based pruning (see docs/TODO.md).
 _PRUNABLE_KINDS = {"srpm", "rpm", "vendor"}
 
 
@@ -91,7 +91,7 @@ def prune(confirm: bool) -> None:
     wall-clock order, so a rebuild that lands on disk later but is an older
     version (a pin rollback, a corrected pinned-version) doesn't get kept
     over a genuinely newer one (docs/CHANGELOG.md 2026-09-08, closes the
-    former docs/bugs.md BUG-0017). Recorded mtime is only the tiebreaker,
+    former docs/BUGS.md BUG-0017). Recorded mtime is only the tiebreaker,
     for equal or unversioned rows -- find_srpm() (`stage-srpm.py`) still
     picks its build input by mtime alone, a separate, smaller-blast-radius
     gap.
@@ -140,7 +140,7 @@ def reset() -> None:
 
     Used by `make clean-logs`. Dropping `artifacts` here would orphan every
     tracked file on disk with no record of what it is or how to find it
-    again (see docs/bugs.md).
+    again (see docs/BUGS.md).
     """
     build_db.reset()
     print("Cleared stage_results and runs (artifacts preserved).")

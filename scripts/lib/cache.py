@@ -46,12 +46,12 @@ def _source_commit(pkg: str, meta: dict) -> str | None:
     so hashing it just made the cache depend on wherever update-versions.py
     last left the working tree -- including a nightly submodule pull that
     moves every submodule to upstream HEAD regardless of this package's own
-    release_type (see docs/bugs.md BUG-0033).
+    release_type (see docs/BUGS.md BUG-0033).
 
     Only meaningful for packages in lib.version.COMMIT_TRACKED_RELEASE_TYPES
     -- for everyone else, including a commit in the input hashes just forces
     an unrelated full rebuild+resubmit with an unchanged version (see
-    docs/bugs.md BUG-0034). Returns None for a commit-tracked package with no
+    docs/BUGS.md BUG-0034). Returns None for a commit-tracked package with no
     source.commit yet (e.g. a mis-shaped package whose archive URL is keyed on
     %{version} instead of %{commit}) -- already covered by the
     package_version input hash.

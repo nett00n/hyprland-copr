@@ -77,7 +77,7 @@ def validate_package(
 
         # archives[0] must resolve to a downloadable URL -- later entries may
         # be bare filenames (that's how vendor tarballs are referenced), but
-        # a bare entry 0 silently defeats spectool (see docs/bugs.md BUG-0026).
+        # a bare entry 0 silently defeats spectool (see docs/BUGS.md BUG-0026).
         source = meta.get("source", {}) or {}
         processed = process_archive_urls(
             source.get("archives", []),
@@ -108,7 +108,7 @@ def validate_package(
     # auto_update.release_type validity -- an unrecognized type used to match
     # no dispatch branch in update-versions.py and silently fall through to
     # the default (semver-or-commit) resolution instead of erroring here (see
-    # docs/bugs.md BUG-0014, e.g. mpvpaper's `latest-tag` before it was added
+    # docs/BUGS.md BUG-0014, e.g. mpvpaper's `latest-tag` before it was added
     # as a real type).
     release_type = (meta.get("auto_update") or {}).get("release_type")
     if release_type and release_type not in RELEASE_TYPES:
@@ -255,7 +255,7 @@ def validate_submodule_url_resolution(
     a normalized one. A mismatch -- commonly a stray or missing trailing
     `.git` -- means the package is silently skipped every run: no error, no
     warning at update time, auto_update simply never fires again. See
-    docs/bugs.md BUG-0013: two packages went weeks with no update before this
+    docs/BUGS.md BUG-0013: two packages went weeks with no update before this
     was noticed by hand. (Distinct from validate_no_duplicate_urls, which
     catches two *packages* colliding on the same url -- this catches one
     package's url failing to match its own submodule at all.)
@@ -292,7 +292,7 @@ def validate_gitmodules(root_path: Path = ROOT) -> tuple[list[str], list[str]]:
     - URLs use https://
     - Every submodule has `ignore = dirty` set (formerly only checked by
       scripts/validate-packages.py, one of the two divergences behind
-      docs/bugs.md formerly BUG-0012 -- a submodule missing it shows as
+      docs/BUGS.md formerly BUG-0012 -- a submodule missing it shows as
       locally "dirty" in `git status` on every commit its upstream makes,
       even with nothing checked out differently)
 

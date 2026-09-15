@@ -35,7 +35,7 @@ from lib.yaml_utils import (
 
 # PINNED_RELEASE_TYPES/RELEASE_TYPES live in lib/version.py -- the single
 # source of truth for every release_type, shared with the validators and
-# cache/yaml_utils. See docs/bugs.md BUG-0014 (mpvpaper's `latest-tag`);
+# cache/yaml_utils. See docs/BUGS.md BUG-0014 (mpvpaper's `latest-tag`);
 # docs/packaging.md holds the canonical release_type table.
 
 
@@ -62,7 +62,7 @@ def checkout_pin(pkg_name: str, pkg_data: dict) -> "Pin | None":
     tracks its branch as before. A Pin with kind == "unresolved" means the
     package IS pinned but the target can't be derived from packages.yaml; the
     checkout is then left exactly where it is (never falls back to branch
-    HEAD -- see docs/bugs.md BUG-0033).
+    HEAD -- see docs/BUGS.md BUG-0033).
     """
     auto_update = pkg_data.get("auto_update") or {}
     release_type = auto_update.get("release_type", "")
@@ -103,7 +103,7 @@ def pull_submodule(
     before (branch defaults to origin's HEAD when not given). If pin is set,
     the checkout is instead pinned *detached* at the resolved pin target and
     is never moved to branch HEAD -- not even when the pin can't be resolved
-    (see docs/bugs.md, BUG-0033's fix).
+    (see docs/BUGS.md, BUG-0033's fix).
 
     Returns the remote-tracking ref ("origin/<branch>") that moving packages
     sharing this submodule's url must resolve their versions against. This is
@@ -210,7 +210,7 @@ def main() -> None:
     # url: multiple packages (e.g. Hyprland / Hyprland-git) can legitimately
     # point at the same submodule url but need independent release_type
     # handling. Keying by url let one package's config silently shadow
-    # another's (see docs/bugs.md).
+    # another's (see docs/BUGS.md).
     packages: dict = {}
     if PACKAGES_YAML.exists():
         try:
@@ -225,7 +225,7 @@ def main() -> None:
     #  - pin:    a pinned package's checkout target; a pin beats every moving
     #            sibling on the same url, which is only safe because version
     #            resolution further down reads origin/<branch>, never the
-    #            working tree (see docs/bugs.md BUG-0033)
+    #            working tree (see docs/BUGS.md BUG-0033)
     #  - movers: packages on this url that do NOT pin (for the coexistence note)
     url_to_branch: dict[str, str | None] = {}
     url_to_pin: dict[str, Pin] = {}
@@ -315,7 +315,7 @@ def main() -> None:
 
         # Handle latest-tag (loosest match: any version-like tag, no commit
         # fallback) -- for upstreams that don't tag strict semver, e.g.
-        # mpvpaper's "1.9" (two components). See docs/bugs.md BUG-0014.
+        # mpvpaper's "1.9" (two components). See docs/BUGS.md BUG-0014.
         if release_type == "latest-tag":
             print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
             tags = fetch_tags(url)
@@ -355,7 +355,7 @@ def main() -> None:
         # Unrecognized release_type: falls through to the default path below,
         # same as before, but now says so -- `make validate-packages` rejects
         # this before it gets here, but a stale/unvalidated run should still
-        # not fail silently. See docs/bugs.md BUG-0014.
+        # not fail silently. See docs/BUGS.md BUG-0014.
         if release_type and release_type not in RELEASE_TYPES:
             print(
                 f"  warning: {pkg_name}: unknown auto_update.release_type "

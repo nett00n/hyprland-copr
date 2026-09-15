@@ -192,7 +192,7 @@ class TestVendorDecision:
     """Test vendor_decision(), the full-cycle.py replacement for the old
 
     `vendor_entry.get("state") == "skipped" or is_cached(...)` guard that caused
-    docs/bugs.md's (now-fixed) BUG-0045: it decided "not-applicable" from a
+    docs/BUGS.md's (now-fixed) BUG-0045: it decided "not-applicable" from a
     stored DB row instead of packages.yaml, so full-cycle.py overwrote the real
     reason ("not-vendored"/"config: skip"/"spec failed") with "cached".
     """
@@ -228,7 +228,7 @@ class TestVendorDecision:
         assert result == "not-applicable"
 
     def test_go_package_skipped_for_spec_failed_is_run_not_cached(self):
-        """Regression for docs/bugs.md BUG-0020: a vendor row skipped once with
+        """Regression for docs/BUGS.md BUG-0020: a vendor row skipped once with
         reason "spec failed" must not be permanent -- once the package is Go/Rust,
         vendor_decision() falls through to is_cached(), which is False for any
         non-"success" state, so the stage is retried.
@@ -288,7 +288,7 @@ class TestVendorDecision:
 
 class TestArtifactAwareCaching:
     """Test that is_cached()/cache_miss_reason() verify the recorded artifact is
-    still on disk before trusting a "success" DB row (docs/bugs.md BUG-0015).
+    still on disk before trusting a "success" DB row (docs/BUGS.md BUG-0015).
     """
 
     def _seed_success(self, pkg: str, stage: str, version: str, hashes: dict) -> None:

@@ -285,7 +285,7 @@ class TestComputeInputHashesNewFields:
 
 class TestSourceCommit:
     """Tests for _source_commit -- reads packages.yaml, never the live
-    submodule checkout (see docs/bugs.md BUG-0033)."""
+    submodule checkout (see docs/BUGS.md BUG-0033)."""
 
     @pytest.mark.parametrize(
         "auto_update",
@@ -345,7 +345,7 @@ class TestSourceCommit:
         """Regression guard: _source_commit must never touch the submodule
         checkout, so a nightly submodule pull (which may move every
         submodule to upstream HEAD) can't change a commit-tracked package's
-        cache key out from under it (see docs/bugs.md BUG-0033)."""
+        cache key out from under it (see docs/BUGS.md BUG-0033)."""
         meta = {
             "version": "1.0",
             "license": "GPLv3",

@@ -138,7 +138,7 @@ intentionally re-pushed); reflexively forcing defeats the point.
 
 This is TOFU (trust-on-first-use): the lock proves a file's bytes haven't changed since the
 hash was first recorded and reviewed in a diff, not that upstream was honest at record time.
-It does not check GPG signatures — see `docs/todo.md` for that.
+It does not check GPG signatures — see `docs/TODO.md` for that.
 
 ## Go vendoring
 

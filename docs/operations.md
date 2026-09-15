@@ -52,7 +52,7 @@ with `--nowait` (async); `SYNCHRONOUS_COPR_BUILD=true` waits for completion inst
 
 If a locally-buildable chroot has **zero** verified/skipped packages at all — a `blackout`
 chroot, `lib.copr.blackout_chroots()` — every package in the run gets held back at once, and
-`stage-copr` now fails loudly instead of silently exiting 0 with nothing submitted (docs/bugs.md
+`stage-copr` now fails loudly instead of silently exiting 0 with nothing submitted (docs/BUGS.md
 BUG-0051, fixed): it prints which chroot(s) have no coverage and exits 1. This only fires when
 *every* package was held back and the cause is a genuine coverage gap — a run where every
 package happens to be held back for its own real reason (e.g. everyone's dependency actually
@@ -65,8 +65,8 @@ Before submitting, `full-cycle`/`stage-copr` also print a per-chroot local-mock 
 local mock succeeded for it), `failed`, `unbuilt` (never tried locally), `skipped` (a deliberate
 `packages.yaml` `fedora: '<ver>': skip: true` opt-out, see `docs/packaging.md` "Per-Fedora-version
 spec differences"), or `not verifiable locally` (aarch64, or any chroot for a Fedora version this
-host's `SUPPORTED` no longer builds — mock can't satisfy either locally, see `docs/todo.md`
-TODO-0024). The per-package gate above already holds back anything not `verified`/`skipped` on a
+host's `SUPPORTED` no longer builds — mock can't satisfy either locally, see
+`docs/features/COPR-0020-aarch64-local-builds.md`). The per-package gate above already holds back anything not `verified`/`skipped` on a
 locally-buildable chroot by default, which makes `REQUIRE_CHROOT_COVERAGE=true` (block the whole
 submission instead of individual packages whenever any locally-buildable chroot is
 `failed`/`unbuilt`) largely redundant now — it still exists for an all-or-nothing policy, but a
@@ -79,7 +79,7 @@ A single `full-cycle` run only builds one `FEDORA_VERSION`'s x86_64 chroot, but 
 submission out to every chroot configured on the project (x86_64/aarch64 for whichever Fedora
 versions `nett00n/hyprland` has enabled) — a chroot-specific failure (e.g. a newer libstdc++
 needed than an older Fedora ships) can pass local mock and still fail on Copr (see
-`docs/bugs.md` BUG-0018). To catch that before submitting:
+`docs/BUGS.md` BUG-0018). To catch that before submitting:
 
 ```shell
 make container-build                                                  # build the single container image once
@@ -110,7 +110,7 @@ paragraph in "`full-cycle` flags" above) instead of just that one chroot warming
 
 Only the `CANONICAL_FEDORA_VERSION` chroot's `full-cycle` call runs the pre-build release
 auto-increment step -- every other chroot in the loop gets `SKIP_RELEASE_BUMP=true`, so a
-package's release advances once per matrix run, not once per chroot (docs/bugs.md BUG-0049; see
+package's release advances once per matrix run, not once per chroot (docs/BUGS.md BUG-0049; see
 "Release auto-increment" in docs/packaging.md for the step itself). If `MATRIX_VERSIONS` is
 overridden to exclude the canonical version, no invocation bumps the release that run.
 
@@ -121,7 +121,7 @@ stages. `30-copr` is the Copr submission (and, with `SYNCHRONOUS_COPR_BUILD=true
 result). On a Copr failure, `30-copr-chroots.log` (per-chroot states) and
 `31-copr-<chroot>.log` (downloaded builder logs for the chroots that failed) are fetched
 automatically — useful for an aarch64-only failure, which `make full-cycle-matrix` still can't
-reproduce locally (see `docs/bugs.md` BUG-0018).
+reproduce locally (see `docs/BUGS.md` BUG-0018).
 
 On failure, analyze logs for actionable errors:
 
@@ -235,7 +235,7 @@ to build into or read from, whichever chroot a stage is targeting.
 bootstrapped buildroot and dnf package cache) stay per-`FEDORA_VERSION`, deliberately: mock
 already namespaces its cache/root state by chroot internally, so sharing these across
 versions would be redundant nesting rather than a correctness requirement the way the
-rpmbuild volume is (docs/todo.md TODO-0023). Without them, every `make full-cycle`/nightly
+rpmbuild volume is (see docs/features/COPR-0019-build-target.md). Without them, every `make full-cycle`/nightly
 run would re-bootstrap every chroot from scratch; with them, only the first build after
 `container-volume-clean` pays that cost, and each grows to roughly 1-1.5GB.
 
@@ -297,7 +297,7 @@ documents:
 ```
 
 Every key under `sections` is independent -- e.g. set `contributors: false` to hide a broken
-render (see `docs/bugs.md` BUG-0030) without touching the underlying git-log-based collection
+render (see `docs/BUGS.md` BUG-0030) without touching the underlying git-log-based collection
 logic. Omitting `documents.sections` entirely renders every block, same as today.
 
 ### CI docs-shell publish
@@ -333,18 +333,18 @@ Runs: bump versions → `validate-packages` + `fmt` (packages.yaml sanity/format
 **not** the full `pre-commit` gate; `scripts/` lint/test health is already CI's job on every
 push/PR, an unrelated regression there shouldn't block tonight's Copr publish; `validate-packages`
 itself now shares the same `lib.validation` check set as `stage-validate`, formerly two
-independently-diverged validators, see docs/bugs.md formerly BUG-0012) →
+independently-diverged validators, see docs/BUGS.md formerly BUG-0012) →
 `full-cycle-matrix` (builds every `MATRIX_VERSIONS` chroot locally -- default all of
-`SUPPORTED`, i.e. 43/44/45 -- before a single Copr submission; see docs/bugs.md
+`SUPPORTED`, i.e. 43/44/45 -- before a single Copr submission; see docs/BUGS.md
 BUG-0018) → `validate-packages` again (no `fmt`) → regenerate docs → push COPR description →
 `git commit`. Building the whole matrix nightly instead of just the default
 `FEDORA_VERSION` roughly triples build time in exchange for catching a chroot-specific
 failure (e.g. a newer libstdc++ requirement) before it ever reaches Copr, rather than only
-after (docs/bugs.md BUG-0018; this tradeoff was TODO-0065). A failing chroot doesn't stop
+after (docs/BUGS.md BUG-0018; this tradeoff was TODO-0065). A failing chroot doesn't stop
 the rest of the matrix (each chroot is a real `matrix-chroot-<version>` target, run from a
 plain shell loop in `_full-cycle-matrix` -- previously `make -k` plus an order-only
 prerequisite, which silently skipped every non-canonical chroot whenever the canonical one
-had any package failure; see docs/bugs.md BUG-0053, fixed) -- Copr submission still runs
+had any package failure; see docs/BUGS.md BUG-0053, fixed) -- Copr submission still runs
 afterward for whatever built cleanly, gated per
 package as described above. `full-cycle-matrix`'s own nonzero exit in that case doesn't
 abort `update-daily`: `_update-daily`'s recipe runs it as
@@ -355,7 +355,7 @@ the commit still happens, and only the final `update-daily` invocation itself ex
 second `validate-packages` exists
 because `full-cycle.py`'s
 `update_package_releases()` rewrites `packages.yaml`'s release fields *after* the first gate
-ran, and that's the file the commit and the generated docs are built from (docs/bugs.md
+ran, and that's the file the commit and the generated docs are built from (docs/BUGS.md
 BUG-0044); it skips `fmt` because the rewrite already goes through the same formatter `make
 fmt` itself uses, so there's nothing left to reformat. Only stages `packages.yaml packages/
 submodules/ README.md docs/README.copr.md docs/full-report.md` — the automation never touches

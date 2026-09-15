@@ -2,7 +2,7 @@
 stage-mock.py in phase 3 of the yaml->sqlite migration.
 
 Records paths/sizes of build outputs into build-report.db's `artifacts` table
-so disk usage can be reported and reclaimed (see docs/todo.md).
+so disk usage can be reported and reclaimed (see docs/TODO.md).
 """
 
 import importlib
@@ -190,7 +190,7 @@ class TestVendorArtifactRecording:
 class TestMissingSrpmArtifactGuard:
     """A "success" srpm row whose recorded file has vanished from disk (e.g. a
     pruned rpmbuild-volume) must not be handed to mock or submitted to Copr --
-    see docs/bugs.md BUG-0015, the exact "Cannot find/open srpm" failure this
+    see docs/BUGS.md BUG-0015, the exact "Cannot find/open srpm" failure this
     guards against.
     """
 

@@ -60,7 +60,7 @@ def show_plan(
     # Apply filters for display, in the same topo-sorted, transitive-deps-expanded
     # order the real run (full-cycle.py's prepare_packages()) uses -- required for
     # would_rebuild below to predict a dependency cascade correctly (a dependent
-    # must be evaluated after its dependency's outcome is known). See docs/bugs.md,
+    # must be evaluated after its dependency's outcome is known). See docs/BUGS.md,
     # formerly BUG-0048.
     packages_to_show, _dep_reason = ordered_packages(
         all_packages_full, package, skip_packages_arg
@@ -80,7 +80,7 @@ def show_plan(
     # rebuilt_packages: a dependent evaluated later in topo order sees every
     # dependency that would_rebuild by then, so compute_forced_stages() can
     # predict the cascade rule ("if any dependency was rebuilt this run, force
-    # all stages") instead of always seeing an empty set. See docs/bugs.md,
+    # all stages") instead of always seeing an empty set. See docs/BUGS.md,
     # formerly BUG-0048.
     would_rebuild: set[str] = set()
 
@@ -126,7 +126,7 @@ def show_plan(
                 # shows "run" here (stage-validate.py has no caching, full-cycle.py
                 # never adds to rebuilt_packages for it), and must not count
                 # toward would_rebuild or every dependent would falsely cascade
-                # on every run, cached or not. See docs/bugs.md, formerly BUG-0048.
+                # on every run, cached or not. See docs/BUGS.md, formerly BUG-0048.
                 if stage in STAGE_ORDER:
                     pkg_would_rebuild = True
 

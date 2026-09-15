@@ -58,7 +58,7 @@ class TestPrintSummary:
 
     def test_not_vendored_renders_n_a_not_cached(self, capsys):
         """A package with no vendor stage (reason="not-vendored") shows "n/a", not
-        "cached" -- the symptom of docs/bugs.md's (now-fixed) BUG-0045 -- and no
+        "cached" -- the symptom of docs/BUGS.md's (now-fixed) BUG-0045 -- and no
         stray "(timestamp)" suffix.
         """
         stages = {

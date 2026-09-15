@@ -2,7 +2,7 @@
 
 Nothing previously removed an old NVR from local-repo/<target>/: every mock
 rebuild only ever added a file, so e.g. hyprutils-0.13.1 could sit next to
-0.14.0 forever (see docs/bugs.md). prune_local_repo() keeps only the newest
+0.14.0 forever (see docs/BUGS.md). prune_local_repo() keeps only the newest
 NVR per (name, arch) *within one target's directory*, and now also drops the
 matching artifact row. local-repo is scoped per chroot (docs/CHANGELOG.md
 2026-08-11) specifically so an fc43 and an fc44 build of the same package

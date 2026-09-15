@@ -1,0 +1,55 @@
+# COPR-0005. Generate RPM spec files from packages.yaml
+
+**Tags:** #packaging #spec
+
+## User Story
+
+As a maintainer, I want the RPM spec file for every package generated from one shared
+template and `packages.yaml`, so that packaging conventions stay consistent across 49
+packages without hand-editing each spec.
+
+## Behavior
+
+`make stage-spec PACKAGE=<name>` renders `packages/<name>/<name>.spec` from
+`templates/spec.j2` and the package's `packages.yaml` entry — sources, `build_requires`,
+`depends_on`, `files:`, release, and (for Go/Rust) the vendor tarball extraction. The
+generated spec is committed and human-editable, but the source of truth for the next
+regeneration is always `packages.yaml`.
+
+Per [COPR-0018](COPR-0018-single-spec-single-srpm.md), one spec is generated once and
+reused across every chroot in a matrix build — no per-`FEDORA_VERSION` content. A
+per-version difference is written as a literal `%if 0%{?fedora} == N ... %endif`
+conditional directly in `build.prep`/`commands`/`install` (see docs/packaging.md
+"Per-Fedora-version spec differences").
+
+## Implementation
+
+- `scripts/stage-spec.py`, `templates/spec.j2`.
+- `scripts/gen-spec.py` is a separate, older generator with its own duplicated logic
+  (see Quirks) — `stage-spec.py` is the one the pipeline actually uses.
+
+## Quirks & Decisions
+
+- Quirk: `gen-spec.py` (446 lines) duplicates `lib/github.py` and
+  `lib.config.get_packager` almost verbatim, has no Makefile target, and is unused
+  except by its own test.
+  Proposed: check whether `build_context()` has spec-rendering logic `stage-spec.py`
+  lacks, then remove or replace with lib calls. (BUG-0074)
+- Quirk: `_templates_hash()` hashes `spec.j2` under a strict full-dict equality check,
+  so any edit to the template invalidates every package's cache at once and forces a
+  full rebuild.
+  Proposed: report "generated from an outdated template" instead of forcing a rebuild.
+  (BUG-0057)
+- Quirk: the spec generator's own version isn't a tracked cache input at all.
+  Proposed: report which packages were last built with an older generator version.
+  (BUG-0058)
+
+## Testing
+
+### Unit
+
+- `tests/test_gen_spec.py`, `tests/test_spec_utils.py`.
+
+## Status
+
+Implemented

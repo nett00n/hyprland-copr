@@ -17,7 +17,7 @@ Environment variables:
   SYNCHRONOUS_COPR_BUILD  If 'true', wait for build completion (default: async with --nowait)
   REQUIRE_CHROOT_COVERAGE  If 'true', abort instead of warning when a Copr chroot has no
                           verified local mock build for a package being submitted (see
-                          docs/bugs.md BUG-0018). Default: warn and submit anyway.
+                          docs/BUGS.md BUG-0018). Default: warn and submit anyway.
   LOG_LEVEL       Logging level: DEBUG, INFO (default), WARNING, ERROR
 """
 
@@ -107,7 +107,7 @@ def run_for_package(
     srpm_path = srpm_entry.get("path") if srpm_entry else None
     mock_state = mock_entry.get("state", "") if mock_entry else ""
     # A recorded-but-vanished SRPM must never be submitted to Copr as-is -- see
-    # docs/bugs.md BUG-0015 (this stage was the publish-a-stale-SRPM vector).
+    # docs/BUGS.md BUG-0015 (this stage was the publish-a-stale-SRPM vector).
     srpm_missing = bool(srpm_path) and not Path(str(srpm_path)).exists()
 
     if (
@@ -214,7 +214,7 @@ def main() -> None:
     if not covered and require_coverage:
         print(
             "error: REQUIRE_CHROOT_COVERAGE=true and some chroots lack a "
-            "verified local mock build -- aborting (see docs/bugs.md BUG-0018)",
+            "verified local mock build -- aborting (see docs/BUGS.md BUG-0018)",
             file=sys.stderr,
         )
         build_db.finish_run(run_id, "failed")
@@ -268,7 +268,7 @@ def main() -> None:
     # every package happens to be held back for its own genuine reason (a
     # real mock failure and its dependents, say). What must be loud is
     # specifically a *blackout chroot* -- one with zero verified/skipped
-    # packages at all (docs/bugs.md BUG-0051: a brand-new
+    # packages at all (docs/BUGS.md BUG-0051: a brand-new
     # SUPPORTED_FEDORA_VERSIONS entry, or a chroot whose matrix pass never
     # completed) -- because that silently vetoes the entire run and gives no
     # signal why. Gate on blackout_chroots(), not merely `submitted == 0`.

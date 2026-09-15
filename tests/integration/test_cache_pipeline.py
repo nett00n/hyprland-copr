@@ -33,7 +33,7 @@ def _seed(pkg: str, stage: str, hashes: dict | None = None, **fields) -> None:
 
 # Maps a stage to the artifacts.kind it's expected to have on disk once
 # successful -- mirrors lib.pipeline._STAGE_ARTIFACT_KINDS. is_cached() now
-# checks this (docs/bugs.md BUG-0015), so tests asserting a "success" stage
+# checks this (docs/BUGS.md BUG-0015), so tests asserting a "success" stage
 # is cached must seed a real, existing artifact for it, not just a DB row.
 _ARTIFACT_KIND_BY_STAGE = {"vendor": "vendor", "srpm": "srpm", "mock": "rpm"}
 

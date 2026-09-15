@@ -34,8 +34,8 @@ def _write_packages_yaml(path, *names):
 def _redirect_paths(fake_repo, monkeypatch):
     """PACKAGES_YAML and get_packages() are value/default-arg imports bound at
     module-import time in set-package-release.py, so fake_repo's monkeypatch of
-    lib.paths.PACKAGES_YAML alone does not redirect them (docs/todo.md
-    TODO-0090). Patch the script module's own references.
+    lib.paths.PACKAGES_YAML alone does not redirect them (docs/TODO.md
+    BUG-0079). Patch the script module's own references.
     """
     monkeypatch.setattr(set_package_release, "PACKAGES_YAML", fake_repo["packages_yaml"])
     monkeypatch.setattr(

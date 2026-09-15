@@ -125,7 +125,7 @@ def print_summary(packages: dict, stages: dict, copr_repo: str) -> None:
             # "not-vendored": this package has no vendor stage at all (not
             # Go/Rust) -- show "n/a", not "cached" (a real cache hit) or a
             # bare "SKIP(ts)" (which reads like a build step that was
-            # deliberately bypassed). See docs/bugs.md, formerly BUG-0045.
+            # deliberately bypassed). See docs/BUGS.md, formerly BUG-0045.
             if reason == "not-vendored":
                 icon = "n/a"
             elif reason == "cached":

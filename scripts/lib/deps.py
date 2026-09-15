@@ -110,7 +110,7 @@ def ordered_packages(
     both call this, so the plan and the real run always visit packages in the same
     dependency-first order -- a cascade (e.g. a dependency's stage failing and
     forcing every downstream stage) can only be predicted correctly if the
-    dependent is evaluated after its dependency (see docs/bugs.md, formerly
+    dependent is evaluated after its dependency (see docs/BUGS.md, formerly
     BUG-0048).
 
     Always topo-sorts. If `package_filter` is set, also expands to include every

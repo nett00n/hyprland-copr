@@ -126,7 +126,7 @@ def prune_local_repo(repo_dir: Path) -> bool:
 
     Nothing else here ever removes an old build: every rebuild only adds a
     new NVR, so a stale hyprutils-0.13.1 can sit next to 0.14.0 forever (see
-    docs/bugs.md). mock's dnf resolves build deps against everything in the
+    docs/BUGS.md). mock's dnf resolves build deps against everything in the
     repo, so this only bloats disk today, but a repo left in a half-pruned
     state after a partial run is exactly the kind of thing that could
     resolve the wrong version later. repo_dir is scoped per chroot, so this
@@ -240,7 +240,7 @@ def run_for_package(
     srpm_state = srpm_entry.get("state", "") if srpm_entry else ""
     srpm_path = srpm_entry.get("path") if srpm_entry else None
     # A "success" srpm row whose recorded file has since vanished (e.g. a pruned
-    # rpmbuild-volume) must not be handed to `mock --rebuild` -- see docs/bugs.md
+    # rpmbuild-volume) must not be handed to `mock --rebuild` -- see docs/BUGS.md
     # BUG-0015, the exact "Cannot find/open srpm" failure this guards against.
     srpm_missing = bool(srpm_path) and not Path(str(srpm_path)).exists()
 
@@ -298,7 +298,7 @@ def run_for_package(
         return False
 
     # rpmbuild_networking/use_host_resolv off: reproduce COPR's offline %build
-    # step locally (docs/todo.md TODO-0004), so an incomplete vendor tree fails
+    # step locally (docs/TODO.md TODO-0004), so an incomplete vendor tree fails
     # here instead of only on COPR. Dep resolution (dnf install of BuildRequires)
     # happens before %build and is unaffected -- it uses --addrepo below plus
     # the chroot's configured Fedora repos, not this networking flag.
