@@ -9,7 +9,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from lib import build_db, paths  # noqa: E402
-from lib.yaml_utils import get_packages as _real_get_packages  # noqa: E402
 
 pkg_build_pop = importlib.import_module("scripts.pkg-build-pop")
 
@@ -29,20 +28,6 @@ _PKG_TEMPLATE = """{name}:
 def _write_packages_yaml(root, *names):
     (root / "packages.yaml").write_text(
         "".join(_PKG_TEMPLATE.format(name=name) for name in names)
-    )
-
-
-@pytest.fixture(autouse=True)
-def _redirect_get_packages(fake_repo, monkeypatch):
-    """get_packages()'s `path` default is bound at import time to the real
-    PACKAGES_YAML, so fake_repo's monkeypatch of lib.paths.PACKAGES_YAML does
-    not redirect pkg-build-pop.py's bare get_packages() call (docs/TODO.md
-    BUG-0079). Patch the script module's own reference instead.
-    """
-    monkeypatch.setattr(
-        pkg_build_pop,
-        "get_packages",
-        lambda: _real_get_packages(fake_repo["packages_yaml"]),
     )
 
 

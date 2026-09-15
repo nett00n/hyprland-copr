@@ -17,6 +17,7 @@ Examples:
     python3 scripts/set-package-release.py hyprlang,hyprutils 5 --lock
 """
 
+import argparse
 import sys
 
 import yaml
@@ -28,14 +29,40 @@ from lib.yaml_utils import (
 )
 
 
-def main() -> None:
-    if len(sys.argv) < 3:
-        print(__doc__, file=sys.stderr)
-        sys.exit(1)
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    """#BUG-0082: real flag parsing -- `lock = "--lock" in sys.argv` used to
+    detect the flag by membership anywhere in argv, so
+    `set-package-release.py --lock hyprlang 5` silently treated `--lock` as
+    the package-name positional instead of erroring.
+    """
+    parser = argparse.ArgumentParser(
+        prog="set-package-release.py",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "packages",
+        help="Package name(s): single name or comma-separated list (case-insensitive)",
+    )
+    parser.add_argument("release", help="Release number (integer)")
+    parser.add_argument(
+        "--lock",
+        action="store_true",
+        help=(
+            "Set release_lock: true to prevent auto-increment. Omitting --lock "
+            "removes an existing release_lock key, if present, re-enabling "
+            "auto-increment for that package."
+        ),
+    )
+    return parser.parse_args(argv)
 
-    pkg_queries = sys.argv[1]
-    release_str = sys.argv[2]
-    lock = "--lock" in sys.argv
+
+def main() -> None:
+    args = parse_args(sys.argv[1:])
+
+    pkg_queries = args.packages
+    release_str = args.release
+    lock = args.lock
 
     # Validate release is integer
     try:

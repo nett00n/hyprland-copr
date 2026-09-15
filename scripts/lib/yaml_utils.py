@@ -12,6 +12,7 @@ from pathlib import Path
 import yaml
 
 from . import build_db
+from . import paths
 from .paths import (
     BUILD_LOG_DIR,
     GROUPS_YAML,
@@ -115,18 +116,22 @@ def validate_packages(packages: dict) -> None:
             sys.exit(f"error: package '{pkg_name}' missing required field 'version'")
 
 
-def get_packages(path: Path = PACKAGES_YAML) -> dict:
-    """Return the packages dict from packages.yaml (packages at root level)."""
-    data = load_packages_yaml(path)
+def get_packages(path: Path | None = None) -> dict:
+    """Return the packages dict from packages.yaml (packages at root level).
+
+    #BUG-0079: `path` is resolved against `paths.PACKAGES_YAML` inside the
+    function body (not as a `def`-time default) so a bare `get_packages()`
+    call still picks up `tests/conftest.py`'s `fake_repo` fixture
+    monkeypatching `lib.paths.PACKAGES_YAML` -- a `def`-time default binds
+    once at import and would never see the patched value.
+    """
+    data = load_packages_yaml(path or paths.PACKAGES_YAML)
     packages = data or {}
     if not packages:
         sys.exit("error: no packages defined in packages.yaml")
     validate_packages(packages)
     return packages
 
-
-# Alias for compatibility
-load_packages = get_packages
 
 SUPPORTED_FEDORA_VERSIONS = {"43", "44", "45"}
 
@@ -219,14 +224,16 @@ def prepare_stage(
     return packages
 
 
-def write_yaml_preserving_comments(
+def update_package_versions(
     path: Path,
     pkg_to_latest: dict[str, str],
     pkg_to_commit_info: dict[str, tuple[str, str, str, str | None]] | None = None,
 ) -> dict[str, tuple[str, str]]:
-    """Update version/commit fields in packages.yaml using yaml load/dump.
+    """#BUG-0102: update version/commit fields in packages.yaml using yaml
+    load/dump. Formerly named write_yaml_preserving_comments(), which its own
+    docstring contradicted -- comments are NOT preserved (a plain yaml
+    load/dump round-trip, accepted trade-off for simpler code).
 
-    Comments will not be preserved (accepted trade-off for simpler code).
     When version changes, also sets release=0 to signal autoreset in next pre-build step.
     Returns {pkg_name: (old_version, new_version)} for changed packages.
 

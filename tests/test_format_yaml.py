@@ -50,25 +50,16 @@ class TestGetIgnoredFiles:
 
 
 class TestGetFormattingRules:
-    def test_indentation_as_string_uses_default_4(self):
-        rules = format_yaml.get_formatting_rules({"rules": {"indentation": "enable"}})
-        assert rules["indent_spaces"] == 4
+    """#BUG-0081: get_formatting_rules() used to also compute an
+    `indent_spaces` key from the `indentation` rule, but format_yaml_file()
+    has always used detect_indentation(content) instead -- that config path
+    was dead and has been dropped, not wired in."""
 
-    def test_indentation_as_dict_with_spaces(self):
+    def test_indent_spaces_not_in_returned_rules(self):
         rules = format_yaml.get_formatting_rules(
             {"rules": {"indentation": {"spaces": 2}}}
         )
-        assert rules["indent_spaces"] == 2
-
-    def test_indentation_auto_uses_default_4(self):
-        rules = format_yaml.get_formatting_rules(
-            {"rules": {"indentation": {"spaces": "auto"}}}
-        )
-        assert rules["indent_spaces"] == 4
-
-    def test_indentation_absent_uses_default_4(self):
-        rules = format_yaml.get_formatting_rules({})
-        assert rules["indent_spaces"] == 4
+        assert "indent_spaces" not in rules
 
     def test_document_start_level_sets_explicit_start_true(self):
         rules = format_yaml.get_formatting_rules(

@@ -16,13 +16,14 @@ from lib.yaml_utils import (
     filter_packages,
     skip_packages,
     apply_os_overrides,
+    get_packages,
     load_packages_yaml,
     load_repo_yaml,
     load_groups_yaml,
     dump_yaml_pretty,
     prepare_stage,
     write_yaml_file,
-    write_yaml_preserving_comments,
+    update_package_versions,
 )
 
 TARGET = "fedora-44-x86_64"
@@ -73,6 +74,48 @@ class TestHashesMatch:
         stored = {"hashes": None}
         new = {}
         assert hashes_match(stored, new) is False
+
+
+class TestFakeRepoFixtureDefault:
+    """#BUG-0080: fake_repo's default packages.yaml/groups.yaml must be
+    parseable YAML -- prior content mixed a flow-mapping `{` with block-style
+    indentation, which yaml.safe_load rejected. Nothing previously exercised
+    this default content through an actual YAML-parsing function."""
+
+    def test_packages_yaml_is_parseable(self, fake_repo):
+        packages = load_packages_yaml(fake_repo["packages_yaml"])
+        assert packages == {
+            "valid-pkg": {
+                "version": "1.0",
+                "license": "MIT",
+                "summary": "Valid package",
+                "description": "A valid package for testing",
+                "url": "https://example.com",
+                "source": {"archives": ["https://example.com/valid-pkg-1.0.tar.gz"]},
+                "build": {"system": "cmake"},
+            }
+        }
+
+    def test_bare_get_packages_call_is_redirected(self, fake_repo):
+        """#BUG-0079: get_packages()'s `path` must be resolved against
+        `paths.PACKAGES_YAML` inside the function body, not as a `def`-time
+        default -- a `def`-time default binds once at import and would never
+        see fake_repo's monkeypatch of lib.paths.PACKAGES_YAML."""
+        assert get_packages() == {
+            "valid-pkg": {
+                "version": "1.0",
+                "license": "MIT",
+                "summary": "Valid package",
+                "description": "A valid package for testing",
+                "url": "https://example.com",
+                "source": {"archives": ["https://example.com/valid-pkg-1.0.tar.gz"]},
+                "build": {"system": "cmake"},
+            }
+        }
+
+    def test_groups_yaml_is_parseable(self, fake_repo):
+        groups = load_groups_yaml(fake_repo["groups_yaml"])
+        assert groups == {"core": {"packages": ["valid-pkg"]}}
 
 
 class TestFindPackageName:
@@ -557,7 +600,7 @@ class TestPrepareStage:
 
 
 class TestWriteYamlPreservingComments:
-    """Test write_yaml_preserving_comments function."""
+    """Test update_package_versions function."""
 
     def test_updates_version(self, tmp_path):
         """Should update package versions."""
@@ -565,7 +608,7 @@ class TestWriteYamlPreservingComments:
         pkg_file.write_text("mypackage:\n  url: 'https://github.com/foo/bar'\n  version: '1.0'")
 
         pkg_to_latest = {"mypackage": "2.0"}
-        changed = write_yaml_preserving_comments(pkg_file, pkg_to_latest)
+        changed = update_package_versions(pkg_file, pkg_to_latest)
 
         assert "mypackage" in changed
         assert changed["mypackage"] == ("1.0", "2.0")
@@ -580,7 +623,7 @@ class TestWriteYamlPreservingComments:
         pkg_file.write_text("mypackage:\n  url: 'https://github.com/foo/bar'\n  version: '1.0'")
 
         pkg_to_latest = {"mypackage": "1.0"}
-        changed = write_yaml_preserving_comments(pkg_file, pkg_to_latest)
+        changed = update_package_versions(pkg_file, pkg_to_latest)
 
         assert changed == {}
 
@@ -594,7 +637,7 @@ class TestWriteYamlPreservingComments:
         pkg_to_commit_info = {
             "mypackage": ("abc123full", "abc123", "20250115", "1.0")
         }
-        changed = write_yaml_preserving_comments(
+        changed = update_package_versions(
             pkg_file, {}, pkg_to_commit_info
         )
 
@@ -607,7 +650,7 @@ class TestWriteYamlPreservingComments:
         pkg_file.write_text("pkg1:\n  url: 'https://a'\n  version: '1.0'\npkg2:\n  url: 'https://b'\n  version: '2.0'")
 
         pkg_to_latest = {"pkg1": "2.0", "pkg2": "2.0"}
-        changed = write_yaml_preserving_comments(pkg_file, pkg_to_latest)
+        changed = update_package_versions(pkg_file, pkg_to_latest)
 
         assert len(changed) == 1  # Only pkg1 changed
         assert "pkg1" in changed
@@ -709,7 +752,7 @@ class TestCacheHelpers:
 
 
 class TestWriteYamlPreservingCommentsRelease:
-    """Test release field handling in write_yaml_preserving_comments."""
+    """Test release field handling in update_package_versions."""
 
     def test_version_change_resets_release_to_zero(self, tmp_path):
         """When version changes, release field is set to 0."""
@@ -725,7 +768,7 @@ test-pkg:
 """)
 
         pkg_to_latest = {"test-pkg": "2.0"}
-        write_yaml_preserving_comments(yaml_file, pkg_to_latest, None)
+        update_package_versions(yaml_file, pkg_to_latest, None)
 
         content = yaml_file.read_text()
         assert "version: '2.0'" in content or 'version: "2.0"' in content
@@ -745,7 +788,7 @@ test-pkg:
 """)
 
         pkg_to_latest = {"test-pkg": "1.0"}
-        write_yaml_preserving_comments(yaml_file, pkg_to_latest, None)
+        update_package_versions(yaml_file, pkg_to_latest, None)
 
         content = yaml_file.read_text()
         assert "release: 3" in content
@@ -775,7 +818,7 @@ test-pkg:
                 "0",  # base version
             )
         }
-        write_yaml_preserving_comments(yaml_file, {}, pkg_to_commit_info)
+        update_package_versions(yaml_file, {}, pkg_to_commit_info)
 
         content = yaml_file.read_text()
         assert "0^20260102gitdef4567" in content

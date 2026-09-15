@@ -33,10 +33,6 @@ all (used by CI, which can't nest privileged containers).
   Proposed: digest-pin the base image itself — pinning individual packages against a
   floating base just creates dnf resolution failures the moment the base updates.
   (BUG-0088)
-- Quirk: `make container-enter` doesn't match `$(CONTAINER_RUN)` — missing
-  `--privileged`, volume mounts, `.venv` mount, copr-config mount, and env
-  passthrough, so manual debugging inside the container behaves differently from a
-  real stage. (BUG-0006)
 
 ## Testing
 

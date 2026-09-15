@@ -33,6 +33,3 @@ it and delete it.
   repo a submodule of content repo (?) -- a repo-topology decision, not a task, until
   someone rules on it
 
-## Ideas
-
-- #TODO-0011 add `make fmt` after scaffolding [P3/D1]

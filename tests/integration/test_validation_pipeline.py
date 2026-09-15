@@ -9,11 +9,12 @@ import yaml
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
 from lib.validation import (
+    validate_env_file,
     validate_package,
     validate_group_membership,
     validate_gitmodules,
 )
-from lib.yaml_utils import load_packages, load_groups_yaml
+from lib.yaml_utils import get_packages, load_groups_yaml
 
 
 class TestValidationPipeline:
@@ -25,13 +26,12 @@ class TestValidationPipeline:
 
         # Monkeypatch to return our packages
         import lib.yaml_utils as yu
-        original_load = yu.load_packages
 
-        def mock_load():
+        def mock_get():
             return packages
 
         import unittest.mock as mock
-        with mock.patch.object(yu, "load_packages", mock_load):
+        with mock.patch.object(yu, "get_packages", mock_get):
             errors, warnings = validate_package("valid-pkg", minimal_package, packages)
 
         assert errors == []
@@ -196,3 +196,44 @@ class TestValidationPipeline:
 
         errors, warnings = validate_package("bad", minimal_package, packages)
         assert any("deprecated 'debuginfo'" in e for e in errors)
+
+
+class TestValidateEnvFile:
+    """#BUG-0052: warn (never error) on a repeated .env assignment."""
+
+    def test_no_env_file_is_silent(self, fake_repo):
+        """A missing .env (fresh clone, CI) produces no warnings."""
+        assert validate_env_file(fake_repo["root"]) == []
+
+    def test_clean_env_file_is_silent(self, fake_repo):
+        env_path = fake_repo["root"] / ".env"
+        env_path.write_text("SKIP_COPR=true\nFEDORA_VERSION=44\n")
+
+        assert validate_env_file(fake_repo["root"]) == []
+
+    def test_duplicate_key_warns_naming_key_and_lines(self, fake_repo):
+        env_path = fake_repo["root"] / ".env"
+        env_path.write_text(
+            "SYNCHRONOUS_COPR_BUILD=true\n"
+            "SKIP_COPR=true\n"
+            "SYNCHRONOUS_COPR_BUILD=true\n"
+            "SKIP_COPR=false\n"
+        )
+
+        warnings = validate_env_file(fake_repo["root"])
+
+        assert len(warnings) == 2
+        assert any("SKIP_COPR" in w and "lines 2, 4" in w for w in warnings)
+        assert any(
+            "SYNCHRONOUS_COPR_BUILD" in w and "lines 1, 3" in w for w in warnings
+        )
+
+    def test_comments_and_blank_lines_ignored(self, fake_repo):
+        env_path = fake_repo["root"] / ".env"
+        env_path.write_text(
+            "# SKIP_COPR=true (a comment, not an assignment)\n"
+            "\n"
+            "SKIP_COPR=true\n"
+        )
+
+        assert validate_env_file(fake_repo["root"]) == []

@@ -33,11 +33,6 @@ command.
   in the Makefile recipe after its script call, untestable by pytest.
   Proposed: move into `scripts/*.py`, same as [COPR-0001](COPR-0001-add-package-from-url.md)'s
   quirk about `add-submodule`/`add-new`. (BUG-0070)
-- Quirk: `set-package-release.py`'s `--lock` is detected by `"--lock" in sys.argv`, so
-  `set-package-release.py --lock <name> <release>` silently treats `--lock` as the
-  package-name positional instead of erroring.
-  Proposed: real flag parsing (argparse, or filter `--lock` out of positionals before
-  indexing). (BUG-0082)
 
 ## Testing
 

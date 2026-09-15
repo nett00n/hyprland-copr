@@ -33,26 +33,22 @@ def fake_repo(tmp_path, monkeypatch):
     build_db.close()
 
     # Create minimal packages.yaml
-    (tmp_path / "packages.yaml").write_text("""{
-  valid-pkg:
-    version: "1.0"
-    license: "MIT"
-    summary: "Valid package"
-    description: "A valid package for testing"
-    url: "https://example.com"
-    source:
-      archives: ["https://example.com/valid-pkg-1.0.tar.gz"]
-    build:
-      system: "cmake"
-}
+    (tmp_path / "packages.yaml").write_text("""valid-pkg:
+  version: "1.0"
+  license: "MIT"
+  summary: "Valid package"
+  description: "A valid package for testing"
+  url: "https://example.com"
+  source:
+    archives: ["https://example.com/valid-pkg-1.0.tar.gz"]
+  build:
+    system: "cmake"
 """)
 
     # Create minimal groups.yaml
-    (tmp_path / "groups.yaml").write_text("""{
-  core:
-    packages:
-      - valid-pkg
-}
+    (tmp_path / "groups.yaml").write_text("""core:
+  packages:
+    - valid-pkg
 """)
 
     # Create minimal .gitmodules

@@ -23,7 +23,49 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
-(none yet)
+- TODO-0011: `make scaffold-package`/`make add-new` now run `make fmt`
+  (fmt-ruff, fmt-yaml, normalize-paths, sort-lists) after scaffolding a new
+  `packages.yaml` entry, instead of leaving it unformatted.
+- BUG-0102: rename `lib.yaml_utils.write_yaml_preserving_comments()` to
+  `update_package_versions()` -- it never preserved comments (its own
+  docstring said so), contradicting the name. No compatibility alias.
+- BUG-0086: delete dead code -- `lib/reporting.badge()`/`badge_short()`
+  (unused by any script; the live badge rendering is the Jinja macro
+  `templates/_badge.j2`) and `lib/yaml_utils.load_packages` (a `get_packages`
+  alias with zero real references).
+- BUG-0081: drop the dead `indent_spaces` key from `format-yaml.py`'s
+  `get_formatting_rules()` -- `format_yaml_file()` has always used
+  `detect_indentation(content)` instead. `lib/yaml_format.py`'s
+  near-identical copy is unchanged (`indent_spaces` is live there).
+- BUG-0082: `set-package-release.py` now parses `--lock` with `argparse`
+  instead of `"--lock" in sys.argv` membership, so `--lock hyprlang 5` (flag
+  before the positionals) sets the lock instead of silently treating `--lock`
+  as the package name.
+- BUG-0099: `full-cycle.py`'s post-plan 5s sleep (extracted into
+  `pause_before_proceeding()`) now only fires on an interactive terminal --
+  it was unconditional, burning time in the unattended cron flow the target
+  is documented for and paid 3x by `full-cycle-matrix`.
+- BUG-0006: `make container-enter` now mounts the same volumes as
+  `CONTAINER_RUN` (mock-cache, mock-root, `.venv`, copr-config) plus
+  `--privileged` and the `LOG_LEVEL`/`NO_COLOR` passthrough, factored into a
+  shared `CONTAINER_MOUNTS` Makefile variable, so manual mock debugging inside
+  it no longer fails differently than a real build stage.
+- BUG-0009: remove the dead `DRY_RUN` passthrough from `Makefile`'s
+  `_full-cycle` recipe -- nothing in `scripts/` reads it; `FORCE_REBUILD`
+  replaced it.
+- BUG-0052: de-duplicate `.env` (`SKIP_COPR`/`SYNCHRONOUS_COPR_BUILD` were each
+  assigned twice), refresh the stale `FEDORA_VERSION` comment in `.env`/
+  `.env.example`, and add `lib.validation.validate_env_file()` (wired into
+  `make validate-packages`/`make pre-commit`) warning on a repeated `.env` key.
+- BUG-0079: `get_packages()` now resolves `path` against `paths.PACKAGES_YAML`
+  inside the function body instead of as a `def`-time default, so a bare
+  `get_packages()` call is redirected by `tests/conftest.py`'s `fake_repo`
+  fixture like every other `paths`-backed default.
+- BUG-0080: fix `tests/conftest.py`/`tests/integration/conftest.py`'s
+  `fake_repo` fixture default `packages.yaml`/`groups.yaml` (was invalid YAML,
+  a flow-mapping `{` mixed with block-style indentation).
+- BUG-0055: patch `regenerate_repo_metadata` in the offline-gate mock test so
+  `pytest tests/` passes on a bare host without `createrepo_c` installed.
 
 ## 2026-09-14
 

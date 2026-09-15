@@ -97,6 +97,21 @@ COPR_CONFIG_MOUNT := $(if $(COPR_REPO),-v $(HOME_DIR)/.config/copr:/root/.config
 # change. Remove this var and its use below after one cycle.
 LOCALREPO_VOLUME := local-repo-$(FEDORA_VERSION)
 
+# Volume mounts + env passthrough shared by every container invocation that
+# needs the full mock/copr/venv setup (CONTAINER_RUN below and
+# `container-enter`, see #BUG-0006 -- container-enter used to hand-copy only
+# two of these five mounts, so mock testing inside it failed differently than
+# a real stage's CONTAINER_RUN).
+CONTAINER_MOUNTS := \
+	-v $(RPMBUILD_MOUNT) \
+	-v $(MOCKCACHE_MOUNT) \
+	-v $(MOCKROOT_MOUNT) \
+	-v $(WORKDIR_MOUNT) \
+	-v $(VENV_MOUNT) \
+	$(COPR_CONFIG_MOUNT) \
+	$(if $(LOG_LEVEL),-e LOG_LEVEL=$(LOG_LEVEL),) \
+	$(if $(NO_COLOR),-e NO_COLOR=$(NO_COLOR),)
+
 # Container execution with volume mounts
 # Note: Containerfile already sets USER, so don't override it here
 # --privileged flag is required for mock to work (namespace support)
@@ -107,14 +122,7 @@ RPMLINT          := .venv/bin/rpmlint
 WORK             := .
 else
 CONTAINER_RUN := $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm --privileged $(MAKE_TTY) \
-	-v $(RPMBUILD_MOUNT) \
-	-v $(MOCKCACHE_MOUNT) \
-	-v $(MOCKROOT_MOUNT) \
-	-v $(WORKDIR_MOUNT) \
-	-v $(VENV_MOUNT) \
-	$(COPR_CONFIG_MOUNT) \
-	$(if $(LOG_LEVEL),-e LOG_LEVEL=$(LOG_LEVEL),) \
-	$(if $(NO_COLOR),-e NO_COLOR=$(NO_COLOR),) \
+	$(CONTAINER_MOUNTS) \
 	-w /work \
 	$(IMAGE_NAME)
 
@@ -346,6 +354,7 @@ list-tags: check-image check-venv setup-volumes ## List all tags for submodules,
 scaffold-package: check-image check-venv setup-volumes ## Scaffold a new packages.yaml entry from a submodule (PACKAGE=<name> required, single package only)
 	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
 	$(CONTAINER_PYTHON) scripts/scaffold-package.py $(PACKAGE)
+	$(MAKE) fmt
 
 add-submodule: check-image check-venv setup-volumes ## Register git submodule for an existing package (PACKAGE=<name> required, single package only)
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE is required"; exit 1)
@@ -367,6 +376,7 @@ add-new: check-image check-venv setup-volumes ## Add submodule from URL and scaf
 	 git submodule add $(URL) submodules/$$_org/$$_name || exit 1; \
 	 git config -f .gitmodules submodule.submodules/$$_org/$$_name.ignore dirty || exit 1; \
 	 $(CONTAINER_PYTHON) scripts/scaffold-package.py $$_name || exit 1
+	$(MAKE) fmt
 
 delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, groups.yaml, sources.lock.yaml, build-report.db, logs/build, packages/, submodules, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required, single package only)
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PKG or PACKAGE is required (e.g. PKG=hyprpicker)"; exit 1)
@@ -464,10 +474,9 @@ container-build: ## Build the single container image (builds every SUPPORTED chr
 		-t $(IMAGE_NAME) \
 		-f Containerfile .,Built $(IMAGE_NAME),Container build failed)
 
-container-enter: ## Enter interactive shell in the container
-	$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run -it --rm \
-		-v $(RPMBUILD_MOUNT) \
-		-v $(WORKDIR_MOUNT) \
+container-enter: check-image check-venv setup-volumes ## Enter interactive shell in the container
+	$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run -it --rm --privileged \
+		$(CONTAINER_MOUNTS) \
 		-w /work \
 		$(IMAGE_NAME) /bin/bash
 
@@ -517,7 +526,6 @@ PROCEED_BUILD ?=
 SKIP_MOCK ?=
 SKIP_COPR ?=
 SKIP_RELEASE_BUMP ?=
-DRY_RUN ?=
 SYNCHRONOUS_COPR_BUILD ?=
 REQUIRE_CHROOT_COVERAGE ?=
 
@@ -550,7 +558,6 @@ _full-cycle: check-image check-venv setup-volumes
 		SKIP_MOCK=$(SKIP_MOCK) \
 		SKIP_COPR=$(SKIP_COPR) \
 		SKIP_RELEASE_BUMP=$(SKIP_RELEASE_BUMP) \
-		DRY_RUN=$(DRY_RUN) \
 		SYNCHRONOUS_COPR_BUILD=$(SYNCHRONOUS_COPR_BUILD) \
 		REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) \
 		$(if $(SKIP_REPO_PREFLIGHT),SKIP_REPO_PREFLIGHT=$(SKIP_REPO_PREFLIGHT),) \

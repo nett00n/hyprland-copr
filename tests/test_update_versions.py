@@ -478,7 +478,7 @@ class TestMain:
                 with patch.object(uv, "pull_submodule"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(
-                            uv, "write_yaml_preserving_comments", return_value={}
+                            uv, "update_package_versions", return_value={}
                         ):
                             mock_parse.return_value = [
                                 {
@@ -518,7 +518,7 @@ class TestMain:
                         uv, "get_submodule_commit_with_base"
                     ) as mock_commit:
                         with patch.object(
-                            uv, "write_yaml_preserving_comments", return_value={}
+                            uv, "update_package_versions", return_value={}
                         ):
                             mock_parse.return_value = [
                                 {
@@ -558,7 +558,7 @@ class TestMain:
                         uv, "get_tag_commit"
                     ) as mock_tag_commit:
                         with patch.object(
-                            uv, "write_yaml_preserving_comments", return_value={}
+                            uv, "update_package_versions", return_value={}
                         ):
                             mock_parse.return_value = [
                                 {
@@ -605,7 +605,7 @@ class TestMain:
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             with patch.object(
-                                uv, "write_yaml_preserving_comments", return_value={}
+                                uv, "update_package_versions", return_value={}
                             ):
                                 mock_parse.return_value = [
                                     {
@@ -649,7 +649,7 @@ class TestMain:
                 with patch.object(uv, "pull_submodule"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(
-                            uv, "write_yaml_preserving_comments", return_value={}
+                            uv, "update_package_versions", return_value={}
                         ):
                             mock_parse.return_value = [
                                 {
@@ -696,7 +696,7 @@ class TestMain:
                 with patch.object(uv, "pull_submodule"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(
-                            uv, "write_yaml_preserving_comments", return_value={}
+                            uv, "update_package_versions", return_value={}
                         ):
                             mock_parse.return_value = [
                                 {
@@ -744,7 +744,7 @@ class TestMain:
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             with patch.object(
-                                uv, "write_yaml_preserving_comments", return_value={}
+                                uv, "update_package_versions", return_value={}
                             ):
                                 mock_parse.return_value = [
                                     {
@@ -788,7 +788,7 @@ class TestMain:
                         uv, "get_submodule_commit_with_base"
                     ) as mock_commit:
                         with patch.object(
-                            uv, "write_yaml_preserving_comments", return_value={}
+                            uv, "update_package_versions", return_value={}
                         ):
                             mock_parse.return_value = [
                                 {
@@ -834,7 +834,7 @@ class TestMain:
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             with patch.object(
-                                uv, "write_yaml_preserving_comments", return_value={}
+                                uv, "update_package_versions", return_value={}
                             ):
                                 mock_parse.return_value = [
                                     {
@@ -880,7 +880,7 @@ class TestMain:
                             ) as mock_commit:
                                 with patch.object(
                                     uv,
-                                    "write_yaml_preserving_comments",
+                                    "update_package_versions",
                                     return_value={},
                                 ):
                                     mock_parse.return_value = [
@@ -934,7 +934,7 @@ class TestMain:
         assert "packages.yaml not found" in captured.err
 
     def test_packages_yaml_updated(self, tmp_path, monkeypatch, capsys):
-        """Test that write_yaml_preserving_comments is called with correct args."""
+        """Test that update_package_versions is called with correct args."""
         gitmodules = tmp_path / ".gitmodules"
         gitmodules.write_text(
             '[submodule "test"]\n'
@@ -959,7 +959,7 @@ class TestMain:
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             with patch.object(
-                                uv, "write_yaml_preserving_comments"
+                                uv, "update_package_versions"
                             ) as mock_write:
                                 mock_parse.return_value = [
                                     {
@@ -1021,7 +1021,7 @@ class TestMain:
                                 uv, "get_submodule_commit_with_base"
                             ) as mock_commit:
                                 with patch.object(
-                                    uv, "write_yaml_preserving_comments"
+                                    uv, "update_package_versions"
                                 ) as mock_write:
                                     mock_parse.return_value = [
                                         {
@@ -1098,7 +1098,7 @@ class TestMain:
                             uv, "get_submodule_commit_with_base"
                         ) as mock_commit:
                             with patch.object(
-                                uv, "write_yaml_preserving_comments", return_value={}
+                                uv, "update_package_versions", return_value={}
                             ):
                                 mock_parse.return_value = [
                                     {
@@ -1166,7 +1166,7 @@ class TestMain:
                 ) as mock_pull:
                     with patch.object(uv, "get_tag_commit", return_value=None):
                         with patch.object(
-                            uv, "write_yaml_preserving_comments", return_value={}
+                            uv, "update_package_versions", return_value={}
                         ):
                             mock_parse.return_value = [
                                 {
@@ -1211,7 +1211,7 @@ class TestMain:
                 with patch.object(uv, "pull_submodule", return_value="origin/main"):
                     with patch.object(uv, "get_tag_commit", return_value=None):
                         with patch.object(
-                            uv, "write_yaml_preserving_comments", return_value={}
+                            uv, "update_package_versions", return_value={}
                         ):
                             mock_parse.return_value = [
                                 {
@@ -1254,7 +1254,7 @@ class TestMain:
                         uv, "get_submodule_commit_with_base"
                     ) as mock_commit:
                         with patch.object(
-                            uv, "write_yaml_preserving_comments", return_value={}
+                            uv, "update_package_versions", return_value={}
                         ):
                             mock_parse.return_value = [
                                 {
@@ -1304,7 +1304,7 @@ class TestMain:
                             ) as mock_commit:
                                 with patch.object(
                                     uv,
-                                    "write_yaml_preserving_comments",
+                                    "update_package_versions",
                                     return_value={},
                                 ):
                                     mock_parse.return_value = [
@@ -1353,7 +1353,7 @@ class TestMain:
                         uv, "get_submodule_commit_with_base"
                     ) as mock_commit:
                         with patch.object(
-                            uv, "write_yaml_preserving_comments", return_value={}
+                            uv, "update_package_versions", return_value={}
                         ):
                             mock_parse.return_value = [
                                 {

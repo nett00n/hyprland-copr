@@ -94,6 +94,20 @@ _stage = {
 }
 
 
+def pause_before_proceeding(seconds: int = 5) -> None:
+    """#BUG-0099: give an interactive operator a window to Ctrl+C after
+    seeing the build plan, before any processing starts.
+
+    Only pauses on a TTY -- the unattended cron flow `full-cycle` is
+    documented for has no one to read the abort window, and
+    `full-cycle-matrix` would otherwise pay this 3x (once per Fedora
+    version).
+    """
+    if sys.stdout.isatty():
+        print(f"  waiting {seconds} seconds before proceeding...", flush=True)
+        time.sleep(seconds)
+
+
 def preflight_autoheal(packages: dict) -> None:
     """Auto-fix two known "forgot a manual step" causes of pipeline failure
     before the per-package loop even starts (TODO-0072):
@@ -290,8 +304,7 @@ def run_build_pipeline(
     _stage["stage-show-plan"].show_plan(
         copr_repo=copr_repo, target=target, force_packages=force_packages
     )
-    print("  waiting 5 seconds before proceeding...", flush=True)
-    time.sleep(5)
+    pause_before_proceeding()
 
     # Global checks: run once before the per-package loop
     _stage["stage-validate"].run_global_checks(all_packages, target)

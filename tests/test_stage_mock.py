@@ -391,7 +391,10 @@ class TestOfflineGate:
              patch.object(stage_mock, "ROOT", tmp_path), \
              patch.object(stage_mock, "run_cmd", return_value=(True, "", "")) as mock_run_cmd, \
              patch.object(stage_mock, "copy_mock_results", return_value=[]), \
-             patch.object(stage_mock, "update_local_repo", return_value=[]):
+             patch.object(stage_mock, "update_local_repo", return_value=[]), \
+             patch.object(
+                 stage_mock, "regenerate_repo_metadata"
+             ) as mock_regen_repo_metadata:
             stage_mock.run_for_package(
                 pkg,
                 meta,
@@ -403,6 +406,13 @@ class TestOfflineGate:
                 run_id=run_id,
                 repo_dir=repo_dir,
             )
+
+        # repodata/ has no repomd.xml, so this is the "empty/corrupt --
+        # regenerating" self-heal path (#BUG-0055): it shells out to the real
+        # createrepo_c binary via subprocess.run rather than run_cmd, so it
+        # must be patched separately or this test fails on any host without
+        # createrepo_c installed.
+        mock_regen_repo_metadata.assert_called_once()
 
         cmd = mock_run_cmd.call_args[0][0]
         assert "--addrepo" in cmd

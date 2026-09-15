@@ -131,11 +131,6 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
   never sets `SYNCHRONOUS_COPR_BUILD`, though it is read at `stage-copr.py:184` and
   `full-cycle.py:153`), and `readme`+`copr-description` run seconds later -- the
   publish step is simply one poll too early for whatever was just resubmitted [P2/D3]
-- #BUG-0099 `full-cycle.py:305-306` unconditionally sleeps 5 seconds after printing
-  the build plan "before proceeding" -- an interactive abort window that only burns
-  time in the unattended cron flow the target is documented for, and is paid 3x by
-  `make full-cycle-matrix` (once per Fedora version). Gate on `sys.stdout.isatty()`
-  [P2/D1]
 - #BUG-0100 `update-versions.py` (423 lines) fetches 45+ submodules serially on
   every run, and 10 separate warn-and-continue sites
   (`update-versions.py:118,125,137,150,188,327,335,344,361,375`) print individual
@@ -207,72 +202,6 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
   start coming out once it exists -- which is why this should land before
   BUG-0093's `TypedDict` work, not after [P2/D2]
 
-### Tests
-
-- #BUG-0055 `tests/test_stage_mock.py::TestOfflineGate::
-  test_addrepo_still_added_when_local_repo_has_repodata` fails on a host
-  without `createrepo_c` installed (`FileNotFoundError: [Errno 2] No such
-  file or directory: 'createrepo_c'`). The test patches `stage_mock.run_cmd`
-  and `update_local_repo`, but `regenerate_repo_metadata()`
-  (`scripts/stage-mock.py:57-72`) calls `subprocess.run(["createrepo_c", ...])`
-  directly rather than through `run_cmd`, so it's never mocked -- the test's
-  empty `repodata/` dir trips `stage-mock.py:318-322`'s "repodata is
-  empty/corrupt -- regenerating" path, which shells out to the real binary.
-  Confirmed pre-existing (fails identically on `main` before/after
-  #BUG-0054, via `git stash`); every other test in the suite passes on this
-  host (1449 passed, this 1 failed). Normally invisible because `make test`
-  runs inside the toolbox container where `createrepo_c` is installed; only
-  bites a bare `pytest tests/` on the host. Fix: patch
-  `regenerate_repo_metadata` (or the `subprocess.run` call inside it) in the
-  test, same as `run_cmd` is patched elsewhere [P3/D1]
-- #BUG-0080 `tests/conftest.py`'s `fake_repo` fixture (`:15-77`) writes a
-  `packages.yaml` that is not valid YAML: `{\n  valid-pkg:\n    version: ...`
-  mixes a flow-mapping open brace with block-style indented content, which
-  `yaml.safe_load` rejects (`yaml.parser.ParserError: while parsing a flow
-  mapping ... expected ',' or '}', but got ':'`). Never caught before because
-  no existing test actually parses this default content via
-  `get_packages()`/`load_packages_yaml()` -- every prior `fake_repo` consumer
-  either overwrites `packages.yaml` itself first or never calls a YAML-parsing
-  function on it. Found while writing `tests/test_pkg_build_pop.py` for
-  BUG-0078, worked around there by writing a fresh valid `packages.yaml` in
-  each test rather than relying on the fixture default. Fix: drop the leading
-  `{`/trailing `}` so the fixture is plain block-style YAML [P2/D1]
-
-### Container / Makefile
-
-- #BUG-0052 `.env` (repo root, gitignored but present on this host) has `SKIP_COPR`
-  and `SYNCHRONOUS_COPR_BUILD` each assigned **twice** (`SKIP_COPR=true` at line 18
-  then `SKIP_COPR=false` at line 20; `SYNCHRONOUS_COPR_BUILD=true` duplicated
-  harmlessly at 17/19) -- found while investigating BUG-0050/BUG-0051, not itself
-  the cause of the 2026-09-08 zero-push incident (`full-cycle-matrix`'s
-  `matrix-chroot-%` recipe always passes `SKIP_COPR=true` as an explicit
-  command-line-style override to the recursive `$(MAKE) full-cycle`, which beats
-  any `-include .env` default regardless). Still a live footgun: Make's `-include
-  .env` (`Makefile:2`) parses `.env` as Makefile syntax where the *last*
-  assignment of a `=` variable wins, so any plain `make full-cycle` (not via the
-  matrix) run without an explicit `SKIP_COPR=` on its own command line silently
-  defaults to `SKIP_COPR=false` -- the opposite of what line 18's value suggests
-  at a glance -- and submits to Copr when the reader of line 18 alone would
-  expect it not to. Also stale in the same file: line 9's comment says "(42, 43,
-  44, or rawhide)" for `FEDORA_VERSION`, but `SUPPORTED`/`SUPPORTED_FEDORA_VERSIONS`
-  have been `43 44 45` since ce1d02de -- neither 42 nor rawhide is valid anymore.
-  Fix: de-duplicate `.env`, drop the `false`/second `true` lines, and refresh the
-  comment. Same class of bug likely worth a one-time `make`-level lint (warn on a
-  repeated key in `.env`) rather than just a manual fix [P3/D1]
-
-- #BUG-0006 `make container-enter` (`Makefile:452-456`) doesn't match
-  `$(CONTAINER_RUN)` (`Makefile:98-108`): missing `--privileged`, missing the
-  mock-cache/mock-root podman volume mounts (`/var/cache/mock`, `/var/lib/mock` --
-  not a config file), missing the `.venv` mount, missing the copr-config mount, and
-  missing the `LOG_LEVEL`/`NO_COLOR` env passthrough -> manual mock testing inside
-  fails differently than real stages [P3/D1]
-
-- #BUG-0009 Makefile `full-cycle` passes `DRY_RUN` env var into the container but
-  nothing in scripts/ reads it (repo-wide grep for `DRY_RUN` under `scripts/` is
-  empty) -> silent no-op flag, misleading. `FORCE_REBUILD` is the real flag that
-  replaced it (`full-cycle.py:154,219,790`; `stage-show-plan.py:116`;
-  `lib/pipeline.py:81-82`), see docs/operations.md [P3/D1]
-
 ### Makefile
 
 - #BUG-0071 `delete-package.py:95-97` now cleans the artifacts ledger
@@ -315,20 +244,6 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
   longest-lived script most likely to be interrupted mid-run. Fix: add the
   same `except KeyboardInterrupt: sys.exit(130)` wrapper used everywhere
   else, at minimum to `update-versions.py` [P3/D1]
-- #BUG-0079 `lib/yaml_utils.get_packages(path: Path = PACKAGES_YAML)`
-  (`lib/yaml_utils.py:118`) binds its default at import time, so a caller that
-  invokes it bare -- `set-package-release.py:53`, `pkg-build-pop.py:24` -- is not
-  redirected by `tests/conftest.py`'s `fake_repo` fixture monkeypatching
-  `lib.paths.PACKAGES_YAML`; both scripts' own tests work around this by also
-  patching the script module's `get_packages` reference directly. Found while
-  writing tests for BUG-0078. Fix: `get_packages(path: Path | None = None)` with
-  `path = path or PACKAGES_YAML` resolved inside the function body [P2/D1]
-- #BUG-0082 `set-package-release.py:36`'s `lock = "--lock" in sys.argv` detects
-  the flag by membership anywhere in argv, so
-  `set-package-release.py --lock hyprlang 5` silently treats `--lock` as the
-  package-name positional (`sys.argv[1]`) instead of erroring -- found while
-  writing tests for BUG-0078. Switch to real flag parsing (argparse, or at
-  least filter `--lock` out of the positionals before indexing) [P3/D1]
 
 ## Tech debt
 
@@ -555,23 +470,11 @@ Mechanical maintenance: pinning, renames, dead-code removal, small tooling addit
   identical (36-line diff across 96/102-line files) -- real differences are just a
   docstring, a path-depth difference, and one extra `monkeypatch_cwd` fixture -> dedupe
   down to that one fixture [P3/D1]
-- #BUG-0081 `format-yaml.py:get_formatting_rules()` (`:63-97`) computes
-  `indent_spaces` from `.yamllint`'s `indentation` rule, but
-  `format_yaml_file()` (`:121-166`) never reads it -- it calls
-  `detect_indentation(content)` on the file's own existing content instead
-  (`:142`). Dead config path; found while writing tests for BUG-0078.
-  Either wire `indent_spaces` in as a fallback when detection is ambiguous, or
-  drop it from `get_formatting_rules()`'s return value [P3/D1]
 - #BUG-0085 3 YAML modules mix PyYAML-load and ruamel-dump inconsistently with no doc
   on which to use when: `lib/yaml_config.py` is ruamel-only, `lib/yaml_utils.py` is
   PyYAML-only, `lib/yaml_format.py` mixes both (docstring advertises ruamel but
   `:44`/`:150` call `yaml.safe_load`) -> confusing for newcomers. A docstring in each
   module solves the stated pain more cheaply than consolidating [P3/D1]
-- #BUG-0086 dead code: `lib/reporting.badge()` (`reporting.py:159`) *and*
-  `badge_short()` (`:141`) are both unused by any script -- neither is imported
-  outside `tests/test_reporting.py`; the live badge rendering is the Jinja macro
-  `templates/_badge.j2`, unrelated to either function. Also `lib/yaml_utils.py:128`'s
-  `load_packages = get_packages` alias has zero references -> remove all three [P3/D1]
 - #BUG-0088 `Containerfile:9-21` installs cargo/golang/mock/rpmlint with no version
   pins, and the base image tag (`Containerfile:3`) floats too -> minor reproducibility
   risk over time. Pinning individual packages against a floating Fedora base just
@@ -593,14 +496,6 @@ Mechanical maintenance: pinning, renames, dead-code removal, small tooling addit
   `B,RUF,SIM` plus the useful `PLW` subset; leave `PLR0912/0913/0915` and `N999`
   off -- they fire on the known-large files already tracked as BUG-0076/-0083 and
   on the intentional `kebab-case.py` script names [P3/D2]
-
-### Daily update
-
-- #BUG-0102 `lib/yaml_utils.write_yaml_preserving_comments()`
-  (`lib/yaml_utils.py:229-238`) does not preserve comments -- its own docstring says
-  so ("accepted trade-off for simpler code"), contradicting the function name.
-  Misleading name on the function that rewrites packages.yaml on every nightly run.
-  Rename, e.g. to `update_package_versions()` [P3/D1]
 
 ### Docs
 

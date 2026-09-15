@@ -2,7 +2,7 @@
 
 ## Context
 
-`docs/BUGS.md` (57 open, next ID BUG-0104) and `docs/TODO.md` (3 open, next ID
+`docs/BUGS.md` (46 open, next ID BUG-0104) and `docs/TODO.md` (2 open, next ID
 TODO-0094) are both well-groomed — every entry has a verified root cause, a
 `[P#/D#]` marker, and file:line evidence. `docs/features/` (5 Planned docs) carries
 the substantial not-yet-built work. What none of them have on their own is an
@@ -47,36 +47,9 @@ current" at the end.
 
 ## Epic 1 — Clear the desk
 
-*All D1/trivial. Two of them (BUG-0055, BUG-0080) actively break the test loop
-you'll lean on for every later epic, and two (BUG-0052, BUG-0009) are live
-footguns during manual pipeline runs. Do the whole epic in one sitting.*
-
-Order:
-
-1. **BUG-0055** — `test_addrepo_still_added_when_local_repo_has_repodata` fails on
-   a bare host (`createrepo_c` not patched). Blocks running `pytest` outside the
-   container. *First because it's the fastest path to a green suite on the host.*
-2. **BUG-0080** — `tests/conftest.py`'s `fake_repo` writes invalid YAML. Every
-   test that needs a parseable `packages.yaml` currently works around it.
-3. **BUG-0079** — `get_packages()` binds `PACKAGES_YAML` at import time, so
-   `fake_repo` can't redirect it. Together with -0080 this makes the fixture
-   actually usable; both were found *while writing tests* for BUG-0078, which is
-   Epic 2.
-4. **BUG-0052** — de-duplicate `.env` (`SKIP_COPR` assigned twice, last wins →
-   a plain `make full-cycle` submits to Copr when line 18 says it won't). Refresh
-   the stale `FEDORA_VERSION` comment. *Do before any manual pipeline runs.*
-5. **BUG-0009** — remove the dead `DRY_RUN` passthrough (nothing in `scripts/`
-   reads it; `FORCE_REBUILD` replaced it).
-6. **BUG-0006** — `make container-enter` ≠ `$(CONTAINER_RUN)`. Needed for
-   hands-on mock debugging in Epics 3–5.
-7. **BUG-0099** — gate the unconditional 5s post-plan sleep on `isatty()`; paid
-   3× per matrix run in the unattended cron flow.
-8. **BUG-0082** — `set-package-release.py`'s `--lock` detected by argv membership.
-9. **BUG-0081** — `format-yaml.py`'s `indent_spaces` is a dead config path.
-10. **BUG-0086** — delete `reporting.badge()`, `badge_short()`, the
-    `load_packages` alias.
-11. **BUG-0102** — rename `write_yaml_preserving_comments()` (it doesn't).
-12. **TODO-0011** — run `make fmt` after scaffolding.
+**Complete.** All items closed; see `docs/CHANGELOG.md`'s `## Unreleased`
+section for the #BUG-0055 #BUG-0080 #BUG-0079 #BUG-0052 #BUG-0009 #BUG-0006
+#BUG-0099 #BUG-0082 #BUG-0081 #BUG-0086 #BUG-0102 #TODO-0011 entries.
 
 **Done when:** `pytest tests/` green on a bare host; `.env` says what it means.
 

@@ -37,17 +37,6 @@ seconds with an actionable message instead of a multi-minute dnf5 resolution fai
   Proposed: bind-mount mock's resultdir (cheap, independent fix); restructure log
   paths to `./logs/<distro>/<version>/<package>/` together with
   [COPR-0022](COPR-0022-run-scoped-logs-and-summary.md).
-- Quirk: `test_addrepo_still_added_when_local_repo_has_repodata` fails on a host
-  without `createrepo_c` installed — `regenerate_repo_metadata()` shells out to
-  `createrepo_c` directly rather than through the mocked `run_cmd`.
-  Proposed: patch `regenerate_repo_metadata` in the test itself. Normally invisible
-  since `make test` runs inside the container, where `createrepo_c` is installed.
-  (BUG-0055)
-- Quirk: `make container-enter` doesn't match `$(CONTAINER_RUN)` — missing
-  `--privileged`, the mock-cache/mock-root volume mounts, the `.venv` mount, the copr
-  config mount, and `LOG_LEVEL`/`NO_COLOR` passthrough, so manual mock testing inside
-  fails differently than a real stage run. (BUG-0006)
-
 ## Testing
 
 ### Unit

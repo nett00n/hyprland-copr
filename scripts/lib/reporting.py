@@ -6,20 +6,6 @@ from datetime import datetime
 
 from lib.version import versions_for
 
-STATE_COLOR = {
-    "success": "brightgreen",
-    "failed": "red",
-    "skipped": "lightgrey",
-}
-
-STATUS_EMOJI = {
-    "success": "✔",
-    "failed": "✘",
-    "skipped": "○",
-}
-
-BADGE_URL = "https://img.shields.io/badge/{label}-{message}-{color}"
-
 # ANSI colors for the `state=` value only -- the rest of the line stays plain
 # so redirected output/log files and grep never have to deal with escape codes.
 _STATE_ANSI = {
@@ -173,36 +159,3 @@ def build_totals_line(packages: dict, stages: dict) -> str:
     if other:
         parts.append(f"{other} skipped/pending")
     return f"Totals: {', '.join(parts)} ({len(packages)} total)"
-
-
-def badge_short(
-    label: str, state: str | None, url: str | None = None, style: str | None = None
-) -> str:
-    """Generate a shields.io badge with a label, emoji message, and status-colored background."""
-    from urllib.parse import quote
-
-    state = state or "unknown"
-    color = STATE_COLOR.get(state, "orange")
-    emoji = STATUS_EMOJI.get(state, "?")
-    img_url = f"https://img.shields.io/badge/{label}-{quote(emoji)}-{color}"
-    if style:
-        img_url += f"?style={style}"
-    img = f"![{label}:{state}]({img_url})"
-    if url:
-        return f"[{img}]({url})"
-    return img
-
-
-def badge(
-    label: str, state: str | None, url: str | None = None, style: str | None = None
-) -> str:
-    """Generate a shields.io badge markdown string."""
-    state = state or "unknown"
-    color = STATE_COLOR.get(state, "orange")
-    img_url = BADGE_URL.format(label=label, message=state, color=color)
-    if style:
-        img_url += f"?style={style}"
-    img = f"![{label}]({img_url})"
-    if url:
-        return f"[{img}]({url})"
-    return img

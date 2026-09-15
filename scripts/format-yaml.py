@@ -72,6 +72,12 @@ def get_ignored_files(config: dict) -> set[str]:
 def get_formatting_rules(config: dict) -> dict:
     """Extract formatting rules from yamllint config.
 
+    #BUG-0081: previously also computed an `indent_spaces` key from the
+    `indentation` rule, but format_yaml_file() has always used
+    detect_indentation(content) (the file's own existing indentation)
+    instead -- that config path was dead. Dropped rather than wired in: see
+    docs/BUGS.md formerly BUG-0081 for why.
+
     Args:
         config: Parsed .yamllint configuration
 
@@ -80,20 +86,6 @@ def get_formatting_rules(config: dict) -> dict:
     """
     rules = config.get("rules", {})
 
-    # Extract indentation spacing
-    # yamllint defaults to 4 spaces if not specified
-    indentation = rules.get("indentation", {})
-    if isinstance(indentation, str):
-        indent_spaces = 4  # yamllint default
-    elif isinstance(indentation, dict):
-        spaces_value = indentation.get("spaces", 4)
-        if spaces_value == "auto":
-            indent_spaces = 4  # yamllint default when auto
-        else:
-            indent_spaces = spaces_value
-    else:
-        indent_spaces = 4  # yamllint default
-
     # Document start rule: add '---' if enabled
     doc_start = rules.get("document-start", {})
     explicit_start = False
@@ -101,7 +93,6 @@ def get_formatting_rules(config: dict) -> dict:
         explicit_start = doc_start.get("level") is not None
 
     return {
-        "indent_spaces": indent_spaces,
         "explicit_start": explicit_start,
     }
 

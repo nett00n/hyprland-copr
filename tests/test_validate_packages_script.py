@@ -57,6 +57,7 @@ def stub_environment(monkeypatch, tmp_path):
         lambda pkgs, mods: ([], []),
     )
     monkeypatch.setattr(validate_packages, "validate_gitmodules", lambda: ([], []))
+    monkeypatch.setattr(validate_packages, "validate_env_file", lambda: [])
     # No .gitmodules on disk -> main()'s `GITMODULES.exists()` guard short-circuits
     # to an empty module list without needing a real file.
     monkeypatch.setattr(
@@ -206,6 +207,23 @@ class TestMainWiring:
         assert "shared by packages" in captured.err
         assert "✓ packages.yaml validation passed" in captured.out
 
+    def test_env_duplicate_key_warns_but_does_not_exit(
+        self, stub_environment, monkeypatch, capsys
+    ):
+        """#BUG-0052: a repeated .env key is a warning, not a gate failure."""
+        monkeypatch.setattr(
+            validate_packages,
+            "validate_env_file",
+            lambda: [".env: 'SKIP_COPR' assigned 2 times (lines 18, 20)"],
+        )
+        _set_packages(monkeypatch, {"pkg-a": _minimal_package()})
+
+        validate_packages.main()  # must not raise SystemExit
+
+        captured = capsys.readouterr()
+        assert "SKIP_COPR" in captured.err
+        assert "✓ packages.yaml validation passed" in captured.out
+
     def test_submodule_url_mismatch_warns_but_does_not_exit(
         self, stub_environment, monkeypatch, capsys
     ):
@@ -280,6 +298,11 @@ class TestParity:
         )
         monkeypatch.setattr(
             validate_packages,
+            "validate_env_file",
+            _spy("validate_env_file", result=[]),
+        )
+        monkeypatch.setattr(
+            validate_packages,
             "validate_package",
             _spy("validate_package", result=([], [])),
         )
@@ -293,4 +316,5 @@ class TestParity:
             "validate_no_duplicate_urls": 1,
             "validate_submodule_url_resolution": 1,
             "validate_gitmodules": 1,
+            "validate_env_file": 1,
         }

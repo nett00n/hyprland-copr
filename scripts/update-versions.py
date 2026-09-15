@@ -30,7 +30,7 @@ from lib.version import (
 )
 from lib.yaml_utils import (
     get_packages,
-    write_yaml_preserving_comments,
+    update_package_versions,
 )
 
 # PINNED_RELEASE_TYPES/RELEASE_TYPES live in lib/version.py -- the single
@@ -408,7 +408,7 @@ def main() -> None:
         print(f"warning: {PACKAGES_YAML} not found, skipping update", file=sys.stderr)
         return
 
-    changed = write_yaml_preserving_comments(
+    changed = update_package_versions(
         PACKAGES_YAML, pkg_to_latest, pkg_to_commit_info
     )
     if changed:

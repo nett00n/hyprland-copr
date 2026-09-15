@@ -16,6 +16,7 @@ Checks (see lib.validation for the authoritative list):
 - .gitmodules conventions: submodules/ path prefix, https:// urls,
   ignore = dirty
 - A package's url not matching any .gitmodules submodule url (warning only)
+- .env assigning the same key more than once (warning only; #BUG-0052)
 """
 
 import sys
@@ -23,6 +24,7 @@ import sys
 from lib.gitmodules import parse_gitmodules
 from lib.paths import GITMODULES
 from lib.validation import (
+    validate_env_file,
     validate_gitmodules,
     validate_group_membership,
     validate_no_duplicate_urls,
@@ -59,6 +61,8 @@ def main() -> None:
 
     gitmodules_errors, gitmodules_warnings = validate_gitmodules()
     warnings.extend(f"  {w}" for w in gitmodules_warnings)
+
+    warnings.extend(f"  {w}" for w in validate_env_file())
 
     if errors:
         print("error: packages.yaml validation failed:", file=sys.stderr)

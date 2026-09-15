@@ -3,6 +3,7 @@
 Validates package.yaml entries, group membership, and .gitmodules conventions.
 """
 
+import re
 from pathlib import Path
 
 from lib.gitmodules import parse_gitmodules
@@ -332,3 +333,47 @@ def validate_gitmodules(root_path: Path = ROOT) -> tuple[list[str], list[str]]:
             )
 
     return errors, warnings
+
+
+_ENV_ASSIGNMENT_RE = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)=")
+
+
+def validate_env_file(root_path: Path = ROOT) -> list[str]:
+    """#BUG-0052: warn when `.env` assigns the same key more than once.
+
+    `.env` is gitignored and read by Make via `-include .env` -- Make keeps
+    only the last assignment of a repeated key, silently overriding whatever
+    an earlier line said. A `make full-cycle` reading a `.env` with
+    `SKIP_COPR` assigned twice submits to Copr or not depending purely on
+    which line comes last, with no warning either way.
+
+    Args:
+        root_path: Path to repository root (`.env` is read from
+            `root_path / ".env"`)
+
+    Returns:
+        List of warning strings, one per repeated key, each naming the key
+        and every line it was assigned on (1-indexed). Empty (never errors)
+        when `.env` is absent -- CI and fresh clones have none.
+    """
+    warnings: list[str] = []
+    env_path = root_path / ".env"
+    if not env_path.exists():
+        return warnings
+
+    lines_by_key: dict[str, list[int]] = {}
+    for lineno, line in enumerate(env_path.read_text().splitlines(), start=1):
+        match = _ENV_ASSIGNMENT_RE.match(line)
+        if not match:
+            continue
+        lines_by_key.setdefault(match.group(1), []).append(lineno)
+
+    for key, linenos in lines_by_key.items():
+        if len(linenos) > 1:
+            line_list = ", ".join(str(n) for n in linenos)
+            warnings.append(
+                f".env: '{key}' assigned {len(linenos)} times (lines {line_list})"
+                " -- Make keeps only the last one"
+            )
+
+    return warnings
