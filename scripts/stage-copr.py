@@ -121,6 +121,13 @@ def run_for_package(
             if mock_state in ("failed", "skipped")
             else "srpm artifact missing"
             if srpm_missing
+            else (
+                f"srpm not built at canonical {canonical_target} "
+                f"(run make full-cycle PACKAGE={pkg} "
+                f"FEDORA_VERSION={CANONICAL_FEDORA_VERSION} SKIP_COPR=1, "
+                "or make full-cycle-matrix)"
+            )
+            if srpm_entry is None
             else f"srpm {srpm_state}"
         )
         status("copr", pkg, "skip", target, blocker, version=ver)

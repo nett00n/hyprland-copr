@@ -452,6 +452,37 @@ class TestStageCoprBlocking:
         assert build_db.get_stage(pkg, "copr", TARGET)["state"] == "skipped"
         assert build_db.get_stage(pkg, "copr", TARGET)["reason"] == "srpm failed"
 
+    def test_copr_blocked_by_missing_canonical_build(self, run_id):
+        """A package only ever built at a non-canonical FEDORA_VERSION (e.g. the
+        default 44, with CANONICAL_FEDORA_VERSION=43) has no srpm/mock row at
+        the canonical target at all -- distinct from a row that exists and
+        failed. The reason must name the canonical target and the fix, not
+        just print "srpm " (see docs/BUGS.md, the SwayOSD copr-skip case)."""
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        # No srpm/mock rows at CANONICAL_TARGET at all -- only ever built at TARGET.
+        build_db.set_stage(
+            pkg, "srpm", TARGET, run_id, "success", path="/some/path.src.rpm"
+        )
+        build_db.set_stage(pkg, "mock", TARGET, run_id, "success")
+
+        result = stage_copr.run_for_package(
+            pkg,
+            meta,
+            "43",
+            "nett00n/hyprland",
+            proceed=False,
+            target=TARGET,
+            run_id=run_id,
+            synchronous=False,
+        )
+
+        assert result is True
+        reason = build_db.get_stage(pkg, "copr", TARGET)["reason"]
+        assert build_db.get_stage(pkg, "copr", TARGET)["state"] == "skipped"
+        assert CANONICAL_TARGET in reason
+        assert "full-cycle" in reason
+
     def test_copr_blocked_by_mock_failure(self, run_id):
         """Test COPR skipped when mock failed."""
         pkg = "test-pkg"
