@@ -58,6 +58,7 @@ hyprland-deps:
 other-apps:
   label: Useful apps
   packages:
+  - SwayOSD
   - Waybar
   - ashell
   - cliphist

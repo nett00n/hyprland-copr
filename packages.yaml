@@ -1872,6 +1872,71 @@ sndio:
   summary: Portable version of OpenBSD's lightweight audio & MIDI sub-system
   url: https://sndio.org/git/sndio
   version: 1.10.0
+SwayOSD:
+  build:
+    commands:
+    - '%global _libdir %{_prefix}/lib'
+    - '%meson --buildtype=release'
+    - '%meson_build'
+    install: []
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: meson
+  build_requires:
+  - cargo
+  - dbus-devel
+  - gcc
+  - glib2-devel
+  - gtk4-devel
+  - gtk4-layer-shell-devel
+  - meson
+  - ninja-build
+  - pkgconfig(libevdev)
+  - pkgconfig(libinput)
+  - pkgconfig(libpulse)
+  - pkgconfig(libudev)
+  - rustc
+  - sassc
+  - systemd-devel
+  depends_on:
+  - gtk4-layer-shell
+  description: |
+    A GTK based on-screen display (OSD) for keyboard shortcuts like caps-lock and volume.
+
+    Shows a themeable OSD popup for volume, brightness, capslock/numlock/scrolllock, and
+    other hardware key events on Wayland compositors such as Hyprland and Sway.
+  devel:
+    files: []
+  files:
+  - '%config(noreplace) %{_sysconfdir}/xdg/swayosd/backend.toml'
+  - '%config(noreplace) %{_sysconfdir}/xdg/swayosd/config.toml'
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/swayosd-client'
+  - '%{_bindir}/swayosd-libinput-backend'
+  - '%{_bindir}/swayosd-server'
+  - '%{_datadir}/dbus-1/system-services/org.erikreider.swayosd.service'
+  - '%{_datadir}/dbus-1/system.d/org.erikreider.swayosd.conf'
+  - '%{_datadir}/polkit-1/actions/org.erikreider.swayosd.policy'
+  - '%{_datadir}/polkit-1/rules.d/org.erikreider.swayosd.rules'
+  - '%{_prefix}/lib/udev/rules.d/99-swayosd.rules'
+  - '%{_sysconfdir}/xdg/swayosd/style.css'
+  - '%{_unitdir}/swayosd-libinput-backend.service'
+  license: GPL-3.0-or-later
+  release: 5
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+    bundled_deps: []
+    name: SwayOSD
+  summary: A GTK based on screen display for keyboard shortcuts like caps-lock and volume
+  url: https://github.com/ErikReider/SwayOSD
+  version: 0.3.2
 uwsm:
   build:
     commands: []

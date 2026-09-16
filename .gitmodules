@@ -198,3 +198,10 @@
 	path = submodules/JakeStanger/ironbar
 	url = https://github.com/JakeStanger/ironbar
 	ignore = dirty
+[submodule "submodules/ErikReider/SwayOSD"]
+	path = submodules/ErikReider/SwayOSD
+	url = https://github.com/ErikReider/SwayOSD
+	ignore = dirty
+[submodule "submodules/jjba23/lambdock"]
+	path = submodules/jjba23/lambdock
+	url = https://codeberg.org/jjba23/lambdock.git

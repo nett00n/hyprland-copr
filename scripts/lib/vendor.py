@@ -68,7 +68,14 @@ def resolve_source_url(pkg_meta: dict, pkg_name: str) -> str:
 
 
 def vendor_tarball_name(pkg_name: str, version: str) -> str:
-    return f"{pkg_name}-{version}-vendor.tar.gz"
+    """Build the vendor tarball filename.
+
+    Lowercased to match the RPM %{name} macro (gen-spec.py always lowercases
+    the packages.yaml key for the spec's Name:), so a mixed-case package key
+    (e.g. SwayOSD) still produces a Source1 filename the generated spec can
+    find (#COPR-0001).
+    """
+    return f"{pkg_name.lower()}-{version}-vendor.tar.gz"
 
 
 def vendor_tarball_path(pkg_name: str, version: str, sources_dir: Path) -> Path:

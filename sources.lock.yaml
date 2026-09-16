@@ -429,3 +429,9 @@ ironbar:
     sha256: 0d25c2f0c72f839b4018ae12b876a71d04b946ce6fe629a0bb12b8b279ca3699
     size: 360974
     recorded: '2026-09-16'
+SwayOSD:
+  swayosd-0.3.2.tar.gz:
+    url: https://github.com/ErikReider/SwayOSD/archive/refs/tags/v0.3.2.tar.gz#/swayosd-0.3.2.tar.gz
+    sha256: cb7ce2d47550b71fb2ecf48cf589d8553cfe2cacd257483cd1bf73db18f9a505
+    size: 69230
+    recorded: '2026-09-16'
