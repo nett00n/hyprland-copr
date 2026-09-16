@@ -239,7 +239,7 @@ glaze:
   - '%doc README.md'
   - '%license LICENSE'
   license: MIT
-  release: 2
+  release: 1
   rpm:
     no_debug_package: true
   source:
@@ -247,7 +247,7 @@ glaze:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Extremely fast, in memory, JSON and reflection library for modern C++.
   url: https://github.com/stephenberry/glaze
-  version: 8.3.0
+  version: 8.4.0
 glaze-v7:
   auto_update:
     release_type: pinned-version
@@ -430,7 +430,7 @@ hypridle:
   - '%{_datadir}/hypr/hypridle.conf'
   - '%{_userunitdir}/hypridle.service'
   license: BSD-3-Clause
-  release: 10
+  release: 11
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -538,7 +538,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 13
+  release: 14
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -666,7 +666,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -704,7 +704,7 @@ hyprland-protocols:
   - '%doc README.md'
   - '%license LICENSE'
   license: BSD-3-Clause
-  release: 9
+  release: 1
   rpm:
     no_debug_package: true
   source:
@@ -712,7 +712,7 @@ hyprland-protocols:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Wayland protocol extensions for Hyprland
   url: https://github.com/hyprwm/hyprland-protocols
-  version: 0.7.0
+  version: 0.7.1
 hyprland-qt-support:
   build:
     commands:
@@ -1117,7 +1117,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 24
+  release: 25
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1149,7 +1149,7 @@ hyprsunset:
   - '%{_prefix}/bin/hyprsunset'
   - '%{_prefix}/lib/systemd/user/hyprsunset.service'
   license: BSD-3-Clause
-  release: 10
+  release: 11
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1195,7 +1195,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 24
+  release: 25
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1924,7 +1924,7 @@ uwsm:
   - '%{_userunitdir}/wayland-wm-env@.service'
   - '%{_userunitdir}/wayland-wm@.service'
   license: MIT
-  release: 2
+  release: 1
   requires: []
   rpm:
     no_debug_package: true
@@ -1934,7 +1934,7 @@ uwsm:
     bundled_deps: []
   summary: Universal Wayland Session Manager
   url: https://github.com/Vladimir-csp/uwsm
-  version: 0.26.7
+  version: 0.27.0
 Waybar:
   build:
     commands:
@@ -2085,7 +2085,7 @@ xdg-desktop-portal-hyprland:
   - '%{_libexecdir}/%{name}'
   - '%{_userunitdir}/%{name}.service'
   license: BSD-3-Clause
-  release: 9
+  release: 10
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'

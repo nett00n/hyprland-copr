@@ -1,12 +1,12 @@
 %global debug_package %{nil}
 
 Name:           uwsm
-Version:        0.26.7
-Release:        2%{?dist}
+Version:        0.27.0
+Release:        1%{?dist}
 Summary:        Universal Wayland Session Manager
 License:        MIT
 URL:            https://github.com/Vladimir-csp/uwsm
-Source0:        https://github.com/Vladimir-csp/uwsm/archive/refs/tags/v0.26.7.tar.gz#/uwsm-0.26.7.tar.gz
+Source0:        https://github.com/Vladimir-csp/uwsm/archive/refs/tags/v0.27.0.tar.gz#/uwsm-0.27.0.tar.gz
 
 BuildRequires:  gcc-c++
 BuildRequires:  meson
@@ -36,8 +36,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.26.7
-Commit:            ab5ec16d96ed1f77c3c7ff2e3f07ed42caf23f2d
+Tag:               v0.27.0
+Commit:            f82dece2cedf308c897513f093f45025fbfdda4f
 
 %prep
 %autosetup -p1
@@ -83,8 +83,15 @@ Development files for uwsm.
 %files devel
 
 %changelog
-* Sun Aug 23 2026 nett00n <copr@nett00n.org> - 0.26.7-2
+* Tue Sep 15 2026 nett00n <copr@nett00n.org> - 0.27.0-1
 
-- chore: Release 0.26.7
-- fix: Only append GenericName if it differs from Name
-- docs: Correct spelling of 'high-priority' in README (#221)
+- chore: Release 0.27.0 "Your Friendly Neighborhood Skynet"
+- feat: editable export/cleanup lists
+- feat: also use UWSM_DEBUG var to control debug
+- fix: pre-check shell syntax before sourcing env scripts, discard a set of extensions, fixes #226
+- fix(uwsm-app): cancel PIPE trap when triggered, fixes #222
+- fix(uwsm-app): reap pipekiller before exec/exit (#225)
+- fix(app-daemon): recover app-daemon when client dies mid-handshake (#223)
+- fix(app-daemon): remove error flag in exception
+- fix: remove deprecated UWSM_NO_TWEAKS
+- fix: correct typos (#227)

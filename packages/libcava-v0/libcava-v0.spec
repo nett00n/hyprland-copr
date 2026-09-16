@@ -68,6 +68,6 @@ Development files for libcava-v0.
 %{_libdir}/pkgconfig/libcava.pc
 
 %changelog
-* Tue Sep 15 2026 nett00n <copr@nett00n.org> - 0.10.7-10
+* Wed Sep 16 2026 nett00n <copr@nett00n.org> - 0.10.7-10
 
 - Update to 0.10.7

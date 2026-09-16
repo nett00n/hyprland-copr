@@ -80,6 +80,6 @@ Development files for waybar.
 %files devel
 
 %changelog
-* Tue Sep 15 2026 nett00n <copr@nett00n.org> - 0.15.0-18
+* Wed Sep 16 2026 nett00n <copr@nett00n.org> - 0.15.0-18
 
 - Update to 0.15.0
