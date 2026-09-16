@@ -23,6 +23,18 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- BUG-0104: `stage-copr.py`'s skip reason for a package whose SRPM was never
+  built at `CANONICAL_FEDORA_VERSION` (the target it actually submits from,
+  per [COPR-0018](features/COPR-0018-single-spec-single-srpm.md)) rendered as
+  a bare `srpm ` (trailing space, from an empty `srpm_state` string) --
+  indistinguishable from a real failure and silent about the actual fix.
+  Building only at a non-canonical `FEDORA_VERSION` (the default, 44) and
+  then running `full-cycle`/`stage-copr` with a real `COPR_REPO` submitted
+  nothing, with no clue why (surfaced packaging SwayOSD, see
+  [package-requests.md](package-requests.md)). Now distinguishes "never
+  built at canonical" from "built but failed/skipped" and names the fix:
+  `srpm not built at canonical fedora-43-x86_64 (run make full-cycle
+  PACKAGE=<pkg> FEDORA_VERSION=43 SKIP_COPR=1, or make full-cycle-matrix)`.
 - BUG-0073 BUG-0097 BUG-0089 BUG-0056 BUG-0078 BUG-0096 BUG-0072: Epic 2
   (Guardrails) complete. `lib.validation` gained `validate_tracker_ids`
   (duplicate/misfiled `#BUG-`/`#TODO-` IDs), `FIELD_TYPES`/

@@ -5,7 +5,7 @@ New-feature ideas go in `docs/TODO.md` instead (promoted to a `docs/features/` d
 once substantial). GitHub issues are for reporter-facing items (someone else's
 bug/request); this file is the maintainer's own log and may cite issue numbers.
 Entries are deleted when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are
-never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0104**.
+never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0105**.
 
 This file absorbed `docs/TODO.md`'s former defect/debt/chore entries on 2026-09-15
 when `docs/` adopted `docs/DOCS-DRIVEN-DEVELOPMENT.md` — see `docs/ID-MIGRATION.md`

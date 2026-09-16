@@ -1409,6 +1409,58 @@ ironbar:
   summary: Customisable Wayland GTK4 bar written in Rust
   url: https://github.com/JakeStanger/ironbar
   version: 0.19.0
+lambdock:
+  build:
+    commands:
+    - '%meson -Dwerror=false'
+    - '%meson_build'
+    install: []
+    no_lto: false
+    prep: []
+    system: meson
+  build_requires:
+  - gcc
+  - gettext
+  - gtk4-layer-shell-devel
+  - meson
+  - ninja-build
+  - pkgconfig(glib-2.0)
+  - pkgconfig(gtk4)
+  - pkgconfig(gtk4-layer-shell-0)
+  - pkgconfig(guile-3.0)
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-protocols)
+  - wayland-devel
+  depends_on:
+  - gtk4-layer-shell
+  description: |
+    Lambdock is a Wayland-native desktop dock built with GTK4,
+    gtk4-layer-shell and GNU Guile Scheme. It provides dynamic Wayland
+    top-level window tracking, multi-monitor support, configurable
+    application launchers, auto-hide animations, GTK CSS themes with
+    hot-reloading, multiple dock instances, and an embedded Guile Scheme
+    runtime with an optional interactive REPL. Designed for compositors
+    implementing wlr-layer-shell, including Hyprland, Sway, River,
+    Wayfire and Niri.
+  files:
+  - '%doc NEWS.org'
+  - '%doc README.org'
+  - '%license COPYING'
+  - '%{_bindir}/lambdock'
+  - '%{_datadir}/guile/site/3.0/lambdock/'
+  - '%{_datadir}/locale/*/LC_MESSAGES/lambdock.mo'
+  license: GPL-3.0-or-later
+  release: 5
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  source_dir: lambdock
+  summary: Wayland desktop dock customizable with GNU Guile Scheme
+  url: https://codeberg.org/jjba23/lambdock.git
+  version: 0.7.4
 libcava:
   build:
     commands:

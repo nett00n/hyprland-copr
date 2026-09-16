@@ -205,3 +205,4 @@
 [submodule "submodules/jjba23/lambdock"]
 	path = submodules/jjba23/lambdock
 	url = https://codeberg.org/jjba23/lambdock.git
+	ignore = dirty
