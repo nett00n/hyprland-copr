@@ -256,6 +256,7 @@ def _dnf_whatprovides(query: str) -> list[str]:
             capture_output=True,
             text=True,
             timeout=30,
+            check=False,
         )
         return sorted(
             {line.strip() for line in result.stdout.splitlines() if line.strip()}
@@ -273,6 +274,7 @@ def _dnf_search(name: str) -> list[str]:
             capture_output=True,
             text=True,
             timeout=30,
+            check=False,
         )
         return sorted(
             {line.strip() for line in result.stdout.splitlines() if line.strip()}
@@ -866,10 +868,9 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                         "No such file",
                         "undefined reference",
                     ]
-                ):
-                    if not prev_line.startswith(("+ ", "Executing")):
-                        error_context = prev_line
-                        break
+                ) and not prev_line.startswith(("+ ", "Executing")):
+                    error_context = prev_line
+                    break
             msg = f"failed during {phase_friendly}"
             if error_context:
                 msg += f" — {error_context}"

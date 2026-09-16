@@ -23,6 +23,20 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- BUG-0073 BUG-0097 BUG-0089 BUG-0056 BUG-0078 BUG-0096 BUG-0072: Epic 2
+  (Guardrails) complete. `lib.validation` gained `validate_tracker_ids`
+  (duplicate/misfiled `#BUG-`/`#TODO-` IDs), `FIELD_TYPES`/
+  `validate_field_types` (packages.yaml scalar type table), `validate_vendoring`
+  (cross-checks the golang/cargo trigger against the `*-vendor.tar.gz` archive
+  and `%{SOURCEn}` prep references), and `validate_dependency_drift` (offline
+  warning when a commit-tracked package outruns a tag-pinned `depends_on`,
+  the class of bug that broke `hyprland-plugins`/`Hyprland` across runs
+  76-78); all wired into `make validate-packages`. Three previously-untested
+  scripts (`gather-requires.py`, `gen-readme-shell.py`, `list-tags.py`) gained
+  unit tests. New `ruff.toml` widens `make lint-ruff` to `B,RUF,SIM,PLW`
+  beyond the default `E,F`, and every finding it turned up was fixed. 16
+  top-level scripts gained a `KeyboardInterrupt` handler, matching the rest
+  of the pipeline.
 - TODO-0011: `make scaffold-package`/`make add-new` now run `make fmt`
   (fmt-ruff, fmt-yaml, normalize-paths, sort-lists) after scaffolding a new
   `packages.yaml` entry, instead of leaving it unformatted.

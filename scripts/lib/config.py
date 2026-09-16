@@ -58,8 +58,8 @@ def get_packager() -> str:
         env_name: str = ""
         env_email: str = ""
         with open(env_file) as f:
-            for line in f:
-                line = line.strip()
+            for raw_line in f:
+                line = raw_line.strip()
                 if not line or line.startswith("#"):
                     continue
                 if line.startswith("PACKAGER="):

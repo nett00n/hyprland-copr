@@ -57,32 +57,14 @@ section for the #BUG-0055 #BUG-0080 #BUG-0079 #BUG-0052 #BUG-0009 #BUG-0006
 
 ## Epic 2 — Guardrails
 
-*Each item here turns a defect-class that was caught by hand into a check.
-BUG-0097 is sequenced before Epic 6's typing work by its own note. BUG-0078
-lands here rather than in Epic 6 because the three untested scripts are the ones
-later refactors would silently break.*
-
-Order:
-
-1. **BUG-0073** — duplicate `#BUG-`/`#TODO-` ID check in `make pre-commit`. D1,
-   and it protects the two files this entire roadmap indexes. *Do first.*
-2. **BUG-0097** — field→type table in `lib/validation.py` (a float `version: 1.9`
-   passed both validators). Explicitly a prerequisite for BUG-0093.
-3. **BUG-0089** — cross-validate the vendoring trigger (`build_requires`
-   containing `golang`/`cargo`) against packages.yaml's `Source1` + `tar xf`.
-   Two sources of truth, no check.
-4. **BUG-0056** — automated check for `latest-commit` outrunning a tag-pinned
-   `depends_on`. This is the drift that broke `hyprland-plugins` across all three
-   chroots (runs 76–78) and was only caught by mock failing. *Needs -0097's
-   validation scaffolding to hang off.*
-5. **BUG-0078** — tests for `gather-requires.py`, `gen-readme-shell.py`,
-   `list-tags.py`. Unblocked by Epic 1's fixture fixes.
-6. **BUG-0096** — widen ruff beyond default `E,F`. Select `B,RUF,SIM` + the
-   useful `PLW` subset; leave `PLR0912/0913/0915` and `N999` off (they fire on
-   files already tracked as BUG-0076/-0083). Catches 8 real `PLW2901`
-   loop-variable bugs.
-7. **BUG-0072** — `KeyboardInterrupt` handler in the 16 scripts lacking one. At
-   minimum `update-versions.py`, the longest-lived script in the nightly run.
+**Complete.** All items closed; see `docs/CHANGELOG.md`'s `## Unreleased` section
+for the #BUG-0073 #BUG-0097 #BUG-0089 #BUG-0056 #BUG-0078 #BUG-0096 #BUG-0072
+entries. `lib.validation` gained `validate_tracker_ids`, `FIELD_TYPES`/
+`validate_field_types`, `validate_vendoring`, and `validate_dependency_drift`; a
+new `ruff.toml` widens `lint-ruff` beyond default `E,F`; 16 scripts gained a
+`KeyboardInterrupt` handler. See
+[COPR-0010](features/COPR-0010-quality-gate.md) and
+[COPR-0004](features/COPR-0004-version-auto-bump.md) for the shipped behavior.
 
 **Done when:** `make pre-commit` fails on a duplicate tracker ID, a mistyped
 packages.yaml scalar, and a vendoring/Source1 mismatch.

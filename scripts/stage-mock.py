@@ -63,6 +63,7 @@ def regenerate_repo_metadata(repo_dir: Path) -> None:
         ["createrepo_c", "--update", str(repo_dir)],
         capture_output=True,
         stdin=subprocess.DEVNULL,
+        check=False,
     )
     if result.returncode != 0:
         logging.error(
@@ -93,6 +94,7 @@ def _rpm_query(rpm_path: Path, fmt: str) -> str:
         ["rpm", "-qp", "--queryformat", fmt, str(rpm_path)],
         capture_output=True,
         text=True,
+        check=False,
     )
     return result.stdout.strip()
 
@@ -113,6 +115,7 @@ def _vercmp(evr_a: str, evr_b: str) -> int:
         ["rpmdev-vercmp", evr_a, evr_b],
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode == 11:
         return 1

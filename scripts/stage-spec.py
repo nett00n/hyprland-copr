@@ -64,6 +64,7 @@ def resolve_dep_versions(build_requires: list) -> list:
                 capture_output=True,
                 text=True,
                 timeout=10,
+                check=False,
             )
             version = out.stdout.strip() if out.returncode == 0 else None
         except Exception:
@@ -174,7 +175,7 @@ def generate_spec(
         if vendor_idx is not None and not any(
             f"SOURCE{vendor_idx}" in cmd for cmd in prep_commands
         ):
-            prep_commands = [f"tar xf %{{SOURCE{vendor_idx}}}"] + prep_commands
+            prep_commands = [f"tar xf %{{SOURCE{vendor_idx}}}", *prep_commands]
 
         context = {
             "name": pkg.lower(),

@@ -36,7 +36,7 @@ def analyze_package(pkg: str) -> int:
         if issues:
             issues_found = True
             print(f"\n{HIGHLIGHT_PREFIX} SRPM stage issues:")
-            for lineno, raw_line, msg, dep, method in issues:
+            for lineno, _raw_line, msg, dep, method in issues:
                 print(f"  - {msg}")
                 print(f"    {srpm_log}:{lineno}")
                 providers = _suggest_providers(dep, method)
@@ -51,7 +51,7 @@ def analyze_package(pkg: str) -> int:
         if issues:
             issues_found = True
             print(f"\n{HIGHLIGHT_PREFIX} Mock builddep issues:")
-            for lineno, raw_line, msg, dep, method in issues:
+            for lineno, _raw_line, msg, dep, method in issues:
                 print(f"  - {msg}")
                 print(f"    {mock_log}:{lineno}")
                 providers = _suggest_providers(dep, method)
@@ -81,7 +81,7 @@ def analyze_package(pkg: str) -> int:
         if issues:
             issues_found = True
             print(f"\n{HIGHLIGHT_PREFIX} Mock root issues:")
-            for lineno, raw_line, msg, dep, method in issues:
+            for lineno, raw_line, msg, _dep, _method in issues:
                 print(f"  - {msg}")
                 print(f"    {root_log}:{lineno}: {raw_line}")
 
@@ -92,7 +92,7 @@ def analyze_package(pkg: str) -> int:
         if issues:
             issues_found = True
             print(f"\n{HIGHLIGHT_PREFIX} COPR stage issues:")
-            for lineno, raw_line, msg, dep, method in issues:
+            for lineno, _raw_line, msg, _dep, _method in issues:
                 print(f"  - {msg}")
                 print(f"    {copr_log}:{lineno}")
 
@@ -103,7 +103,7 @@ def analyze_package(pkg: str) -> int:
         if issues:
             issues_found = True
             print(f"\n{HIGHLIGHT_PREFIX} COPR chroot mismatch:")
-            for lineno, raw_line, msg, dep, method in issues:
+            for _lineno, _raw_line, msg, _dep, _method in issues:
                 print(f"  - {msg}")
 
     # COPR builder issues (downloaded per-chroot logs for failed chroots)
@@ -150,4 +150,8 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

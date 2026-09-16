@@ -27,6 +27,22 @@ a nightly Copr publish.
 (`lib.validation`), so a passing `validate-packages` implies `stage-validate` will
 pass too.
 
+`validate-packages` also enforces, as **errors**:
+
+- No `#BUG-NNNN`/`#TODO-NNNN` ID is declared twice within `docs/BUGS.md` or
+  `docs/TODO.md`, and no ID's prefix mismatches its file. (#BUG-0073)
+- Every `packages.yaml` scalar matches the type table in `lib.validation.FIELD_TYPES`
+  (a YAML float/bool where a string/int is expected is rejected, not silently
+  coerced). (#BUG-0097)
+- A package whose `build_requires` triggers vendoring (`golang`/`cargo`) declares a
+  matching `*-vendor.tar.gz` `source.archives` entry, and vice versa; a hand-written
+  `prep`'s `%{SOURCEn}` reference stays inside the declared `archives` range.
+  (#BUG-0089)
+
+`ruff check scripts/` (`make lint-ruff`) additionally selects `B,RUF,SIM,PLW` beyond
+the default `E,F` (see `ruff.toml`), catching real variable-lifetime bugs (redefined
+loop variables, unused unpacked variables) alongside style. (#BUG-0096)
+
 ## Implementation
 
 - `Makefile` `lint*`/`fmt*`/`pre-commit`/`validate-packages` targets.
@@ -38,20 +54,28 @@ pass too.
 
 ## Quirks & Decisions
 
-- Quirk: ruff runs with default rules only (`E,F`) — no `ruff.toml`.
-  Proposed: select `B,RUF,SIM` plus the useful `PLW` subset (catches real
-  variable-lifetime bugs, e.g. 8 `PLW2901` redefined-loop-name instances); leave
+- Decision: `lib.validation.validate_tracker_ids()` greps `docs/BUGS.md`/
+  `docs/TODO.md` for `^- #(BUG|TODO)-\d+` declarations and errors on any ID declared
+  twice within a file or filed under the wrong file's prefix — the exact class of
+  bug the 2026-08-18 grooming pass found and fixed by hand. (BUG-0073, closed)
+- Decision: `ruff.toml` selects `B,RUF,SIM` plus the useful `PLW` subset (catches real
+  variable-lifetime bugs, e.g. 8 `PLW2901` redefined-loop-name instances); leaves
   `PLR0912/0913/0915`/`N999` off, since they fire on already-tracked large files and
-  the intentional `kebab-case.py` script names. (BUG-0096)
-- Quirk: no field→type table for `packages.yaml` scalars — `REQUIRED_FIELDS` checks
-  presence only, so a YAML float like `version: 1.9` passed both validators until
-  found by hand.
-  Proposed: add a field→type table to `lib/validation.py`; should land before the
-  `TypedDict` typing work below, which depends on it. (BUG-0097)
-- Quirk: three top-level scripts have zero tests (`gather-requires.py`,
-  `gen-readme-shell.py`, `list-tags.py`), violating the stated coverage rule.
-  Proposed: add tests using a network/subprocess fake, same pattern as other
-  recently-covered scripts. (BUG-0078)
+  the intentional `kebab-case.py` script names; leaves `PLW0603` off (fires only on
+  `lib/build_db.py`'s deliberate module-level connection singleton) and `RUF100` off
+  (its autofix would delete the `# noqa: E402` directives `make lint-flake` still
+  needs in `scripts/delete-package.py`, since flake8 and ruff don't share a
+  suppression namespace). (BUG-0096, closed)
+- Decision: `lib.validation.FIELD_TYPES` is a dotted-path → type table covering every
+  scalar `packages.yaml.example` documents; a present-but-wrong-typed field
+  (`version: 1.9`, `release: true`) is an error, absence stays `REQUIRED_FIELDS`'
+  job. The ~15 `str()` call-site wrappers this makes redundant are left in place —
+  removing them is BUG-0093's job once the `TypedDict` work below lands. (BUG-0097,
+  closed)
+- All three top-level scripts that had zero tests now have unit tests
+  (`tests/test_gather_requires.py`, `tests/test_list_tags.py`,
+  `tests/test_gen_readme_shell.py`), each faking the network/subprocess boundary the
+  same way other recently-covered scripts do. (BUG-0078, closed)
 - Quirk: 134 bare `dict`/`list`/`tuple` annotations block mypy's
   `disallow_any_generics`; 17 `Any`-laundering returns block `warn_return_any`.
   Proposed: `TypedDict`/`Literal` aliases for the stage-results row, package metadata,
@@ -62,7 +86,11 @@ pass too.
 
 ### Unit
 
-- `tests/test_validate_packages_script.py`, `tests/test_validation_gaps.py`.
+- `tests/test_validate_packages_script.py`, `tests/test_validation_gaps.py`
+  (covers `validate_tracker_ids`, `FIELD_TYPES`/`validate_field_types`,
+  `validate_vendoring`, `validate_dependency_drift`).
+- `tests/test_gather_requires.py`, `tests/test_list_tags.py`,
+  `tests/test_gen_readme_shell.py`.
 
 ### Integration
 

@@ -42,8 +42,8 @@ def get_packager() -> str:
         env_name: str = ""
         env_email: str = ""
         with open(env_file) as f:
-            for line in f:
-                line = line.strip()
+            for raw_line in f:
+                line = raw_line.strip()
                 if not line or line.startswith("#"):
                     continue
                 if line.startswith("PACKAGER="):
@@ -183,8 +183,8 @@ def build_changelog(
     notes: list[str] = []
     body = release_info.get("body") if release_info else None
     if body:
-        for line in body.splitlines():
-            line = line.strip()
+        for raw_line in body.splitlines():
+            line = raw_line.strip()
             if not line or line.startswith("#"):
                 continue
             if line.startswith(("- ", "* ", "• ")):
@@ -415,10 +415,10 @@ def main() -> None:
             url_to_submodule[url] = path
             url_to_submodule[url.removesuffix(".git")] = path
 
-    for name, pkg in packages.items():
+    for name, raw_pkg in packages.items():
         if target and name != target:
             continue
-        pkg = apply_os_overrides(pkg, fedora_version)
+        pkg = apply_os_overrides(raw_pkg, fedora_version)
         if pkg.get("_skip"):
             print(f"  skipped   {name} (fedora:{fedora_version} skip)")
             continue
@@ -443,4 +443,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

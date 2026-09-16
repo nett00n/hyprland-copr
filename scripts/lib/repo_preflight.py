@@ -58,6 +58,7 @@ def rpm_dist_tag(path: Path) -> str | None:
         ["rpm", "-qp", "--queryformat", "%{RELEASE}", str(path)],
         capture_output=True,
         text=True,
+        check=False,
     )
     m = _DIST_TAG_RE.search(result.stdout)
     return m.group(1) if m else None

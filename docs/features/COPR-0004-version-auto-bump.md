@@ -27,6 +27,15 @@ bump 49 packages' versions.
 Bumping a version also resets that package's `release: 0`, signaling the next build to
 reset the release counter (see [COPR-0008](COPR-0008-release-numbering.md)).
 
+`scripts/update-versions.py` handles Ctrl+C cleanly: `except KeyboardInterrupt:
+sys.exit(130)`, same as the rest of the pipeline. (#BUG-0072)
+
+`make validate-packages` warns (offline, no network) when a `latest-commit`/
+`pinned-commit` package's `source.commit.date` is newer than a tag-pinned
+`depends_on` sibling's pinned tag date — the drift class that broke
+`hyprland-plugins` against `Hyprland` across all three chroots (runs 76–78) before
+mock caught it. (#BUG-0056)
+
 ## Implementation
 
 - `scripts/update-versions.py`, `lib/version.py`.
@@ -43,15 +52,15 @@ reset the release counter (see [COPR-0008](COPR-0008-release-numbering.md)).
   Proposed: add `ThreadPoolExecutor`-based concurrency, once the aggregate-reporting
   fix above can show what broke; split out separately since it's a different risk
   profile (shared `.git/modules` state). (BUG-0101)
-- Quirk: no `KeyboardInterrupt` handling — the longest-lived script in the nightly run
-  (serially fetching 45+ submodules over the network) has no clean Ctrl+C exit.
-  Proposed: add the same `except KeyboardInterrupt: sys.exit(130)` wrapper every other
-  top-level script already has. (BUG-0072)
-- Quirk: a `depends_on` package on `latest-commit` can silently outrun a tag-pinned
-  sibling's API (e.g. `hyprland-plugins` tracking `main` past what pinned `Hyprland`
-  ships) — nothing flags this drift before mock fails.
-  Open: no automated check for the class exists yet across any other package pair.
-  (BUG-0056)
+- `update-versions.py` now exits cleanly (130) on Ctrl+C instead of a raw traceback.
+  (BUG-0072, closed)
+- Decision: the drift check (`lib.validation.validate_dependency_drift()`) is
+  offline and degrading — it reads only local submodule git state via the existing
+  `lib.gitmodules.get_tag_commit()`, and skips silently (no warning) when a
+  submodule is uninitialized or the tag isn't fetched locally, so CI and fresh
+  clones stay green. It warns rather than errors: a commit-tracked package being
+  ahead of a pinned sibling is common and often correct — the point is making the
+  drift visible, not blocking on it. (BUG-0056, closed)
 
 ## Testing
 

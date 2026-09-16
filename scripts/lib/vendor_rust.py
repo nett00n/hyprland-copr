@@ -65,11 +65,12 @@ def generate(
             capture_output=True,
             text=True,
             timeout=10,
+            check=False,
         )
         if check.returncode != 0:
             raise VendorError(f"cargo check failed: {check.stderr.strip()}")
-    except FileNotFoundError:
-        raise VendorError("'cargo' not found in PATH")
+    except FileNotFoundError as e:
+        raise VendorError("'cargo' not found in PATH") from e
 
     # Handle Rust subdirectory if specified
     rust_subdir = pkg_meta.get("build", {}).get("rust_subdir", "")

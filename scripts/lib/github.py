@@ -193,8 +193,8 @@ def build_changelog(
     notes: list[str] = []
     body = release_info.get("body") if release_info else None
     if body:
-        for line in body.splitlines():
-            line = line.strip()
+        for raw_line in body.splitlines():
+            line = raw_line.strip()
             if not line or line.startswith("#"):
                 continue
             if line.startswith(("- ", "* ", "• ")):

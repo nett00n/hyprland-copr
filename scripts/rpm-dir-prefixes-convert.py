@@ -28,9 +28,8 @@ def iter_file_lists(data: dict) -> Iterator[list]:
     for pkg in packages.values():
         if "files" in pkg:
             yield pkg["files"]
-        if devel := pkg.get("devel"):
-            if "files" in devel:
-                yield devel["files"]
+        if (devel := pkg.get("devel")) and "files" in devel:
+            yield devel["files"]
 
 
 def collect_replacements(data: dict, reverse: bool) -> dict[str, str]:
@@ -111,4 +110,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

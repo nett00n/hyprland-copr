@@ -59,8 +59,8 @@ def get_ignored_files(config: dict) -> set[str]:
     try:
         ignore_str = config["ignore"]
         # Parse the ignore block (each line is a filename)
-        for line in ignore_str.strip().split("\n"):
-            line = line.strip()
+        for raw_line in ignore_str.strip().split("\n"):
+            line = raw_line.strip()
             if line:
                 ignored.add(line)
     except Exception as e:
@@ -206,4 +206,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

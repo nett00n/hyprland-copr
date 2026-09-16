@@ -16,6 +16,7 @@ Environment variables:
 """
 
 import os
+import sys
 
 from lib import build_db
 from lib.cache import compute_input_hashes
@@ -145,14 +146,18 @@ def show_plan(
 
 
 if __name__ == "__main__":
-    package = os.environ.get("PACKAGE", "")
-    skip_packages_arg = os.environ.get("SKIP_PACKAGES", "")
-    copr_repo = os.environ.get("COPR_REPO", "")
-    force_packages: set[str] = set()
-    if env_flag("FORCE_REBUILD"):
-        force_packages = (
-            {n.strip() for n in package.split(",") if n.strip()}
-            if package
-            else set(get_packages())
-        )
-    show_plan(package, skip_packages_arg, copr_repo, force_packages=force_packages)
+    try:
+        package = os.environ.get("PACKAGE", "")
+        skip_packages_arg = os.environ.get("SKIP_PACKAGES", "")
+        copr_repo = os.environ.get("COPR_REPO", "")
+        force_packages: set[str] = set()
+        if env_flag("FORCE_REBUILD"):
+            force_packages = (
+                {n.strip() for n in package.split(",") if n.strip()}
+                if package
+                else set(get_packages())
+            )
+        show_plan(package, skip_packages_arg, copr_repo, force_packages=force_packages)
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

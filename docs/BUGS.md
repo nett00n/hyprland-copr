@@ -153,54 +153,11 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
   too. Cosmetic only -- both forms are valid RPM spec syntax -- but inconsistent with the
   rest of the file [P3/D2]
 
-- #BUG-0056 a `depends_on` package on `auto_update.release_type: latest-commit`
-  (e.g. `hyprland-plugins`) can silently outrun a tag-pinned dependency (`Hyprland`
-  at `v0.56.2`): upstream's `722f15a` (2026-09-05) chased Hyprland's unreleased
-  `main` API (`window->presentation()/metadata()/backend()`, `WindowPresentation.hpp`,
-  `WINDOW_STATE_PINNED`, `S*RenderData`), which doesn't exist in the packaged 0.56.2
-  headers, and mock failed on all three chroots (fedora-43/44/45-x86_64, runs 76-78)
-  before anyone noticed. Nothing in `make validate-packages`/`stage-validate` flags a
-  `latest-commit` package tracking a compositor API ahead of a sibling package's
-  pinned version -- the drift is only caught by mock actually failing to compile.
-  Fixed for now by pinning `hyprland-plugins` to `00862ca` ("hyprpm: add pin for
-  0.56.2", `pinned-commit`) -- the first candidate tried, `faf5ef1`, turned out to
-  already carry two more rounds of the same drift (`keybinds/Manager.hpp` replacing
-  `managers/KeybindManager.hpp`, `g_layoutManager` drag targets), only surfacing once
-  `glslang-devel` was also fixed and the build got further; `00862ca` was verified by
-  checking every `hyprland/src/...` header it includes against the `v0.56.2` tag tree
-  directly, since upstream's own `hyprpm.toml` pin hash for 0.56.2 has since been
-  rewritten and no longer resolves. Unpin back to `latest-commit` once Hyprland 0.57
-  is packaged. Also fixed in the same pass, both pre-existing and independent of the
-  version pin: `hyprland-devel` was missing `Requires: glslang-devel`/`lua-devel` for
-  headers (`ShaderLoader.hpp`, `LuaBindings.hpp`) it ships but doesn't declare
-  (fixed via `Hyprland`'s new `devel.requires`, which every future `hyprland-devel`
-  consumer now inherits); and `hyprland-plugins`' `files:` glob
-  (`%{_prefix}/lib/libhypr*.so`) never matched `libborders-plus-plus.so`/
-  `libcsgo-vulkan-fix.so` (non-`libhypr*`-named), so a clean build would have failed
-  rpmbuild's unpackaged-files check -- this had never been hit before because no
-  `hyprland-plugins` mock build in `build-report.db` had ever reached that far. What
-  remains: no automated check for the `latest-commit`-outruns-a-pinned-`depends_on`
-  class of drift across any other package pair [P2/D3]
-- #BUG-0089 vendoring is triggered by `build_requires` containing `golang`/`cargo`
-  (`lib/vendor.py:26-38`, two sources of truth with packages.yaml's Source1 + `tar xf
-  %{SOURCE1}`, which must be hand-added and isn't cross-validated) -> silent breakage
-  if the pair drifts. No cross-validation exists in `validate-packages.py` or
-  `lib/validation.py` today [P2/D2]
 - #BUG-0092 vendor stage's `log` field is missing from 5 skip paths, not just the
   "tarball already exists" one: `stage-vendor.py:72` (config skip), `:92`
   (not-vendored), `:104` (spec failed), `:132` (tarball exists), `:144` (vendor-store
   hit) -> inconsistent stage rows. Decide first whether a `log` pointing at an empty
   file is better than `NULL` for the report renderer [P2/D1]
-- #BUG-0097 no scalar-type validation for `packages.yaml` -- nothing checks that
-  a YAML scalar loaded from `packages.yaml` has the type the code assumes.
-  `lib/validation.py:11`'s `REQUIRED_FIELDS` checks presence only, so
-  `version: 1.9` (a float) passed both validators until it was found by hand and
-  fixed 2026-08-28 (see `docs/CHANGELOG.md`). Add a field->type table to
-  `lib/validation.py` (`version: str`, `release: int`, `url: str`,
-  `source.commit.full: str`) and reject mismatches. The `str()` wrappers now
-  littering ~15 call sites are compensation for the absence of this check and can
-  start coming out once it exists -- which is why this should land before
-  BUG-0093's `TypedDict` work, not after [P2/D2]
 
 ### Makefile
 
@@ -210,40 +167,6 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
   *worse off* than before: they survive on disk with no DB row pointing at them
   anymore. Fix needs a glob-and-unlink plus `regenerate_repo_metadata` per touched
   target, or dnf metadata goes stale [P2/D2]
-
-### Scripts
-
-- #BUG-0072 Ctrl+C is handled inconsistently across the scripts. Confirmed by hand: the
-  long-running orchestration scripts already catch it cleanly --
-  `full-cycle.py:851-853`, `stage-mock.py:441`, `stage-copr.py:306`, `stage-srpm.py:225`,
-  `stage-vendor.py:231`, `stage-spec.py:321`, `stage-validate.py:173`,
-  `refresh-checksums.py:120` and `pkg-build-pop.py:54` all wrap
-  `main()` in `except KeyboardInterrupt: print(...); sys.exit(130)`. And the
-  Makefile layer around them propagates a SIGINT correctly too: the
-  `PIPELINE_LOCK_FILE` flock (`Makefile:151-153`) is scoped to the holding
-  fd, so it releases itself the instant the shell exits, no manual cleanup
-  needed; and `_full-cycle-matrix`'s per-chroot loop (`Makefile` `for v in
-  $(MATRIX_ORDERED_VERSIONS) ... || { overall=1; ... }`) does NOT swallow a
-  Ctrl+C into "chroot marked failed, loop continues" as the `||` shape might
-  suggest -- verified with a standalone repro (`sleep 5 || { ...}` in a
-  three-iteration loop, SIGINT sent to the whole process group mid-sleep):
-  bash re-raises SIGINT on itself and the whole non-interactive script dies
-  outright, `||` notwithstanding, so the remaining matrix chroots are never
-  attempted after an interrupt. What's missing: 16 other top-level scripts
-  have no `KeyboardInterrupt` handler at all -- `db-artifacts.py`,
-  `delete-package.py`, `format-yaml.py`, `gather-requires.py`,
-  `gen-readme-shell.py`, `gen-report.py`, `gen-spec.py`, `list-tags.py`,
-  `pkg-log-analysis.py`, `rpm-dir-prefixes-convert.py`, `scaffold-package.py`,
-  `set-package-release.py`, `sort-yaml-lists.py`, `stage-show-plan.py`,
-  `update-versions.py`, `validate-packages.py`. Ctrl+C still stops them (default
-  Python behavior), but as a raw traceback and exit code 1, not the clean
-  message + exit(130) the rest of the pipeline gives. Most of these are short
-  and low-stakes, but `update-versions.py` is the one that actually matters:
-  it's the first stage of every `make update-daily` run and serially fetches
-  45+ submodules over the network (BUG-0100/-0101), so it's the
-  longest-lived script most likely to be interrupted mid-run. Fix: add the
-  same `except KeyboardInterrupt: sys.exit(130)` wrapper used everywhere
-  else, at minimum to `update-versions.py` [P3/D1]
 
 ## Tech debt
 
@@ -344,17 +267,6 @@ distro/arch-agnostic build-target work itself is tracked as a feature, not here 
   `stage-vendor.py:70-75`) -> extract to a small helper (the old `lib/stage_utils.py`
   was removed in the sqlite migration; a new home is needed, e.g.
   `lib/stage_common.py`) [P3/D1]
-- #BUG-0078 3 top-level scripts have zero tests (re-verified 2026-09-14; membership
-  changed -- `format-yaml.py`, `pkg-build-pop.py`, `set-package-release.py`, and
-  `sort-yaml-lists.py` are now tested and drop off this list (see docs/CHANGELOG.md
-  2026-09-14's Phase 1); `serve.py` is removed from the repo and drops off too):
-  `gather-requires.py`, `gen-readme-shell.py`, `list-tags.py`
-  -> violates the coverage rule now stated in `docs/CONTRIBUTING.md` "Code quality
-  and linting". `gather-requires`/`list-tags` have Makefile-level `make -n`
-  coverage only (`tests/integration/test_make_targets.py:583,605-616`), which never
-  executes the script; all three need a network or subprocess fake (`rpm`,
-  `git ls-remote`, or the jinja/git-log pair) rather than being pure-logic
-  [P2/D3]
 - #BUG-0083 `lib/log_analysis.py` is 1257 lines (re-verified 2026-08-18, grown from
   944) of ~41 copy-pasted `if m: issues.append(...); continue` blocks from
   hand-written regexes -> a data table of (regex, formatter) pairs would cut it by
@@ -449,16 +361,6 @@ Mechanical maintenance: pinning, renames, dead-code removal, small tooling addit
 
 ### Scripts
 
-- #BUG-0073 `scripts/validate-packages.py` (the `make pre-commit` gate) has no check
-  that `docs/BUGS.md`/`docs/TODO.md` are internally consistent -- specifically, that
-  no `#BUG-NNNN`/`#TODO-NNNN` ID is declared twice within a file (the exact class of
-  bug the 2026-08-18 grooming pass found and fixed by hand: two prior TODO entries had
-  been silently reallocated after deletion, and a stale `## Next` section was
-  duplicating BUG-0018). Add a check (either in `validate-packages.py` alongside its
-  other doc-adjacent checks, or a small standalone script wired into `make
-  pre-commit`/`make lint`) that greps both files for `^- #(BUG|TODO)-[0-9]+`
-  declarations and fails on any duplicate. Cheap and mechanical -- the exact grep is
-  already in the 2026-08-18 grooming session's verification steps [P2/D1]
 - #BUG-0074 `scripts/gen-spec.py` (446 lines) duplicates `lib/github.py`
   (`_cache_key`/`load_release_cache`/`save_release_cache`/`fetch_github_release`/
   `build_changelog`) and `lib/config.get_packager` almost verbatim, has no Makefile
@@ -485,18 +387,6 @@ Mechanical maintenance: pinning, renames, dead-code removal, small tooling addit
   external importers as of 2026-08-18, so this is now `_log_fn` only). Naturally
   resolved by BUG-0084 -- moving those modules to `run_cmd` removes the need for it
   [P3/D1]
-- #BUG-0096 ruff runs with default rules only -- no `ruff.toml`, so
-  `Makefile:287`'s `ruff check scripts/` runs `E,F` alone (same gap `mypy.ini`
-  just fixed for mypy). `--select ANN,A,B,PLW,PLR,RUF,SIM,TC,FBT,N` reports 231
-  findings, several of them variable-lifetime bugs rather than style: `PLW2901`
-  redefined-loop-name x8 (`format-yaml.py:54`, `gather-requires.py:56`,
-  `gen-spec.py:46,187,421`, `lib/config.py:62`, `lib/github.py:197`,
-  `lib/yaml_format.py:68`), `RUF059` unused unpacked variable x2 (`lib/copr.py:95`,
-  `update-versions.py:390`), `B904` x2, `B905` x1 (`gen-report.py:286`). Select
-  `B,RUF,SIM` plus the useful `PLW` subset; leave `PLR0912/0913/0915` and `N999`
-  off -- they fire on the known-large files already tracked as BUG-0076/-0083 and
-  on the intentional `kebab-case.py` script names [P3/D2]
-
 ### Docs
 
 - #BUG-0103 `docs/DOCS-DRIVEN-DEVELOPMENT.md`'s Rules require every top-level

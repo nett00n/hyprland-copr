@@ -8,6 +8,7 @@ Usage:
     python3 scripts/update-versions.py
 """
 
+import contextlib
 import sys
 from typing import NamedTuple
 
@@ -213,11 +214,9 @@ def main() -> None:
     # another's (see docs/BUGS.md).
     packages: dict = {}
     if PACKAGES_YAML.exists():
-        try:
+        # get_packages exits on error; ignore and continue
+        with contextlib.suppress(SystemExit):
             packages = get_packages(PACKAGES_YAML)
-        except SystemExit:
-            # get_packages exits on error; ignore and continue
-            pass
 
     # One physical checkout per submodule url. Three things are derived per
     # url below:
@@ -387,7 +386,7 @@ def main() -> None:
         if pkg_name in pkg_to_latest:
             latest_str: str | None = pkg_to_latest[pkg_name]
         elif pkg_name in pkg_to_commit_info:
-            full_hash, short, date, base = pkg_to_commit_info[pkg_name]
+            _full_hash, short, date, base = pkg_to_commit_info[pkg_name]
             prefix = base if base else "0"
             latest_str = f"{prefix}^{date}git{short}"
         else:
@@ -408,9 +407,7 @@ def main() -> None:
         print(f"warning: {PACKAGES_YAML} not found, skipping update", file=sys.stderr)
         return
 
-    changed = update_package_versions(
-        PACKAGES_YAML, pkg_to_latest, pkg_to_commit_info
-    )
+    changed = update_package_versions(PACKAGES_YAML, pkg_to_latest, pkg_to_commit_info)
     if changed:
         print("updated packages.yaml:", file=sys.stderr)
         for pkg, (old, new) in sorted(changed.items()):
@@ -425,4 +422,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

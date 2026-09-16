@@ -27,6 +27,7 @@ def detect_tarball_source_name(
                 capture_output=True,
                 text=True,
                 timeout=60,
+                check=False,
             )
             curl_proc.wait(timeout=5)
             if tar_result.returncode == 0:

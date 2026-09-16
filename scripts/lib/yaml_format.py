@@ -64,8 +64,8 @@ def get_ignored_files(config: dict) -> set[str]:
     try:
         ignore_str = config["ignore"]
         # Parse the ignore block (each line is a filename)
-        for line in ignore_str.strip().split("\n"):
-            line = line.strip()
+        for raw_line in ignore_str.strip().split("\n"):
+            line = raw_line.strip()
             if line:
                 ignored.add(line)
     except Exception as e:
@@ -92,10 +92,8 @@ def get_formatting_rules(config: dict) -> dict:
         indent_spaces = 4  # yamllint default
     elif isinstance(indentation, dict):
         spaces_value = indentation.get("spaces", 4)
-        if spaces_value == "auto":
-            indent_spaces = 4  # yamllint default when auto
-        else:
-            indent_spaces = spaces_value
+        # yamllint default when "auto"
+        indent_spaces = 4 if spaces_value == "auto" else spaces_value
     else:
         indent_spaces = 4  # yamllint default
 

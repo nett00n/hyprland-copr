@@ -57,6 +57,7 @@ def run_cmd(
             text=True,
             stdin=subprocess.DEVNULL,
             timeout=timeout,
+            check=False,
         )
     except FileNotFoundError:
         return False, "", f"command not found: {cmd[0]}"
@@ -105,6 +106,7 @@ def run_git(
             text=True,
             stdin=subprocess.DEVNULL,
             timeout=timeout,
+            check=False,
         )
     except FileNotFoundError:
         return subprocess.CompletedProcess(cmd, 127, "", "command not found: git")

@@ -97,7 +97,7 @@ def main() -> None:
     data = yaml.safe_load(PACKAGES_YAML.read_text())
     updated: list[tuple[str, int]] = []
 
-    for query, pkg_name in resolved_packages.items():
+    for _query, pkg_name in resolved_packages.items():
         if pkg_name not in data:
             sys.exit(f"error: package {pkg_name} not in packages.yaml")
 
@@ -116,10 +116,7 @@ def main() -> None:
     write_yaml_file(PACKAGES_YAML, data)
 
     # Print results
-    if lock:
-        status = "release_lock=true"
-    else:
-        status = "auto-increment enabled"
+    status = "release_lock=true" if lock else "auto-increment enabled"
 
     for pkg_name, old_release in updated:
         print(f"Set {pkg_name}: release={release_int}, {status}")
@@ -130,4 +127,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

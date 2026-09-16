@@ -90,6 +90,7 @@ def chroot_package_version(rpm_name: str, fedora_version: str) -> str | None:
             capture_output=True,
             text=True,
             timeout=60,
+            check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None

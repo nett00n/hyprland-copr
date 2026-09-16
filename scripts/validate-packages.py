@@ -9,6 +9,8 @@ a passing `make validate-packages` implies `make stage-validate` will pass too.
 
 Checks (see lib.validation for the authoritative list):
 - Required fields, source.archives, build system, devel-file placement
+- packages.yaml scalar types match FIELD_TYPES (#BUG-0097)
+- Vendoring trigger cross-checked against declared source/prep (#BUG-0089)
 - Self-dependencies and invalid depends_on references (case-insensitive)
 - Unknown auto_update.release_type values
 - fedora: override blocks only using the supported `skip` key
@@ -17,6 +19,10 @@ Checks (see lib.validation for the authoritative list):
   ignore = dirty
 - A package's url not matching any .gitmodules submodule url (warning only)
 - .env assigning the same key more than once (warning only; #BUG-0052)
+- No duplicate/misfiled #BUG-/#TODO- tracker IDs in docs/BUGS.md, docs/TODO.md
+  (#BUG-0073)
+- A commit-tracked package outrunning a tag-pinned depends_on (warning only,
+  offline; #BUG-0056)
 """
 
 import sys
@@ -24,18 +30,20 @@ import sys
 from lib.gitmodules import parse_gitmodules
 from lib.paths import GITMODULES
 from lib.validation import (
+    validate_dependency_drift,
     validate_env_file,
     validate_gitmodules,
     validate_group_membership,
     validate_no_duplicate_urls,
     validate_package,
     validate_submodule_url_resolution,
+    validate_tracker_ids,
 )
 from lib.yaml_utils import get_packages
 
 
 def main() -> None:
-    """Validate packages.yaml and .gitmodules."""
+    """Validate packages.yaml and .gitmodules. #COPR-0010"""
     packages = get_packages()
 
     errors: list[str] = []
@@ -64,6 +72,11 @@ def main() -> None:
 
     warnings.extend(f"  {w}" for w in validate_env_file())
 
+    errors.extend(f"  {e}" for e in validate_tracker_ids())
+
+    _, drift_warnings = validate_dependency_drift(packages)
+    warnings.extend(f"  {w}" for w in drift_warnings)
+
     if errors:
         print("error: packages.yaml validation failed:", file=sys.stderr)
         for err in errors:
@@ -88,4 +101,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

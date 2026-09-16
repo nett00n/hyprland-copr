@@ -145,10 +145,7 @@ def run_for_package(
 
     # In async mode: successful submission → "unknown" state (build is pending)
     # In sync mode: successful submission → "success", failed submission → "failed"
-    if ok:
-        state = "unknown" if not synchronous else "success"
-    else:
-        state = "failed"
+    state = ("unknown" if not synchronous else "success") if ok else "failed"
 
     # copr-cli prints "Created builds: N" as soon as the build is submitted,
     # before it starts watching/waiting -- so a build_id can exist even when

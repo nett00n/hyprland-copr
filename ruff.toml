@@ -1,0 +1,20 @@
+# #BUG-0096: widen make lint-ruff (`ruff check scripts/`) beyond the default E,F.
+#
+# An explicit `select` replaces ruff's default rule set entirely, so E4/E7/E9/F
+# (ruff's own defaults) are re-listed here alongside the added B/RUF/SIM/PLW --
+# omitting them would silently disable what Makefile:lint-ruff already runs today.
+[lint]
+select = ["E4", "E7", "E9", "F", "B", "RUF", "SIM", "PLW"]
+ignore = [
+    # Fires only on lib/build_db.py's deliberate module-level connection
+    # singleton -- not a bug there.
+    "PLW0603",
+    # Its autofix would delete the `# noqa: E402` directives scripts/delete-package.py
+    # needs for flake8 (make lint-flake), which ruff can't see -- the two linters
+    # don't share a suppression namespace.
+    "RUF100",
+]
+
+# PLR0912/0913/0915 and N999 are deliberately left off the select above (not just
+# ignored): PLR031x fire on files already tracked as tech debt (BUG-0076/-0083),
+# and N999 fires on the intentional kebab-case.py script names.

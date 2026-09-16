@@ -30,11 +30,12 @@ def generate(
             capture_output=True,
             text=True,
             timeout=10,
+            check=False,
         )
         if result.returncode != 0:
             raise VendorError(f"go check failed: {result.stderr.strip()}")
-    except FileNotFoundError:
-        raise VendorError("'go' not found in PATH (or not executable)")
+    except FileNotFoundError as e:
+        raise VendorError("'go' not found in PATH (or not executable)") from e
 
     _log = _log_fn(log_path)
 

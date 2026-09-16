@@ -78,7 +78,7 @@ def collect_packages(
     names: list[str] = []
     seen: set[str] = set()
     for stage_data in stages.values():
-        for name in (stage_data or {}).keys():
+        for name in stage_data or {}:
             if name not in seen:
                 names.append(name)
                 seen.add(name)
@@ -283,7 +283,7 @@ def main() -> None:
     sections = get_sections(repo)
 
     env = create_jinja_env()
-    for fmt, out in zip(formats, outputs):
+    for fmt, out in zip(formats, outputs, strict=True):
         template_name = (
             f"readme-{fmt}.md.j2" if fmt != "full-report" else "full-report.md.j2"
         )
@@ -306,4 +306,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

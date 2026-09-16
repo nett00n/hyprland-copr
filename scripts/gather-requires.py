@@ -42,6 +42,7 @@ def rpm(*args: str) -> list[str]:
         capture_output=True,
         text=True,
         timeout=30,
+        check=False,
     )
     if result.returncode != 0:
         raise RuntimeError(f"rpm command failed: {result.stderr}")
@@ -52,8 +53,8 @@ def bare_sonames(rpm_path: str) -> list[str]:
     """Return unique bare SONAME entries from an RPM's Requires."""
     seen: set[str] = set()
     out: list[str] = []
-    for line in rpm("-qp", "--requires", rpm_path):
-        line = line.strip()
+    for raw_line in rpm("-qp", "--requires", rpm_path):
+        line = raw_line.strip()
         if _BARE_SONAME.match(line) and line not in seen:
             seen.add(line)
             out.append(line)
@@ -102,4 +103,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

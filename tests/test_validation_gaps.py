@@ -14,6 +14,11 @@ from lib.validation import (
     validate_package,
     validate_no_duplicate_urls,
     validate_submodule_url_resolution,
+    validate_field_types,
+    validate_vendoring,
+    validate_tracker_ids,
+    validate_dependency_drift,
+    FIELD_TYPES,
     REQUIRED_FIELDS,
     VALID_BUILD_SYSTEMS,
 )
@@ -621,3 +626,292 @@ class TestValidateSubmoduleUrlResolution:
         assert any("Waybar-git" in w for w in warnings)
         assert any("hyprland-plugins-git" in w for w in warnings)
         assert not any("ok-pkg" in w for w in warnings)
+
+
+class TestValidateFieldTypes:
+    """Test validate_field_types (#BUG-0097): packages.yaml scalar type table."""
+
+    def test_correctly_typed_package_is_clean(self):
+        meta = {
+            "version": "1.0",
+            "release": 3,
+            "build": {"system": "cmake", "no_lto": True, "prep": ["echo hi"]},
+            "depends_on": ["a", "b"],
+            "rpm": {"no_debug_package": False},
+        }
+        errors, warnings = validate_field_types("pkg", meta)
+        assert errors == []
+        assert warnings == []
+
+    def test_float_version_is_rejected(self):
+        """The original BUG-0097 repro: `version: 1.9` parsed as a YAML float."""
+        meta = {"version": 1.9}
+        errors, _ = validate_field_types("pkg", meta)
+        assert any("version" in e and "float" in e for e in errors)
+
+    def test_bool_release_is_rejected(self):
+        """bool is an int subclass in Python -- must be rejected explicitly."""
+        meta = {"release": True}
+        errors, _ = validate_field_types("pkg", meta)
+        assert any("release" in e and "bool" in e for e in errors)
+
+    def test_int_release_is_accepted(self):
+        meta = {"release": 4}
+        errors, _ = validate_field_types("pkg", meta)
+        assert errors == []
+
+    def test_string_where_bool_expected_is_rejected(self):
+        meta = {"build": {"no_lto": "true"}}
+        errors, _ = validate_field_types("pkg", meta)
+        assert any("build.no_lto" in e for e in errors)
+
+    def test_string_where_list_expected_is_rejected(self):
+        meta = {"depends_on": "not-a-list"}
+        errors, _ = validate_field_types("pkg", meta)
+        assert any("depends_on" in e for e in errors)
+
+    def test_missing_field_is_not_checked(self):
+        """Absence is REQUIRED_FIELDS' job, not this one's."""
+        errors, _ = validate_field_types("pkg", {})
+        assert errors == []
+
+    def test_null_field_is_not_checked(self):
+        meta = {"version": None}
+        errors, _ = validate_field_types("pkg", meta)
+        assert errors == []
+
+    def test_nested_dotted_path_is_checked(self):
+        meta = {"source": {"commit": {"date": 20240101}}}
+        errors, _ = validate_field_types("pkg", meta)
+        assert any("source.commit.date" in e for e in errors)
+
+    def test_field_types_table_has_no_fedora_keys(self):
+        """fedora: override blocks are validated separately, not by this table."""
+        assert not any(k.startswith("fedora") for k in FIELD_TYPES)
+
+
+class TestValidateVendoring:
+    """Test validate_vendoring (#BUG-0089): cross-check the vendoring trigger."""
+
+    def _vendored_meta(self, **overrides):
+        meta = {
+            "build_requires": ["cargo"],
+            "source": {"archives": ["https://example.com/x.tar.gz#/x.tar.gz",
+                                     "x-1.0-vendor.tar.gz"]},
+            "build": {"prep": []},
+        }
+        meta.update(overrides)
+        return meta
+
+    def test_consistent_vendored_package_is_clean(self):
+        errors, warnings = validate_vendoring("x", self._vendored_meta())
+        assert errors == []
+        assert warnings == []
+
+    def test_non_vendored_package_is_clean(self):
+        meta = {
+            "build_requires": ["cmake"],
+            "source": {"archives": ["https://example.com/x.tar.gz"]},
+        }
+        errors, warnings = validate_vendoring("x", meta)
+        assert errors == []
+        assert warnings == []
+
+    def test_trigger_without_archive_is_error(self):
+        """golang/cargo in build_requires but no -vendor.tar.gz archive."""
+        meta = {
+            "build_requires": ["golang"],
+            "source": {"archives": ["https://example.com/x.tar.gz"]},
+        }
+        errors, _ = validate_vendoring("x", meta)
+        assert any("no '*-vendor.tar.gz'" in e for e in errors)
+
+    def test_archive_without_trigger_is_error(self):
+        """A vendor archive declared with no golang/cargo build_requires."""
+        meta = {
+            "build_requires": ["cmake"],
+            "source": {"archives": ["https://example.com/x.tar.gz",
+                                     "x-1.0-vendor.tar.gz"]},
+        }
+        errors, _ = validate_vendoring("x", meta)
+        assert any("never runs" in e for e in errors)
+
+    def test_prep_source_index_within_range_is_clean(self):
+        meta = self._vendored_meta(
+            build={"prep": ["pushd cli", "tar xf %{SOURCE1}", "popd"]}
+        )
+        errors, _ = validate_vendoring("x", meta)
+        assert errors == []
+
+    def test_prep_source_index_out_of_range_is_error(self):
+        """A hand-written prep referencing a SOURCEn beyond the archives list."""
+        meta = self._vendored_meta(
+            build={"prep": ["tar xf %{SOURCE5}"]}
+        )
+        errors, _ = validate_vendoring("x", meta)
+        assert any("SOURCE5" in e for e in errors)
+
+
+class TestValidateTrackerIds:
+    """Test validate_tracker_ids (#BUG-0073): duplicate/misfiled tracker IDs."""
+
+    def test_clean_files_produce_no_errors(self, tmp_path):
+        docs = tmp_path / "docs"
+        docs.mkdir()
+        (docs / "BUGS.md").write_text("# Bugs\n\n- #BUG-0001 one\n- #BUG-0002 two\n")
+        (docs / "TODO.md").write_text("# Todo\n\n- #TODO-0001 one\n")
+
+        assert validate_tracker_ids(tmp_path) == []
+
+    def test_duplicate_id_within_a_file_is_an_error(self, tmp_path):
+        docs = tmp_path / "docs"
+        docs.mkdir()
+        (docs / "BUGS.md").write_text(
+            "# Bugs\n\n- #BUG-0001 one\n- #BUG-0002 two\n- #BUG-0001 again\n"
+        )
+        (docs / "TODO.md").write_text("# Todo\n")
+
+        errors = validate_tracker_ids(tmp_path)
+        assert len(errors) == 1
+        assert "BUG-0001" in errors[0]
+        assert "2 times" in errors[0]
+        assert "3, 5" in errors[0]  # 1-indexed line numbers of both declarations
+
+    def test_misfiled_prefix_is_an_error(self, tmp_path):
+        docs = tmp_path / "docs"
+        docs.mkdir()
+        (docs / "BUGS.md").write_text("# Bugs\n\n- #TODO-0001 misfiled\n")
+        (docs / "TODO.md").write_text("# Todo\n")
+
+        errors = validate_tracker_ids(tmp_path)
+        assert any("wrong prefix" in e for e in errors)
+
+    def test_missing_files_produce_no_errors(self, tmp_path):
+        assert validate_tracker_ids(tmp_path) == []
+
+    def test_real_repo_trackers_are_consistent(self):
+        """Regression pin: the actual docs/BUGS.md + docs/TODO.md stay clean."""
+        assert validate_tracker_ids(paths.ROOT) == []
+
+
+class TestValidateDependencyDrift:
+    """Test validate_dependency_drift (#BUG-0056): offline commit-vs-tag drift."""
+
+    def _gitmodules(self, tmp_path, url, rel_path="submodules/dep"):
+        (tmp_path / ".gitmodules").write_text(
+            f'[submodule "dep"]\n\tpath = {rel_path}\n\turl = {url}\n'
+        )
+        (tmp_path / rel_path).mkdir(parents=True)
+
+    def test_no_gitmodules_is_clean(self, tmp_path):
+        all_packages = {"a": {"auto_update": {"release_type": "pinned-commit"}}}
+        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        assert errors == []
+        assert warnings == []
+
+    def test_uninitialized_submodule_is_silently_skipped(self, tmp_path):
+        """No warning when the dependency's submodule dir doesn't exist."""
+        (tmp_path / ".gitmodules").write_text(
+            '[submodule "dep"]\n\tpath = submodules/dep\n'
+            "\turl = https://example.com/dep\n"
+        )
+        all_packages = {
+            "a": {
+                "auto_update": {"release_type": "pinned-commit"},
+                "source": {"commit": {"date": "20260901"}},
+                "depends_on": ["dep"],
+            },
+            "dep": {"url": "https://example.com/dep", "version": "1.0"},
+        }
+        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        assert errors == []
+        assert warnings == []
+
+    @patch("lib.validation.get_tag_commit")
+    def test_newer_commit_than_pinned_dependency_warns(self, mock_get_tag, tmp_path):
+        self._gitmodules(tmp_path, "https://example.com/dep")
+        mock_get_tag.return_value = ("abc123", "abc123", "20260101", None)
+
+        all_packages = {
+            "a": {
+                "auto_update": {"release_type": "pinned-commit"},
+                "source": {"commit": {"date": "20260901"}},
+                "depends_on": ["dep"],
+            },
+            "dep": {"url": "https://example.com/dep", "version": "1.0"},
+        }
+        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        assert errors == []
+        assert len(warnings) == 1
+        assert "'a'" in warnings[0]
+        assert "dep" in warnings[0]
+
+    @patch("lib.validation.get_tag_commit")
+    def test_older_commit_than_pinned_dependency_is_clean(self, mock_get_tag, tmp_path):
+        self._gitmodules(tmp_path, "https://example.com/dep")
+        mock_get_tag.return_value = ("abc123", "abc123", "20260901", None)
+
+        all_packages = {
+            "a": {
+                "auto_update": {"release_type": "pinned-commit"},
+                "source": {"commit": {"date": "20260101"}},
+                "depends_on": ["dep"],
+            },
+            "dep": {"url": "https://example.com/dep", "version": "1.0"},
+        }
+        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        assert errors == []
+        assert warnings == []
+
+    @patch("lib.validation.get_tag_commit")
+    def test_unresolvable_tag_is_silently_skipped(self, mock_get_tag, tmp_path):
+        self._gitmodules(tmp_path, "https://example.com/dep")
+        mock_get_tag.return_value = None
+
+        all_packages = {
+            "a": {
+                "auto_update": {"release_type": "pinned-commit"},
+                "source": {"commit": {"date": "20260901"}},
+                "depends_on": ["dep"],
+            },
+            "dep": {"url": "https://example.com/dep", "version": "1.0"},
+        }
+        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        assert errors == []
+        assert warnings == []
+
+    def test_non_commit_tracked_package_is_skipped(self, tmp_path):
+        """Only latest-commit/pinned-commit packages are checked."""
+        all_packages = {
+            "a": {
+                "auto_update": {"release_type": "latest-tag"},
+                "source": {"commit": {"date": "20260901"}},
+                "depends_on": ["dep"],
+            },
+            "dep": {"url": "https://example.com/dep", "version": "1.0"},
+        }
+        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        assert errors == []
+        assert warnings == []
+
+    @patch("lib.validation.get_tag_commit")
+    def test_commit_tracked_dependency_is_skipped(self, mock_get_tag, tmp_path):
+        """Comparing two commit-tracked packages isn't this check's job."""
+        self._gitmodules(tmp_path, "https://example.com/dep")
+
+        all_packages = {
+            "a": {
+                "auto_update": {"release_type": "pinned-commit"},
+                "source": {"commit": {"date": "20260901"}},
+                "depends_on": ["dep"],
+            },
+            "dep": {
+                "auto_update": {"release_type": "latest-commit"},
+                "url": "https://example.com/dep",
+                "version": "1.0",
+            },
+        }
+        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        assert errors == []
+        assert warnings == []
+        mock_get_tag.assert_not_called()

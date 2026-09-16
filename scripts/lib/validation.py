@@ -6,9 +6,10 @@ Validates package.yaml entries, group membership, and .gitmodules conventions.
 import re
 from pathlib import Path
 
-from lib.gitmodules import parse_gitmodules
+from lib.gitmodules import get_tag_commit, parse_gitmodules
 from lib.paths import ROOT
-from lib.version import RELEASE_TYPES
+from lib.vendor import needs_vendoring
+from lib.version import COMMIT_TRACKED_RELEASE_TYPES, RELEASE_TYPES
 from lib.yaml_utils import SUPPORTED_FEDORA_VERSIONS, load_groups_yaml
 
 REQUIRED_FIELDS = ["version", "license", "summary", "description", "url"]
@@ -25,6 +26,234 @@ VALID_BUILD_SYSTEMS = {
 DEVEL_INDICATORS = ["%{_includedir}", "pkgconfig/", "/cmake/"]
 VALID_FEDORA_OVERRIDE_KEYS = {"skip"}
 
+# #BUG-0097: dotted-path -> expected scalar type for packages.yaml fields, derived
+# from packages.yaml.example. Only fields actually present are checked (absence is
+# REQUIRED_FIELDS' job); `bool` is checked exactly (never accepted where `int` is
+# expected -- Python's bool is an int subclass) and vice versa. Nested `dict`/list
+# *contents* (e.g. fedora: override keys) are validated by their own dedicated
+# checks elsewhere in this module.
+FIELD_TYPES: dict[str, type] = {
+    "version": str,
+    "release": int,
+    "license": str,
+    "summary": str,
+    "description": str,
+    "url": str,
+    "source_dir": str,
+    "source_name": str,
+    "auto_update.release_type": str,
+    "build.system": str,
+    "build.go_subdir": str,
+    "build.save_files": str,
+    "build.no_lto": bool,
+    "build.prep": list,
+    "build.commands": list,
+    "build.install": list,
+    "build.configure_flags": list,
+    "build.cargo_update": list,
+    "build_requires": list,
+    "depends_on": list,
+    "requires": list,
+    "recommends": list,
+    "files": list,
+    "devel.files": list,
+    "devel.requires": list,
+    "rpm.buildarch": str,
+    "rpm.no_debug_package": bool,
+    "source.archives": list,
+    "source.bundled_deps": list,
+    "source.name": str,
+    "source.source_dir": str,
+    "source.commit.full": str,
+    "source.commit.date": str,
+}
+
+_MISSING = object()
+
+
+def _get_dotted(meta: dict, path: str) -> object:
+    """Walk a dotted path through nested dicts, returning _MISSING if absent."""
+    obj: object = meta
+    for part in path.split("."):
+        if not isinstance(obj, dict) or part not in obj:
+            return _MISSING
+        obj = obj[part]
+    return obj
+
+
+def validate_field_types(name: str, meta: dict) -> tuple[list[str], list[str]]:
+    """#BUG-0097: reject packages.yaml scalars whose type doesn't match FIELD_TYPES.
+
+    Presence is REQUIRED_FIELDS' job; this only checks fields that are present.
+    A YAML scalar like `version: 1.9` (a float) or `release: true` (a bool) used
+    to pass validation silently -- see docs/CHANGELOG.md 2026-08-28.
+
+    Args:
+        name: Package name (unused, kept for signature symmetry with validate_package)
+        meta: Package metadata dict
+
+    Returns:
+        Tuple of (errors, warnings) as lists of strings -- always empty warnings
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    for path, expected in FIELD_TYPES.items():
+        value = _get_dotted(meta, path)
+        if value is _MISSING or value is None:
+            continue
+        if expected is int:
+            valid = isinstance(value, int) and not isinstance(value, bool)
+        elif expected is bool:
+            valid = isinstance(value, bool)
+        else:
+            valid = isinstance(value, expected)
+        if not valid:
+            errors.append(
+                f"{path}: expected {expected.__name__}, got "
+                f"{type(value).__name__} ({value!r})"
+            )
+
+    return errors, warnings
+
+
+_SOURCE_INDEX_RE = re.compile(r"%\{SOURCE(\d+)\}")
+
+
+def validate_vendoring(name: str, meta: dict) -> tuple[list[str], list[str]]:
+    """#BUG-0089: cross-validate the vendoring trigger against its declared source.
+
+    Three sources of truth exist for a package's Go/Rust vendor tarball and none
+    were compared: `build_requires` containing golang/cargo (lib.vendor.needs_vendoring,
+    which drives whether stage-vendor actually runs), a `*-vendor.tar.gz` entry in
+    `source.archives` (what the generated spec's Source1+ line points at), and a
+    hand-written `build.prep`'s `%{SOURCEn}` reference (auto-injected by
+    stage-spec.py when absent, but never checked against the archives list when
+    present, e.g. aylurs-gtk-shell's `pushd cli` variant).
+
+    Args:
+        name: Package name (unused, kept for signature symmetry with validate_package)
+        meta: Package metadata dict
+
+    Returns:
+        Tuple of (errors, warnings) as lists of strings -- always empty warnings
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    archives = (meta.get("source") or {}).get("archives") or []
+    has_vendor_archive = any(
+        isinstance(a, str) and a.endswith("-vendor.tar.gz") for a in archives
+    )
+    triggers_vendor = needs_vendoring(meta)
+
+    if triggers_vendor and not has_vendor_archive:
+        errors.append(
+            "build_requires triggers vendoring (golang/cargo) but source.archives "
+            "has no '*-vendor.tar.gz' entry -- the vendor stage's tarball is "
+            "referenced by nothing"
+        )
+    if has_vendor_archive and not triggers_vendor:
+        errors.append(
+            "source.archives declares a vendor tarball but build_requires has no "
+            "golang/cargo -- the vendor stage never runs, so it's never produced"
+        )
+
+    prep = (meta.get("build") or {}).get("prep") or []
+    for cmd in prep:
+        if not isinstance(cmd, str):
+            continue
+        for m in _SOURCE_INDEX_RE.finditer(cmd):
+            idx = int(m.group(1))
+            if idx >= len(archives):
+                errors.append(
+                    f"build.prep references %{{SOURCE{idx}}} but source.archives "
+                    f"has only {len(archives)} entr{'y' if len(archives) == 1 else 'ies'}"
+                )
+
+    return errors, warnings
+
+
+def validate_dependency_drift(
+    all_packages: dict, root_path: Path = ROOT
+) -> tuple[list[str], list[str]]:
+    """#BUG-0056: warn when a commit-tracked package outruns a tag-pinned dependency.
+
+    Offline and degrading by design: reads only local submodule git state via the
+    existing lib.gitmodules.get_tag_commit(), and skips silently -- no warning --
+    whenever a submodule isn't initialized or its dependency's tag isn't fetched
+    locally, so CI and fresh clones stay green. This is the drift class that broke
+    `hyprland-plugins` (pinned-commit, tracking Hyprland's unreleased main API)
+    against `Hyprland` (pinned to v0.56.2) across all three chroots (runs 76-78)
+    before mock caught it -- nothing flagged it beforehand.
+
+    Warning-level, not error: a commit-tracked package being ahead of a pinned
+    sibling is common and often correct (that's what `latest-commit` is for); the
+    point is making the drift visible, not blocking on it.
+
+    Args:
+        all_packages: Dict of all packages
+        root_path: Path to repository root (submodules live under
+            `root_path / "submodules"`, resolved via .gitmodules)
+
+    Returns:
+        Tuple of (errors, warnings) as lists of strings -- always empty errors
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    gitmodules_path = root_path / ".gitmodules"
+    if not gitmodules_path.exists():
+        return errors, warnings
+
+    modules = parse_gitmodules(gitmodules_path)
+    url_to_path = {mod["url"]: mod.get("path") for mod in modules}
+    pkg_by_lower = {k.lower(): k for k in all_packages}
+
+    for name, meta in sorted(all_packages.items()):
+        release_type = (meta.get("auto_update") or {}).get("release_type")
+        if release_type not in COMMIT_TRACKED_RELEASE_TYPES:
+            continue
+        commit = meta.get("source", {}).get("commit")
+        a_date = commit.get("date") if isinstance(commit, dict) else None
+        if not a_date:
+            continue
+
+        for dep in meta.get("depends_on") or []:
+            dep_key = pkg_by_lower.get(str(dep).lower())
+            if dep_key is None:
+                continue
+            dep_meta = all_packages[dep_key]
+            dep_release_type = (dep_meta.get("auto_update") or {}).get("release_type")
+            if dep_release_type in COMMIT_TRACKED_RELEASE_TYPES:
+                continue  # only compare against tag/version-pinned siblings
+
+            dep_path = url_to_path.get(dep_meta.get("url", ""))
+            if not dep_path:
+                continue
+            repo = root_path / dep_path
+            if not repo.is_dir():
+                continue  # submodule not initialized
+
+            dep_version = str(dep_meta.get("version", ""))
+            if not dep_version:
+                continue
+            tag_info = get_tag_commit(repo, f"v{dep_version}")
+            if tag_info is None:
+                continue  # tag not resolvable locally
+            _, _, dep_date, _ = tag_info
+
+            if a_date > dep_date:
+                warnings.append(
+                    f"'{name}' source.commit.date ({a_date}) is newer than "
+                    f"depends_on '{dep_key}' pinned tag v{dep_version} ({dep_date}) "
+                    "-- possible API drift ahead of a pinned dependency (the class "
+                    "of bug that broke hyprland-plugins against Hyprland, "
+                    "runs 76-78)"
+                )
+
+    return errors, warnings
+
 
 def validate_package(
     name: str, meta: dict, all_packages: dict
@@ -40,6 +269,8 @@ def validate_package(
     - depends_on references valid packages
     - build_requires references covered by depends_on
     - fedora: overrides use valid versions and keys
+    - packages.yaml scalar types match FIELD_TYPES (#BUG-0097)
+    - vendoring trigger cross-checked against declared source (#BUG-0089)
 
     Args:
         name: Package name
@@ -56,6 +287,14 @@ def validate_package(
     for field in REQUIRED_FIELDS:
         if not meta.get(field):
             errors.append(f"missing required field: {field}")
+
+    type_errors, type_warnings = validate_field_types(name, meta)
+    errors.extend(type_errors)
+    warnings.extend(type_warnings)
+
+    vendor_errors, vendor_warnings = validate_vendoring(name, meta)
+    errors.extend(vendor_errors)
+    warnings.extend(vendor_warnings)
 
     # source.archives required
     if not meta.get("source", {}).get("archives"):
@@ -151,13 +390,17 @@ def validate_package(
             base = req[:-6].lower()
         elif req.startswith("pkgconfig(") and req.endswith(")"):
             base = req[10:-1].lower()
-        if base and base in pkg_by_lower and pkg_by_lower[base] != name:
-            if base not in depends_on_lower:
-                resolved = pkg_by_lower[base]
-                warnings.append(
-                    f"build_requires '{req}' references local package '{resolved}'"
-                    " — add to depends_on"
-                )
+        if (
+            base
+            and base in pkg_by_lower
+            and pkg_by_lower[base] != name
+            and base not in depends_on_lower
+        ):
+            resolved = pkg_by_lower[base]
+            warnings.append(
+                f"build_requires '{req}' references local package '{resolved}'"
+                " — add to depends_on"
+            )
 
     # Validate fedora: override blocks
     fedora_blocks = meta.get("fedora", {})
@@ -377,3 +620,57 @@ def validate_env_file(root_path: Path = ROOT) -> list[str]:
             )
 
     return warnings
+
+
+_TRACKER_ID_RE = re.compile(r"^- #(BUG|TODO)-(\d+)\b")
+_TRACKER_FILES = {"BUGS.md": "BUG", "TODO.md": "TODO"}
+
+
+def validate_tracker_ids(root_path: Path = ROOT) -> list[str]:
+    """#BUG-0073: error when a `#BUG-`/`#TODO-` ID is declared twice, or misfiled.
+
+    Greps `docs/BUGS.md`/`docs/TODO.md` for `^- #(BUG|TODO)-NNNN` declarations --
+    the exact grep the 2026-08-18 grooming pass used by hand after finding two
+    TODO entries silently reallocated after deletion, and a stale `## Next`
+    section duplicating BUG-0018. Also flags an ID filed under the wrong file's
+    prefix (a `#TODO-` line in BUGS.md or vice versa).
+
+    Args:
+        root_path: Path to repository root (files are read from
+            `root_path / "docs" / "BUGS.md"` and `.../TODO.md`)
+
+    Returns:
+        List of error strings, one per duplicate or misfiled ID. Empty when
+        both files are absent or internally consistent.
+    """
+    errors: list[str] = []
+
+    for filename, expected_prefix in _TRACKER_FILES.items():
+        path = root_path / "docs" / filename
+        if not path.exists():
+            continue
+
+        lines_by_id: dict[str, list[int]] = {}
+        for lineno, line in enumerate(path.read_text().splitlines(), start=1):
+            match = _TRACKER_ID_RE.match(line)
+            if not match:
+                continue
+            prefix, number = match.group(1), match.group(2)
+            tracker_id = f"{prefix}-{number}"
+            if prefix != expected_prefix:
+                errors.append(
+                    f"docs/{filename}:{lineno}: '#{tracker_id}' has the wrong "
+                    f"prefix for this file (expected #{expected_prefix}-NNNN)"
+                )
+                continue
+            lines_by_id.setdefault(tracker_id, []).append(lineno)
+
+        for tracker_id, linenos in lines_by_id.items():
+            if len(linenos) > 1:
+                line_list = ", ".join(str(n) for n in linenos)
+                errors.append(
+                    f"docs/{filename}: '#{tracker_id}' declared {len(linenos)} "
+                    f"times (lines {line_list})"
+                )
+
+    return errors

@@ -107,7 +107,7 @@ def check_copr_credentials() -> bool:
     Returns:
         True if credentials are valid, False otherwise
     """
-    ok, stdout, stderr = run_cmd(["copr-cli", "whoami"])
+    ok, _stdout, stderr = run_cmd(["copr-cli", "whoami"])
     if not ok:
         print("error: COPR credentials are invalid or missing", file=sys.stderr)
         print(

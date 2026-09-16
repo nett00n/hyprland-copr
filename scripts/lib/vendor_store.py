@@ -53,7 +53,9 @@ def _tool_version(language: str) -> str:
     if cmd is None:
         return ""
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=10, check=False
+        )
         return (result.stdout or result.stderr).strip()
     except (OSError, subprocess.TimeoutExpired):
         return ""

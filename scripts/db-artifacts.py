@@ -16,6 +16,7 @@ Usage:
 
 import argparse
 import shutil
+import sys
 from functools import cmp_to_key
 from pathlib import Path
 from typing import Any
@@ -216,4 +217,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)

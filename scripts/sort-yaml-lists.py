@@ -122,7 +122,7 @@ def _process_dict_body(
             sorted_children = _sort_block(children)
             if sorted_children != children:
                 sorted_keys_out.append(key_name)
-            processed.append([first_line] + sorted_children)
+            processed.append([first_line, *sorted_children])
         elif (
             _block_is_dict(children, child_indent)
             and key_name not in PRESERVE_DICT_ORDER
@@ -130,7 +130,7 @@ def _process_dict_body(
             sorted_children = _process_dict_body(
                 children, child_indent, sorted_keys_out
             )
-            processed.append([first_line] + sorted_children)
+            processed.append([first_line, *sorted_children])
         else:
             processed.append(entry)
 
@@ -283,4 +283,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nUser Interrupted.", file=sys.stderr)
+        sys.exit(130)
