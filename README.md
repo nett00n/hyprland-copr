@@ -26,6 +26,12 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-09-17
+
+Added Packages:
+- LambDock
+- SwayOSD
+
 ### 2026-08-10
 
 Added Packages:
@@ -62,10 +68,6 @@ Updated packages:
 Big automation update. SQLite is now used to store build-related info instead of plain yaml file.
 Not so simple, but yaml was really messed up and limits architechture.
 New packages: snappy switcher, mpvpaper.
-
-### 2026-06-30
-
-New packages: snappy switcher, mpvpaper. Added a `recommends` field to package config.
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/blog/NEWS.md)
 

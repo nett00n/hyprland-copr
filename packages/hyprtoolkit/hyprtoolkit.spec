@@ -1,7 +1,7 @@
 
 Name:           hyprtoolkit
 Version:        0.6.0
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        A modern C++ Wayland-native GUI toolkit
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprtoolkit
@@ -69,6 +69,6 @@ Development files for hyprtoolkit.
 %{_libdir}/pkgconfig/hyprtoolkit.pc
 
 %changelog
-* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.6.0-4
+* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.6.0-5
 
 - version: bump to 0.6.0
