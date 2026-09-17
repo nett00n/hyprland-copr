@@ -6,8 +6,10 @@ Validates package.yaml entries, group membership, and .gitmodules conventions.
 import re
 from pathlib import Path
 
-from lib.gitmodules import get_tag_commit, parse_gitmodules
+from lib.detection import BUILD_SYSTEM_MARKERS, matches_build_system
+from lib.gitmodules import get_tag_commit, get_tag_info, parse_gitmodules
 from lib.paths import ROOT
+from lib.subprocess_utils import run_git
 from lib.vendor import needs_vendoring
 from lib.version import COMMIT_TRACKED_RELEASE_TYPES, RELEASE_TYPES
 from lib.yaml_utils import SUPPORTED_FEDORA_VERSIONS, load_groups_yaml
@@ -251,6 +253,92 @@ def validate_dependency_drift(
                     "of bug that broke hyprland-plugins against Hyprland, "
                     "runs 76-78)"
                 )
+
+    return errors, warnings
+
+
+def validate_build_system_drift(
+    all_packages: dict, root_path: Path = ROOT
+) -> tuple[list[str], list[str]]:
+    """#COPR-0010, #BUG-0105: warn when a submodule's tagged tree no longer ships the
+    build_system marker packages.yaml declares.
+
+    Offline and degrading by design, same contract as validate_dependency_drift():
+    reads only local submodule git state (a tag's committed tree via `git ls-tree`,
+    never the checked-out working tree, so a stale checkout can't produce a false
+    verdict) and skips silently -- no warning, no error -- whenever a submodule isn't
+    initialized or the version tag isn't resolvable locally. This is the drift class
+    that broke `hyprland-protocols` 0.7.1 (upstream's `meson -> cmake` commit dropped
+    meson.build; packages.yaml still said `build.system: meson`) across all three
+    chroots (runs 136-138) before mock caught it -- nothing flagged it beforehand.
+
+    Warning-level, not error: a false positive here (e.g. a repo that ships both
+    meson.build and CMakeLists.txt) must never block `make update-daily`'s nightly
+    Copr publish.
+
+    Args:
+        all_packages: Dict of all packages
+        root_path: Path to repository root (submodules live under
+            `root_path / "submodules"`, resolved via .gitmodules)
+
+    Returns:
+        Tuple of (errors, warnings) as lists of strings -- always empty errors
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    gitmodules_path = root_path / ".gitmodules"
+    if not gitmodules_path.exists():
+        return errors, warnings
+
+    modules = parse_gitmodules(gitmodules_path)
+    url_to_path = {mod["url"]: mod.get("path") for mod in modules}
+
+    for name, meta in sorted(all_packages.items()):
+        declared = (meta.get("build") or {}).get("system")
+        if declared not in BUILD_SYSTEM_MARKERS:
+            continue  # unknown/unset system, or one with no marker to check
+
+        pkg_path = url_to_path.get(meta.get("url", ""))
+        if not pkg_path:
+            continue
+        repo = root_path / pkg_path
+        if not repo.is_dir():
+            continue  # submodule not initialized
+
+        commit = meta.get("source", {}).get("commit")
+        ref: str | None = None
+        if isinstance(commit, dict) and commit.get("hash"):
+            ref = commit["hash"]
+        else:
+            version = str(meta.get("version", ""))
+            if version:
+                tag_info = get_tag_info(repo, version)
+                ref = tag_info["tag"] if tag_info else None
+        if not ref:
+            continue  # tag/commit not resolvable locally
+
+        tree = run_git("ls-tree", "--name-only", ref, cwd=repo, timeout=10)
+        if tree.returncode != 0:
+            continue  # ref not resolvable locally
+        entries = set(tree.stdout.split())
+        if matches_build_system(declared, entries):
+            continue
+
+        detected = next(
+            (
+                system
+                for system in BUILD_SYSTEM_MARKERS
+                if system != declared and matches_build_system(system, entries)
+            ),
+            None,
+        )
+        detail = f" -- looks like '{detected}' now" if detected else ""
+        warnings.append(
+            f"'{name}' declares build.system: {declared} but {ref}'s tree doesn't "
+            f"match it{detail} -- upstream may have switched build systems (fix "
+            "build.system in packages.yaml)"
+        )
 
     return errors, warnings
 

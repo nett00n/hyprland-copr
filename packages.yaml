@@ -430,7 +430,7 @@ hypridle:
   - '%{_datadir}/hypr/hypridle.conf'
   - '%{_userunitdir}/hypridle.service'
   license: BSD-3-Clause
-  release: 11
+  release: 12
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -538,7 +538,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 14
+  release: 15
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -666,7 +666,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -678,9 +678,10 @@ hyprland-plugins:
   version: 0.56.0^20260805git00862ca
 hyprland-protocols:
   build:
-    system: meson
+    system: cmake
   build_requires:
-  - meson
+  - cmake
+  - ninja-build
   description: |
     hyprland-protocols
 
@@ -704,7 +705,7 @@ hyprland-protocols:
   - '%doc README.md'
   - '%license LICENSE'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   rpm:
     no_debug_package: true
   source:
@@ -1149,7 +1150,7 @@ hyprsunset:
   - '%{_prefix}/bin/hyprsunset'
   - '%{_prefix}/lib/systemd/user/hyprsunset.service'
   license: BSD-3-Clause
-  release: 11
+  release: 12
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -2202,7 +2203,7 @@ xdg-desktop-portal-hyprland:
   - '%{_libexecdir}/%{name}'
   - '%{_userunitdir}/%{name}.service'
   license: BSD-3-Clause
-  release: 10
+  release: 11
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'

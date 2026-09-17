@@ -4,7 +4,7 @@
 
 Name:           hyprland-plugins
 Version:        0.56.0^20260805git00862ca
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
@@ -79,6 +79,6 @@ sed -i \
 %{_prefix}/lib/libhyprfocus.so
 
 %changelog
-* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.56.0^20260805git00862ca-3
+* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.56.0^20260805git00862ca-4
 
 - hyprpm: add pin for 0.56.2

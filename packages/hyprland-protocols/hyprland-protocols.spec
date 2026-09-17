@@ -2,13 +2,14 @@
 
 Name:           hyprland-protocols
 Version:        0.7.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Wayland protocol extensions for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-protocols
 Source0:        https://github.com/hyprwm/hyprland-protocols/archive/refs/tags/v0.7.1.tar.gz#/hyprland-protocols-0.7.1.tar.gz
 
-BuildRequires:  meson
+BuildRequires:  cmake
+BuildRequires:  ninja-build
 
 
 
@@ -42,11 +43,11 @@ Commit:            cc9a8fd253bdc00f48a967ecf4828211ef08751f
 %autosetup -p1
 
 %build
-%meson
-%meson_build
+%cmake
+%cmake_build
 
 %install
-%meson_install
+%cmake_install
 
 %files
 %doc README.md
@@ -64,6 +65,6 @@ Development files for hyprland-protocols.
 %{_datadir}/pkgconfig/%{name}.pc
 
 %changelog
-* Tue Sep 15 2026 nett00n <copr@nett00n.org> - 0.7.1-1
+* Tue Sep 15 2026 nett00n <copr@nett00n.org> - 0.7.1-2
 
 - VERSION: bump to 0.7.1

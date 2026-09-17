@@ -39,6 +39,18 @@ pass too.
   `prep`'s `%{SOURCEn}` reference stays inside the declared `archives` range.
   (#BUG-0089)
 
+... and, offline and degrading by design (skips silently rather than warning
+whenever a submodule isn't initialized or its ref isn't resolvable locally, so CI
+and fresh clones stay green), as **warnings**:
+
+- A commit-tracked package (`latest-commit`/`pinned-commit`) whose
+  `source.commit.date` is newer than a tag/version-pinned `depends_on` sibling's
+  pinned tag date — possible API drift ahead of a pinned dependency. (#BUG-0056)
+- A package's declared `build.system` whose marker file (`CMakeLists.txt`,
+  `meson.build`, ...) is missing from its submodule's tagged/pinned-commit tree
+  (read via `git ls-tree`, never the working tree) — upstream likely switched build
+  systems; names the system it looks like instead. (#BUG-0105)
+
 `ruff check scripts/` (`make lint-ruff`) additionally selects `B,RUF,SIM,PLW` beyond
 the default `E,F` (see `ruff.toml`), catching real variable-lifetime bugs (redefined
 loop variables, unused unpacked variables) alongside style. (#BUG-0096)
@@ -81,6 +93,21 @@ loop variables, unused unpacked variables) alongside style. (#BUG-0096)
   Proposed: `TypedDict`/`Literal` aliases for the stage-results row, package metadata,
   and `compute_input_hashes()`'s dict, plus typed loader wrappers at YAML/JSON trust
   boundaries. (BUG-0093, BUG-0094, BUG-0095)
+- Decision: `validate_build_system_drift()` checks only whether the *declared*
+  system's own marker is present — not whether it's the *first* marker
+  `detect_build_system()` would return — so a repo that ships both `meson.build`
+  and `CMakeLists.txt` mid-migration is never a false positive. It resolves the ref
+  to inspect the same way as `validate_dependency_drift()`: the version tag via
+  `get_tag_info()`, falling back to `source.commit.hash` for commit-tracked
+  packages. `lib.detection.BUILD_SYSTEM_MARKERS` (data) plus
+  `lib.detection.matches_build_system()` (the one function that evaluates it) is
+  the single source of truth both this and `detect_build_system()` (used at
+  `scaffold-package.py` time) call — no second copy of the marker logic to drift
+  out of sync. A marker entry that is itself a tuple means "all of these
+  together" (autotools' `configure`+`Makefile.in` pairing, distinct from
+  `configure.ac` alone). Warning-level rather than an error, same rationale as
+  BUG-0056: a false positive must never block `make update-daily`'s nightly Copr
+  publish. (BUG-0105)
 
 ## Testing
 
@@ -88,7 +115,9 @@ loop variables, unused unpacked variables) alongside style. (#BUG-0096)
 
 - `tests/test_validate_packages_script.py`, `tests/test_validation_gaps.py`
   (covers `validate_tracker_ids`, `FIELD_TYPES`/`validate_field_types`,
-  `validate_vendoring`, `validate_dependency_drift`).
+  `validate_vendoring`, `validate_dependency_drift`, `validate_build_system_drift`).
+- `tests/test_detection.py` (covers `BUILD_SYSTEM_MARKERS` staying in sync with
+  `detect_build_system()`).
 - `tests/test_gather_requires.py`, `tests/test_list_tags.py`,
   `tests/test_gen_readme_shell.py`.
 

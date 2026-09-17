@@ -60,22 +60,46 @@ def detect_license(repo: Path) -> str | None:
     return None
 
 
+# Marker files that identify each build system, in the same priority order
+# detect_build_system() checks them. A tuple element that is itself a tuple means
+# "all of these together" (autotools' legacy configure+Makefile.in pairing, as
+# opposed to the modern configure.ac-alone case); every other element means "this
+# file alone".
+#
+# This is the single source of truth behind both detect_build_system() (below) and
+# lib.validation.validate_build_system_drift() -- which warns in `make
+# validate-packages` when a submodule's tagged tree no longer ships the marker its
+# packages.yaml build.system declares (#BUG-0105). Add a system here, in priority
+# order, and both call sites pick it up.
+BUILD_SYSTEM_MARKERS: dict[str, tuple[str | tuple[str, ...], ...]] = {
+    "cmake": ("CMakeLists.txt",),
+    "meson": ("meson.build",),
+    "cargo": ("Cargo.toml",),
+    "autotools": ("configure.ac", ("configure", "Makefile.in")),
+    "python": ("pyproject.toml", "setup.py"),
+    "make": ("Makefile",),
+    "golang": ("go.mod",),
+}
+
+
+def matches_build_system(system: str, entries: set[str]) -> bool:
+    """True if `entries` (a set of top-level filenames) satisfies `system`'s
+    BUILD_SYSTEM_MARKERS -- an unknown `system` (no marker entry) never matches."""
+
+    def marker_present(marker: str | tuple[str, ...]) -> bool:
+        if isinstance(marker, tuple):
+            return all(name in entries for name in marker)
+        return marker in entries
+
+    return any(marker_present(m) for m in BUILD_SYSTEM_MARKERS.get(system, ()))
+
+
 def detect_build_system(repo: Path) -> str | None:
     """Detect build system from repo root."""
-    if (repo / "CMakeLists.txt").exists():
-        return "cmake"
-    if (repo / "meson.build").exists():
-        return "meson"
-    if (repo / "Cargo.toml").exists():
-        return "cargo"
-    if (repo / "configure.ac").exists():
-        return "autotools"
-    if (repo / "configure").exists() and (repo / "Makefile.in").exists():
-        return "autotools"
-    if (repo / "pyproject.toml").exists() or (repo / "setup.py").exists():
-        return "python"
-    if (repo / "Makefile").exists():
-        return "make"
+    entries = {p.name for p in repo.iterdir()} if repo.is_dir() else set()
+    for system in BUILD_SYSTEM_MARKERS:
+        if matches_build_system(system, entries):
+            return system
     return None
 
 

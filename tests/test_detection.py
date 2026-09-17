@@ -13,6 +13,8 @@ from lib.detection import (
     extract_cmake_info,
     extract_meson_info,
     extract_version,
+    matches_build_system,
+    BUILD_SYSTEM_MARKERS,
 )
 
 
@@ -163,6 +165,43 @@ class TestDetectBuildSystem:
         repo = tmp_path / "repo"
         repo.mkdir()
         assert detect_build_system(repo) is None
+
+
+class TestBuildSystemMarkers:
+    """BUILD_SYSTEM_MARKERS + matches_build_system() are the single source of truth
+    behind both detect_build_system() (below) and
+    lib.validation.validate_build_system_drift() (#BUG-0105) -- one table, one
+    matcher, no way for the two call sites to independently drift apart."""
+
+    def test_every_marker_is_detected_as_its_own_system(self, tmp_path):
+        """Each system's first marker, alone in a repo, round-trips through
+        detect_build_system()."""
+        for system, markers in BUILD_SYSTEM_MARKERS.items():
+            repo = tmp_path / system
+            repo.mkdir()
+            first = markers[0]
+            for name in (first if isinstance(first, tuple) else (first,)):
+                (repo / name).write_text("")
+            assert detect_build_system(repo) == system
+
+    def test_cmake_and_meson_are_disjoint_marker_sets(self):
+        """The hyprland-protocols 0.7.1 case: these two must never share a marker,
+        or a meson->cmake switch (or vice versa) would go undetected."""
+        assert not set(BUILD_SYSTEM_MARKERS["cmake"]) & set(
+            BUILD_SYSTEM_MARKERS["meson"]
+        )
+
+    def test_autotools_requires_both_configure_and_makefile_in(self):
+        """The compound marker (configure alone is not autotools -- e.g. an
+        already-generated tree from another build system entirely) is an
+        all-of-tuple, not two independent OR options."""
+        assert not matches_build_system("autotools", {"configure"})
+        assert not matches_build_system("autotools", {"Makefile.in"})
+        assert matches_build_system("autotools", {"configure", "Makefile.in"})
+        assert matches_build_system("autotools", {"configure.ac"})
+
+    def test_unknown_system_never_matches(self):
+        assert not matches_build_system("FIXME", {"CMakeLists.txt"})
 
 
 class TestExtractCmakeInfo:

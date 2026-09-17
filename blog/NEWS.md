@@ -4,6 +4,11 @@ Maintainer's microblog, informal. Newest first, dated `## YYYY-MM-DD` entries, o
 paragraph each. README shows the most recent entries - see
 `scripts/gen-report.py:get_recent_news()`.
 
+## 2026-09-17
+Added Packages:
+- LambDock
+- SwayOSD
+
 ## 2026-08-10
 Added Packages:
 - Ironbar

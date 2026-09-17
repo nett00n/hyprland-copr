@@ -23,6 +23,8 @@ Checks (see lib.validation for the authoritative list):
   (#BUG-0073)
 - A commit-tracked package outrunning a tag-pinned depends_on (warning only,
   offline; #BUG-0056)
+- A declared build.system whose marker file (CMakeLists.txt, meson.build, ...) is
+  missing from the submodule's tagged tree (warning only, offline; #BUG-0105)
 """
 
 import sys
@@ -30,6 +32,7 @@ import sys
 from lib.gitmodules import parse_gitmodules
 from lib.paths import GITMODULES
 from lib.validation import (
+    validate_build_system_drift,
     validate_dependency_drift,
     validate_env_file,
     validate_gitmodules,
@@ -76,6 +79,9 @@ def main() -> None:
 
     _, drift_warnings = validate_dependency_drift(packages)
     warnings.extend(f"  {w}" for w in drift_warnings)
+
+    _, build_system_warnings = validate_build_system_drift(packages)
+    warnings.extend(f"  {w}" for w in build_system_warnings)
 
     if errors:
         print("error: packages.yaml validation failed:", file=sys.stderr)

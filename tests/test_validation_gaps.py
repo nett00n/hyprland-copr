@@ -18,6 +18,7 @@ from lib.validation import (
     validate_vendoring,
     validate_tracker_ids,
     validate_dependency_drift,
+    validate_build_system_drift,
     FIELD_TYPES,
     REQUIRED_FIELDS,
     VALID_BUILD_SYSTEMS,
@@ -915,3 +916,144 @@ class TestValidateDependencyDrift:
         assert errors == []
         assert warnings == []
         mock_get_tag.assert_not_called()
+
+
+class TestValidateBuildSystemDrift:
+    """Test validate_build_system_drift (#BUG-0105): offline build-system drift.
+
+    The hyprland-protocols 0.7.1 case: packages.yaml said `meson`, upstream's
+    v0.7.1 tag ships CMakeLists.txt with no meson.build.
+    """
+
+    def _gitmodules(self, tmp_path, url, rel_path="submodules/pkg"):
+        (tmp_path / ".gitmodules").write_text(
+            f'[submodule "pkg"]\n\tpath = {rel_path}\n\turl = {url}\n'
+        )
+        (tmp_path / rel_path).mkdir(parents=True)
+
+    def _pkg(self, system="meson", version="0.7.1"):
+        return {
+            "pkg": {
+                "url": "https://example.com/pkg",
+                "version": version,
+                "build": {"system": system},
+            }
+        }
+
+    def test_no_gitmodules_is_clean(self, tmp_path):
+        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        assert errors == []
+        assert warnings == []
+
+    def test_uninitialized_submodule_is_silently_skipped(self, tmp_path):
+        (tmp_path / ".gitmodules").write_text(
+            '[submodule "pkg"]\n\tpath = submodules/pkg\n'
+            "\turl = https://example.com/pkg\n"
+        )
+        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        assert errors == []
+        assert warnings == []
+
+    def test_no_matching_gitmodules_url_is_skipped(self, tmp_path):
+        self._gitmodules(tmp_path, "https://example.com/other")
+        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        assert errors == []
+        assert warnings == []
+
+    def test_unknown_build_system_is_skipped(self, tmp_path):
+        self._gitmodules(tmp_path, "https://example.com/pkg")
+        errors, warnings = validate_build_system_drift(
+            self._pkg(system="FIXME"), tmp_path
+        )
+        assert errors == []
+        assert warnings == []
+
+    @patch("lib.validation.run_git")
+    @patch("lib.validation.get_tag_info")
+    def test_unresolvable_tag_is_silently_skipped(
+        self, mock_get_tag_info, mock_run_git, tmp_path
+    ):
+        self._gitmodules(tmp_path, "https://example.com/pkg")
+        mock_get_tag_info.return_value = None
+
+        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        assert errors == []
+        assert warnings == []
+        mock_run_git.assert_not_called()
+
+    @patch("lib.validation.run_git")
+    @patch("lib.validation.get_tag_info")
+    def test_marker_present_is_clean(self, mock_get_tag_info, mock_run_git, tmp_path):
+        self._gitmodules(tmp_path, "https://example.com/pkg")
+        mock_get_tag_info.return_value = {"tag": "v0.7.1"}
+        mock_run_git.return_value = MagicMock(
+            returncode=0, stdout="README.md\nmeson.build\nLICENSE\n"
+        )
+
+        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        assert errors == []
+        assert warnings == []
+
+    @patch("lib.validation.run_git")
+    @patch("lib.validation.get_tag_info")
+    def test_missing_marker_warns_and_names_detected_system(
+        self, mock_get_tag_info, mock_run_git, tmp_path
+    ):
+        """The hyprland-protocols 0.7.1 case: meson.build gone, CMakeLists.txt added."""
+        self._gitmodules(tmp_path, "https://example.com/pkg")
+        mock_get_tag_info.return_value = {"tag": "v0.7.1"}
+        mock_run_git.return_value = MagicMock(
+            returncode=0, stdout="README.md\nCMakeLists.txt\nLICENSE\n"
+        )
+
+        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        assert errors == []
+        assert len(warnings) == 1
+        assert "'pkg'" in warnings[0]
+        assert "meson" in warnings[0]
+        assert "cmake" in warnings[0]
+
+    @patch("lib.validation.run_git")
+    @patch("lib.validation.get_tag_info")
+    def test_both_markers_present_is_clean(
+        self, mock_get_tag_info, mock_run_git, tmp_path
+    ):
+        """A repo mid-migration shipping both files is not drift."""
+        self._gitmodules(tmp_path, "https://example.com/pkg")
+        mock_get_tag_info.return_value = {"tag": "v0.7.1"}
+        mock_run_git.return_value = MagicMock(
+            returncode=0, stdout="meson.build\nCMakeLists.txt\n"
+        )
+
+        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        assert errors == []
+        assert warnings == []
+
+    @patch("lib.validation.run_git")
+    def test_pinned_commit_uses_commit_hash_not_tag(self, mock_run_git, tmp_path):
+        """A commit-tracked package resolves via source.commit.hash, no tag lookup."""
+        self._gitmodules(tmp_path, "https://example.com/pkg")
+        mock_run_git.return_value = MagicMock(returncode=0, stdout="CMakeLists.txt\n")
+
+        packages = self._pkg(system="cmake")
+        packages["pkg"]["source"] = {"commit": {"hash": "abc123"}}
+        del packages["pkg"]["version"]
+
+        errors, warnings = validate_build_system_drift(packages, tmp_path)
+        assert errors == []
+        assert warnings == []
+        mock_run_git.assert_called_once()
+        assert mock_run_git.call_args[0][2] == "abc123"
+
+    @patch("lib.validation.run_git")
+    @patch("lib.validation.get_tag_info")
+    def test_git_ls_tree_failure_is_silently_skipped(
+        self, mock_get_tag_info, mock_run_git, tmp_path
+    ):
+        self._gitmodules(tmp_path, "https://example.com/pkg")
+        mock_get_tag_info.return_value = {"tag": "v0.7.1"}
+        mock_run_git.return_value = MagicMock(returncode=128, stdout="")
+
+        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        assert errors == []
+        assert warnings == []

@@ -23,6 +23,14 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- BUG-0105 COPR-0010: `hyprland-protocols` fixed (`build.system: meson -> cmake`,
+  matching upstream 0.7.1's `meson -> cmake` switch) after mock failures on all
+  three chroots. `make validate-packages` gained
+  `lib.validation.validate_build_system_drift` -- warns, offline via `git ls-tree`
+  on the package's pinned tag/commit, when a submodule's tagged tree no longer
+  ships the marker file (`CMakeLists.txt`, `meson.build`, ...) its declared
+  `build.system` implies, naming the system it looks like instead.
+  `lib.detection.BUILD_SYSTEM_MARKERS` backs both this and `detect_build_system`.
 - BUG-0104: `stage-copr.py`'s skip reason for a package whose SRPM was never
   built at `CANONICAL_FEDORA_VERSION` (the target it actually submits from,
   per [COPR-0018](features/COPR-0018-single-spec-single-srpm.md)) rendered as

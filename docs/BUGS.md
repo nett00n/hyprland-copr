@@ -5,7 +5,7 @@ New-feature ideas go in `docs/TODO.md` instead (promoted to a `docs/features/` d
 once substantial). GitHub issues are for reporter-facing items (someone else's
 bug/request); this file is the maintainer's own log and may cite issue numbers.
 Entries are deleted when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are
-never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0105**.
+never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0106**.
 
 This file absorbed `docs/TODO.md`'s former defect/debt/chore entries on 2026-09-15
 when `docs/` adopted `docs/DOCS-DRIVEN-DEVELOPMENT.md` — see `docs/ID-MIGRATION.md`
@@ -158,6 +158,25 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
   (not-vendored), `:104` (spec failed), `:132` (tarball exists), `:144` (vendor-store
   hit) -> inconsistent stage rows. Decide first whether a `log` pointing at an empty
   file is better than `NULL` for the report renderer [P2/D1]
+
+- #BUG-0105 `hyprland-protocols` 0.7.1 shipped upstream's `meson -> cmake` switch
+  (commit `3f3860b`, `meson.build` deleted, `CMakeLists.txt` added) but
+  `packages.yaml` still declared `build.system: meson`, so `%meson`/`%meson_build`
+  ran against a tree with no `meson.build` -> `mock` failed with "Neither source
+  directory nor build directory contain a build file meson.build" on all three
+  chroots (runs 136-138), and cascaded to 5 dependents
+  (`Hyprland`/`hypridle`/`hyprsunset`/`xdg-desktop-portal-hyprland`/
+  `hyprland-plugins`) via their skipped `mock` stage. Nothing flagged the drift
+  before mock did -- `detect_build_system()` (`lib/detection.py:63`) only ever runs
+  at `scaffold-package.py` package-creation time, never again after. Fixed the
+  package (`build.system: cmake`, `build_requires: [cmake, ninja-build]`) and added
+  `lib.validation.validate_build_system_drift` (`make validate-packages`, warning
+  only, offline via `git ls-tree` on the tagged/pinned commit -- see
+  [COPR-0010](features/COPR-0010-quality-gate.md)) to catch this class going
+  forward. What remains: it's warning-level so a silent false positive (a repo
+  shipping both marker files mid-migration) can't block `make update-daily`;
+  promoting it to an error is worth revisiting once it's run quiet for a while
+  [P3/D1]
 
 ### Makefile
 
