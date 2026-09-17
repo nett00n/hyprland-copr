@@ -135,6 +135,7 @@ New packages: snappy switcher, mpvpaper. Added a `recommends` field to package c
 - `gammastep` — Adjust the color temperature of your screen according to your surroundings. This may help your eyes hurt less if you are working in front of the screen at night.
 - `hyprland-per-window-layout` — Per-window keyboard layout daemon for Hyprland
 - `ironbar` — Customisable Wayland GTK4 bar written in Rust
+- `lambdock` — Wayland desktop dock customizable with GNU Guile Scheme
 - `mpvpaper` — A video wallpaper program for wlroots based wayland compositors.
 - `network-manager-applet` — Tray applet and an advanced network connection editor
 - `nnn` — n³ The unorthodox terminal file manager
@@ -144,6 +145,7 @@ New packages: snappy switcher, mpvpaper. Added a `recommends` field to package c
 - `satty` — Satty - Modern Screenshot Annotation
 - `snappy-switcher` — alt-tab switch window for wayland compositor
 - `swaybg` — Great utility if all you want is one simple static wallpaper
+- `swayosd` — A GTK based on screen display for keyboard shortcuts like caps-lock and volume
 - `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
 - `uwsm` — Universal Wayland Session Manager
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
@@ -166,7 +168,7 @@ New packages: snappy switcher, mpvpaper. Added a `recommends` field to package c
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-09-16
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-09-17
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->
