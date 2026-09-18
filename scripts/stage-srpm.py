@@ -188,7 +188,9 @@ def run_for_package(
     if path:
         # Absolute container path: /root/rpmbuild/SRPMS is a podman volume,
         # not under ROOT, so there's no repo-relative form to use.
-        build_db.record_artifact(path, "rpmbuild-volume", "srpm", pkg, target, ver)
+        build_db.record_artifact(
+            path, "rpmbuild-volume", "srpm", pkg, target, ver, arch="src"
+        )
     return True
 
 

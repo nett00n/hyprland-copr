@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from lib import build_db
-from lib.cache import hashes_match, _sha256, _package_config_hash, _dependencies_hashes, _patches_hashes
+from lib.cache import hashes_match, _sha256, _content_hash, _dependencies_hashes, _patches_hashes
 from lib.build_db import now_epoch
 from lib.yaml_utils import (
     find_package_name,
@@ -74,6 +74,83 @@ class TestHashesMatch:
         stored = {"hashes": None}
         new = {}
         assert hashes_match(stored, new) is False
+
+    def test_advisory_key_mismatch_still_matches(self):
+        """#BUG-0057, #BUG-0058: templates/generator are advisory -- a changed
+        value there alone must not fail the match.
+        """
+        stored = {"hashes": {"a": "hash1", "templates": "old", "generator": "old"}}
+        new = {"a": "hash1", "templates": "new", "generator": "new"}
+        assert hashes_match(stored, new) is True
+
+    def test_invalidating_key_mismatch_with_matching_advisory(self):
+        """An advisory match doesn't paper over a genuine invalidating mismatch."""
+        stored = {"hashes": {"a": "hash1", "templates": "same"}}
+        new = {"a": "hash2", "templates": "same"}
+        assert hashes_match(stored, new) is False
+
+    def test_removed_invalidating_key_forces_mismatch(self):
+        """#BUG-0098: a stored row with a since-removed invalidating key (e.g.
+        the old package_config) must mismatch once, not silently keep matching.
+        """
+        stored = {"hashes": {"a": "hash1", "package_config": "x"}}
+        new = {"a": "hash1"}
+        assert hashes_match(stored, new) is False
+
+    def test_new_advisory_key_with_no_prior_value_still_matches(self):
+        """A brand-new advisory key (e.g. generator, added after some rows were
+        already recorded) must not force a mismatch on rows that predate it.
+        """
+        stored = {"hashes": {"a": "hash1", "templates": "same"}}
+        new = {"a": "hash1", "templates": "same", "generator": "g1"}
+        assert hashes_match(stored, new) is True
+
+
+class TestStaleAdvisories:
+    """#BUG-0057, #BUG-0058."""
+
+    def test_no_staleness_when_unchanged(self):
+        from lib.cache import stale_advisories
+
+        stored = {"hashes": {"templates": "t1", "generator": "g1"}}
+        new = {"templates": "t1", "generator": "g1"}
+        assert stale_advisories(stored, new) == []
+
+    def test_stale_template_only(self):
+        from lib.cache import stale_advisories
+
+        stored = {"hashes": {"templates": "t1", "generator": "g1"}}
+        new = {"templates": "t2", "generator": "g1"}
+        assert stale_advisories(stored, new) == ["stale-template"]
+
+    def test_stale_generator_only(self):
+        from lib.cache import stale_advisories
+
+        stored = {"hashes": {"templates": "t1", "generator": "g1"}}
+        new = {"templates": "t1", "generator": "g2"}
+        assert stale_advisories(stored, new) == ["stale-generator"]
+
+    def test_both_stale(self):
+        from lib.cache import stale_advisories
+
+        stored = {"hashes": {"templates": "t1", "generator": "g1"}}
+        new = {"templates": "t2", "generator": "g2"}
+        assert stale_advisories(stored, new) == ["stale-template", "stale-generator"]
+
+    def test_missing_stored_advisory_key_is_not_reported_stale(self):
+        """A row from before the `generator` key existed has nothing to
+        compare against -- not stale, just unknown.
+        """
+        from lib.cache import stale_advisories
+
+        stored = {"hashes": {"templates": "t1"}}  # no "generator" key at all
+        new = {"templates": "t1", "generator": "g2"}
+        assert stale_advisories(stored, new) == []
+
+    def test_no_stored_hashes_at_all(self):
+        from lib.cache import stale_advisories
+
+        assert stale_advisories({}, {"templates": "t1"}) == []
 
 
 class TestFakeRepoFixtureDefault:
@@ -714,20 +791,25 @@ class TestCacheHelpers:
         hash2 = _sha256(b"content2")
         assert hash1 != hash2
 
-    def test_package_config_hash_deterministic(self):
-        """_package_config_hash should be deterministic."""
+    def test_content_hash_deterministic(self):
+        """_content_hash should be deterministic.
+
+        #BUG-0098: also the implementation _dependencies_hashes() now uses --
+        the formerly-separate _package_config_hash() was byte-identical and
+        has been removed.
+        """
         meta = {"build_requires": ["gcc"], "requires": ["glibc"]}
-        hash1 = _package_config_hash(meta)
-        hash2 = _package_config_hash(meta)
+        hash1 = _content_hash(meta)
+        hash2 = _content_hash(meta)
         assert hash1 == hash2
 
-    def test_package_config_hash_key_order_independent(self):
-        """_package_config_hash should be independent of key order."""
+    def test_content_hash_key_order_independent(self):
+        """_content_hash should be independent of key order."""
         meta1 = {"build_requires": ["gcc"], "requires": ["glibc"]}
         meta2 = {"requires": ["glibc"], "build_requires": ["gcc"]}
         # Both dicts are equivalent, so hashes should be same
-        hash1 = _package_config_hash(meta1)
-        hash2 = _package_config_hash(meta2)
+        hash1 = _content_hash(meta1)
+        hash2 = _content_hash(meta2)
         # Should normalize before hashing
         assert hash1 == hash2
 

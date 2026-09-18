@@ -11,45 +11,52 @@ audited without re-deriving state from logs.
 ## Behavior
 
 `build-report.db` (sqlite, gitignored) is the single source of truth for build state:
-three tables — `runs` (one row per invocation), `stage_results` (per-stage state,
-keyed by `(package, stage, target)`), `artifacts` (paths/sizes of every SRPM, vendor
-tarball, mock-built RPM, and log). `make db-usage`/`make db-prune [CONFIRM=1]` report
-and reclaim disk usage by package × target; `make db-shell` opens an interactive
-sqlite3 shell.
+`runs` (one row per invocation), `stage_results` (per-stage *current* state, keyed by
+`(package, stage, target)`), `stage_history` (append-only, keyed by
+`(package, stage, target, run_id)` — one row per attempt, never overwritten),
+`artifacts` (paths/sizes/`sha256`/`arch` of every SRPM, vendor tarball, mock-built
+RPM, and log). `make db-usage [VERIFY=1]`/`make db-prune [CONFIRM=1]` report and
+reclaim disk usage by package × target; `make db-shell` opens an interactive
+sqlite3 shell; `make db-export [FORMAT=yaml|json] [OUTPUT=path]` snapshots every
+table to a deterministic, sorted yaml/json file for offline diffing.
+
+`db-usage`/`db-prune`/`db-shell` all read `artifacts.path`, recorded as an
+absolute *container* path (`/work/...` under the repo/vendor-store realms, or a
+podman-named-volume path with no host equivalent at all under `rpmbuild-volume`).
+`lib.paths.host_path(realm, path)` resolves the repo/vendor-store realms to a real
+path on the host running outside the container; `db-usage`/`db-prune` use it to
+work from the host too (`rpmbuild-volume` rows are reported, but their size/path
+can't be resolved that way and say so).
+
+`artifacts.sha256` detects on-disk corruption within a target (the wrong-chroot case
+is already caught by the per-chroot `local-repo/<target>/` layout): it is computed
+once per file and recomputed only when the file's recorded `size_bytes`/`mtime`
+changes, so a normal run doesn't re-hash every RPM. `artifacts.arch` records the
+artifact's own architecture — distinct from its target's arch for a `noarch`
+subpackage.
+
+`stage_results` also keeps the last **successful** attempt's `version`/`log`/
+`build_id`/timestamp alongside the last attempt's (`last_success_*` columns) — a
+failed rebuild overwrites `version`/`log`/`build_id` but never `last_success_*`,
+so the previous known-good build stays discoverable. `stage_history` is what answers
+"why did package X rebuild in run N": every `set_stage()`/`finalize_stage()`/
+`update_reason()`/`update_state()` call appends a row for the current `run_id`
+instead of overwriting in place, since `run_id` already threads through every call
+site.
+
+`db-export`'s deterministic snapshot is the natural input for the docs-drift CI
+check in [COPR-0012](COPR-0012-docs-generation.md)'s BUG-0031.
 
 ## Implementation
 
 - `lib/build_db.py`, `lib/cache.py`, `lib/pipeline.py`.
-- Composite key `(package, stage, target)`, row upserts instead of full-file rewrites
-  (migrated from a `build-report.yaml` full-rewrite scheme).
-
-## Quirks & Decisions
-
-- Quirk: only "last attempt" is stored per `(package, stage, target)`, not "last
-  success" — a failed rebuild overwrites the previous known-good version/log/build_id.
-  Proposed: keep `last_success` alongside `last_attempt`. (BUG-0059)
-- Quirk: `stage_results.reason` only ever holds the *current* run's explanation — the
-  primary key means the next run's `set_stage()` overwrites it in place, so
-  reconstructing why an earlier run rebuilt a package requires filesystem evidence
-  once the reason is gone.
-  Proposed: an append-only `stage_history` table keyed by
-  `(package, stage, target, run_id)` — `run_id` already threads through every call
-  site, so it's an extra insert with no caller-side plumbing needed. (BUG-0063)
-- Quirk: no `sha256` column on `artifacts` to detect on-disk corruption within a
-  target (the wrong-chroot case is already caught by the per-chroot `local-repo/
-  <target>/` layout).
-  Proposed: add it with an mtime/size guard, since hashing every RPM on every run has
-  a real I/O cost — fold into the same migration as the `arch` column below. (BUG-0061)
-- Quirk: `artifacts` has no `arch` column; a noarch subpackage's arch can differ from
-  its target's arch.
-  Proposed: same migration as the sha256 addition above. (BUG-0065)
-- Quirk: `db-shell`/`db-usage`/`db-prune` only resolve correctly inside the
-  container — recorded paths are container-absolute. Can only ever be partially
-  fixed: the `rpmbuild-volume` realm has no host path at all.
-  Proposed: a host-side fallback for the repo + vendor-store realms only. (BUG-0062)
-- Quirk: no `make db-export` (sqlite → yaml/json snapshot) for offline diffing.
-  Proposed: add one — also the natural input for the docs-drift CI check in
-  [COPR-0012](COPR-0012-docs-generation.md)'s BUG-0031. (BUG-0060)
+- Composite key `(package, stage, target)` on `stage_results`, row upserts instead of
+  full-file rewrites (migrated from a `build-report.yaml` full-rewrite scheme).
+- `stage_history` rows are written best-effort alongside `stage_results` in the same
+  transaction; calls with no `run_id` (tests, ad-hoc scripts) write no history row.
+- Schema migrations are ordered and additive (`_MIGRATIONS`, applied from
+  `PRAGMA user_version` upward) so existing databases gain new tables/columns without
+  losing data.
 
 ## Testing
 

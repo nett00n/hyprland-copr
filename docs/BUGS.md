@@ -54,28 +54,6 @@ Shipped behavior doing the wrong thing.
   only way this bug can still bite. `lib.copr.fetch_failed_chroot_logs` still
   downloads failed chroots' builder logs after the fact for `make stage-log-analyze`,
   which remains the only diagnostic for an aarch64-only failure [P2/D4]
-- #BUG-0057 `_templates_hash()` (`lib/cache.py:65-67`) hashes `spec.j2` and
-  `hashes_match()` (`lib/cache.py:120-123`) is a strict full-dict equality, so any
-  edit to `spec.j2` invalidates all 49 packages' caches at once and force-rebuilds
-  everything. Wanted instead: inform that a cached package's spec was generated from
-  an outdated template, rather than force a rebuild [P2/D3]
-- #BUG-0064 when package B depends on A and `is_cached("mock", B, ...)` returns
-  true, nothing verifies A's RPM still exists in `local-repo/<target>/` --
-  `is_cached()` (`lib/pipeline.py:100-127`) only checks B's own artifact via
-  `artifacts_present()`, and the dependency input is `_dependencies_hashes()`
-  (`lib/cache.py:82-90`), which hashes A's packages.yaml *config*, not A's build
-  state or on-disk artifact. The actual dependency-file-exists check,
-  `check_buildroot_repo()`/`_rpm_present()` (`lib/repo_preflight.py:100-171`), only
-  runs inside `stage-mock.run_for_package()` -- which the cached path skips entirely
-  (`full-cycle.py:517-519`). Concretely: A and B both build fine; A's RPM later goes
-  missing from `local-repo/<target>/` (stale-artifact prune, partial
-  `make clean-localrepo`, volume corruption) with A's own `mock` stage row untouched;
-  B stays "cached" since B's own hash/artifact are unaffected, so the one check that
-  would notice A is gone never runs. The gap only surfaces later, by accident, if
-  some other *uncached* package that also depends on A happens to build. Distinct
-  from BUG-0017 (wrong-artifact-kept pruning) and BUG-0061 (on-disk corruption
-  detection) -- this is about a dependency's *existence*, not its integrity [P2/D3]
-
 ### Docs / templates
 
 - #BUG-0030 `templates/_contributors.j2`'s `{% if c.github_user %}...{% endif %}` is a
@@ -191,62 +169,12 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
 
 Refactor / typing / dedup / structure with no behavior change.
 
-### Containers / caches
-
-- #BUG-0058 the generator version itself (`gen-spec.py`/`stage-spec.py`) isn't a
-  tracked cache input at all -- `compute_input_hashes()` (`lib/cache.py:102-117`)
-  covers source_commit/templates/package_config/dependencies/patches/package_version
-  only. Report which packages were last built with an older generator version [P3/D2]
-
-### Build report db
-
-Migrated from build-report.yaml to build-report.db (sqlite, stdlib) -- see git
-history for the migration. Composite key is now `(package, stage, target)`, row
-upserts instead of full-file rewrites, and an `artifacts` table tracks disk usage
-(`make db-usage`/`make db-prune`). Remaining gaps:
-
-- #BUG-0059 only "last attempt" is stored per (package, stage, target)
-  (`lib/build_db.py:36-56`), not "last success" -> a failed rebuild overwrites the
-  previous known-good version/log/build_id, no `last_success` kept alongside
-  `last_attempt` [P2/D3]
-- #BUG-0061 artifact sha256 to detect corrupted local-repo RPMs (the wrong-chroot
-  case is now caught by the per-chroot `local-repo/<target>/` layout; sha256 is still
-  needed for on-disk corruption within a target). `artifacts` table
-  (`lib/build_db.py:58-69`) has no `sha256` column today; hashing every RPM on every
-  run has a real I/O cost, so this needs an mtime/size guard [P2/D3]
-- #BUG-0062 `db-shell`/`db-usage`/`db-prune` only resolve correctly inside the
-  container (artifact paths are container-absolute); no host-side fallback. Can only
-  ever be partial: the `rpmbuild-volume` realm lives in a podman named volume with no
-  host path at all, so a fix covers the repo and vendor-store realms only [P3/D3]
-- #BUG-0063 `stage_results.reason` (`lib/build_db.py:39`, populated by
-  `lib.pipeline.cache_miss_reason()`) only ever holds the *current* run's
-  explanation for why a stage ran/cached -- the table's `(package, stage,
-  target)` primary key means the next run's `set_stage()`/`finalize_stage()`
-  overwrites it in place, same root cause as BUG-0059. `lib/build_db.py`'s
-  own module docstring already flags "append-only attempt history" as a
-  follow-up. Concrete cost: reconstructing why run N rebuilt a given package
-  requires reading `reason` before run N+1 starts, or falling back to
-  filesystem evidence (artifact mtimes, log files) once it's gone -- done by
-  hand this way investigating why run 64 rebuilt 19 packages
-  (`artifact-missing`) plus one dependency cascade, since run 63's per-package
-  reasons were already overwritten by the time it was asked about. Fits
-  naturally as a small db addition: an append-only `stage_history` table (or
-  similar) written alongside the existing upsert, keyed by
-  `(package, stage, target, run_id)`, holding at least `state`/`reason`/
-  `version`/`completed_at` -- `run_id` already threads through every
-  `set_stage()`/`finalize_stage()` call site, so no caller-side plumbing
-  needed beyond the extra insert [P2/D2]
-
 ### Build matrix (arch / non-fedora distros)
 
 Db key is already `target` (= mock chroot, e.g. fedora-44-x86_64) and `runs` carries
 distro/distro_version/arch, so aarch64 and centos need no schema change. The
 distro/arch-agnostic build-target work itself is tracked as a feature, not here — see
 [COPR-0019](features/COPR-0019-build-target.md) (Planned).
-
-- #BUG-0065 `artifacts` table has no arch column (`lib/build_db.py:58-69`); a noarch
-  subpackage's arch != its target's arch. Best folded into BUG-0061's schema
-  migration rather than done separately [P3/D4]
 
 ### Makefile
 
@@ -348,15 +276,6 @@ Design/complexity items found while auditing `make update-daily` end to end
 (2026-08). Automation actually misbehaving from these findings is filed under
 `## Bugs & quirks` "update-daily" above instead.
 
-- #BUG-0098 `lib/cache.py:_content_hash()` (`:25-35`) and `_package_config_hash()`
-  (`:70-79`) are byte-identical implementations -- both drop `release`, normalize
-  keys, then sha256 of `json.dumps(..., sort_keys=True, default=str)` -- and
-  `compute_input_hashes()` stores both results, under `content` *and*
-  `package_config`. Two names, one hash, stored twice in every stage row. Collapsing
-  them changes the `hashes` dict shape, and `hashes_match()` (`lib/cache.py:120-123`)
-  is an exact dict comparison -- so this invalidates every cached row and forces a
-  full 49-package rebuild on the next run. That cost, not the ~15 LOC saved, is the
-  real content of this entry [P3/D2]
 - #BUG-0101 add concurrency (e.g. `ThreadPoolExecutor`) to `update-versions.py`'s
   per-submodule pull/fetch loop -- split out from BUG-0100 because it's a different
   risk profile (shared `.git/modules` state) from the reporting fix [P3/D3]
@@ -364,11 +283,6 @@ Design/complexity items found while auditing `make update-daily` end to end
 ## Chores
 
 Mechanical maintenance: pinning, renames, dead-code removal, small tooling additions.
-
-### Build report db
-
-- #BUG-0060 export sqlite -> yaml/json snapshot for offline diffing (`make
-  db-export`) -- no such mode exists in `db-artifacts.py` today [P3/D1]
 
 ### Makefile
 

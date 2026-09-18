@@ -114,9 +114,12 @@ def print_summary(packages: dict, stages: dict, copr_repo: str) -> None:
             # deliberately bypassed). See docs/BUGS.md, formerly BUG-0045.
             if reason == "not-vendored":
                 icon = "n/a"
-            elif reason == "cached":
-                # Show "cached" if stage was cached, otherwise show state
-                icon = "cached"
+            elif reason.startswith("cached"):
+                # Show "cached" if stage was cached, otherwise show state.
+                # reason is "cached" or, with a stale advisory input (#BUG-0057/
+                # -0058), "cached (stale-template)"/"cached (stale-generator)" --
+                # still a cache hit, so still shown as cached, just annotated.
+                icon = reason
             else:
                 # Validate uses WARN for failures (warning level), other stages use FAIL
                 if stage == "validate":
@@ -147,7 +150,9 @@ def build_totals_line(packages: dict, stages: dict) -> str:
     built = cached = failed = other = 0
     for pkg in packages:
         entry = stages.get("mock", {}).get(pkg, {})
-        if entry.get("reason") == "cached":
+        # "cached" or "cached (stale-template)"/"cached (stale-generator)"
+        # (#BUG-0057/-0058) -- both are still a cache hit.
+        if entry.get("reason", "").startswith("cached"):
             cached += 1
         elif entry.get("state") == "success":
             built += 1

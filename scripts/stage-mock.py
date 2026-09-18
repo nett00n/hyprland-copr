@@ -38,7 +38,7 @@ from lib.paths import (
     local_repo,
     resolve_target,
 )
-from lib.repo_preflight import check_buildroot_repo
+from lib.repo_preflight import check_buildroot_repo, rpm_arch
 from lib.reporting import event, status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
@@ -358,7 +358,9 @@ def run_for_package(
         # Copied RPMs get absolute paths (unlike mock_log above): repo_dir
         # isn't always under ROOT in tests, and this stays correct either way.
         for rpm_path in update_local_repo(target, repo_dir):
-            build_db.record_artifact(rpm_path, "repo", "rpm", pkg, target, ver)
+            build_db.record_artifact(
+                rpm_path, "repo", "rpm", pkg, target, ver, arch=rpm_arch(Path(rpm_path))
+            )
     status("mock", pkg, "ok" if ok else "fail", target, version=ver)
 
     extra: dict[str, Any] = {}

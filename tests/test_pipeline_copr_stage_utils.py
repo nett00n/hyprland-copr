@@ -22,6 +22,7 @@ from lib.pipeline import (
     compute_forced_stages,
     is_cached,
     cache_miss_reason,
+    missing_dep_artifacts,
     vendor_decision,
 )
 from lib.copr import parse_build_id, validate_copr_repo
@@ -384,6 +385,103 @@ class TestArtifactAwareCaching:
         build_db.record_artifact(str(rpm), "repo", "rpm", "pkg", TARGET, "1.0-1.fc44")
         assert is_cached("mock", "pkg", TARGET, hashes, {"mock"}) is False
         assert cache_miss_reason("mock", "pkg", TARGET, hashes, {"mock"}) == "forced"
+
+
+class TestDependencyArtifactCaching:
+    """#COPR-0002, #BUG-0064: is_cached("mock", ...) must also verify a
+    dependency's own mock artifact still exists on disk.
+    """
+
+    def _seed_success(self, pkg: str, stage: str, version: str, hashes: dict) -> None:
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage(pkg, stage, TARGET, run_id, "success", version=version)
+        build_db.finalize_stage(pkg, stage, TARGET, 1, hashes)
+
+    def _record_rpm(self, tmp_path, pkg: str, version: str) -> None:
+        rpm = tmp_path / f"{pkg}-{version}.x86_64.rpm"
+        rpm.write_text("fake rpm")
+        build_db.record_artifact(str(rpm), "repo", "rpm", pkg, TARGET, version)
+
+    ALL_PACKAGES = {"a": {"depends_on": []}, "b": {"depends_on": ["a"]}}
+
+    def test_cached_when_dep_artifact_present(self, tmp_path):
+        hashes = {"h": "1"}
+        self._seed_success("a", "mock", "1.0-1.fc44", hashes)
+        self._record_rpm(tmp_path, "a", "1.0-1.fc44")
+        self._seed_success("b", "mock", "1.0-1.fc44", hashes)
+        self._record_rpm(tmp_path, "b", "1.0-1.fc44")
+
+        assert (
+            is_cached("mock", "b", TARGET, hashes, set(), all_packages=self.ALL_PACKAGES)
+            is True
+        )
+
+    def test_not_cached_when_dep_artifact_missing(self, tmp_path):
+        hashes = {"h": "1"}
+        self._seed_success("a", "mock", "1.0-1.fc44", hashes)
+        self._record_rpm(tmp_path, "a", "1.0-1.fc44")
+        (tmp_path / "a-1.0-1.fc44.x86_64.rpm").unlink()
+        self._seed_success("b", "mock", "1.0-1.fc44", hashes)
+        self._record_rpm(tmp_path, "b", "1.0-1.fc44")
+
+        assert (
+            is_cached("mock", "b", TARGET, hashes, set(), all_packages=self.ALL_PACKAGES)
+            is False
+        )
+        assert (
+            cache_miss_reason(
+                "mock", "b", TARGET, hashes, set(), all_packages=self.ALL_PACKAGES
+            )
+            == "dep-artifact-missing: a"
+        )
+
+    def test_dep_check_skipped_without_all_packages(self, tmp_path):
+        """Backward-compat: callers that don't pass all_packages get the old behavior."""
+        hashes = {"h": "1"}
+        self._seed_success("a", "mock", "1.0-1.fc44", hashes)
+        # a's RPM never recorded at all -- would be missing if checked.
+        self._seed_success("b", "mock", "1.0-1.fc44", hashes)
+        self._record_rpm(tmp_path, "b", "1.0-1.fc44")
+
+        assert is_cached("mock", "b", TARGET, hashes, set()) is True
+
+    def test_skipped_dep_does_not_invalidate(self, tmp_path):
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", TARGET, run_id, "skipped", reason="config: skip")
+        hashes = {"h": "1"}
+        self._seed_success("b", "mock", "1.0-1.fc44", hashes)
+        self._record_rpm(tmp_path, "b", "1.0-1.fc44")
+
+        assert (
+            is_cached("mock", "b", TARGET, hashes, set(), all_packages=self.ALL_PACKAGES)
+            is True
+        )
+
+    def test_only_mock_stage_checks_dependency_artifacts(self, tmp_path):
+        """vendor/srpm stages are unaffected by a dependency's mock artifact state."""
+        hashes = {"h": "1"}
+        self._seed_success("a", "mock", "1.0-1.fc44", hashes)
+        # a's RPM never recorded -- would fail the mock-stage dep check.
+        self._seed_success("b", "srpm", "1.0-1.fc44", hashes)
+        self._record_rpm(tmp_path, "b", "1.0-1.fc44")
+        build_db.record_artifact(
+            str(tmp_path / "b.src.rpm"), "rpmbuild-volume", "srpm", "b", TARGET, "1.0-1.fc44"
+        )
+        (tmp_path / "b.src.rpm").write_text("srpm")
+
+        assert (
+            is_cached("srpm", "b", TARGET, hashes, set(), all_packages=self.ALL_PACKAGES)
+            is True
+        )
+
+    def test_missing_dep_artifacts_helper_direct(self, tmp_path):
+        self._seed_success("a", "mock", "1.0-1.fc44", {"h": "1"})
+        assert missing_dep_artifacts("b", TARGET, self.ALL_PACKAGES) == ["a"]
+        self._record_rpm(tmp_path, "a", "1.0-1.fc44")
+        assert missing_dep_artifacts("b", TARGET, self.ALL_PACKAGES) == []
+
+    def test_missing_dep_artifacts_unknown_package_returns_empty(self):
+        assert missing_dep_artifacts("nonexistent", TARGET, self.ALL_PACKAGES) == []
 
 
 class TestCacheMissReason:

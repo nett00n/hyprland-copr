@@ -13,6 +13,7 @@ from pathlib import Path
 
 from lib import build_db
 from lib.cache import hashes_match
+from lib.deps import effective_deps
 from lib.vendor import needs_vendoring
 from lib.yaml_utils import apply_os_overrides
 
@@ -50,6 +51,31 @@ def artifacts_present(stage: str, pkg: str, target: str, version: str | None) ->
     if not rows:
         return False
     return all(Path(row["path"]).exists() for row in rows)
+
+
+def missing_dep_artifacts(pkg: str, target: str, all_packages: dict) -> list[str]:
+    """#COPR-0002, #BUG-0064: return sorted effective deps of `pkg` whose own
+    `mock`-stage artifact is no longer present in `local-repo/<target>/`.
+
+    A dependency whose own `mock` row is "skipped" (config: skip -- see
+    stage-mock.py) is not expected to have a local artifact at all and is not
+    reported missing. Everything else must have `artifacts_present()` true for
+    its own recorded version, same check `is_cached()` already applies to a
+    package's own artifact -- this just extends it one hop to each dependency.
+    """
+    meta = all_packages.get(pkg)
+    if meta is None:
+        return []
+    missing = []
+    for dep in sorted(effective_deps(pkg, meta, all_packages)):
+        dep_stage = build_db.get_stage(dep, "mock", target)
+        if dep_stage is not None and dep_stage.get("state") == "skipped":
+            continue
+        if not artifacts_present(
+            "mock", dep, target, dep_stage.get("version") if dep_stage else None
+        ):
+            missing.append(dep)
+    return missing
 
 
 def compute_forced_stages(
@@ -98,7 +124,13 @@ def compute_forced_stages(
 
 
 def is_cached(
-    stage: str, pkg: str, target: str, new_hashes: dict, forced_stages: set[str]
+    stage: str,
+    pkg: str,
+    target: str,
+    new_hashes: dict,
+    forced_stages: set[str],
+    *,
+    all_packages: dict | None = None,
 ) -> bool:
     """Check if a stage result is cached and can be skipped.
 
@@ -106,6 +138,10 @@ def is_cached(
     - Its state is "success"
     - Its stored hashes match current input hashes
     - It's not in the forced_stages set
+    - Its own artifact (if any) is still present on disk
+    - For the mock stage only, every dependency's own mock artifact is still
+      present on disk too (#COPR-0002, #BUG-0064) -- skipped when
+      `all_packages` isn't given, since resolving deps needs it
 
     Args:
         stage: Stage name
@@ -113,6 +149,8 @@ def is_cached(
         target: build_db target key
         new_hashes: Newly computed input hashes for this stage
         forced_stages: Set of stages that must run (cannot be skipped)
+        all_packages: Full packages.yaml dict, needed to check the mock
+            stage's dependency artifacts. `None` skips that check.
 
     Returns:
         True if stage can be skipped (is cached), False if it must run
@@ -124,7 +162,11 @@ def is_cached(
         return False
     if not (entry.get("state") == "success" and hashes_match(entry, new_hashes)):
         return False
-    return artifacts_present(stage, pkg, target, entry.get("version"))
+    if not artifacts_present(stage, pkg, target, entry.get("version")):
+        return False
+    if stage != "mock" or all_packages is None:
+        return True
+    return not missing_dep_artifacts(pkg, target, all_packages)
 
 
 def vendor_decision(
@@ -170,6 +212,8 @@ def cache_miss_reason(
     forced_stages: set[str],
     deps: set[str] | None = None,
     rebuilt_packages: set[str] | None = None,
+    *,
+    all_packages: dict | None = None,
 ) -> str:
     """Determine why a stage cache was missed (not cached).
 
@@ -185,6 +229,8 @@ def cache_miss_reason(
         deps: Package's effective dependencies (see lib.deps.effective_deps),
             used to detect dependency-based force
         rebuilt_packages: Set of packages rebuilt this run (to show in reason)
+        all_packages: Full packages.yaml dict, needed to name which mock-stage
+            dependency artifact went missing (#BUG-0064). `None` skips that check.
 
     Returns:
         Canonical reason string. Full vocabulary (some set here, some set
@@ -221,9 +267,14 @@ def cache_miss_reason(
           gone from disk (stage-mock.py/stage-copr.py, see docs/BUGS.md BUG-0015)
         - "mock {state}" — mock upstream (copr) (stage scripts)
         - "local dep failed: <name>" — local dep failed in mock (stage-mock.py)
+        - "dep-artifact-missing: <name>" / "dep-artifact-missing: <name>, <name>" —
+          mock stage only: hashes match and pkg's own artifact is present, but a
+          dependency's own mock artifact is gone from local-repo/<target>/
+          (#BUG-0064, see missing_dep_artifacts())
 
     Note: When listing rebuilt dependencies, only includes deps that actually changed
-    (reason != "cached"). Cached dependencies are filtered out even if in rebuilt_packages.
+    (reason not "cached" or "cached (stale-...)" -- #BUG-0057/-0058, still a cache
+    hit). Cached dependencies are filtered out even if in rebuilt_packages.
     """
     if stage in forced_stages:
         # Check if forced due to dependency rebuild
@@ -234,8 +285,9 @@ def cache_miss_reason(
                 dep
                 for dep in sorted(deps)
                 if dep in rebuilt_packages
-                and (build_db.get_stage(dep, stage, target) or {}).get("reason")
-                != "cached"
+                and not (build_db.get_stage(dep, stage, target) or {})
+                .get("reason", "")
+                .startswith("cached")
             ]
             if rebuilt_deps:
                 deps_str = ", ".join(rebuilt_deps)
@@ -250,9 +302,12 @@ def cache_miss_reason(
     if state != "success":
         return f"prior-{state}"
 
-    if hashes_match(entry, new_hashes) and not artifacts_present(
-        stage, pkg, target, entry.get("version")
-    ):
-        return "artifact-missing"
+    if hashes_match(entry, new_hashes):
+        if not artifacts_present(stage, pkg, target, entry.get("version")):
+            return "artifact-missing"
+        if stage == "mock" and all_packages is not None:
+            missing = missing_dep_artifacts(pkg, target, all_packages)
+            if missing:
+                return f"dep-artifact-missing: {', '.join(missing)}"
 
     return "hash-mismatch"

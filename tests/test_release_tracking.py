@@ -468,7 +468,11 @@ class TestUpdatePackageReleases:
         The dependency hash (used to detect content changes) excludes release,
         so only actual content changes cascade, not release-only changes.
         """
-        from lib.cache import _package_config_hash, _content_hash
+        from lib.cache import _content_hash
+
+        # #BUG-0098: _dependencies_hashes() now uses _content_hash() directly --
+        # the formerly-separate _package_config_hash() was byte-identical and
+        # has been removed.
 
         # Dependency package
         dep = {
@@ -495,13 +499,13 @@ class TestUpdatePackageReleases:
 
         # Build dependency with release=1
         all_packages_1 = {"dep": dep, "pkg": pkg}
-        dep_hash_1 = _package_config_hash(dep)
+        dep_hash_1 = _content_hash(dep)
 
         # Now bump dependency release to 2
         dep_bumped = dict(dep)
         dep_bumped["release"] = 2
         all_packages_2 = {"dep": dep_bumped, "pkg": pkg}
-        dep_hash_2 = _package_config_hash(dep_bumped)
+        dep_hash_2 = _content_hash(dep_bumped)
 
         # Verify: dependency hash should NOT change with release-only change
         assert dep_hash_1 == dep_hash_2, (

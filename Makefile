@@ -162,7 +162,7 @@ LOCK_DISABLE ?= # bypass for hosts without flock, or a deliberate parallel run
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-nuke submodules-update submodules-purge sync-hard-reset
+.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export db-nuke submodules-update submodules-purge sync-hard-reset
 
 save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
 	@mkdir -p logs
@@ -284,9 +284,10 @@ help: ## Show this help
 	@echo "    make sync-hard-reset    # Hard-reset repo+submodules to origin (destructive; resolves conflicts)"
 	@echo ""
 	@echo "  Build artifact tracking (build-report.db):"
-	@echo "    make db-usage           # Disk usage by package/target"
+	@echo "    make db-usage           # Disk usage by package/target (VERIFY=1: flag corruption)"
 	@echo "    make db-prune           # Reclaim space (dry-run; CONFIRM=1 to delete)"
 	@echo "    make db-shell           # Interactive sqlite3 shell"
+	@echo "    make db-export          # Snapshot for offline diffing (FORMAT=yaml|json, OUTPUT=path)"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*## ' Makefile | \
 		awk -F': ' '{split($$1, parts, " "); split($$2, desc, "## "); printf "  \033[36m%-24s\033[0m %s\n", parts[1], desc[2]}'
@@ -430,18 +431,26 @@ readme: check-image check-venv setup-volumes ## Generate README.md, docs/README.
 readme-shell: check-image check-venv ## Regenerate only the branding shell of README.md/docs/README.copr.md (no build-report.db needed; for CI)
 	$(call run_with_result,$(CONTAINER_PYTHON) scripts/gen-readme-shell.py,Readme shell updated,Readme shell update failed)
 
-db-usage: check-image check-venv setup-volumes ## Report disk usage of tracked build artifacts by package/target
-	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --usage
+db-usage: check-image check-venv setup-volumes ## Report disk usage of tracked build artifacts by package/target. VERIFY=1 also re-hashes every artifact to flag corruption
+	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --usage $(if $(filter 1,$(VERIFY)),--verify,)
 
 db-prune: check-image check-venv setup-volumes ## Remove all but the newest artifact per (package,target,kind). Dry-run by default; CONFIRM=1 to actually delete
 	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --prune $(if $(filter 1,$(CONFIRM)),--confirm,)
 
-db-shell: check-image check-venv ## Open an interactive sqlite3 shell on build-report.db
+db-export: check-image check-venv setup-volumes ## Snapshot runs/stage_results/stage_history/artifacts for offline diffing. FORMAT=yaml|json (default yaml), OUTPUT=path (default stdout)
+	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --export \
+		$(if $(FORMAT),--format $(FORMAT),) $(if $(OUTPUT),--output $(OUTPUT),)
+
+db-shell: check-image check-venv ## Open an interactive sqlite3 shell on build-report.db. NO_CONTAINER=1 opens it directly on the host (#BUG-0062)
+ifeq ($(NO_CONTAINER),1)
+	@.venv/bin/python3 -m sqlite3 build-report.db
+else
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run -it --rm \
 		-v $(WORKDIR_MOUNT) \
 		-v $(VENV_MOUNT) \
 		-w /work \
 		$(IMAGE_NAME) /work/.venv/bin/python3 -m sqlite3 build-report.db
+endif
 
 db-nuke: ## DESTROY build-report.db entirely: artifact ledger + all run/stage history (irreversible; confirmation required)
 	@printf "$(HIGHLIGHT_PREFIX) Destroy build-report.db entirely (artifact ledger + all history)? [y/N] "; \

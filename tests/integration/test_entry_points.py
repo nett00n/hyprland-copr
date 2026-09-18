@@ -894,6 +894,43 @@ class TestStageShowPlan:
         assert "cache" in lines["pkg-b"]
         assert "OtherPkg" not in captured.out
 
+    def test_show_plan_flags_stale_template(self, capsys):
+        """#BUG-0057: a package cached against an old `templates` hash shows
+        "cache!" on the spec column and the footer note, but stays cached
+        (does not show "run") since templates is advisory.
+        """
+        packages = {"pkg-a": {"version": "1.0"}}
+        self._seed_validate({"pkg-a": "success"})
+
+        stored_hashes = {
+            "source_commit": "x",
+            "templates": "old-template-hash",
+            "generator": "g1",
+            "dependencies": "x",
+            "patches": "x",
+            "content": "x",
+            "package_version": "1.0",
+        }
+        new_hashes = {**stored_hashes, "templates": "new-template-hash"}
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg-a", "spec", TARGET, run_id, "success")
+        build_db.finalize_stage(
+            "pkg-a", "spec", TARGET, started_at=1, hashes=stored_hashes
+        )
+
+        with (
+            patch.object(stage_show_plan, "get_packages") as mock_get,
+            patch.object(
+                stage_show_plan, "compute_input_hashes", return_value=new_hashes
+            ),
+        ):
+            mock_get.return_value = packages
+            stage_show_plan.show_plan(target=TARGET)
+
+        captured = capsys.readouterr()
+        assert "cache!" in captured.out
+        assert "1 package(s) built from an outdated spec" in captured.out
+
 
 class TestStageShowPlanPredictsCascade:
     """Tests that show_plan()'s prediction matches full-cycle.py's real cascade

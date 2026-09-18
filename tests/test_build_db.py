@@ -399,6 +399,164 @@ class TestArtifacts:
         assert build_db.artifacts(package="a") == []
 
 
+class TestArtifactSha256AndArch:
+    """#COPR-0015, #BUG-0061, #BUG-0065."""
+
+    def test_sha256_computed_on_first_write(self, build_db_path, tmp_path):
+        f = tmp_path / "pkg.rpm"
+        f.write_bytes(b"x" * 100)
+        import hashlib
+
+        expected = hashlib.sha256(b"x" * 100).hexdigest()
+
+        build_db.record_artifact(str(f), "repo", "rpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+
+        rows = build_db.artifacts(package="pkg")
+        assert rows[0]["sha256"] == expected
+
+    def test_arch_stored(self, build_db_path, tmp_path):
+        f = tmp_path / "pkg.rpm"
+        f.write_bytes(b"x")
+
+        build_db.record_artifact(
+            str(f), "repo", "rpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44", arch="noarch"
+        )
+
+        assert build_db.artifacts(package="pkg")[0]["arch"] == "noarch"
+
+    def test_arch_defaults_to_absent(self, build_db_path, tmp_path):
+        f = tmp_path / "pkg.tar.gz"
+        f.write_bytes(b"x")
+
+        build_db.record_artifact(str(f), "rpmbuild-volume", "vendor", "pkg", "fedora-44-x86_64", None)
+
+        assert "arch" not in build_db.artifacts(package="pkg")[0]
+
+    def test_sha256_not_recomputed_when_size_and_mtime_unchanged(self, build_db_path, tmp_path, monkeypatch):
+        f = tmp_path / "pkg.rpm"
+        f.write_bytes(b"x" * 100)
+        build_db.record_artifact(str(f), "repo", "rpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+        first_sha = build_db.artifacts(package="pkg")[0]["sha256"]
+
+        calls = []
+        real_hasher = build_db._sha256_file
+
+        def spy(path):
+            calls.append(path)
+            return real_hasher(path)
+
+        monkeypatch.setattr(build_db, "_sha256_file", spy)
+
+        # Same file, same size/mtime -- os.stat() must not have moved.
+        build_db.record_artifact(str(f), "repo", "rpm", "pkg", "fedora-44-x86_64", "1.0-2.fc44")
+
+        assert calls == []
+        assert build_db.artifacts(package="pkg")[0]["sha256"] == first_sha
+
+    def test_sha256_recomputed_when_mtime_changes(self, build_db_path, tmp_path):
+        f = tmp_path / "pkg.rpm"
+        f.write_bytes(b"x" * 100)
+        build_db.record_artifact(str(f), "repo", "rpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+        first_sha = build_db.artifacts(package="pkg")[0]["sha256"]
+
+        f.write_bytes(b"y" * 200)  # different content, size, and mtime
+        build_db.record_artifact(str(f), "repo", "rpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+
+        second_sha = build_db.artifacts(package="pkg")[0]["sha256"]
+        assert second_sha != first_sha
+
+    def test_verify_artifact_true_when_unmodified(self, build_db_path, tmp_path):
+        f = tmp_path / "pkg.rpm"
+        f.write_bytes(b"x" * 100)
+        build_db.record_artifact(str(f), "repo", "rpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+
+        assert build_db.verify_artifact("repo", str(f)) is True
+
+    def test_verify_artifact_false_on_corruption(self, build_db_path, tmp_path):
+        """File corrupted on disk without going through record_artifact() again --
+        size/mtime in the db are now stale relative to the file, so a direct
+        re-hash (not the guarded record_artifact path) must catch the mismatch.
+        """
+        f = tmp_path / "pkg.rpm"
+        f.write_bytes(b"x" * 100)
+        build_db.record_artifact(str(f), "repo", "rpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+
+        f.write_bytes(b"corrupted")
+
+        assert build_db.verify_artifact("repo", str(f)) is False
+
+    def test_verify_artifact_none_when_row_absent(self, build_db_path):
+        assert build_db.verify_artifact("repo", "/nonexistent") is None
+
+    def test_verify_artifact_none_when_no_sha256_recorded(self, build_db_path, tmp_path):
+        """A row from before this migration (or any NULL sha256) can't be verified."""
+        f = tmp_path / "pkg.rpm"
+        f.write_bytes(b"x")
+        build_db.record_artifact(str(f), "repo", "rpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+        conn = build_db.connect()
+        conn.execute("UPDATE artifacts SET sha256 = NULL")
+        conn.commit()
+
+        assert build_db.verify_artifact("repo", str(f)) is None
+
+    def test_v2_schema_migrates_artifacts_with_null_sha256_and_arch(self, build_db_path, tmp_path):
+        """A pre-#BUG-0061 db (artifacts has no sha256/arch columns) migrates
+        without losing rows; existing rows come back with sha256/arch absent.
+        """
+        import sqlite3
+
+        conn = sqlite3.connect(str(build_db_path))
+        conn.executescript(
+            """
+            CREATE TABLE runs (
+              id INTEGER PRIMARY KEY, started_at INTEGER NOT NULL,
+              completed_at INTEGER, target TEXT NOT NULL, distro TEXT NOT NULL,
+              distro_version TEXT NOT NULL, arch TEXT NOT NULL,
+              copr_repo TEXT, package_filter TEXT, exit_state TEXT
+            );
+            CREATE TABLE stage_results (
+              package TEXT NOT NULL, stage TEXT NOT NULL, target TEXT NOT NULL,
+              state TEXT NOT NULL, version TEXT, reason TEXT, log TEXT, path TEXT,
+              build_id INTEGER, errors INTEGER, warnings INTEGER,
+              has_devel INTEGER NOT NULL DEFAULT 0, force_run INTEGER NOT NULL DEFAULT 0,
+              started_at INTEGER, completed_at INTEGER, hashes_json TEXT,
+              run_id INTEGER REFERENCES runs(id), updated_at INTEGER NOT NULL,
+              last_success_version TEXT, last_success_log TEXT,
+              last_success_build_id INTEGER, last_success_at INTEGER,
+              PRIMARY KEY (package, stage, target)
+            ) WITHOUT ROWID;
+            CREATE TABLE artifacts (
+              path TEXT NOT NULL, realm TEXT NOT NULL, kind TEXT NOT NULL,
+              package TEXT NOT NULL, target TEXT NOT NULL, version TEXT,
+              size_bytes INTEGER, mtime INTEGER, recorded_at INTEGER NOT NULL,
+              PRIMARY KEY (realm, path)
+            ) WITHOUT ROWID;
+            CREATE TABLE stage_history (
+              package TEXT NOT NULL, stage TEXT NOT NULL, target TEXT NOT NULL,
+              run_id INTEGER NOT NULL REFERENCES runs(id), state TEXT NOT NULL,
+              reason TEXT, version TEXT, log TEXT, build_id INTEGER,
+              started_at INTEGER, completed_at INTEGER, recorded_at INTEGER NOT NULL,
+              PRIMARY KEY (package, stage, target, run_id)
+            ) WITHOUT ROWID;
+            """
+        )
+        conn.execute(
+            "INSERT INTO artifacts (path, realm, kind, package, target, recorded_at) "
+            "VALUES ('/x/a.rpm', 'repo', 'rpm', 'a', 'fedora-44-x86_64', 100)"
+        )
+        conn.execute("PRAGMA user_version = 2")
+        conn.commit()
+        conn.close()
+
+        rows = build_db.artifacts(package="a")
+        assert len(rows) == 1
+        assert "sha256" not in rows[0]
+        assert "arch" not in rows[0]
+
+        conn = build_db.connect()
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == build_db.SCHEMA_VERSION
+
+
 class TestRuns:
     def test_start_and_finish_run_record_timestamps_and_exit_state(self, build_db_path):
         run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64", copr_repo="nett00n/hyprland")
@@ -460,3 +618,264 @@ class TestResetOrdering:
         build_db.reset()
 
         assert len(build_db.artifacts(package="a")) == 1
+
+    def test_reset_clears_stage_history(self, build_db_path):
+        run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", "fedora-44-x86_64", run_id, "success")
+
+        build_db.reset()
+
+        assert build_db.stage_history(package="a") == []
+
+
+class TestStageHistory:
+    """#COPR-0015, #BUG-0063: append-only attempt history."""
+
+    def test_two_runs_leave_two_distinct_history_rows(self, build_db_path):
+        run_1 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage(
+            "a", "mock", "fedora-44-x86_64", run_1, "failed", reason="hash-mismatch"
+        )
+        run_2 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage(
+            "a", "mock", "fedora-44-x86_64", run_2, "success", reason="hash-mismatch"
+        )
+
+        history = build_db.stage_history(package="a", stage="mock", target="fedora-44-x86_64")
+        assert [h["run_id"] for h in history] == [run_1, run_2]
+        assert [h["state"] for h in history] == ["failed", "success"]
+
+        # The current-state row is still exactly one row (upsert semantics unchanged).
+        conn = build_db.connect()
+        assert conn.execute("SELECT COUNT(*) FROM stage_results").fetchone()[0] == 1
+
+    def test_update_reason_with_run_id_writes_that_runs_history_row(self, build_db_path):
+        """A cache hit in a later run calls update_reason with the *current* run's
+        id -- the row's own stored run_id still points at whichever run last
+        actually executed the stage, so passing it in is what keeps history
+        correctly attributed (not silently rewriting an older run's row).
+        """
+        run_1 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", "fedora-44-x86_64", run_1, "success", reason="hash-mismatch")
+
+        run_2 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.update_reason("a", "mock", "fedora-44-x86_64", "cached", run_id=run_2)
+
+        history = build_db.stage_history(package="a", stage="mock", target="fedora-44-x86_64")
+        assert [h["run_id"] for h in history] == [run_1, run_2]
+        assert history[0]["reason"] == "hash-mismatch"
+        assert history[1]["reason"] == "cached"
+        # The row's own run_id (last time it actually ran) is untouched.
+        assert build_db.get_stage("a", "mock", "fedora-44-x86_64") is not None
+
+    def test_update_reason_without_run_id_writes_no_history(self, build_db_path):
+        run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", "fedora-44-x86_64", run_id, "success", reason="hash-mismatch")
+
+        build_db.update_reason("a", "mock", "fedora-44-x86_64", "cached")
+
+        history = build_db.stage_history(package="a", stage="mock", target="fedora-44-x86_64")
+        assert len(history) == 1
+        assert history[0]["reason"] == "hash-mismatch"
+        assert build_db.get_stage("a", "mock", "fedora-44-x86_64")["reason"] == "cached"
+
+    def test_update_state_with_run_id_writes_that_runs_history_row(self, build_db_path):
+        run_1 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("a", "copr", "fedora-44-x86_64", run_1, "unknown", build_id=1)
+
+        run_2 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.update_state("a", "copr", "fedora-44-x86_64", "success", run_id=run_2)
+
+        history = build_db.stage_history(package="a", stage="copr", target="fedora-44-x86_64")
+        assert [h["run_id"] for h in history] == [run_1, run_2]
+        assert history[0]["state"] == "unknown"
+        assert history[1]["state"] == "success"
+
+    def test_set_stage_with_no_run_id_writes_no_history_row(self, build_db_path):
+        build_db.set_stage("a", "mock", "fedora-44-x86_64", None, "success")
+
+        assert build_db.stage_history(package="a") == []
+        # The current-state row is still written normally.
+        assert build_db.get_stage("a", "mock", "fedora-44-x86_64") is not None
+
+    def test_stage_history_filters_and_orders_by_run(self, build_db_path):
+        run_1 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", "fedora-44-x86_64", run_1, "success")
+        build_db.set_stage("b", "mock", "fedora-44-x86_64", run_1, "success")
+        run_2 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", "fedora-44-x86_64", run_2, "failed")
+
+        assert len(build_db.stage_history(run_id=run_1)) == 2
+        assert len(build_db.stage_history(package="a")) == 2
+        assert len(build_db.stage_history(package="a", stage="mock", target="fedora-44-x86_64")) == 2
+
+    def test_stage_history_limit(self, build_db_path):
+        for _ in range(3):
+            run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+            build_db.set_stage("a", "mock", "fedora-44-x86_64", run_id, "success")
+
+        assert len(build_db.stage_history(package="a", limit=2)) == 2
+
+
+class TestLastSuccess:
+    """#COPR-0015, #BUG-0059: last_success_* survives a subsequent failure."""
+
+    def test_last_success_set_on_success(self, build_db_path):
+        run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage(
+            "a", "mock", "fedora-44-x86_64", run_id, "success",
+            version="1.0-1.fc44", log="logs/a/20-mock.log", build_id=42,
+        )
+
+        success = build_db.last_success("a", "mock", "fedora-44-x86_64")
+        assert success["version"] == "1.0-1.fc44"
+        assert success["log"] == "logs/a/20-mock.log"
+        assert success["build_id"] == 42
+        assert success["at"] is not None
+
+    def test_last_success_survives_a_later_failure(self, build_db_path):
+        run_1 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage(
+            "a", "mock", "fedora-44-x86_64", run_1, "success",
+            version="1.0-1.fc44", build_id=42,
+        )
+        run_2 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage(
+            "a", "mock", "fedora-44-x86_64", run_2, "failed", version="1.0-2.fc44"
+        )
+
+        entry = build_db.get_stage("a", "mock", "fedora-44-x86_64")
+        assert entry["version"] == "1.0-2.fc44"
+        assert entry["state"] == "failed"
+
+        success = build_db.last_success("a", "mock", "fedora-44-x86_64")
+        assert success["version"] == "1.0-1.fc44"
+        assert success["build_id"] == 42
+
+    def test_last_success_none_when_never_succeeded(self, build_db_path):
+        run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", "fedora-44-x86_64", run_id, "failed")
+
+        assert build_db.last_success("a", "mock", "fedora-44-x86_64") is None
+
+    def test_last_success_none_when_row_absent(self, build_db_path):
+        build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        assert build_db.last_success("nonexistent", "mock", "fedora-44-x86_64") is None
+
+
+class TestMigrationPreservesData:
+    def test_v1_schema_migrates_without_losing_rows(self, build_db_path):
+        """A pre-migration db (only runs/stage_results/artifacts, user_version=1)
+        gains stage_history + last_success_* columns without losing existing rows.
+        """
+        import sqlite3
+
+        conn = sqlite3.connect(str(build_db_path))
+        conn.executescript(
+            """
+            CREATE TABLE runs (
+              id INTEGER PRIMARY KEY, started_at INTEGER NOT NULL,
+              completed_at INTEGER, target TEXT NOT NULL, distro TEXT NOT NULL,
+              distro_version TEXT NOT NULL, arch TEXT NOT NULL,
+              copr_repo TEXT, package_filter TEXT, exit_state TEXT
+            );
+            CREATE TABLE stage_results (
+              package TEXT NOT NULL, stage TEXT NOT NULL, target TEXT NOT NULL,
+              state TEXT NOT NULL, version TEXT, reason TEXT, log TEXT, path TEXT,
+              build_id INTEGER, errors INTEGER, warnings INTEGER,
+              has_devel INTEGER NOT NULL DEFAULT 0, force_run INTEGER NOT NULL DEFAULT 0,
+              started_at INTEGER, completed_at INTEGER, hashes_json TEXT,
+              run_id INTEGER REFERENCES runs(id), updated_at INTEGER NOT NULL,
+              PRIMARY KEY (package, stage, target)
+            ) WITHOUT ROWID;
+            CREATE TABLE artifacts (
+              path TEXT NOT NULL, realm TEXT NOT NULL, kind TEXT NOT NULL,
+              package TEXT NOT NULL, target TEXT NOT NULL, version TEXT,
+              size_bytes INTEGER, mtime INTEGER, recorded_at INTEGER NOT NULL,
+              PRIMARY KEY (realm, path)
+            ) WITHOUT ROWID;
+            """
+        )
+        conn.execute(
+            "INSERT INTO runs (id, started_at, target, distro, distro_version, arch) "
+            "VALUES (1, 100, 'fedora-44-x86_64', 'fedora', '44', 'x86_64')"
+        )
+        conn.execute(
+            "INSERT INTO stage_results "
+            "(package, stage, target, state, run_id, updated_at) "
+            "VALUES ('a', 'mock', 'fedora-44-x86_64', 'success', 1, 100)"
+        )
+        conn.execute("PRAGMA user_version = 1")
+        conn.commit()
+        conn.close()
+
+        entry = build_db.get_stage("a", "mock", "fedora-44-x86_64")
+        assert entry["state"] == "success"
+
+        conn = build_db.connect()
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == build_db.SCHEMA_VERSION
+        tables = {
+            row[0]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+        assert "stage_history" in tables
+
+
+class TestExportHelpers:
+    """#COPR-0015, #BUG-0060: all_runs/all_stage_results/all_stage_history/
+    all_artifacts/export_snapshot -- the read side of `db-export`.
+    """
+
+    def test_all_runs_ordered_by_id(self, build_db_path):
+        run_1 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        run_2 = build_db.start_run("fedora-43-x86_64", "fedora", "43", "x86_64")
+
+        runs = build_db.all_runs()
+        assert [r["id"] for r in runs] == [run_1, run_2]
+
+    def test_all_stage_results_includes_key_columns_and_decodes_hashes(self, build_db_path):
+        run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", "fedora-44-x86_64", run_id, "success")
+        build_db.finalize_stage(
+            "a", "mock", "fedora-44-x86_64", started_at=1, hashes={"x": "y"}
+        )
+
+        rows = build_db.all_stage_results()
+        assert len(rows) == 1
+        assert rows[0]["package"] == "a"
+        assert rows[0]["stage"] == "mock"
+        assert rows[0]["target"] == "fedora-44-x86_64"
+        assert rows[0]["hashes"] == {"x": "y"}
+        assert "hashes_json" not in rows[0]
+
+    def test_all_stage_history_ordered_by_run(self, build_db_path):
+        run_1 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", "fedora-44-x86_64", run_1, "success")
+        run_2 = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", "fedora-44-x86_64", run_2, "failed")
+
+        rows = build_db.all_stage_history()
+        assert [r["run_id"] for r in rows] == [run_1, run_2]
+
+    def test_all_artifacts_ordered_by_realm_path(self, build_db_path, tmp_path):
+        f1 = tmp_path / "b.rpm"
+        f1.write_bytes(b"1")
+        f2 = tmp_path / "a.rpm"
+        f2.write_bytes(b"1")
+        build_db.record_artifact(str(f1), "repo", "rpm", "b", "fedora-44-x86_64", None)
+        build_db.record_artifact(str(f2), "repo", "rpm", "a", "fedora-44-x86_64", None)
+
+        rows = build_db.all_artifacts()
+        assert [r["path"] for r in rows] == sorted([str(f1), str(f2)])
+
+    def test_export_snapshot_shape(self, build_db_path):
+        snapshot = build_db.export_snapshot()
+        assert set(snapshot.keys()) == {
+            "runs",
+            "stage_results",
+            "stage_history",
+            "artifacts",
+        }
+        assert all(isinstance(v, list) for v in snapshot.values())

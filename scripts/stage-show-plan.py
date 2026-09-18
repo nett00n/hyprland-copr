@@ -19,7 +19,7 @@ import os
 import sys
 
 from lib import build_db
-from lib.cache import compute_input_hashes
+from lib.cache import compute_input_hashes, stale_advisories
 from lib.config import env_flag
 from lib.deps import effective_deps, ordered_packages
 from lib.paths import resolve_target
@@ -84,6 +84,9 @@ def show_plan(
     # all stages") instead of always seeing an empty set. See docs/BUGS.md,
     # formerly BUG-0048.
     would_rebuild: set[str] = set()
+    # #BUG-0057, #BUG-0058: count of packages whose spec stage is cached but
+    # from an outdated template/generator -- reported as a footer note.
+    stale_spec_count = 0
 
     for pkg in packages_to_show:
         if build_db.get_stage(pkg, "validate", target) is None:
@@ -118,8 +121,18 @@ def show_plan(
                 label = "retry"
                 if stage in STAGE_ORDER:
                     pkg_would_rebuild = True
-            elif is_cached(stage, pkg, target, new_hashes, forced_stages):
+            elif is_cached(
+                stage,
+                pkg,
+                target,
+                new_hashes,
+                forced_stages,
+                all_packages=all_packages_full,
+            ):
                 label = "cache"
+                if stage == "spec" and entry and stale_advisories(entry, new_hashes):
+                    label = "cache!"
+                    stale_spec_count += 1
             else:
                 label = "run"
                 # "validate" is excluded from STAGE_ORDER (lib.pipeline: "all
@@ -142,6 +155,12 @@ def show_plan(
         )
         print(f"  {pkg:<30} " + "  ".join(row) + f"  {version:<14}")
 
+    if stale_spec_count:
+        print(
+            f"\n  {stale_spec_count} package(s) built from an outdated spec "
+            "template/generator ('cache!' above) -- rerun with FORCE_REBUILD=1 "
+            "to pick up the change, or leave as-is (#BUG-0057, #BUG-0058)"
+        )
     print()
 
 

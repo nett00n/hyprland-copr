@@ -38,7 +38,7 @@ import sys
 import time
 
 from lib import build_db
-from lib.cache import compute_input_hashes
+from lib.cache import compute_input_hashes, stale_advisories
 from lib.config import env_flag
 from lib.copr import (
     copr_blocked_packages,
@@ -92,6 +92,22 @@ _stage = {
         "refresh-checksums",
     ]
 }
+
+
+def cached_reason(pkg: str, stage: str, target: str, new_hashes: dict) -> str:
+    """#BUG-0057, #BUG-0058: the `reason` for a cache-hit stage row, annotated
+    with any stale advisory input -- "cached" normally, or
+    "cached (stale-template)"/"cached (stale-generator)"/"cached (stale-template,
+    stale-generator)" when spec.j2 or the generator itself changed since this
+    stage last actually ran. Still a cache hit either way -- see
+    lib.reporting.print_summary()/build_totals_line(), which treat any reason
+    starting with "cached" as one.
+    """
+    prior_entry = build_db.get_stage(pkg, stage, target)
+    if prior_entry is None:
+        return "cached"
+    stale = stale_advisories(prior_entry, new_hashes)
+    return f"cached ({', '.join(stale)})" if stale else "cached"
 
 
 def pause_before_proceeding(seconds: int = 5) -> None:
@@ -352,8 +368,9 @@ def run_build_pipeline(
 
         # Spec
         if is_cached("spec", pkg, target, new_hashes, forced_stages):
-            event("spec", target, pkg, "skip", reason="cached", ver=pkg_ver)
-            build_db.update_reason(pkg, "spec", target, "cached")
+            reason = cached_reason(pkg, "spec", target, new_hashes)
+            event("spec", target, pkg, "skip", reason=reason, ver=pkg_ver)
+            build_db.update_reason(pkg, "spec", target, reason, run_id=run_id)
         else:
             rebuilt_packages.add(pkg)
             started_at = int(time.time())
@@ -417,8 +434,9 @@ def run_build_pipeline(
                 pkg, meta, fedora_version, target, run_id, all_packages
             )
         elif decision == "cached":
-            event("vendor", target, pkg, "skip", reason="cached", ver=pkg_ver)
-            build_db.update_reason(pkg, "vendor", target, "cached")
+            reason = cached_reason(pkg, "vendor", target, new_hashes)
+            event("vendor", target, pkg, "skip", reason=reason, ver=pkg_ver)
+            build_db.update_reason(pkg, "vendor", target, reason, run_id=run_id)
         else:
             rebuilt_packages.add(pkg)
             started_at = int(time.time())
@@ -466,8 +484,9 @@ def run_build_pipeline(
 
         # SRPM
         if is_cached("srpm", pkg, target, new_hashes, forced_stages):
-            event("srpm", target, pkg, "skip", reason="cached", ver=pkg_ver)
-            build_db.update_reason(pkg, "srpm", target, "cached")
+            reason = cached_reason(pkg, "srpm", target, new_hashes)
+            event("srpm", target, pkg, "skip", reason=reason, ver=pkg_ver)
+            build_db.update_reason(pkg, "srpm", target, reason, run_id=run_id)
         else:
             rebuilt_packages.add(pkg)
             started_at = int(time.time())
@@ -516,11 +535,19 @@ def run_build_pipeline(
         # Mock
         if skip_mock:
             event("mock", target, pkg, "skip", reason="SKIP_MOCK=true", ver=pkg_ver)
-            build_db.update_reason(pkg, "mock", target, "SKIP_MOCK")
+            build_db.update_reason(pkg, "mock", target, "SKIP_MOCK", run_id=run_id)
         else:
-            if is_cached("mock", pkg, target, new_hashes, forced_stages):
-                event("mock", target, pkg, "skip", reason="cached", ver=pkg_ver)
-                build_db.update_reason(pkg, "mock", target, "cached")
+            if is_cached(
+                "mock",
+                pkg,
+                target,
+                new_hashes,
+                forced_stages,
+                all_packages=all_packages,
+            ):
+                reason = cached_reason(pkg, "mock", target, new_hashes)
+                event("mock", target, pkg, "skip", reason=reason, ver=pkg_ver)
+                build_db.update_reason(pkg, "mock", target, reason, run_id=run_id)
             else:
                 rebuilt_packages.add(pkg)
                 started_at = int(time.time())
@@ -538,6 +565,7 @@ def run_build_pipeline(
                         forced_stages,
                         deps,
                         rebuilt_packages,
+                        all_packages=all_packages,
                     )
                 )
                 if not _stage["stage-mock"].run_for_package(
@@ -609,7 +637,7 @@ def run_build_pipeline(
     # a build that has since finished on Copr's side would still read as
     # "unknown" here and get treated as a cache miss (docs/BUGS.md BUG-0002).
     if not skip_copr and copr_repo:
-        poll_copr_status(target, list(packages))
+        poll_copr_status(target, list(packages), run_id=run_id)
 
     for pkg, meta in packages.items():
         pkg_ver = (
@@ -620,7 +648,7 @@ def run_build_pipeline(
 
         if skip_copr:
             event("copr", target, pkg, "skip", reason="SKIP_COPR=true", ver=pkg_ver)
-            build_db.update_reason(pkg, "copr", target, "SKIP_COPR")
+            build_db.update_reason(pkg, "copr", target, "SKIP_COPR", run_id=run_id)
             continue
 
         if not copr_repo:
@@ -682,12 +710,15 @@ def run_build_pipeline(
                 and prior_copr.get("build_id")
             ):
                 event("copr", target, pkg, "skip", reason="in-progress", ver=pkg_ver)
-                build_db.update_reason(pkg, "copr", target, "in-progress")
+                build_db.update_reason(
+                    pkg, "copr", target, "in-progress", run_id=run_id
+                )
                 continue
 
         if is_cached("copr", pkg, target, new_hashes, forced_stages):
-            event("copr", target, pkg, "skip", reason="cached", ver=pkg_ver)
-            build_db.update_reason(pkg, "copr", target, "cached")
+            reason = cached_reason(pkg, "copr", target, new_hashes)
+            event("copr", target, pkg, "skip", reason=reason, ver=pkg_ver)
+            build_db.update_reason(pkg, "copr", target, reason, run_id=run_id)
         else:
             rebuilt_packages.add(pkg)
             started_at = int(time.time())

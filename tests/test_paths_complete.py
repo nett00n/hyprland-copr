@@ -11,6 +11,7 @@ from lib.paths import (
     get_package_log_dir,
     mock_chroot,
     local_repo,
+    host_path,
     ROOT,
     BUILD_LOG_DIR,
     LOCAL_REPO_ROOT,
@@ -133,3 +134,35 @@ class TestPathConstants:
         # Paths should be under root or at root
         assert isinstance(ROOT, Path)
         assert isinstance(BUILD_LOG_DIR, Path)
+
+
+class TestHostPath:
+    """#COPR-0015, #BUG-0062: host_path()."""
+
+    def test_rpmbuild_volume_realm_returns_none(self):
+        assert host_path("rpmbuild-volume", "/root/rpmbuild/SRPMS/pkg.src.rpm") is None
+
+    def test_repo_realm_strips_container_prefix(self):
+        assert host_path("repo", "/work/local-repo/fedora-44-x86_64/pkg.rpm") == (
+            ROOT / "local-repo" / "fedora-44-x86_64" / "pkg.rpm"
+        )
+
+    def test_vendor_store_realm_strips_container_prefix(self):
+        assert host_path("vendor-store", "/work/.cache/vendor/pkg/abc/tarball.tar.gz") == (
+            ROOT / ".cache" / "vendor" / "pkg" / "abc" / "tarball.tar.gz"
+        )
+
+    def test_already_relative_path_resolves_against_root(self):
+        """stage-mock.py's mock-log rows are already repo-relative."""
+        assert host_path("repo", "logs/build/pkg/21-mock-build.log") == (
+            ROOT / "logs" / "build" / "pkg" / "21-mock-build.log"
+        )
+
+    def test_absolute_path_outside_container_mount_returned_unchanged(self):
+        """Already host-resolved (e.g. this call running outside a container)."""
+        assert host_path("repo", "/some/other/absolute/path.rpm") == Path(
+            "/some/other/absolute/path.rpm"
+        )
+
+    def test_unknown_realm_returns_none(self):
+        assert host_path("unknown-realm", "/work/x") is None

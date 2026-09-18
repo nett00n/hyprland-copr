@@ -19,6 +19,7 @@ from lib import build_db, paths
 from lib.repo_preflight import (
     check_buildroot_repo,
     format_local_repo_remedy,
+    rpm_arch,
     rpm_dist_tag,
     target_dist_tag,
 )
@@ -73,6 +74,32 @@ class TestRpmDistTag:
         with patch("lib.repo_preflight.subprocess.run") as mock_run:
             mock_run.return_value.stdout = ""
             assert rpm_dist_tag(path) is None
+
+
+class TestRpmArch:
+    """#COPR-0015, #BUG-0065."""
+
+    def test_from_filename_x86_64(self):
+        path = Path("aquamarine-0.14.0-8.fc44.x86_64.rpm")
+        assert rpm_arch(path) == "x86_64"
+
+    def test_from_filename_noarch(self):
+        path = Path("pkg-devel-1.0-1.fc44.noarch.rpm")
+        assert rpm_arch(path) == "noarch"
+
+    def test_falls_back_to_rpm_query(self, tmp_path):
+        path = tmp_path / "oddly-named.rpm"
+        path.write_bytes(b"not a real rpm")
+        with patch("lib.repo_preflight.subprocess.run") as mock_run:
+            mock_run.return_value.stdout = "x86_64\n"
+            assert rpm_arch(path) == "x86_64"
+
+    def test_unresolvable_returns_none(self, tmp_path):
+        path = tmp_path / "oddly-named.rpm"
+        path.write_bytes(b"not a real rpm")
+        with patch("lib.repo_preflight.subprocess.run") as mock_run:
+            mock_run.return_value.stdout = ""
+            assert rpm_arch(path) is None
 
 
 class TestFormatLocalRepoRemedy:

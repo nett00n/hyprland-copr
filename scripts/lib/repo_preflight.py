@@ -30,6 +30,9 @@ _TARGET_VERSION_RE = re.compile(r"^fedora-(\d+)-")
 # fc44, el9, etc. -- the dist-tag component of an RPM release string.
 _DIST_TAG_RE = re.compile(r"(fc\d+|el\d+)")
 
+# The arch component of an NVRA filename: name-version-release.ARCH.rpm.
+_ARCH_RE = re.compile(r"\.([A-Za-z0-9_]+)\.rpm$")
+
 
 def target_dist_tag(target: str) -> str | None:
     """Return the dist tag a chroot's own packages carry, e.g.
@@ -62,6 +65,25 @@ def rpm_dist_tag(path: Path) -> str | None:
     )
     m = _DIST_TAG_RE.search(result.stdout)
     return m.group(1) if m else None
+
+
+def rpm_arch(path: Path) -> str | None:
+    """Return an RPM's architecture (e.g. "x86_64", "noarch") from its NVRA
+    filename, falling back to `rpm -qp --qf %{ARCH}` for a filename that
+    doesn't parse. #COPR-0015, #BUG-0065 -- a noarch subpackage's arch can
+    differ from its target's arch, so this can't just be read off the target.
+    """
+    m = _ARCH_RE.search(path.name)
+    if m:
+        return m.group(1)
+    result = subprocess.run(
+        ["rpm", "-qp", "--queryformat", "%{ARCH}", str(path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    arch = result.stdout.strip()
+    return arch or None
 
 
 def format_local_repo_remedy(names: list[str], fedora_version: str) -> str:

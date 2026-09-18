@@ -73,6 +73,10 @@ packages.yaml scalar, and a vendoring/Source1 mismatch.
 
 ## Epic 3 — Build-db memory
 
+**Complete.** All items closed; see `docs/CHANGELOG.md`'s `## Unreleased`
+section for the #BUG-0063 #BUG-0059 #BUG-0064 #BUG-0061 #BUG-0065 #BUG-0098
+#BUG-0057 #BUG-0058 #BUG-0060 #BUG-0062 entries.
+
 *The "why did run N rebuild 19 packages" pain, plus the cache lying about
 dependencies. Item 4 is a single schema migration — design it once with the arch
 column (BUG-0065) and the copr-chroot dimension
@@ -85,28 +89,39 @@ Order:
    `(package, stage, target, run_id)`. D2, and `run_id` already threads through
    every `set_stage()`/`finalize_stage()` call site, so it's an extra insert with
    no caller plumbing. *First: it's the cheapest, and it starts accumulating the
-   history the rest of this epic wants to read.*
+   history the rest of this epic wants to read.* **Done** — see
+   `docs/CHANGELOG.md`'s `## Unreleased` section.
 2. **BUG-0059** — `last_success` alongside `last_attempt`. Same root cause as
-   -0063; do immediately after, on the same table design.
+   -0063; do immediately after, on the same table design. **Done** — landed
+   together with BUG-0063 (same migration).
 3. **BUG-0064** — verify a cached package's *dependencies'* RPMs still exist in
    `local-repo/<target>/`. Today `is_cached()` checks only the package's own
    artifact, and the one check that would notice (`check_buildroot_repo()`) runs
-   inside the path the cache skips.
+   inside the path the cache skips. **Done** — see `docs/CHANGELOG.md`'s
+   `## Unreleased` section.
 4. **BUG-0061 + BUG-0065** — artifact `sha256` (with an mtime/size guard) and
    the `arch` column, as **one** migration. -0065's own entry says to fold it in.
+   **Done**, together with BUG-0098 (see below) — see `docs/CHANGELOG.md`'s
+   `## Unreleased` section. The next full build after this landed rebuilt
+   every package once, as expected.
 5. **BUG-0057** — stop `spec.j2` edits force-rebuilding all 49 packages; report
-   "spec generated from an outdated template" instead.
+   "spec generated from an outdated template" instead. **Done** — see
+   `docs/CHANGELOG.md`'s `## Unreleased` section.
 6. **BUG-0058** — track the generator version as a cache input; report packages
-   last built with an older generator. Same code path as -0057.
+   last built with an older generator. Same code path as -0057. **Done** —
+   landed together with BUG-0057.
 7. **BUG-0098** — collapse the byte-identical `_content_hash()` /
    `_package_config_hash()`. *Deliberately last in this epic:* it invalidates
    every cached row and forces a full 49-package rebuild, so it should ride along
    with whichever of -0061/-0057 already costs a rebuild rather than paying twice.
+   **Done** — landed in the same migration/commit as BUG-0061+BUG-0065 above.
 8. **BUG-0060** — `make db-export` (sqlite → yaml/json snapshot). D1, and useful
-   input to BUG-0031 in Epic 4.
+   input to BUG-0031 in Epic 4. **Done** — see `docs/CHANGELOG.md`'s
+   `## Unreleased` section.
 9. **BUG-0062** — host-side path resolution for `db-shell`/`db-usage`/`db-prune`.
    Can only ever be partial (the rpmbuild volume has no host path at all) — take
-   the repo + vendor-store realms and say so.
+   the repo + vendor-store realms and say so. **Done** — landed together with
+   BUG-0060.
 
 **Done when:** you can answer "why did package X rebuild in run N" after run N+1 has
 run, and a missing dependency RPM invalidates the cache that depends on it.

@@ -51,6 +51,49 @@ def build_db_path(tmp_path, monkeypatch):
     build_db.close()
 
 
+class TestCachedReason:
+    """#BUG-0057, #BUG-0058: full_cycle.cached_reason()."""
+
+    def test_no_prior_entry_returns_plain_cached(self):
+        assert full_cycle.cached_reason("pkg", "spec", TARGET, {"templates": "t1"}) == "cached"
+
+    def test_no_staleness_returns_plain_cached(self):
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg", "spec", TARGET, run_id, "success")
+        build_db.finalize_stage(
+            "pkg", "spec", TARGET, started_at=1, hashes={"templates": "t1", "generator": "g1"}
+        )
+
+        reason = full_cycle.cached_reason(
+            "pkg", "spec", TARGET, {"templates": "t1", "generator": "g1"}
+        )
+        assert reason == "cached"
+
+    def test_stale_template_annotated(self):
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg", "spec", TARGET, run_id, "success")
+        build_db.finalize_stage(
+            "pkg", "spec", TARGET, started_at=1, hashes={"templates": "t1", "generator": "g1"}
+        )
+
+        reason = full_cycle.cached_reason(
+            "pkg", "spec", TARGET, {"templates": "t2", "generator": "g1"}
+        )
+        assert reason == "cached (stale-template)"
+
+    def test_both_stale_annotated_together(self):
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg", "spec", TARGET, run_id, "success")
+        build_db.finalize_stage(
+            "pkg", "spec", TARGET, started_at=1, hashes={"templates": "t1", "generator": "g1"}
+        )
+
+        reason = full_cycle.cached_reason(
+            "pkg", "spec", TARGET, {"templates": "t2", "generator": "g2"}
+        )
+        assert reason == "cached (stale-template, stale-generator)"
+
+
 class TestFullCycleFinalize:
     """Test finalize_report() with async/sync COPR builds.
 
@@ -258,8 +301,9 @@ def _patched_pipeline(
     """
     if is_cached_side_effect is None:
 
-        def is_cached_side_effect(stage, pkg, target, new_hashes, forced_stages):
+        def is_cached_side_effect(stage, pkg, target, new_hashes, forced_stages, **_kwargs):
             # Only mock/copr are "not cached" -- exercises the real branches.
+            # **_kwargs absorbs is_cached()'s keyword-only all_packages (#BUG-0064).
             return stage not in ("mock", "copr")
 
     with contextlib.ExitStack() as stack:

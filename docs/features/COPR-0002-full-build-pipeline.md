@@ -26,6 +26,13 @@ already-succeeded stages), `SKIP_MOCK=true`/`SKIP_COPR=true`, `SYNCHRONOUS_COPR_
 true` (wait for Copr instead of `--nowait`), `REQUIRE_CHROOT_COVERAGE=true`,
 `FORCE_REBUILD=1` (ignore cache).
 
+The `mock` stage's cache check also verifies that every (non-skipped) transitive
+dependency's own `mock`-stage artifact still exists in `local-repo/<target>/` — not
+just the package's own artifact. A dependency's RPM going missing there (stale-
+artifact prune, a partial `clean-localrepo`, volume corruption) invalidates every
+package that (transitively) depends on it, with reason `dep-artifact-missing: <dep>`,
+rather than silently staying "cached" (#BUG-0064).
+
 | Stage | What it does |
 | --- | --- |
 | validate | packages.yaml entry + `.gitmodules` sanity |
@@ -41,6 +48,18 @@ true` (wait for Copr instead of `--nowait`), `REQUIRE_CHROOT_COVERAGE=true`,
   the matching `scripts/stage-*.py` modules.
 - Caching: `lib/cache.py` (`compute_input_hashes`/`hashes_match`) + `lib/pipeline.py`
   (`is_cached()`), backed by `build-report.db` (see COPR-0015).
+  `compute_input_hashes()`'s dict has one key per cache input: `source_commit`,
+  `templates`, `generator`, `content` (the package config minus `release`),
+  `dependencies`, `patches`, `package_version`. `content` is the single
+  implementation for "package config hash" — a prior duplicate under the key
+  `package_config` (byte-identical to `content`, stored twice in every stage row)
+  was removed (#BUG-0098); reading an old row's stored `hashes` therefore always
+  misses once, which is why this rides along with a migration that costs a full
+  rebuild anyway rather than paying for a cache-wide miss twice.
+  `templates`/`generator` are *advisory*: `hashes_match()` only compares the
+  remaining ("invalidating") keys, so editing `spec.j2` or the generator itself
+  never forces a rebuild — `lib.cache.stale_advisories()` reports which packages'
+  cached spec is now stale instead (#BUG-0057, #BUG-0058; see COPR-0005).
 - Standalone equivalents exist per stage: `make stage-validate`/`stage-spec`/
   `stage-vendor`/`stage-srpm`/`stage-mock`/`stage-copr PACKAGE=<name>`.
 
@@ -51,12 +70,6 @@ true` (wait for Copr instead of `--nowait`), `REQUIRE_CHROOT_COVERAGE=true`,
   — the same shape six times.
   Proposed: a small stage-runner abstraction; do together with the per-stage
   "config: skip" copy-paste (six `set_stage()` call sites). (BUG-0076, BUG-0077)
-- Quirk: `is_cached()` checks only a package's own artifact, not whether its
-  dependencies' RPMs still exist in `local-repo/<target>/` — a dependency's RPM going
-  missing (stale-artifact prune, partial `clean-localrepo`) leaves a stale "cached"
-  verdict on every package that depends on it.
-  Proposed: extend the cache check to verify dependency artifacts are still present.
-  (BUG-0064)
 - Quirk: an edit to `spec.j2` invalidates all packages' caches at once via a strict
   full-dict hash comparison, forcing a full rebuild.
   Proposed: report "spec generated from an outdated template" instead of forcing a

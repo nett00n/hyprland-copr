@@ -60,10 +60,21 @@ class TestCachePipeline:
         result = is_cached("spec", "pkg-a", TARGET, hashes, set())
         assert result is True
 
-    def test_changed_template_invalidates_cache(self):
-        """is_cached returns False when templates hash differs."""
+    def test_changed_template_does_not_invalidate_cache(self):
+        """#BUG-0057: templates is advisory -- a changed hash alone must not
+        force a rebuild, only get reported via lib.cache.stale_advisories().
+        """
         old_hashes = {"source_commit": "abc123", "templates": "old_template"}
         new_hashes = {"source_commit": "abc123", "templates": "new_template"}
+        _seed("pkg-a", "spec", hashes=old_hashes, version="1.0-1.fc43")
+
+        result = is_cached("spec", "pkg-a", TARGET, new_hashes, set())
+        assert result is True
+
+    def test_changed_source_commit_still_invalidates_cache(self):
+        """A genuinely invalidating key still forces a cache miss."""
+        old_hashes = {"source_commit": "abc123", "templates": "same"}
+        new_hashes = {"source_commit": "def456", "templates": "same"}
         _seed("pkg-a", "spec", hashes=old_hashes, version="1.0-1.fc43")
 
         result = is_cached("spec", "pkg-a", TARGET, new_hashes, set())

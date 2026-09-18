@@ -80,6 +80,54 @@ class TestUsageReport:
         out = capsys.readouterr().out
         assert "No artifacts recorded." in out
 
+    def test_verify_false_never_hashes(self, tmp_path, capsys):
+        """#BUG-0061: without --verify, corruption is not reported at all."""
+        f = tmp_path / "a.rpm"
+        f.write_bytes(b"x" * 10)
+        build_db.record_artifact(str(f), "repo", "rpm", "a", TARGET, None)
+        f.write_bytes(b"corrupted!")  # same size, different content
+
+        db_artifacts.usage_report(verify=False)
+
+        out = capsys.readouterr().out
+        assert "sha256 mismatch" not in out
+
+    def test_verify_flags_corrupted_artifact(self, tmp_path, capsys):
+        f = tmp_path / "a.rpm"
+        f.write_bytes(b"x" * 10)
+        build_db.record_artifact(str(f), "repo", "rpm", "a", TARGET, None)
+        f.write_bytes(b"corrupte!!")  # same size -> record_artifact's guard wouldn't rehash
+
+        db_artifacts.usage_report(verify=True)
+
+        out = capsys.readouterr().out
+        assert "1 artifact(s): sha256 mismatch (corrupted on disk):" in out
+        assert str(f) in out
+
+    def test_verify_reports_unverifiable_when_no_sha256(self, tmp_path, capsys):
+        f = tmp_path / "a.rpm"
+        f.write_bytes(b"x" * 10)
+        build_db.record_artifact(str(f), "repo", "rpm", "a", TARGET, None)
+        conn = build_db.connect()
+        conn.execute("UPDATE artifacts SET sha256 = NULL")
+        conn.commit()
+
+        db_artifacts.usage_report(verify=True)
+
+        out = capsys.readouterr().out
+        assert "1 artifact(s): no sha256 recorded, not verifiable" in out
+
+    def test_verify_silent_when_unmodified(self, tmp_path, capsys):
+        f = tmp_path / "a.rpm"
+        f.write_bytes(b"x" * 10)
+        build_db.record_artifact(str(f), "repo", "rpm", "a", TARGET, None)
+
+        db_artifacts.usage_report(verify=True)
+
+        out = capsys.readouterr().out
+        assert "sha256 mismatch" not in out
+        assert "not verifiable" not in out
+
 
 class TestPrune:
     def test_dry_run_deletes_nothing(self, tmp_path, capsys):
@@ -269,3 +317,93 @@ class TestForgetRepo:
         assert (TARGET, "srpm", "rpmbuild-volume") in remaining_targets_kinds
         assert (TARGET, "mock_log", "repo") in remaining_targets_kinds
         assert TARGET in capsys.readouterr().out
+
+
+class TestResolvePath:
+    """#COPR-0015, #BUG-0062: db_artifacts._resolve_path()."""
+
+    def test_recorded_path_resolves_directly(self, tmp_path):
+        f = tmp_path / "a.rpm"
+        f.write_bytes(b"x")
+        row = {"path": str(f), "realm": "repo"}
+        assert db_artifacts._resolve_path(row) == f
+
+    def test_container_path_falls_back_to_host_path(self, tmp_path, monkeypatch):
+        from lib import paths as paths_module
+
+        monkeypatch.setattr(paths_module, "ROOT", tmp_path)
+        (tmp_path / "local-repo" / TARGET).mkdir(parents=True)
+        real = tmp_path / "local-repo" / TARGET / "a.rpm"
+        real.write_bytes(b"x")
+
+        row = {"path": f"/work/local-repo/{TARGET}/a.rpm", "realm": "repo"}
+        assert db_artifacts._resolve_path(row) == real
+
+    def test_rpmbuild_volume_unresolvable_returns_none(self):
+        row = {"path": "/root/rpmbuild/SRPMS/a.src.rpm", "realm": "rpmbuild-volume"}
+        assert db_artifacts._resolve_path(row) is None
+
+    def test_genuinely_missing_file_returns_none(self, tmp_path):
+        row = {"path": str(tmp_path / "gone.rpm"), "realm": "repo"}
+        assert db_artifacts._resolve_path(row) is None
+
+
+class TestUsageReportHostResolution:
+    def test_rpmbuild_volume_row_reported_unresolvable_not_missing(self, capsys):
+        build_db.record_artifact(
+            "/root/rpmbuild/SRPMS/a.src.rpm", "rpmbuild-volume", "srpm", "a", TARGET, None
+        )
+
+        db_artifacts.usage_report()
+
+        out = capsys.readouterr().out
+        assert "no host path exists for this realm" in out
+        assert "file missing on disk" not in out
+
+
+class TestExportSnapshot:
+    def test_yaml_export_contains_all_tables(self, tmp_path, capsys):
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", TARGET, run_id, "success")
+        f = tmp_path / "a.rpm"
+        f.write_bytes(b"x")
+        build_db.record_artifact(str(f), "repo", "rpm", "a", TARGET, "1.0-1.fc44")
+
+        db_artifacts.export_snapshot("yaml", None)
+
+        out = capsys.readouterr().out
+        assert "runs:" in out
+        assert "stage_results:" in out
+        assert "stage_history:" in out
+        assert "artifacts:" in out
+        assert "a.rpm" in out
+
+    def test_json_export_is_valid_json(self, capsys):
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", TARGET, run_id, "success")
+
+        db_artifacts.export_snapshot("json", None)
+
+        import json
+
+        out = capsys.readouterr().out
+        data = json.loads(out)
+        assert set(data.keys()) == {"runs", "stage_results", "stage_history", "artifacts"}
+
+    def test_export_to_file(self, tmp_path):
+        build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        output = tmp_path / "snapshot.yaml"
+
+        db_artifacts.export_snapshot("yaml", str(output))
+
+        assert output.exists()
+        assert "runs:" in output.read_text()
+
+    def test_two_exports_with_no_changes_are_identical(self):
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", TARGET, run_id, "success")
+
+        first = build_db.export_snapshot()
+        second = build_db.export_snapshot()
+
+        assert first == second

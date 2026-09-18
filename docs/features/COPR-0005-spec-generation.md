@@ -22,6 +22,12 @@ per-version difference is written as a literal `%if 0%{?fedora} == N ... %endif`
 conditional directly in `build.prep`/`commands`/`install` (see docs/packaging.md
 "Per-Fedora-version spec differences").
 
+An edit to `templates/spec.j2`, `scripts/stage-spec.py`, or `scripts/lib/spec_utils.py`
+(the generator itself) does not force a rebuild: every package's spec/vendor/srpm/mock
+cache stays a hit, and the packages whose spec was actually generated from an older
+template or generator version are reported (`stage-show-plan`/`gen-report`) as
+`stale-template`/`stale-generator` instead (#BUG-0057, #BUG-0058).
+
 ## Implementation
 
 - `scripts/stage-spec.py`, `templates/spec.j2`.
@@ -35,14 +41,6 @@ conditional directly in `build.prep`/`commands`/`install` (see docs/packaging.md
   except by its own test.
   Proposed: check whether `build_context()` has spec-rendering logic `stage-spec.py`
   lacks, then remove or replace with lib calls. (BUG-0074)
-- Quirk: `_templates_hash()` hashes `spec.j2` under a strict full-dict equality check,
-  so any edit to the template invalidates every package's cache at once and forces a
-  full rebuild.
-  Proposed: report "generated from an outdated template" instead of forcing a rebuild.
-  (BUG-0057)
-- Quirk: the spec generator's own version isn't a tracked cache input at all.
-  Proposed: report which packages were last built with an older generator version.
-  (BUG-0058)
 
 ## Testing
 

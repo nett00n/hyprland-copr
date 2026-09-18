@@ -69,6 +69,28 @@ class TestComputeInputHashes:
 
         assert hash1 == hash2
 
+    def test_generator_key_present_and_deterministic(self):
+        """#BUG-0058: `generator` is a real (advisory) key in the hash dict,
+        deterministic for an unchanged generator source.
+        """
+        meta = {"version": "1.0"}
+        all_packages = {"test-pkg": meta}
+
+        result = compute_input_hashes("test-pkg", meta, all_packages)
+        assert "generator" in result
+        assert result["generator"] == compute_input_hashes(
+            "test-pkg", meta, all_packages
+        )["generator"]
+
+    def test_package_config_key_no_longer_present(self):
+        """#BUG-0098: the byte-identical package_config key was removed."""
+        meta = {"version": "1.0"}
+        all_packages = {"test-pkg": meta}
+
+        assert "package_config" not in compute_input_hashes(
+            "test-pkg", meta, all_packages
+        )
+
 
 class TestHashesMatch:
     """Test hashes_match function."""

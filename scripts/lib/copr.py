@@ -520,12 +520,17 @@ def fetch_failed_chroot_logs(pkg: str, build_id: int) -> None:
         return
 
 
-def poll_copr_status(target: str, packages_list: list[str]) -> bool:
+def poll_copr_status(
+    target: str, packages_list: list[str], run_id: int | None = None
+) -> bool:
     """Poll COPR status for packages with non-terminal states using copr-cli.
 
     Queries the status of pending builds and updates their state in
     build-report.db (touching only the `state` column -- see
-    build_db.update_state). Skips packages that don't have a build_id or are
+    build_db.update_state). `run_id`, when given (full-cycle.py has one;
+    gen-report.py's standalone poll does not), mirrors a state change into
+    that run's `stage_history` row (#COPR-0015, #BUG-0063). Skips packages
+    that don't have a build_id or are
     already in terminal states (success/failed).
 
     Args:
@@ -569,7 +574,7 @@ def poll_copr_status(target: str, packages_list: list[str]) -> bool:
 
         # Update if status changed
         if new_state and new_state != state:
-            build_db.update_state(pkg, "copr", target, new_state)
+            build_db.update_state(pkg, "copr", target, new_state, run_id=run_id)
             if new_state == "failed":
                 fetch_failed_chroot_logs(pkg, build_id)
             updated = True

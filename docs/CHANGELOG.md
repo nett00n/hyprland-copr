@@ -23,6 +23,88 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- BUG-0060 BUG-0062 COPR-0015: `make db-export [FORMAT=yaml|json] [OUTPUT=path]`
+  (`db-artifacts.py --export`) dumps `runs`/`stage_results`/`stage_history`/
+  `artifacts` to a deterministic snapshot for offline diffing — two exports of
+  an unchanged db are identical, the natural input to
+  [COPR-0012](features/COPR-0012-docs-generation.md)'s BUG-0031 docs-drift
+  check. New `lib.build_db.all_runs()`/`all_stage_results()`/
+  `all_stage_history()`/`all_artifacts()`/`export_snapshot()`.
+  New `lib.paths.host_path(realm, path)` resolves a recorded
+  container-absolute `artifacts.path` (the `/work` bind mount) back to a real
+  host path for the `repo`/`vendor-store` realms; `rpmbuild-volume` (a podman
+  named volume) has no host path at all and returns `None`. `db-artifacts.py
+  --usage`/`--prune` now fall back to it when the recorded path doesn't
+  resolve directly, so both work from the host as well as inside the
+  container — `--usage` reports `rpmbuild-volume` rows as "no host path
+  exists for this realm" rather than lumping them in with genuinely missing
+  files. `make db-shell NO_CONTAINER=1` opens `build-report.db` with the
+  host's own sqlite3 instead of spawning the container.
+- BUG-0057 BUG-0058 COPR-0002 COPR-0005: an edit to `templates/spec.j2` or the
+  generator itself (`scripts/stage-spec.py`, `scripts/lib/spec_utils.py`) no
+  longer force-rebuilds every package. `compute_input_hashes()` gained a
+  `generator` key (sha256 of the generator's own source); `templates` and
+  `generator` are now `lib.cache.ADVISORY_HASH_KEYS` — `hashes_match()`
+  excludes them from cache-hit comparison, and new `lib.cache.
+  stale_advisories()` reports which changed. `full-cycle.py`'s cache-hit
+  reason becomes `cached (stale-template)`/`cached (stale-generator)`/
+  `cached (stale-template, stale-generator)` instead of a bare `cached` when
+  applicable — `lib.reporting.print_summary()`/`build_totals_line()` and
+  `lib.pipeline.cache_miss_reason()`'s rebuilt-dep filter now match on
+  `reason.startswith("cached")` rather than `== "cached"`.
+  `stage-show-plan.py` marks the spec column `cache!` and prints a "N
+  package(s) built from an outdated spec template/generator" footer note;
+  `gen-report.py`'s per-package report already surfaces the annotated reason
+  verbatim (no template change needed, since it already showed any
+  non-`"cached"` reason string). New reasons/keys apply going forward only —
+  a row recorded before this landed has no `generator` key, and a missing
+  advisory key is treated as "unknown, not stale" rather than reported.
+- BUG-0061 BUG-0065 BUG-0098 COPR-0015 COPR-0002: `artifacts` gained `sha256`
+  (mtime/size-guarded — an unchanged file carries its prior hash forward
+  instead of being re-hashed on every run) and `arch` columns.
+  `lib.build_db.record_artifact()` takes an optional `arch` kwarg
+  (stage-mock.py parses it from the RPM's NVRA filename via new
+  `lib.repo_preflight.rpm_arch()`; stage-srpm.py passes `"src"`); new
+  `lib.build_db.verify_artifact()` re-hashes on demand — wired into
+  `make db-usage VERIFY=1` (`db-artifacts.py --usage --verify`), which flags
+  a sha256 mismatch as on-disk corruption. `SCHEMA_VERSION` 2 -> 3.
+  Same migration folds in BUG-0098: `lib/cache.py`'s `_package_config_hash()`
+  was a byte-identical duplicate of `_content_hash()` (same normalize ->
+  exclude-release -> sha256 steps), stored under a second `package_config`
+  key in every stage row; `_dependencies_hashes()` now calls `_content_hash()`
+  directly and `compute_input_hashes()` no longer emits `package_config`.
+  Riding along with the sha256/arch migration means the resulting full
+  49-package cache invalidation is paid once, not twice — **the next
+  `make full-cycle`/`make update-daily` after this lands rebuilds every
+  package**, as flagged in the roadmap.
+- BUG-0064 COPR-0002: `is_cached("mock", ...)` now also verifies that every
+  effective dependency's own `mock`-stage artifact is still present in
+  `local-repo/<target>/`, not just the package's own artifact — previously a
+  dependency's RPM going missing (stale-artifact prune, a partial
+  `make clean-localrepo`, volume corruption) left every dependent "cached"
+  since only the dependent's own hash/artifact were checked. New
+  `lib.pipeline.missing_dep_artifacts()`; `is_cached()`/`cache_miss_reason()`
+  gained a keyword-only `all_packages` param (full-cycle.py and
+  stage-show-plan.py now pass it) that the mock-stage check needs to resolve
+  deps — omitting it preserves the old behavior for any other caller. New
+  reason string `dep-artifact-missing: <name>[, <name>...]`.
+- BUG-0063 BUG-0059 COPR-0015: `build-report.db` gained an append-only
+  `stage_history` table (keyed by `(package, stage, target, run_id)`) and
+  `last_success_*` columns on `stage_results`. Every `set_stage()`/
+  `finalize_stage()`/`update_reason()`/`update_state()` call now also appends
+  (or, within the same run, updates) a `stage_history` row, so "why did
+  package X rebuild in run N" is answerable after run N+1 has started instead
+  of only before it. `update_reason`/`update_state` gained an optional
+  `run_id` kwarg (threaded through from `full-cycle.py` and
+  `lib.copr.poll_copr_status`) so a cache-hit in run N+5 is attributed to run
+  N+5, not silently rewritten into whichever earlier run's row the stage last
+  actually executed in. `last_success_version`/`_log`/`_build_id`/`_at` are
+  carried forward on anything but a `success`, so a failed rebuild no longer
+  clobbers the previous known-good build's identity — new `lib.build_db.
+  last_success()` reads it back. Schema migrations are now ordered/additive
+  (`_MIGRATIONS`, applied from `PRAGMA user_version` upward) rather than a
+  single `CREATE TABLE IF NOT EXISTS` script, so existing databases pick up
+  the new table/columns without losing data. `SCHEMA_VERSION` 1 -> 2.
 - BUG-0105 COPR-0010: `hyprland-protocols` fixed (`build.system: meson -> cmake`,
   matching upstream 0.7.1's `meson -> cmake` switch) after mock failures on all
   three chroots. `make validate-packages` gained
