@@ -1,7 +1,7 @@
 
 Name:           swayosd
 Version:        0.3.2
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        A GTK based on screen display for keyboard shortcuts like caps-lock and volume
 License:        GPL-3.0-or-later
 URL:            https://github.com/ErikReider/SwayOSD
@@ -80,7 +80,7 @@ Development files for swayosd.
 %files devel
 
 %changelog
-* Mon Jun 22 2026 nett00n <copr@nett00n.org> - 0.3.2-5
+* Mon Jun 22 2026 nett00n <copr@nett00n.org> - 0.3.2-6
 
 - Arvid Eriksson (1):
 - Fix --top-margin positioning with fractional scaling (#242)

@@ -2,7 +2,7 @@
 
 Name:           uwsm
 Version:        0.27.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Universal Wayland Session Manager
 License:        MIT
 URL:            https://github.com/Vladimir-csp/uwsm
@@ -83,7 +83,7 @@ Development files for uwsm.
 %files devel
 
 %changelog
-* Tue Sep 15 2026 nett00n <copr@nett00n.org> - 0.27.0-1
+* Tue Sep 15 2026 nett00n <copr@nett00n.org> - 0.27.0-2
 
 - chore: Release 0.27.0 "Your Friendly Neighborhood Skynet"
 - feat: editable export/cleanup lists

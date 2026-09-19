@@ -2,7 +2,7 @@
 
 Name:           lambdock
 Version:        0.7.4
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Wayland desktop dock customizable with GNU Guile Scheme
 License:        GPL-3.0-or-later
 URL:            https://codeberg.org/jjba23/lambdock.git
@@ -62,6 +62,6 @@ Commit:            f868e05ebd7c22187e3fa22f65c405c54cc1042c
 %{_datadir}/locale/*/LC_MESSAGES/lambdock.mo
 
 %changelog
-* Mon Sep 07 2026 nett00n <copr@nett00n.org> - 0.7.4-5
+* Mon Sep 07 2026 nett00n <copr@nett00n.org> - 0.7.4-6
 
 - feat: ✨ Improve dynamic items

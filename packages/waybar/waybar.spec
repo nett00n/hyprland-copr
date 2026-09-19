@@ -1,7 +1,7 @@
 
 Name:           waybar
 Version:        0.15.0
-Release:        18%{?dist}
+Release:        19%{?dist}
 Summary:        Highly customizable Wayland bar for Sway and Wlroots based compositors
 License:        MIT
 URL:            https://github.com/Alexays/Waybar
@@ -80,6 +80,6 @@ Development files for waybar.
 %files devel
 
 %changelog
-* Thu Sep 17 2026 nett00n <copr@nett00n.org> - 0.15.0-18
+* Fri Sep 18 2026 nett00n <copr@nett00n.org> - 0.15.0-19
 
 - Update to 0.15.0

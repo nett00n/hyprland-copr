@@ -2,7 +2,7 @@
 
 Name:           glaze-v7
 Version:        7.9.1
-Release:        9%{?dist}
+Release:        10%{?dist}
 Summary:        Compat build of glaze 7.x for consumers pinned below 8.0
 License:        MIT
 URL:            https://github.com/stephenberry/glaze
@@ -59,6 +59,6 @@ Development files for glaze-v7.
 %{_includedir}/glaze-v7/
 
 %changelog
-* Tue Sep 08 2026 nett00n <copr@nett00n.org> - 7.9.1-9
+* Fri Sep 18 2026 nett00n <copr@nett00n.org> - 7.9.1-10
 
 - Update to 7.9.1

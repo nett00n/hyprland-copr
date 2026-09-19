@@ -2,7 +2,7 @@
 
 Name:           imageio-ffmpeg
 Version:        0.6.0
-Release:        9%{?dist}
+Release:        10%{?dist}
 Summary:        FFMPEG wrapper for Python
 BuildArch:      noarch
 License:        BSD-2-Clause
@@ -45,6 +45,6 @@ Commit:            ae47d8028c237ca5507ceef1b843ee427b442887
 %license LICENSE
 
 %changelog
-* Thu Jan 16 2025 nett00n <copr@nett00n.org> - 0.6.0-9
+* Thu Jan 16 2025 nett00n <copr@nett00n.org> - 0.6.0-10
 
 - Bump version
