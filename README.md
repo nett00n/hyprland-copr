@@ -170,7 +170,7 @@ New packages: snappy switcher, mpvpaper.
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-09-17
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-09-19
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->
