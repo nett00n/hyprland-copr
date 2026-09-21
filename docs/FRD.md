@@ -28,9 +28,11 @@ file and `docs/features/` work together.
 - [ ] [COPR-0021. Per-chroot Copr rows and a package × target matrix report](features/COPR-0021-copr-chroot-matrix.md) - `#matrix` `#copr` `#reporting`
 - [X] [COPR-0022. Run-scoped logs and a durable nightly summary](features/COPR-0022-run-scoped-logs-and-summary.md) - `#daily` `#diagnostics` `#logs`
 - [ ] [COPR-0023. Upstream source signature verification](features/COPR-0023-source-signature-verification.md) - `#security` `#provenance`
+- [ ] [COPR-0024. Agent memory via HyperMnesia (Tier 0/1 constraints + doc search)](features/COPR-0024-hypermnesia-memory.md) - `#tooling` `#docs` `#agents`
 
 ## Tags
 
+- `#agents`: COPR-0024
 - `#arch`: COPR-0020
 - `#automation`: COPR-0003
 - `#build`: COPR-0002, COPR-0003, COPR-0006, COPR-0009, COPR-0017, COPR-0018, COPR-0019, COPR-0020
@@ -40,7 +42,7 @@ file and `docs/features/` work together.
 - `#copr`: COPR-0002, COPR-0007, COPR-0017, COPR-0021
 - `#daily`: COPR-0003, COPR-0022
 - `#diagnostics`: COPR-0009, COPR-0022
-- `#docs`: COPR-0012, COPR-0016
+- `#docs`: COPR-0012, COPR-0016, COPR-0024
 - `#intake`: COPR-0014
 - `#lint`: COPR-0010
 - `#logs`: COPR-0022
@@ -63,5 +65,6 @@ file and `docs/features/` work together.
 - `#srpm`: COPR-0018
 - `#state`: COPR-0015
 - `#testing`: COPR-0006, COPR-0010
+- `#tooling`: COPR-0024
 - `#upstream`: COPR-0004
 - `#versioning`: COPR-0004

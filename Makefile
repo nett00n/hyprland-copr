@@ -799,3 +799,19 @@ stage-log-analyze: check-image check-venv setup-volumes ## Analyze build logs fo
 
 prune-logs: check-image check-venv ## Enforce log retention on logs/runs/ (#COPR-0022). Dry-run by default; CONFIRM=1 to delete. KEEP=<n> overrides LOG_RETENTION_RUNS (default 10)
 	@$(CONTAINER_PYTHON) scripts/prune-logs.py $(if $(KEEP),--keep $(KEEP),) $(if $(filter 1,$(CONFIRM)),--confirm,)
+
+# HM_HOME points at the HyperMnesia checkout (#COPR-0024); runs on the host, never in the
+# container, since it talks to an external Postgres over $(DATABASE_URL).
+HM_HOME       ?= $(HOME)/personal-env/hypermnesia
+HM_SCOPE      ?= hyprland-copr-daily
+
+memory-refresh: ## Re-ingest docs/ into HyperMnesia and check the store is healthy (#COPR-0024). No-op if DATABASE_URL is unset -- see docs/features/COPR-0024-hypermnesia-memory.md
+	@if [ -z "$(DATABASE_URL)" ]; then \
+		echo "memory-refresh: DATABASE_URL not set, skipping (HyperMnesia not configured on this box)"; \
+	elif [ ! -d "$(HM_HOME)" ]; then \
+		echo "memory-refresh: $(HM_HOME) not found, skipping"; \
+	else \
+		cd "$(HM_HOME)" && HM_PYTHON=$(HM_HOME)/.venv/bin/python3 HM_REPO=$(HM_SCOPE) ./hm ingest $(CURDIR) $(HM_SCOPE) && \
+		.venv/bin/python ci/freshness.py $(CURDIR) $(HM_SCOPE) && \
+		HM_PYTHON=$(HM_HOME)/.venv/bin/python3 HM_REPO=$(HM_SCOPE) ./hm doctor; \
+	fi

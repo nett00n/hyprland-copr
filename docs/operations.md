@@ -452,3 +452,32 @@ Fields:
   conditionally on that, since without it the container's stdout is always a plain
   pipe regardless of your outer terminal. `NO_COLOR` set on the host is forwarded into
   the container the same way `LOG_LEVEL` already is.
+
+## Memory store (agent constraints + doc search)
+
+(#COPR-0024) An optional [HyperMnesia](https://github.com/Recluse/HyperMnesia) instance,
+checked out separately at `~/personal-env/hypermnesia` (not part of this repo), gives an AI
+coding agent two things when it's running and configured: the `must` rules from
+`memory/seed.sql` injected automatically before it edits a file, and hybrid search over
+`docs/`. It is entirely optional infrastructure — every hook is fail-open, and nothing in
+this repo's build/test/lint path depends on it.
+
+```shell
+make memory-refresh   # re-ingest docs/, check freshness, run hm doctor
+```
+
+No-ops with a message if `DATABASE_URL` is unset or `~/personal-env/hypermnesia` doesn't
+exist, so it's safe to run on a box that never set the store up. When it does run, it's the
+same operation whether it's the first ingest or a refresh — HyperMnesia diffs by content
+hash and only re-embeds what changed.
+
+`HM_HOME` (default `~/personal-env/hypermnesia`) and `HM_SCOPE` (default
+`hyprland-copr-daily`, must match `HM_REPO` in `.mcp.json`/`.claude/settings.json` exactly —
+the scope match is case-sensitive) override the target on the command line.
+
+**Editing a rule:** `CLAUDE.md` is the source of truth. Update it first, then hand-edit
+`memory/seed.sql` to match, then `make memory-refresh` and `psql "$DATABASE_URL" -f
+memory/seed.sql` (the seed load isn't part of the ingest, since it isn't a document). See
+[docs/features/COPR-0024-hypermnesia-memory.md](features/COPR-0024-hypermnesia-memory.md)
+for the full design and `~/personal-env/hypermnesia/docs/INSTALL.md` for standing the store
+up in the first place.

@@ -23,6 +23,13 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0024: adds an optional [HyperMnesia](https://github.com/Recluse/HyperMnesia)-backed
+  memory layer for AI coding agents working in this repo — a hand-authored component map
+  (`memory/seed.sql`) injects the `must` rules for a file before it's edited, plus hybrid
+  search over `docs/`. New `make memory-refresh` target (no-ops without `DATABASE_URL`);
+  new `tests/test_hypermnesia_seed.py` validates the map with no database needed. The store
+  itself lives outside this repo. See
+  [COPR-0024](features/COPR-0024-hypermnesia-memory.md).
 - BUG-0100 COPR-0004: `update-versions.py`'s 10 warn-and-continue sites (plus
   `lib.gitmodules.fetch_tags()`, whose fetch/timeout failure used to be
   indistinguishable from "upstream has no tags") now collect into one
