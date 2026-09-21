@@ -8,8 +8,24 @@ its no-raise contract (see that function's docstring).
 import configparser
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 from .subprocess_utils import run_git
+
+
+class TagFetch(NamedTuple):
+    """Result of fetch_tags(): tags plus whether the fetch itself failed.
+
+    error is None on success (including "no tags at all", which is not an
+    error). A non-None error means the tag list is not trustworthy -- an empty
+    `tags` list must not be read as "upstream has no tags" in that case. See
+    docs/BUGS.md formerly BUG-0100: fetch/timeout failures used to return the
+    same `[]` as a tagless repo, hiding a network failure as silently as a
+    tagless upstream.
+    """
+
+    tags: list[str]
+    error: str | None = None
 
 
 def parse_gitmodules(path: Path) -> list[dict]:
@@ -36,15 +52,22 @@ def parse_gitmodules(path: Path) -> list[dict]:
     return modules
 
 
-def fetch_tags(url: str) -> list[str]:
-    """Fetch all tags from a remote git URL."""
+def fetch_tags(url: str) -> TagFetch:
+    """Fetch all tags from a remote git URL.
+
+    Returns TagFetch(tags, error) -- error is set (and tags is []) when the
+    fetch itself failed, so callers can tell that apart from an upstream that
+    legitimately has no tags. See TagFetch's docstring / BUG-0100.
+    """
     result = run_git("ls-remote", "--tags", url, timeout=30)
     if result.returncode == 124:
-        print(f"  warning: timeout fetching tags from {url}", file=sys.stderr)
-        return []
+        error = f"timeout fetching tags from {url}"
+        print(f"  warning: {error}", file=sys.stderr)
+        return TagFetch([], error)
     if result.returncode != 0:
-        print(f"  warning: failed to fetch tags from {url}", file=sys.stderr)
-        return []
+        error = f"failed to fetch tags from {url}"
+        print(f"  warning: {error}", file=sys.stderr)
+        return TagFetch([], error)
     tags = []
     for line in result.stdout.splitlines():
         parts = line.split("\t", 1)
@@ -54,7 +77,7 @@ def fetch_tags(url: str) -> list[str]:
         if ref.endswith("^{}"):
             continue
         tags.append(ref.removeprefix("refs/tags/"))
-    return tags
+    return TagFetch(tags)
 
 
 def ensure_initialized(root: Path, modules: list[dict], urls: set[str]) -> list[str]:

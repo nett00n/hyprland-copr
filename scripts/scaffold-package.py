@@ -61,7 +61,7 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
     version = extract_version(repo)
     if version is None:
         print(f"fetching tags to determine version: {key} ...", file=sys.stderr)
-        tags = fetch_tags(url)
+        tags, _error = fetch_tags(url)
         latest = latest_semver(tags)
     else:
         latest = version

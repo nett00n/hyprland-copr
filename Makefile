@@ -691,6 +691,9 @@ _update-daily:
 		fi; \
 	fi
 	@echo $(HIGHLIGHT_PREFIX) "$$(cat logs/.update-versions-count 2>/dev/null || echo '?') package(s) updated tonight"
+	@if [ -f logs/.update-versions-failures.md ]; then \
+		echo "$(HIGHLIGHT_PREFIX) ✗ $$(grep -c '^- \`' logs/.update-versions-failures.md 2>/dev/null || echo '?') upstream refresh failure(s) tonight (see docs/nightly-summary.md's Upstream version refresh section, or logs/.update-versions-failures.md) #BUG-0100"; \
+	fi
 	@if [ -f logs/.update-daily-failed ]; then \
 		rm -f logs/.update-daily-failed; \
 		echo "$(HIGHLIGHT_PREFIX) ✗ Some packages failed to build tonight (docs and commit were still produced; see stage-log-analyze output above, docs/nightly-summary.md, or logs/runs/latest/<target>/<pkg>)"; \

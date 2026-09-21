@@ -20,7 +20,7 @@ def cmd_list_tags(modules: list[dict]) -> None:
         name = mod["name"]
         url = mod["url"]
         print(f"fetching tags: {name} ...", file=sys.stderr)
-        tags = fetch_tags(url)
+        tags, _error = fetch_tags(url)
         detected = latest_semver(tags)
         print(f"\n{name}  ({url})")
         if not tags:

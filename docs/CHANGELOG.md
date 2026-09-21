@@ -23,6 +23,16 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- BUG-0100 COPR-0004: `update-versions.py`'s 10 warn-and-continue sites (plus
+  `lib.gitmodules.fetch_tags()`, whose fetch/timeout failure used to be
+  indistinguishable from "upstream has no tags") now collect into one
+  aggregated report instead of only scrolling past on stderr: a stdout block
+  after the YAML summary, a `logs/.update-versions-failures.md` sentinel
+  folded into `docs/nightly-summary.md`'s new `## Upstream version refresh`
+  section, and a count in `_update-daily`'s closing banner. `fetch_tags()` now
+  returns `TagFetch(tags, error)`. Exit code stays 0 on partial failure — one
+  flaky remote must not abort the whole nightly. See
+  [COPR-0004](features/COPR-0004-version-auto-bump.md).
 - COPR-0022: build logs nest under `logs/runs/<run_id>/<target>/<package>/`
   instead of a flat `logs/build/<pkg>/` — `full-cycle.py` no longer `rmtree`s
   a package's logs at the start of the next run, so a prior night's mock/Copr

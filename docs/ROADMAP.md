@@ -146,9 +146,15 @@ Order:
    into `_update-daily`) linking back to those per-run logs. The live-tailing
    half (bind-mount mock's resultdir) stays a separate, cheap follow-up, per
    the original plan — see `docs/CHANGELOG.md`'s `## Unreleased` section.
-2. **BUG-0100** — aggregate the 10 warn-and-continue sites in
-   `update-versions.py` into one failure report. Today a single `git fetch`
-   failure is invisible and a package silently sits on a stale version.
+2. **BUG-0100**. **Done** — every warn-and-continue site in `update-versions.py`
+   (plus `lib.gitmodules.fetch_tags()`'s own fetch/timeout failure, previously
+   indistinguishable from an upstream with no tags) now collects into one
+   report: an aggregated stdout block, a `logs/.update-versions-failures.md`
+   sentinel folded into `docs/nightly-summary.md`
+   ([COPR-0022](features/COPR-0022-run-scoped-logs-and-summary.md)), and a
+   count in `_update-daily`'s closing banner. Exit code stays 0 — see
+   [COPR-0004](features/COPR-0004-version-auto-bump.md)'s Behavior section for
+   why — see `docs/CHANGELOG.md`'s `## Unreleased` section.
 3. **BUG-0039** — resubmitted packages publish as `unknown` (async `--nowait`
    submit, `readme` runs seconds later, one poll too early).
 4. **BUG-0031** — CI check that generated docs still match
@@ -156,8 +162,9 @@ Order:
    (snapshot vs. partial diff) — **BUG-0060's `db-export` from Epic 3 is the
    natural answer**, which is why it's sequenced after.
 5. **BUG-0101** — concurrency in `update-versions.py`'s per-submodule loop.
-   Split from BUG-0100 as materially riskier (shared `.git/modules`); do it only
-   once BUG-0100's aggregate reporting can show what broke.
+   Split from BUG-0100 as materially riskier (shared `.git/modules`); its
+   aggregate reporting has shipped (item 2 above), so this can now show what
+   broke.
 
 **Done when:** a failed nightly leaves a committed summary pointing at logs that still
 exist tomorrow.

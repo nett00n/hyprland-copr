@@ -614,7 +614,7 @@ class TestMain:
                                         "url": "https://github.com/test/test.git",
                                     }
                                 ]
-                                mock_fetch.return_value = ["v1.2.3", "v1.0.0"]
+                                mock_fetch.return_value = (["v1.2.3", "v1.0.0"], None)
                                 mock_semver.return_value = "v1.2.3"
                                 uv.main()
 
@@ -658,14 +658,17 @@ class TestMain:
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
-                            mock_fetch.return_value = [
-                                "1.0",
-                                "1.1",
-                                "1.2",
-                                "1.2.1",
-                                "1.3",
-                                "1.9",
-                            ]
+                            mock_fetch.return_value = (
+                                [
+                                    "1.0",
+                                    "1.1",
+                                    "1.2",
+                                    "1.2.1",
+                                    "1.3",
+                                    "1.9",
+                                ],
+                                None,
+                            )
                             uv.main()
 
         captured = capsys.readouterr()
@@ -705,7 +708,7 @@ class TestMain:
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
-                            mock_fetch.return_value = ["nightly", "latest"]
+                            mock_fetch.return_value = (["nightly", "latest"], None)
                             uv.main()
 
         captured = capsys.readouterr()
@@ -753,7 +756,7 @@ class TestMain:
                                         "url": "https://github.com/test/test.git",
                                     }
                                 ]
-                                mock_fetch.return_value = ["v2.0.0"]
+                                mock_fetch.return_value = (["v2.0.0"], None)
                                 mock_semver.return_value = "v2.0.0"
                                 uv.main()
 
@@ -843,7 +846,7 @@ class TestMain:
                                         "url": "https://github.com/test/test.git",
                                     }
                                 ]
-                                mock_fetch.return_value = ["v2.0.0"]
+                                mock_fetch.return_value = (["v2.0.0"], None)
                                 mock_semver.return_value = "v2.0.0"
                                 uv.main()
 
@@ -890,7 +893,7 @@ class TestMain:
                                             "url": "https://github.com/test/test.git",
                                         }
                                     ]
-                                    mock_fetch.return_value = []
+                                    mock_fetch.return_value = ([], None)
                                     mock_semver.return_value = None
                                     mock_commit.return_value = (
                                         "abcdef123456",
@@ -926,7 +929,7 @@ class TestMain:
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
-                            mock_fetch.return_value = ["v1.0.0"]
+                            mock_fetch.return_value = (["v1.0.0"], None)
                             mock_semver.return_value = "v1.0.0"
                             uv.main()
 
@@ -968,7 +971,7 @@ class TestMain:
                                         "url": "https://github.com/test/test.git",
                                     }
                                 ]
-                                mock_fetch.return_value = ["v1.5.0"]
+                                mock_fetch.return_value = (["v1.5.0"], None)
                                 mock_semver.return_value = "v1.5.0"
                                 mock_write.return_value = {
                                     "test": ("1.0.0", "1.5.0")
@@ -1030,7 +1033,7 @@ class TestMain:
                                             "url": "https://github.com/test/test",
                                         }
                                     ]
-                                    mock_fetch.return_value = ["v0.56.1"]
+                                    mock_fetch.return_value = (["v0.56.1"], None)
                                     mock_semver.return_value = "v0.56.1"
                                     mock_commit.return_value = (
                                         "924a3573abcdef",
@@ -1297,7 +1300,7 @@ class TestMain:
         with patch.object(uv, "parse_gitmodules") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
                 with patch.object(uv, "pull_submodule", return_value="origin/main"):
-                    with patch.object(uv, "fetch_tags", return_value=[]):
+                    with patch.object(uv, "fetch_tags", return_value=([], None)):
                         with patch.object(uv, "latest_semver", return_value=None):
                             with patch.object(
                                 uv, "get_submodule_commit_with_base"
@@ -1368,3 +1371,215 @@ class TestMain:
         captured = capsys.readouterr()
         assert "submodule not pulled" in captured.err
         assert "latest: null" in captured.out
+
+
+class TestRenderFailureBlock:
+    """Tests for render_failure_block (the stdout aggregate)."""
+
+    def test_empty_list_renders_nothing(self):
+        assert uv.render_failure_block([]) == []
+
+    def test_groups_by_kind_and_counts(self):
+        failures = [
+            uv.Failure("pkg-a", "fetch", "git fetch failed"),
+            uv.Failure("pkg-b", "fetch", "git fetch failed: timeout"),
+            uv.Failure("pkg-c", "resolve", "no semver tag"),
+        ]
+        lines = uv.render_failure_block(failures)
+        text = "\n".join(lines)
+        assert "3 upstream refresh failure(s)" in text
+        assert "[fetch] (2)" in text
+        assert "[resolve] (1)" in text
+        assert "pkg-a: git fetch failed" in text
+        assert "pkg-c: no semver tag" in text
+
+
+class TestRenderFailureMarkdown:
+    """Tests for render_failure_markdown (the sentinel / nightly-summary body)."""
+
+    def test_includes_heading_count_and_grouped_entries(self):
+        failures = [
+            uv.Failure("mod-x", "missing", "does not exist, skipping pull"),
+            uv.Failure("pkg-y", "tags", "failed to fetch tags from https://x"),
+        ]
+        md = uv.render_failure_markdown(failures)
+        assert md.startswith("## Upstream version refresh")
+        assert "2 failure(s)" in md
+        assert "### missing" in md
+        assert "### tags" in md
+        assert "`mod-x`: does not exist, skipping pull" in md
+        assert "`pkg-y`: failed to fetch tags from https://x" in md
+
+
+class TestFailureReport:
+    """Tests for the aggregated failure report end-to-end through main(). #BUG-0100"""
+
+    def _run(self, tmp_path, monkeypatch, **fetch_tags_kwargs):
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            '[submodule "test"]\n'
+            "\tpath = submodules/test\n"
+            "\turl = https://github.com/test/test.git\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text("")
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+        log_dir = tmp_path / "logs"
+        monkeypatch.setattr(uv, "LOG_DIR", log_dir)
+        return log_dir
+
+    def test_fetch_tags_failure_is_collected_and_distinguishable_from_no_tags(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """The regression this whole change exists for: a fetch_tags() error
+        must show up in the failure report, and must NOT look identical to a
+        clean run against an upstream with genuinely no tags."""
+        log_dir = self._run(tmp_path, monkeypatch)
+        packages = {
+            "test": {
+                "url": "https://github.com/test/test.git",
+                "auto_update": {"release_type": "latest-version"},
+            }
+        }
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                    with patch.object(uv, "fetch_tags") as mock_fetch:
+                        with patch.object(
+                            uv, "update_package_versions", return_value={}
+                        ):
+                            mock_parse.return_value = [
+                                {
+                                    "name": "test",
+                                    "path": "submodules/test",
+                                    "url": "https://github.com/test/test.git",
+                                }
+                            ]
+                            mock_fetch.return_value = ([], "failed to fetch tags from x")
+                            uv.main()
+
+        captured = capsys.readouterr()
+        assert "1 upstream refresh failure(s)" in captured.out
+        assert "[tags]" in captured.out
+        assert "test: failed to fetch tags from x" in captured.out
+        failures_md = log_dir / ".update-versions-failures.md"
+        assert failures_md.exists()
+        assert "failed to fetch tags from x" in failures_md.read_text()
+
+    def test_clean_run_prints_no_failure_block_and_no_sentinel(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        log_dir = self._run(tmp_path, monkeypatch)
+        packages = {
+            "test": {
+                "url": "https://github.com/test/test.git",
+                "auto_update": {"release_type": "latest-version"},
+            }
+        }
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                    with patch.object(
+                        uv, "fetch_tags", return_value=(["v1.0.0"], None)
+                    ):
+                        with patch.object(uv, "latest_semver", return_value="v1.0.0"):
+                            with patch.object(
+                                uv, "update_package_versions", return_value={}
+                            ):
+                                mock_parse.return_value = [
+                                    {
+                                        "name": "test",
+                                        "path": "submodules/test",
+                                        "url": "https://github.com/test/test.git",
+                                    }
+                                ]
+                                uv.main()
+
+        captured = capsys.readouterr()
+        assert "upstream refresh failure" not in captured.out
+        assert not (log_dir / ".update-versions-failures.md").exists()
+
+    def test_stale_sentinel_is_removed_on_clean_rerun(self, tmp_path, monkeypatch):
+        log_dir = self._run(tmp_path, monkeypatch)
+        log_dir.mkdir(parents=True)
+        stale = log_dir / ".update-versions-failures.md"
+        stale.write_text("stale content from a previous failing run")
+
+        packages = {
+            "test": {
+                "url": "https://github.com/test/test.git",
+                "auto_update": {"release_type": "latest-version"},
+            }
+        }
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                    with patch.object(
+                        uv, "fetch_tags", return_value=(["v1.0.0"], None)
+                    ):
+                        with patch.object(uv, "latest_semver", return_value="v1.0.0"):
+                            with patch.object(
+                                uv, "update_package_versions", return_value={}
+                            ):
+                                mock_parse.return_value = [
+                                    {
+                                        "name": "test",
+                                        "path": "submodules/test",
+                                        "url": "https://github.com/test/test.git",
+                                    }
+                                ]
+                                uv.main()
+
+        assert not stale.exists()
+
+    def test_main_exits_zero_with_failures_present(self, tmp_path, monkeypatch):
+        """#BUG-0100: partial upstream failures must never abort the nightly
+        (Makefile's `$(MAKE) update-versions || exit 1` would kill the whole
+        run) -- visibility, not fatality."""
+        log_dir = self._run(tmp_path, monkeypatch)
+        packages = {
+            "test": {
+                "url": "https://github.com/test/test.git",
+                "auto_update": {"release_type": "latest-version"},
+            }
+        }
+        with patch.object(uv, "parse_gitmodules") as mock_parse:
+            with patch.object(uv, "get_packages", return_value=packages):
+                with patch.object(uv, "pull_submodule", return_value=None):
+                    with patch.object(
+                        uv, "fetch_tags", return_value=([], "failed to fetch")
+                    ):
+                        with patch.object(
+                            uv, "update_package_versions", return_value={}
+                        ):
+                            mock_parse.return_value = [
+                                {
+                                    "name": "test",
+                                    "path": "submodules/test",
+                                    "url": "https://github.com/test/test.git",
+                                }
+                            ]
+                            # main() raises nothing and returns normally (exit 0)
+                            uv.main()
+        assert (log_dir / ".update-versions-failures.md").exists()
+
+    def test_missing_packages_yaml_still_writes_count_sentinel(
+        self, tmp_path, monkeypatch
+    ):
+        """Regression guard: the early-return path (packages.yaml missing)
+        used to skip the sentinel writes entirely, leaving a previous run's
+        count/failures sentinel stale for tonight's (nonexistent) run."""
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text("")
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        monkeypatch.setattr(uv, "PACKAGES_YAML", tmp_path / "does-not-exist.yaml")
+        log_dir = tmp_path / "logs"
+        monkeypatch.setattr(uv, "LOG_DIR", log_dir)
+
+        with patch.object(uv, "parse_gitmodules", return_value=[]):
+            with patch.object(uv, "get_packages", return_value={}):
+                uv.main()
+
+        assert (log_dir / ".update-versions-count").read_text() == "0\n"
+        assert not (log_dir / ".update-versions-failures.md").exists()

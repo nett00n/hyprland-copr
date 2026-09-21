@@ -23,7 +23,7 @@ class TestCmdListTags:
     def test_marks_the_detected_latest_tag(self, capsys):
         modules = [{"name": "foo", "url": "https://example.com/foo"}]
         with (
-            patch.object(list_tags, "fetch_tags", return_value=["v1.0.0", "v2.0.0"]),
+            patch.object(list_tags, "fetch_tags", return_value=(["v1.0.0", "v2.0.0"], None)),
             patch.object(list_tags, "latest_semver", return_value="v2.0.0"),
         ):
             cmd_list_tags(modules)
@@ -35,7 +35,7 @@ class TestCmdListTags:
     def test_no_tags_found_message(self, capsys):
         modules = [{"name": "foo", "url": "https://example.com/foo"}]
         with (
-            patch.object(list_tags, "fetch_tags", return_value=[]),
+            patch.object(list_tags, "fetch_tags", return_value=([], None)),
             patch.object(list_tags, "latest_semver", return_value=None),
         ):
             cmd_list_tags(modules)
@@ -47,7 +47,7 @@ class TestCmdListTags:
         modules = [{"name": "foo", "url": "https://example.com/foo"}]
         with (
             patch.object(
-                list_tags, "fetch_tags", return_value=["v2.0.0", "v1.0.0", "v1.5.0"]
+                list_tags, "fetch_tags", return_value=(["v2.0.0", "v1.0.0", "v1.5.0"], None)
             ),
             patch.object(list_tags, "latest_semver", return_value="v2.0.0"),
         ):
@@ -62,7 +62,7 @@ class TestCmdListTags:
             {"name": "bar", "url": "https://example.com/bar"},
         ]
         with (
-            patch.object(list_tags, "fetch_tags", return_value=["v1.0.0"]),
+            patch.object(list_tags, "fetch_tags", return_value=(["v1.0.0"], None)),
             patch.object(list_tags, "latest_semver", return_value="v1.0.0"),
         ):
             cmd_list_tags(modules)
@@ -101,7 +101,7 @@ class TestMain:
         with (
             patch.object(list_tags, "parse_gitmodules", return_value=[mod]),
             patch.object(list_tags, "resolve_module", return_value=mod),
-            patch.object(list_tags, "fetch_tags", return_value=["v1.0.0"]),
+            patch.object(list_tags, "fetch_tags", return_value=(["v1.0.0"], None)),
             patch.object(list_tags, "latest_semver", return_value="v1.0.0"),
             patch.object(sys, "argv", ["list-tags.py", "foo"]),
         ):
@@ -120,7 +120,7 @@ class TestMain:
         ]
         with (
             patch.object(list_tags, "parse_gitmodules", return_value=modules),
-            patch.object(list_tags, "fetch_tags", return_value=[]),
+            patch.object(list_tags, "fetch_tags", return_value=([], None)),
             patch.object(list_tags, "latest_semver", return_value=None),
             patch.object(sys, "argv", ["list-tags.py"]),
         ):

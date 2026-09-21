@@ -26,7 +26,7 @@ from lib.log_analysis import (
     _analyze_copr_chroot_logs,
     _suggest_providers,
 )
-from lib.paths import RUNS_LOG_DIR, get_package_log_dir
+from lib.paths import LOG_DIR, RUNS_LOG_DIR, get_package_log_dir
 
 HIGHLIGHT_PREFIX = "█▓▒░"
 
@@ -174,18 +174,28 @@ def analyze_package(pkg: str, log_dir: Path) -> tuple[int, list[str]]:
 
 def render_markdown_summary(
     results: list[tuple[str, Path, int, list[str]]],
+    upstream_report: str | None = None,
 ) -> str:
     """#COPR-0022: render a durable Markdown summary for --output.
 
     One section per (package, log_dir) analyzed, linking back to that exact
     run-scoped log directory so a failure found tonight can still be traced
     after `logs/` has moved on to later runs.
+
+    upstream_report, when given, is scripts/update-versions.py's aggregated
+    failure report (see its render_failure_markdown()) and is prepended so the
+    nightly summary covers the whole night -- upstream refresh and build --
+    not just the build half. #BUG-0100
     """
     lines = ["# Nightly log analysis summary", ""]
     had_issues = any(result == 1 for _pkg, _log_dir, result, _issues in results)
     no_logs = [pkg for pkg, _d, result, _i in results if result == 2]
     clean = [pkg for pkg, _d, result, _i in results if result == 0]
     failing = [(pkg, d, i) for pkg, d, result, i in results if result == 1]
+
+    if upstream_report:
+        lines.append(upstream_report.rstrip("\n"))
+        lines.append("")
 
     lines.append(f"- Packages analyzed: {len(results)}")
     lines.append(f"- Clean: {len(clean)}")
@@ -211,7 +221,7 @@ def render_markdown_summary(
             lines.append(f"- {pkg}")
         lines.append("")
 
-    return "\n".join(lines) + ("\n" if had_issues or no_logs else "")
+    return "\n".join(lines) + ("\n" if had_issues or no_logs or upstream_report else "")
 
 
 def main(argv: list[str]) -> int:
@@ -250,7 +260,19 @@ def main(argv: list[str]) -> int:
             summary_results.append((pkg, log_dir, result, issue_lines))
 
     if args.output:
-        Path(args.output).write_text(render_markdown_summary(summary_results))
+        # #BUG-0100: fold scripts/update-versions.py's aggregated failure
+        # report into the same nightly summary, when one was written tonight.
+        # Absent on an ad-hoc `make stage-log-analyze` run or a clean night --
+        # tolerate that rather than requiring it.
+        upstream_failures_path = LOG_DIR / ".update-versions-failures.md"
+        upstream_report = (
+            upstream_failures_path.read_text()
+            if upstream_failures_path.exists()
+            else None
+        )
+        Path(args.output).write_text(
+            render_markdown_summary(summary_results, upstream_report)
+        )
         print(f"{HIGHLIGHT_PREFIX} ✓ Wrote summary to {args.output}")
 
     return 1 if had_issues else 0

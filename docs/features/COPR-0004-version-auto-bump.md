@@ -36,22 +36,53 @@ sys.exit(130)`, same as the rest of the pipeline. (#BUG-0072)
 `hyprland-plugins` against `Hyprland` across all three chroots (runs 76–78) before
 mock caught it. (#BUG-0056)
 
+Every warn-and-continue site along the way (a submodule that doesn't exist, a
+`git fetch`/`switch`/`checkout` failure, an unresolved pin, a `fetch_tags()`
+failure/timeout, no version-like tag found, an unknown `release_type`, a
+conflicting pin) also collects a `Failure(scope, kind, detail)` alongside its
+existing stderr print. At the end of the run:
+
+- an aggregated block prints to stdout after the YAML summary, grouped by
+  `kind`, so a run with one real outage doesn't scroll past unnoticed among
+  routine per-package lines;
+- when non-empty, the same report is written to
+  `logs/.update-versions-failures.md` (removed when there are no failures, so
+  a stale file from a previous failing run can never be read as tonight's);
+  `scripts/pkg-log-analysis.py` folds it into `docs/nightly-summary.md`'s
+  `## Upstream version refresh` section when `make stage-log-analyze` runs
+  (#COPR-0022);
+- `_update-daily`'s closing banner echoes the failure count next to the
+  existing "N package(s) updated tonight" line.
+
+`make update-versions` still exits 0 when failures are collected: `Makefile`'s
+`_update-daily` runs it as `$(MAKE) update-versions || exit 1`, so a non-zero
+exit would abort the entire nightly over one flaky remote. Visibility, not
+fatality — see `_update-daily`'s pattern for `full-cycle-matrix` (recorded via
+`logs/.update-daily-failed`, not fatal either). (#BUG-0100)
+
 ## Implementation
 
-- `scripts/update-versions.py`, `lib/version.py`.
+- `scripts/update-versions.py`, `lib/version.py`, `lib/gitmodules.py` (`fetch_tags()`).
 - Runs first in `make update-daily` (COPR-0003), before the quality gate.
 
 ## Quirks & Decisions
 
-- Quirk: fetches 45+ submodules serially, and 10 separate warn-and-continue sites
-  print individual failures to stderr with nothing aggregated — a single `git fetch`
-  failure is invisible in the stdout summary, so a package can silently sit on a stale
-  version indefinitely.
-  Proposed: aggregate the warn-and-continue sites into one failure report. (BUG-0100)
+- Decision: every warn-and-continue site now also appends a `Failure` to an
+  in-process list, rendered as one aggregated block (stdout) and one durable
+  Markdown sentinel (`logs/.update-versions-failures.md`, folded into
+  `docs/nightly-summary.md`) at the end of the run, instead of only ever
+  scrolling past on stderr. The exit code stays 0 on partial failure — see
+  `## Behavior` above for why. (BUG-0100, closed)
+- Decision: `lib.gitmodules.fetch_tags()` used to return a bare `list[str]`,
+  so a failed/timed-out `git ls-remote` and a genuinely tagless upstream were
+  both `[]` — indistinguishable, and the single most common real network
+  failure for tag-based packages was silently swallowed. It now returns
+  `TagFetch(tags, error)`; `error` is non-`None` only on an actual fetch
+  failure. (BUG-0100, closed)
 - Quirk: the per-submodule pull/fetch loop runs serially with no concurrency.
-  Proposed: add `ThreadPoolExecutor`-based concurrency, once the aggregate-reporting
-  fix above can show what broke; split out separately since it's a different risk
-  profile (shared `.git/modules` state). (BUG-0101)
+  Proposed: add `ThreadPoolExecutor`-based concurrency, now that the
+  aggregate-reporting fix above can show what broke; split out separately
+  since it's a different risk profile (shared `.git/modules` state). (BUG-0101)
 - `update-versions.py` now exits cleanly (130) on Ctrl+C instead of a raw traceback.
   (BUG-0072, closed)
 - Decision: the drift check (`lib.validation.validate_dependency_drift()`) is
@@ -66,7 +97,9 @@ mock caught it. (#BUG-0056)
 
 ### Unit
 
-- `tests/test_update_versions.py`, `tests/test_version.py`.
+- `tests/test_update_versions.py`, `tests/test_version.py`, `tests/test_gitmodules.py`
+  (`TagFetch`), `tests/test_pkg_log_analysis.py` (folding the failure report into
+  `docs/nightly-summary.md`).
 
 ## Status
 

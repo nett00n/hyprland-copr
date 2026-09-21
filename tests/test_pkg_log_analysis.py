@@ -166,6 +166,7 @@ class TestOutputMode:
         runs_dir = tmp_path / "logs" / "runs"
         monkeypatch.setattr(pkg_log_analysis, "RUNS_LOG_DIR", runs_dir)
         monkeypatch.setattr(paths_module, "RUNS_LOG_DIR", runs_dir)
+        monkeypatch.setattr(pkg_log_analysis, "LOG_DIR", tmp_path / "logs")
         pkg_dir = runs_dir / "1" / "fedora-44-x86_64" / "broken-pkg"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "10-srpm.log").write_text("error: No matching package to install: 'x'\n")
@@ -182,6 +183,7 @@ class TestOutputMode:
         runs_dir = tmp_path / "logs" / "runs"
         monkeypatch.setattr(pkg_log_analysis, "RUNS_LOG_DIR", runs_dir)
         monkeypatch.setattr(paths_module, "RUNS_LOG_DIR", runs_dir)
+        monkeypatch.setattr(pkg_log_analysis, "LOG_DIR", tmp_path / "logs")
         (runs_dir / "1" / "fedora-44-x86_64" / "clean-pkg").mkdir(parents=True)
 
         out_file = tmp_path / "summary.md"
@@ -201,3 +203,43 @@ class TestOutputMode:
         )
 
         assert exit_code == 0
+
+    def test_folds_in_update_versions_failure_report_when_present(
+        self, tmp_path, monkeypatch
+    ):
+        """#BUG-0100: scripts/update-versions.py's aggregated failure report,
+        when left as a sentinel, must be folded into the same nightly
+        summary."""
+        runs_dir = tmp_path / "logs" / "runs"
+        log_dir = tmp_path / "logs"
+        monkeypatch.setattr(pkg_log_analysis, "RUNS_LOG_DIR", runs_dir)
+        monkeypatch.setattr(paths_module, "RUNS_LOG_DIR", runs_dir)
+        monkeypatch.setattr(pkg_log_analysis, "LOG_DIR", log_dir)
+        (runs_dir / "1" / "fedora-44-x86_64" / "clean-pkg").mkdir(parents=True)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        (log_dir / ".update-versions-failures.md").write_text(
+            "## Upstream version refresh\n\n1 failure(s):\n\n### fetch\n\n"
+            "- `hyprland`: git fetch failed\n"
+        )
+
+        out_file = tmp_path / "summary.md"
+        exit_code = pkg_log_analysis.main(["clean-pkg", "--output", str(out_file)])
+
+        assert exit_code == 0
+        content = out_file.read_text()
+        assert "## Upstream version refresh" in content
+        assert "hyprland" in content
+
+    def test_no_sentinel_omits_upstream_section(self, tmp_path, monkeypatch):
+        runs_dir = tmp_path / "logs" / "runs"
+        log_dir = tmp_path / "logs"
+        monkeypatch.setattr(pkg_log_analysis, "RUNS_LOG_DIR", runs_dir)
+        monkeypatch.setattr(paths_module, "RUNS_LOG_DIR", runs_dir)
+        monkeypatch.setattr(pkg_log_analysis, "LOG_DIR", log_dir)
+        (runs_dir / "1" / "fedora-44-x86_64" / "clean-pkg").mkdir(parents=True)
+
+        out_file = tmp_path / "summary.md"
+        exit_code = pkg_log_analysis.main(["clean-pkg", "--output", str(out_file)])
+
+        assert exit_code == 0
+        assert "Upstream version refresh" not in out_file.read_text()

@@ -109,15 +109,6 @@ submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
   never sets `SYNCHRONOUS_COPR_BUILD`, though it is read at `stage-copr.py:184` and
   `full-cycle.py:153`), and `readme`+`copr-description` run seconds later -- the
   publish step is simply one poll too early for whatever was just resubmitted [P2/D3]
-- #BUG-0100 `update-versions.py` (423 lines) fetches 45+ submodules serially on
-  every run, and 10 separate warn-and-continue sites
-  (`update-versions.py:118,125,137,150,188,327,335,344,361,375`) print individual
-  failures to stderr with nothing aggregated -> a single `git fetch` failure is
-  invisible in the stdout summary, so a package can silently sit on a stale version
-  indefinitely. Scoped down to just the aggregate-failure-report half; see
-  BUG-0101 for the concurrency half, split out separately since it's materially
-  riskier (git operations on shared `.git/modules`) [P2/D2]
-
 ### Packaging metadata
 
 - #BUG-0047 `lib/rpm_macros.py:normalize_file_entry`'s forward direction (abs -> macro)

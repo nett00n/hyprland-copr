@@ -9,6 +9,7 @@ Usage:
 """
 
 import contextlib
+import datetime
 import sys
 from typing import NamedTuple
 
@@ -56,6 +57,32 @@ class Pin(NamedTuple):
     detail: str = ""
 
 
+class Failure(NamedTuple):
+    """#COPR-0004, #BUG-0100: one aggregated entry for the failure report.
+
+    Every warn-and-continue site in this script appends one of these (in
+    addition to its existing stderr print) so a single `git fetch` failure --
+    or any of the other 10 warn sites -- shows up in the aggregated block
+    printed at the end of main(), instead of only scrolling past on stderr.
+
+    scope:  submodule or package name the failure is about
+    kind:   a small closed vocabulary grouping failures in the report --
+            "missing" (submodule dir absent), "fetch" (git fetch failed),
+            "branch" (couldn't determine default branch), "switch" (git
+            switch/checkout failed), "pin" (a pinned checkout couldn't be
+            resolved), "tags" (fetch_tags() itself failed/timed out -- see
+            lib.gitmodules.TagFetch), "resolve" (no version could be derived
+            from what was fetched), "config" (a packages.yaml value itself is
+            the problem, e.g. an unknown release_type)
+    detail: human-readable reason, already stripped of the "  warning: "
+            prefix used on stderr
+    """
+
+    scope: str
+    kind: str
+    detail: str
+
+
 def checkout_pin(pkg_name: str, pkg_data: dict) -> "Pin | None":
     """Return the Pin this package imposes on its submodule checkout, or None.
 
@@ -96,7 +123,10 @@ def checkout_pin(pkg_name: str, pkg_data: dict) -> "Pin | None":
 
 
 def pull_submodule(
-    mod: dict, branch: str | None = None, pin: "Pin | None" = None
+    mod: dict,
+    branch: str | None = None,
+    pin: "Pin | None" = None,
+    failures: "list[Failure] | None" = None,
 ) -> str | None:
     """Fetch origin and position the submodule working tree.
 
@@ -113,19 +143,32 @@ def pull_submodule(
     version resolution. Returns None only when the submodule couldn't be
     prepared at all (missing directory, failed fetch, undeterminable default
     branch).
+
+    failures, when given, collects a Failure alongside every stderr warning
+    below -- see Failure's docstring / BUG-0100. It defaults to None (rather
+    than a caller-owned list) so direct callers/tests that only care about the
+    return value and the stderr trace are unaffected.
     """
     repo = ROOT / mod["path"]
     if not repo.exists():
-        print(f"  warning: {repo} does not exist, skipping pull", file=sys.stderr)
+        detail = f"{repo} does not exist, skipping pull"
+        print(f"  warning: {detail}", file=sys.stderr)
+        if failures is not None:
+            failures.append(Failure(mod["name"], "missing", detail))
         return None
 
     # --tags: a pinned tag need not be reachable from the tracked branch, and
     # get_tag_commit() below resolves refs/tags/<tag> locally.
     fetch_result = run_git("fetch", "--tags", "origin", cwd=repo)
     if fetch_result.returncode != 0:
+        detail = "git fetch failed"
+        if fetch_result.stderr:
+            detail += f": {fetch_result.stderr.strip()}"
         print(f"  warning: git fetch failed for {mod['name']}", file=sys.stderr)
         if fetch_result.stderr:
             print(f"  {fetch_result.stderr.strip()}", file=sys.stderr)
+        if failures is not None:
+            failures.append(Failure(mod["name"], "fetch", detail))
         return None
 
     # Determine target branch
@@ -134,10 +177,13 @@ def pull_submodule(
         # Get the default branch from origin's HEAD
         head_result = run_git("symbolic-ref", "refs/remotes/origin/HEAD", cwd=repo)
         if head_result.returncode != 0:
+            detail = "could not determine default branch"
             print(
-                f"  warning: could not determine default branch for {mod['name']}",
+                f"  warning: {detail} for {mod['name']}",
                 file=sys.stderr,
             )
+            if failures is not None:
+                failures.append(Failure(mod["name"], "branch", detail))
             return None
         # Extract branch name from "refs/remotes/origin/main" -> "main"
         target_branch = head_result.stdout.strip().split("/")[-1]
@@ -148,9 +194,14 @@ def pull_submodule(
         # Checkout and sync with origin
         checkout_result = run_git("switch", "-C", target_branch, moving_ref, cwd=repo)
         if checkout_result.returncode != 0:
+            detail = "git switch failed"
+            if checkout_result.stderr:
+                detail += f": {checkout_result.stderr.strip()}"
             print(f"  warning: git switch failed for {mod['name']}", file=sys.stderr)
             if checkout_result.stderr:
                 print(f"  {checkout_result.stderr.strip()}", file=sys.stderr)
+            if failures is not None:
+                failures.append(Failure(mod["name"], "switch", detail))
         else:
             print(f"  updated {mod['name']} to {target_branch}", file=sys.stderr)
         # Return moving_ref even on failure: version resolution reads the
@@ -158,11 +209,13 @@ def pull_submodule(
         return moving_ref
 
     if pin.kind == "unresolved":
+        detail = f"pinned by {pin.owner} ({pin.detail}); leaving the checkout untouched"
         print(
-            f"  warning: {mod['name']} is pinned by {pin.owner} ({pin.detail}); "
-            f"leaving the checkout untouched",
+            f"  warning: {mod['name']} is {detail}",
             file=sys.stderr,
         )
+        if failures is not None:
+            failures.append(Failure(mod["name"], "pin", detail))
         return moving_ref
 
     resolved: str | None = None
@@ -176,27 +229,89 @@ def pull_submodule(
             break
     else:
         tried = ", ".join(pin.candidates)
+        detail = (
+            f"pinned by {pin.owner} to {tried}, none of which exist in the "
+            f"fetched repo; leaving the checkout untouched"
+        )
         print(
-            f"  warning: {mod['name']} is pinned by {pin.owner} to {tried}, none of "
-            f"which exist in the fetched repo; leaving the checkout untouched",
+            f"  warning: {mod['name']} is {detail}",
             file=sys.stderr,
         )
+        if failures is not None:
+            failures.append(Failure(mod["name"], "pin", detail))
         return moving_ref
 
     checkout_result = run_git("checkout", "--force", "--detach", target, cwd=repo)
     if checkout_result.returncode != 0:
+        detail = f"git checkout failed at pinned {target}"
+        if checkout_result.stderr:
+            detail += f": {checkout_result.stderr.strip()}"
         print(
             f"  warning: git checkout failed for {mod['name']} at pinned {target}",
             file=sys.stderr,
         )
         if checkout_result.stderr:
             print(f"  {checkout_result.stderr.strip()}", file=sys.stderr)
+        if failures is not None:
+            failures.append(Failure(mod["name"], "switch", detail))
     else:
         print(
             f"  pinned {mod['name']} to {target} ({resolved[:7]}, from {pin.owner})",
             file=sys.stderr,
         )
     return moving_ref
+
+
+def render_failure_block(failures: "list[Failure]") -> list[str]:
+    """#COPR-0004, #BUG-0100: render the aggregated failure report for stdout.
+
+    Grouped by `kind` so a run with e.g. 8 unrelated "resolve" misses and one
+    real "fetch" outage doesn't bury the outage in the noise. Returns an empty
+    list when there's nothing to report -- callers decide whether that's worth
+    printing at all.
+    """
+    if not failures:
+        return []
+    lines = [f"{len(failures)} upstream refresh failure(s):"]
+    by_kind: dict[str, list[Failure]] = {}
+    for failure in failures:
+        by_kind.setdefault(failure.kind, []).append(failure)
+    for kind in sorted(by_kind):
+        group = by_kind[kind]
+        lines.append(f"  [{kind}] ({len(group)}):")
+        for failure in group:
+            lines.append(f"    {failure.scope}: {failure.detail}")
+    return lines
+
+
+def render_failure_markdown(failures: "list[Failure]") -> str:
+    """#COPR-0004, #BUG-0100: render the durable Markdown sentinel body.
+
+    Written to LOG_DIR/.update-versions-failures.md when failures is
+    non-empty, and folded into docs/nightly-summary.md by
+    scripts/pkg-log-analysis.py. Carries a timestamp so a stale leftover (one
+    that scripts/pkg-log-analysis.py somehow reads without this run having
+    removed it) is self-evidently not tonight's.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    lines = [
+        "## Upstream version refresh",
+        "",
+        f"_Generated {now} by `make update-versions`._",
+        "",
+        f"{len(failures)} failure(s):",
+        "",
+    ]
+    by_kind: dict[str, list[Failure]] = {}
+    for failure in failures:
+        by_kind.setdefault(failure.kind, []).append(failure)
+    for kind in sorted(by_kind):
+        lines.append(f"### {kind}")
+        lines.append("")
+        for failure in by_kind[kind]:
+            lines.append(f"- `{failure.scope}`: {failure.detail}")
+        lines.append("")
+    return "\n".join(lines)
 
 
 def main() -> None:
@@ -206,6 +321,11 @@ def main() -> None:
 
     modules = parse_gitmodules(GITMODULES)
     url_to_module = {mod["url"]: mod for mod in modules}
+
+    # #BUG-0100: every warn-and-continue site below also appends here, so one
+    # aggregated report can be rendered/persisted at the end of the run
+    # instead of failures only ever scrolling past on stderr.
+    failures: list[Failure] = []
 
     # Load packages.yaml. Config/versions below are keyed by PACKAGE NAME, not
     # url: multiple packages (e.g. Hyprland / Hyprland-git) can legitimately
@@ -248,13 +368,14 @@ def main() -> None:
         if existing is None:
             url_to_pin[url] = pin
         elif existing.candidates != pin.candidates or existing.kind != pin.kind:
-            print(
-                f"  warning: {url}: {pin.owner} pins this submodule to "
+            detail = (
+                f"{pin.owner} pins this submodule to "
                 f"{pin.candidates or '(unresolved)'} but {existing.owner} already "
                 f"pinned it to {existing.candidates or '(unresolved)'}; keeping "
-                f"{existing.owner}'s (first in packages.yaml)",
-                file=sys.stderr,
+                f"{existing.owner}'s (first in packages.yaml)"
             )
+            print(f"  warning: {url}: {detail}", file=sys.stderr)
+            failures.append(Failure(url, "config", detail))
 
     print("pulling submodules ...", file=sys.stderr)
     url_to_ref: dict[str, str | None] = {}
@@ -269,7 +390,9 @@ def main() -> None:
                 f"versions from the remote branch, without moving the checkout",
                 file=sys.stderr,
             )
-        url_to_ref[url] = pull_submodule(mod, branch=url_to_branch.get(url), pin=pin)
+        url_to_ref[url] = pull_submodule(
+            mod, branch=url_to_branch.get(url), pin=pin, failures=failures
+        )
 
     pkg_to_latest: dict[str, str] = {}
     pkg_to_commit_info: dict[str, tuple[str, str, str, str | None]] = {}
@@ -306,7 +429,10 @@ def main() -> None:
         # Handle latest-version (semver only, no commit fallback)
         if release_type == "latest-version":
             print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
-            tags = fetch_tags(url)
+            tags, fetch_error = fetch_tags(url)
+            if fetch_error:
+                failures.append(Failure(pkg_name, "tags", fetch_error))
+                continue
             latest = latest_semver(tags)
             if latest:
                 pkg_to_latest[pkg_name] = latest.lstrip("v")
@@ -317,7 +443,10 @@ def main() -> None:
         # mpvpaper's "1.9" (two components). See docs/BUGS.md BUG-0014.
         if release_type == "latest-tag":
             print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
-            tags = fetch_tags(url)
+            tags, fetch_error = fetch_tags(url)
+            if fetch_error:
+                failures.append(Failure(pkg_name, "tags", fetch_error))
+                continue
             latest = latest_tag(tags)
             if latest:
                 rpm_version = rpm_version_from_tag(latest)
@@ -330,20 +459,17 @@ def main() -> None:
                     )
                 pkg_to_latest[pkg_name] = rpm_version
             else:
-                print(
-                    f"  warning: {pkg_name}: no version-like tag found",
-                    file=sys.stderr,
-                )
+                detail = "no version-like tag found"
+                print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
+                failures.append(Failure(pkg_name, "resolve", detail))
             continue
 
         # Handle latest-commit
         if release_type == "latest-commit":
             if ref is None:
-                print(
-                    f"  warning: {pkg_name}: submodule not pulled, cannot resolve "
-                    f"latest commit",
-                    file=sys.stderr,
-                )
+                detail = "submodule not pulled, cannot resolve latest commit"
+                print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
+                failures.append(Failure(pkg_name, "resolve", detail))
                 continue
             print(f"fetching HEAD commit: {pkg_name} ({ref}) ...", file=sys.stderr)
             commit_info = get_submodule_commit_with_base(repo, ref)
@@ -356,25 +482,26 @@ def main() -> None:
         # this before it gets here, but a stale/unvalidated run should still
         # not fail silently. See docs/BUGS.md BUG-0014.
         if release_type and release_type not in RELEASE_TYPES:
-            print(
-                f"  warning: {pkg_name}: unknown auto_update.release_type "
-                f"{release_type!r}, falling back to default (semver-or-commit) "
-                f"resolution",
-                file=sys.stderr,
+            detail = (
+                f"unknown auto_update.release_type {release_type!r}, falling back "
+                f"to default (semver-or-commit) resolution"
             )
+            print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
+            failures.append(Failure(pkg_name, "config", detail))
 
         # Default: try semver, fall back to commit
         print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
-        tags = fetch_tags(url)
+        tags, fetch_error = fetch_tags(url)
+        if fetch_error:
+            failures.append(Failure(pkg_name, "tags", fetch_error))
+            continue
         latest = latest_semver(tags)
         if latest:
             pkg_to_latest[pkg_name] = latest.lstrip("v")
         elif ref is None:
-            print(
-                f"  warning: {pkg_name}: no semver tag and submodule not pulled, "
-                f"nothing to resolve",
-                file=sys.stderr,
-            )
+            detail = "no semver tag and submodule not pulled, nothing to resolve"
+            print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
+            failures.append(Failure(pkg_name, "resolve", detail))
         else:
             commit_info = get_submodule_commit_with_base(repo, ref)
             if commit_info:
@@ -403,8 +530,29 @@ def main() -> None:
         )
     )
 
+    # #BUG-0100: the aggregated failure report -- everything collected above
+    # was already printed live as it happened, one line at a time on stderr;
+    # this is the single place a human (or docs/nightly-summary.md, via the
+    # sentinel below) sees the whole run's damage at once.
+    for line in render_failure_block(failures):
+        print(line)
+
+    # Sentinel files for `make update-daily`'s end-of-run summary line and for
+    # scripts/pkg-log-analysis.py folding this run's failures into
+    # docs/nightly-summary.md. Written/removed on every exit path (including
+    # the early return below) so a stale leftover from a previous run can
+    # never be read as tonight's -- see LOG_DIR / ".update-versions-count"
+    # consumer in Makefile's update-daily target.
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    failures_sentinel = LOG_DIR / ".update-versions-failures.md"
+    if failures:
+        failures_sentinel.write_text(render_failure_markdown(failures))
+    else:
+        failures_sentinel.unlink(missing_ok=True)
+
     if not PACKAGES_YAML.exists():
         print(f"warning: {PACKAGES_YAML} not found, skipping update", file=sys.stderr)
+        (LOG_DIR / ".update-versions-count").write_text("0\n")
         return
 
     changed = update_package_versions(PACKAGES_YAML, pkg_to_latest, pkg_to_commit_info)
@@ -415,9 +563,6 @@ def main() -> None:
     else:
         print("packages.yaml: all versions already up to date", file=sys.stderr)
 
-    # Sentinel file for `make update-daily`'s end-of-run summary line -- see
-    # LOG_DIR / ".update-versions-count" consumer in Makefile's update-daily target.
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
     (LOG_DIR / ".update-versions-count").write_text(f"{len(changed)}\n")
 
 

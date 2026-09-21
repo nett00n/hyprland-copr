@@ -65,6 +65,14 @@ retention policy of its own. `_update-daily` stages it (`git add`) only if
 `stage-log-analyze` actually wrote it, so an empty package set can't fail the commit
 step on a missing file.
 
+The summary covers the whole night, not just the build half: when
+`scripts/update-versions.py` (upstream refresh, [COPR-0004](COPR-0004-version-auto-bump.md))
+leaves `logs/.update-versions-failures.md` behind, `pkg-log-analysis.py` prepends it
+verbatim as an `## Upstream version refresh` section, ahead of the build-log analysis
+below it. Absent that sentinel (a clean refresh, or an ad-hoc `stage-log-analyze` run
+with no preceding `update-versions`), the section is simply omitted — no error.
+(#BUG-0100)
+
 `delete-package.py` used the old flat layout's `<pkg-log-dir>.parent.iterdir()` trick
 for case-insensitive name discovery; it now globs `logs/runs/*/*/<pkg>` via
 `lib.paths.iter_package_log_dirs()` and removes every match across every run/target
@@ -79,8 +87,9 @@ still on disk.
 - `scripts/prune-logs.py` (new) + `make prune-logs`.
 - `scripts/pkg-log-analysis.py`: `resolve_log_dirs()`, `collect_issues()` (the old
   print-per-section body, now building a line list reused by both the stdout printer
-  and the Markdown renderer), `render_markdown_summary()`, `--run-id`/`--target`/
-  `--output` flags.
+  and the Markdown renderer), `render_markdown_summary()` (now takes an optional
+  `upstream_report` string, read from `logs/.update-versions-failures.md` when
+  present — #BUG-0100), `--run-id`/`--target`/`--output` flags.
 - Every stage script (`stage-spec.py`, `stage-vendor.py`, `stage-srpm.py`,
   `stage-mock.py`, `stage-copr.py`) and `lib/copr.py`'s `fetch_failed_chroot_logs()`
   now pass `run_id`/`target` into `get_package_log_dir()`.

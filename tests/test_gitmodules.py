@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from scripts.lib.gitmodules import (
+    TagFetch,
     ensure_initialized,
     fetch_tags,
     get_changelog_info,
@@ -98,10 +99,11 @@ class TestFetchTags:
 
         result = fetch_tags("https://github.com/hyprwm/hyprland.git")
 
-        assert "v1.0.0" in result
-        assert "v2.0.0" in result
+        assert result.error is None
+        assert "v1.0.0" in result.tags
+        assert "v2.0.0" in result.tags
         # Dereferenced tag (^{}) should not be in results
-        assert not any("^{}" in tag for tag in result)
+        assert not any("^{}" in tag for tag in result.tags)
 
     @patch("scripts.lib.gitmodules.run_git")
     def test_fetch_tags_command_failure(self, mock_run, capsys):
@@ -110,7 +112,8 @@ class TestFetchTags:
 
         result = fetch_tags("https://invalid.git")
 
-        assert result == []
+        assert result.tags == []
+        assert result.error is not None
         captured = capsys.readouterr()
         assert "warning" in captured.err
 
@@ -123,10 +126,27 @@ class TestFetchTags:
 
         result = fetch_tags("https://slow-repo.git")
 
-        assert result == []
+        assert result.tags == []
+        assert result.error is not None
+        assert "timeout" in result.error
         captured = capsys.readouterr()
         assert "warning" in captured.err
         assert "timeout" in captured.err
+
+    @patch("scripts.lib.gitmodules.run_git")
+    def test_fetch_tags_failure_vs_no_tags_are_distinguishable(self, mock_run):
+        """A fetch failure and a genuinely tagless upstream must not collapse
+        to the same (tags=[], error=None) shape -- that collapse is BUG-0100's
+        root cause for the update-versions.py aggregate report."""
+        mock_run.return_value = _cp(returncode=0, stdout="")
+        no_tags = fetch_tags("https://example.com/no-tags.git")
+        assert no_tags == TagFetch([], None)
+
+        mock_run.return_value = _cp(returncode=1, stdout="")
+        failed = fetch_tags("https://example.com/broken.git")
+        assert failed.tags == []
+        assert failed.error is not None
+        assert failed != no_tags
 
     @patch("scripts.lib.gitmodules.run_git")
     def test_fetch_tags_malformed_output(self, mock_run):
@@ -143,7 +163,8 @@ class TestFetchTags:
         result = fetch_tags("https://example.com/repo.git")
 
         # Should only have the properly formatted line
-        assert "v1.0.0" in result
+        assert "v1.0.0" in result.tags
+        assert result.error is None
 
 
 class TestEnsureInitialized:
