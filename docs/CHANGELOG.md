@@ -23,6 +23,21 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0022: build logs nest under `logs/runs/<run_id>/<target>/<package>/`
+  instead of a flat `logs/build/<pkg>/` — `full-cycle.py` no longer `rmtree`s
+  a package's logs at the start of the next run, so a prior night's mock/Copr
+  failure survives to be diffed against. New `lib.log_retention` keeps the
+  newest `LOG_RETENTION_RUNS` run directories (default 10; `make prune-logs
+  [KEEP=<n>] [CONFIRM=1]`, dry-run by default) and prunes the rest after each
+  run starts. `pkg-log-analysis.py` gained `--run-id`/`--target`/`--output`;
+  without `--run-id`/`--target` it resolves a package to the newest run that
+  logged it, across every target in that run (a matrix night logs one target
+  per chroot). `make stage-log-analyze LOG_SUMMARY_OUTPUT=docs/nightly-summary.md`
+  — how `_update-daily` now invokes it — writes a Markdown summary linking
+  back to the exact per-run, per-target logs; that file is committed (`logs/`
+  itself stays gitignored), so git history is the durable archive. See
+  [COPR-0022](features/COPR-0022-run-scoped-logs-and-summary.md). The
+  pre-existing `logs/build/` tree is not migrated; it is simply orphaned.
 - BUG-0060 BUG-0062 COPR-0015: `make db-export [FORMAT=yaml|json] [OUTPUT=path]`
   (`db-artifacts.py --export`) dumps `runs`/`stage_results`/`stage_history`/
   `artifacts` to a deterministic snapshot for offline diffing — two exports of

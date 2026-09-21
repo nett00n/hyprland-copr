@@ -11,7 +11,10 @@ GROUPS_YAML = ROOT / "groups.yaml"
 SOURCES_LOCK = ROOT / "sources.lock.yaml"
 GITMODULES = ROOT / ".gitmodules"
 LOG_DIR = ROOT / "logs"
-BUILD_LOG_DIR = LOG_DIR / "build"
+# #COPR-0022: build logs nest under a run identifier (build_db `runs.id`) and
+# the build target, so a failed run's evidence survives the next run instead
+# of being overwritten -- see get_run_log_dir()/get_package_log_dir() below.
+RUNS_LOG_DIR = LOG_DIR / "runs"
 LOCAL_REPO_ROOT = ROOT / "local-repo"
 TEMPLATE_DIR = ROOT / "templates"
 GITHUB_RELEASE_CACHE = ROOT / "cache" / "github-releases.json"
@@ -39,9 +42,33 @@ ARCH = "x86_64"
 CANONICAL_FEDORA_VERSION = "43"
 
 
-def get_package_log_dir(pkg_name: str) -> Path:
-    """Return the build log directory for a package."""
-    return BUILD_LOG_DIR / pkg_name
+def get_run_log_dir(run_id: int, target: str) -> Path:
+    """#COPR-0022: return the log directory for one build target within one run.
+
+    Scoped by both `run_id` (a `runs.id` primary key) and `target` (the same
+    key build-report.db uses, e.g. "fedora-44-x86_64") -- a matrix night's
+    x86_64 and aarch64 builds of the same Fedora version, or the same
+    package rebuilt on a later run, never share a directory.
+    """
+    if not re.match(r"^[\w.-]+$", target):
+        raise ValueError(f"Invalid target: {target}")
+    return RUNS_LOG_DIR / str(run_id) / target
+
+
+def get_package_log_dir(pkg_name: str, run_id: int, target: str) -> Path:
+    """#COPR-0022: return the build log directory for a package within one
+    run+target."""
+    return get_run_log_dir(run_id, target) / pkg_name
+
+
+def iter_package_log_dirs(pkg_name: str) -> list[Path]:
+    """#COPR-0022: every log dir for `pkg_name` still on disk, across every
+    run and target (a run pruned by retention won't appear). Used by
+    delete-package.py, which has no single run/target to scope to.
+    """
+    if not RUNS_LOG_DIR.exists():
+        return []
+    return sorted(RUNS_LOG_DIR.glob(f"*/*/{pkg_name}"))
 
 
 def mock_chroot(fedora_version: str) -> str:

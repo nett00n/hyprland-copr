@@ -33,7 +33,6 @@ Environment variables:
 
 import importlib
 import os
-import shutil
 import sys
 import time
 
@@ -56,13 +55,13 @@ from lib.pipeline import (
     cache_miss_reason,
     vendor_decision,
 )
+from lib.log_retention import prune_run_logs, refresh_latest_link, retention_from_env
 from lib.paths import (
     ARCH,
-    BUILD_LOG_DIR,
     DISTRO,
     GITMODULES,
     ROOT,
-    get_package_log_dir,
+    get_run_log_dir,
     local_repo,
     resolve_target,
 )
@@ -798,7 +797,7 @@ def finalize_report(
         if (stages.get("mock", {}).get(pkg) or {}).get("state") == "failed"
     ]
     if mock_failures:
-        report_mock_failures(packages, BUILD_LOG_DIR, versions)
+        report_mock_failures(packages, get_run_log_dir(run_id, target), versions)
 
     # Analyze copr failures if present. Only meaningful in synchronous mode --
     # async submissions are still "unknown"/pending here and only reach a
@@ -812,7 +811,7 @@ def finalize_report(
             if (stages.get("copr", {}).get(pkg) or {}).get("state") == "failed"
         ]
         if copr_failures:
-            report_copr_failures(packages, BUILD_LOG_DIR, versions)
+            report_copr_failures(packages, get_run_log_dir(run_id, target), versions)
 
     if any_failed:
         sys.exit(1)
@@ -841,16 +840,14 @@ def main() -> None:
 
     preflight_autoheal(packages)
 
-    BUILD_LOG_DIR.mkdir(parents=True, exist_ok=True)
-    for pkg in packages:
-        pkg_log_dir = get_package_log_dir(pkg)
-        if pkg_log_dir.exists():
-            try:
-                shutil.rmtree(pkg_log_dir)
-            except OSError as e:
-                print(f"warning: could not remove {pkg_log_dir}: {e}", file=sys.stderr)
-
     run_id = setup_run(packages, target, fedora_version, copr_repo, package_filter)
+    # #COPR-0022: each run gets its own log dir (logs/runs/<run_id>/<target>/),
+    # so unlike the old logs/build/<pkg>/ layout there is nothing to clear here
+    # -- a prior run's evidence is simply a different, still-intact directory.
+    # Enforce the retention policy instead of destroying it outright.
+    get_run_log_dir(run_id, target).mkdir(parents=True, exist_ok=True)
+    refresh_latest_link(run_id)
+    prune_run_logs(retention_from_env())
 
     # Pre-build: auto-increment/reset release values. Skipped under
     # SKIP_RELEASE_BUMP=true (set by full-cycle-matrix for every non-canonical

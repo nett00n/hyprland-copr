@@ -589,9 +589,6 @@ class TestPrepareStage:
 
     def test_returns_packages(self, tmp_path, monkeypatch):
         """Should return the filtered packages dict."""
-        from lib import paths
-
-        monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path / "logs")
         monkeypatch.delenv("PACKAGE", raising=False)
         monkeypatch.delenv("SKIP_PACKAGES", raising=False)
 
@@ -601,9 +598,6 @@ class TestPrepareStage:
 
     def test_returns_all_packages_and_packages_when_include_all(self, tmp_path, monkeypatch):
         """include_all=True returns (all_packages, packages)."""
-        from lib import paths
-
-        monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path / "logs")
         monkeypatch.delenv("PACKAGE", raising=False)
         monkeypatch.delenv("SKIP_PACKAGES", raising=False)
 
@@ -616,10 +610,6 @@ class TestPrepareStage:
 
     def test_clears_stage_if_not_resuming(self, tmp_path, monkeypatch):
         """Should clear stage data if not resuming (proceed=False)."""
-        from lib import paths
-
-        monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path / "logs")
-
         run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
         build_db.set_stage("hyprutils", "spec", TARGET, run_id, "success")
 
@@ -632,10 +622,6 @@ class TestPrepareStage:
 
     def test_preserves_stage_if_resuming(self, tmp_path, monkeypatch):
         """Should NOT clear stage data if resuming (proceed=True)."""
-        from lib import paths
-
-        monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path / "logs")
-
         run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
         build_db.set_stage("hyprutils", "spec", TARGET, run_id, "success")
 

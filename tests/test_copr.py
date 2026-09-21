@@ -256,7 +256,7 @@ class TestPollCoprStatus:
 
         assert result is True
         assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "failed"
-        mock_fetch_logs.assert_called_once_with("pkg1", 456)
+        mock_fetch_logs.assert_called_once_with("pkg1", 456, TARGET, None)
 
     @patch("lib.copr.run_cmd")
     def test_poll_status_no_state_change(self, mock_run_cmd):
@@ -298,7 +298,7 @@ class TestPollCoprStatus:
         assert result is True
         assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "success"
         assert build_db.get_stage("pkg2", "copr", TARGET)["state"] == "failed"
-        mock_fetch_logs.assert_called_once_with("pkg2", 222)
+        mock_fetch_logs.assert_called_once_with("pkg2", 222, TARGET, None)
 
     @patch("lib.copr.run_cmd")
     def test_poll_case_insensitive_status(self, mock_run_cmd):
@@ -333,7 +333,7 @@ class TestPollCoprStatus:
 
         assert result is True
         assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "failed"
-        mock_fetch_logs.assert_called_once_with("pkg1", 123)
+        mock_fetch_logs.assert_called_once_with("pkg1", 123, TARGET, None)
 
     @pytest.mark.parametrize(
         "copr_state", ["running", "starting", "pending", "importing", "waiting"]
@@ -811,32 +811,39 @@ class TestFetchFailedChrootLogs:
         self, mock_get_chroots, mock_download, tmp_path, monkeypatch
     ):
         """Writes 30-copr-chroots.log for all chroots, downloads only failed ones."""
-        monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path)
+        monkeypatch.setattr(paths, "RUNS_LOG_DIR", tmp_path)
         mock_get_chroots.return_value = CHROOT_LIST_RESPONSE["items"]
         mock_download.return_value = True
 
-        fetch_failed_chroot_logs("hyprland-git", 10798066)
+        fetch_failed_chroot_logs("hyprland-git", 10798066, TARGET, run_id=7)
 
-        summary = (tmp_path / "hyprland-git" / "30-copr-chroots.log").read_text()
+        pkg_log_dir = tmp_path / "7" / TARGET / "hyprland-git"
+        summary = (pkg_log_dir / "30-copr-chroots.log").read_text()
         assert "fedora-44-x86_64 succeeded" in summary
         assert "fedora-43-x86_64 failed" in summary
         mock_download.assert_called_once_with(
             CHROOT_LIST_RESPONSE["items"][1]["result_url"],
-            tmp_path / "hyprland-git" / "31-copr-fedora-43-x86_64.log",
+            pkg_log_dir / "31-copr-fedora-43-x86_64.log",
         )
 
     @patch("lib.copr.get_build_chroots")
     def test_no_chroots_writes_nothing(self, mock_get_chroots, tmp_path, monkeypatch):
         """Empty chroot list (e.g. API failure) writes no files."""
-        monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path)
+        monkeypatch.setattr(paths, "RUNS_LOG_DIR", tmp_path)
         mock_get_chroots.return_value = []
 
-        fetch_failed_chroot_logs("pkg", 1)
+        fetch_failed_chroot_logs("pkg", 1, TARGET, run_id=7)
 
-        assert not (tmp_path / "pkg").exists()
+        assert not (tmp_path / "7" / TARGET / "pkg").exists()
 
     @patch("lib.copr.get_build_chroots")
     def test_never_raises(self, mock_get_chroots):
         """Any unexpected exception is swallowed -- this must never break polling."""
         mock_get_chroots.side_effect = RuntimeError("boom")
-        fetch_failed_chroot_logs("pkg", 1)  # should not raise
+        fetch_failed_chroot_logs("pkg", 1, TARGET, run_id=7)  # should not raise
+
+    def test_no_run_id_and_no_prior_run_is_a_noop(self, monkeypatch):
+        """No run_id given and no run recorded for `target` -- nothing to scope
+        the log dir to, so this is a no-op rather than a guess."""
+        monkeypatch.setattr(build_db, "latest_run", lambda target: None)
+        fetch_failed_chroot_logs("pkg", 1, TARGET)  # should not raise

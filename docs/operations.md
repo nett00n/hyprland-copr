@@ -116,18 +116,28 @@ overridden to exclude the canonical version, no invocation bumps the release tha
 
 ### Check build logs
 
-`logs/build/<name>/`: `00-spec`/`10-srpm`/`20-mock`/`21-mock-build`/`21-mock-root` are local
-stages. `30-copr` is the Copr submission (and, with `SYNCHRONOUS_COPR_BUILD=true`, the watched
-result). On a Copr failure, `30-copr-chroots.log` (per-chroot states) and
-`31-copr-<chroot>.log` (downloaded builder logs for the chroots that failed) are fetched
-automatically — useful for an aarch64-only failure, which `make full-cycle-matrix` still can't
-reproduce locally (see `docs/BUGS.md` BUG-0018).
+`logs/runs/<run_id>/<target>/<name>/` (`#COPR-0022`): `00-spec`/`10-srpm`/`20-mock`/
+`21-mock-build`/`21-mock-root` are local stages. `30-copr` is the Copr submission
+(and, with `SYNCHRONOUS_COPR_BUILD=true`, the watched result). On a Copr failure,
+`30-copr-chroots.log` (per-chroot states) and `31-copr-<chroot>.log` (downloaded
+builder logs for the chroots that failed) are fetched automatically — useful for an
+aarch64-only failure, which `make full-cycle-matrix` still can't reproduce locally
+(see `docs/BUGS.md` BUG-0018). `logs/runs/latest` is a symlink to the most recent
+run, refreshed every run, for quick access without knowing the `run_id`. A run's
+logs are no longer deleted when the next run starts — `make prune-logs [KEEP=<n>]
+[CONFIRM=1]` (dry-run without `CONFIRM=1`) enforces `LOG_RETENTION_RUNS` (default
+10) by hand; the nightly job prunes automatically.
 
 On failure, analyze logs for actionable errors:
 
 ```shell
 make stage-log-analyze PACKAGE=<name>
 ```
+
+Add `LOG_SUMMARY_OUTPUT=<path>` to also write a durable Markdown summary linking
+back to the exact log dirs analyzed — `_update-daily` does this every night to
+`docs/nightly-summary.md`, which gets committed (`git log -p docs/nightly-summary.md`
+for past nights' summaries).
 
 Reports missing dependencies, incompatible plugins, missing source files, compile errors with
 line references, unsatisfiable buildroot transactions (e.g. a stale `local-repo` RPM pinned
@@ -376,7 +386,8 @@ A one-off package build failure (e.g. a chroot-specific mock failure) does **not
 run: it's recorded in `build-report.db` as usual, `readme`/`copr-description`/the docs commit
 still happen (so the night's version bumps and submodule moves aren't lost), and
 `update-daily` reports the failure and exits non-zero only at the very end, after everything
-else has run. Check `logs/build/<pkg>` or run `make stage-log-analyze` to see what failed.
+else has run. Check `docs/nightly-summary.md`, `logs/runs/latest/<target>/<pkg>`, or run
+`make stage-log-analyze` to see what failed.
 
 A no-op night (nothing staged) skips the commit instead of failing the target. With `PUSH=1`,
 the target rebases onto `origin/main` before pushing, so it doesn't collide with

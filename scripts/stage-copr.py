@@ -79,7 +79,7 @@ def run_for_package(
 
     ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
     has_devel = 1 if "devel" in meta else 0
-    pkg_log_dir = get_package_log_dir(pkg)
+    pkg_log_dir = get_package_log_dir(pkg, run_id, target)
     pkg_log_dir.mkdir(parents=True, exist_ok=True)
     log = pkg_log_dir / "30-copr.log"
     log.unlink(missing_ok=True)
@@ -163,7 +163,7 @@ def run_for_package(
     status("copr", pkg, "ok" if ok else "fail", target, version=ver)
 
     if not ok and synchronous and build_id:
-        fetch_failed_chroot_logs(pkg, build_id)
+        fetch_failed_chroot_logs(pkg, build_id, target, run_id)
 
     extra: dict[str, Any] = {}
     if ok and synchronous:

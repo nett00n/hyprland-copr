@@ -90,8 +90,12 @@ class TestVendorArtifactRecording:
     def vendor_store_dir(self, tmp_path, monkeypatch):
         """Isolate lib.vendor_store's content-addressed cache under tmp_path --
         otherwise these tests would read/write the real repo's .cache/vendor/.
+        Also isolate #COPR-0022's run-scoped log dir, since stage-vendor.py's
+        `generate()` path (unlike the tarball-exists/vendor-store-hit skips)
+        records `log.relative_to(ROOT)` against it.
         """
         monkeypatch.setattr(paths, "VENDOR_STORE_DIR", tmp_path / "vendor-store")
+        monkeypatch.setattr(paths, "RUNS_LOG_DIR", tmp_path / "logs" / "runs")
 
     def test_freshly_generated_tarball_recorded(self, tmp_path, run_id):
         pkg = "test-pkg"

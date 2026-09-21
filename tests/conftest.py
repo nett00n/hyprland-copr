@@ -27,7 +27,7 @@ def fake_repo(tmp_path, monkeypatch):
     monkeypatch.setattr(paths, "PACKAGES_YAML", tmp_path / "packages.yaml")
     monkeypatch.setattr(paths, "GROUPS_YAML", tmp_path / "groups.yaml")
     monkeypatch.setattr(paths, "GITMODULES", tmp_path / ".gitmodules")
-    monkeypatch.setattr(paths, "BUILD_LOG_DIR", tmp_path / "logs" / "build")
+    monkeypatch.setattr(paths, "RUNS_LOG_DIR", tmp_path / "logs" / "runs")
     monkeypatch.setattr(paths, "BUILD_DB", tmp_path / "build-report.db")
     monkeypatch.setattr(paths, "TEMPLATE_DIR", tmp_path / "templates")
     build_db.close()

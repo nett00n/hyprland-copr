@@ -83,7 +83,7 @@ def run_for_package(
     ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
     has_devel = 1 if "devel" in meta else 0
     spec = ROOT / "packages" / pkg.lower() / f"{pkg.lower()}.spec"
-    pkg_log_dir = get_package_log_dir(pkg)
+    pkg_log_dir = get_package_log_dir(pkg, run_id, target)
     pkg_log_dir.mkdir(parents=True, exist_ok=True)
     log = pkg_log_dir / "10-srpm.log"
     log.unlink(missing_ok=True)

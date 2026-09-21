@@ -554,7 +554,7 @@ class TestStageCoprBlocking:
         entry = build_db.get_stage(pkg, "copr", TARGET)
         assert entry["state"] == "failed"
         assert entry["build_id"] == 10798066
-        mock_fetch_logs.assert_called_once_with(pkg, 10798066)
+        mock_fetch_logs.assert_called_once_with(pkg, 10798066, TARGET, run_id)
 
 
 class TestStageCoprMainGating:

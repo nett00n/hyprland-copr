@@ -185,9 +185,9 @@ def update_local_repo(mock_chroot: str, repo_dir: Path) -> list[str]:
     return copied
 
 
-def copy_mock_results(mock_chroot: str, pkg: str) -> list[str]:
+def copy_mock_results(run_id: int, mock_chroot: str, pkg: str) -> list[str]:
     result_dir = Path("/var/lib/mock") / mock_chroot / "result"
-    pkg_log_dir = get_package_log_dir(pkg)
+    pkg_log_dir = get_package_log_dir(pkg, run_id, mock_chroot)
     pkg_log_dir.mkdir(parents=True, exist_ok=True)
     copied: list[str] = []
     for name in ("build.log", "root.log", "state.log"):
@@ -226,7 +226,7 @@ def run_for_package(
 
     ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
     has_devel = 1 if "devel" in meta else 0
-    pkg_log_dir = get_package_log_dir(pkg)
+    pkg_log_dir = get_package_log_dir(pkg, run_id, target)
     pkg_log_dir.mkdir(parents=True, exist_ok=True)
     log = pkg_log_dir / "20-mock.log"
     log.unlink(missing_ok=True)
@@ -345,10 +345,10 @@ def run_for_package(
         stale_result.unlink()
     event("mock", target, pkg, "run", ver=ver)
     ok, _, _ = run_cmd(cmd, log)
-    # Copies build.log/root.log/state.log to logs/build/<pkg>/, then records
+    # Copies build.log/root.log/state.log to this run's log dir, then records
     # each as an artifact (repo-relative path, matching the `log` column
     # convention used everywhere else in this file).
-    for mock_log in copy_mock_results(target, pkg):
+    for mock_log in copy_mock_results(run_id, target, pkg):
         build_db.record_artifact(mock_log, "repo", "mock_log", pkg, target, ver)
     state = "success" if ok else "failed"
     if not ok:

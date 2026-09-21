@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Remove a package and every place it's tracked: packages.yaml entry, group
 membership in groups.yaml, its sources.lock.yaml entry, build-report.db rows,
-and its logs/build/<name> directory (case-insensitive lookup by name).
+and every logs/runs/<run_id>/<target>/<name> directory still on disk
+(case-insensitive lookup by name).
 
 Resolves the package primarily against packages.yaml. If it's already gone
 from there (e.g. a previous run only got as far as popping the yaml entry),
@@ -22,7 +23,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from lib import build_db  # noqa: E402
-from lib.paths import GROUPS_YAML, PACKAGES_YAML, ROOT, get_package_log_dir  # noqa: E402
+from lib.paths import (  # noqa: E402
+    GROUPS_YAML,
+    PACKAGES_YAML,
+    RUNS_LOG_DIR,
+    iter_package_log_dirs,
+)
 from lib.source_lock import load_lock, save_lock  # noqa: E402
 from lib.yaml_utils import (  # noqa: E402
     find_package_name,
@@ -44,8 +50,8 @@ def resolve_name(query: str, packages: dict, groups: dict, lock: dict) -> str | 
     for group in groups.values():
         candidates.update(group.get("packages") or [])
     candidates.update(build_db.known_packages())
-    if get_package_log_dir(query).parent.exists():
-        candidates.update(p.name for p in get_package_log_dir(query).parent.iterdir())
+    if RUNS_LOG_DIR.exists():
+        candidates.update(p.name for p in RUNS_LOG_DIR.glob("*/*/*") if p.is_dir())
 
     matches = {name for name in candidates if name.lower() == query_lower}
     if len(matches) == 1:
@@ -96,10 +102,11 @@ def main() -> None:
         build_db.forget_package(pkg_name)
         parts.append("build-report.db")
 
-    log_dir = get_package_log_dir(pkg_name)
-    if log_dir.exists():
+    log_dirs = iter_package_log_dirs(pkg_name)
+    for log_dir in log_dirs:
         shutil.rmtree(log_dir)
-        parts.append(str(log_dir.relative_to(ROOT)))
+    if log_dirs:
+        parts.append(f"{len(log_dirs)} log dir(s) under logs/runs/")
 
     if not parts:
         sys.exit(f"error: {pkg_name} matched but nothing to remove (already clean)")

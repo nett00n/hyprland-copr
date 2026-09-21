@@ -247,7 +247,7 @@ def run_for_package(
         return True
 
     ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
-    pkg_log_dir = get_package_log_dir(pkg)
+    pkg_log_dir = get_package_log_dir(pkg, run_id, target)
     pkg_log_dir.mkdir(parents=True, exist_ok=True)
     log = pkg_log_dir / "00-spec.log"
     log.unlink(missing_ok=True)

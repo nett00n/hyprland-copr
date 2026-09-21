@@ -162,7 +162,7 @@ LOCK_DISABLE ?= # bypass for hosts without flock, or a deliberate parallel run
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export db-nuke submodules-update submodules-purge sync-hard-reset
+.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export db-nuke submodules-update submodules-purge sync-hard-reset
 
 save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
 	@mkdir -p logs
@@ -170,7 +170,7 @@ save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is
 	@echo $(HIGHLIGHT_PREFIX) "✓ Saved build-report.db snapshot to logs/build-report.db.last"
 
 clean-logs: check-image check-venv setup-volumes ## Remove build logs; clears stage/run state but keeps the artifact ledger (use db-nuke to also drop that)
-	@rm -rf logs/build logs/make
+	@rm -rf logs/runs logs/make
 	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --reset || true
 	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned build logs and stage state (artifact ledger preserved)"
 
@@ -379,7 +379,7 @@ add-new: check-image check-venv setup-volumes ## Add submodule from URL and scaf
 	 $(CONTAINER_PYTHON) scripts/scaffold-package.py $$_name || exit 1
 	$(MAKE) fmt
 
-delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, groups.yaml, sources.lock.yaml, build-report.db, logs/build, packages/, submodules, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required, single package only)
+delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, groups.yaml, sources.lock.yaml, build-report.db, logs/runs/*/*/<name>, packages/, submodules, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required, single package only)
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PKG or PACKAGE is required (e.g. PKG=hyprpicker)"; exit 1)
 	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
 	@echo "$(HIGHLIGHT_PREFIX) Removing package '$(PACKAGE)'..."
@@ -670,14 +670,17 @@ _update-daily:
 	@# already goes through write_yaml_file's FORMAT_FILE, same as format-yaml.py.
 	$(MAKE) validate-packages || exit 1
 	$(MAKE) readme copr-description || exit 1
-	@# stage-log-analyze must run here, after readme's gen-report.py has polled Copr
-	@# and fetched any newly-failed chroot logs (see lib.copr.poll_copr_status) --
-	@# and before tomorrow's full-cycle.py rmtree's logs/build/<pkg> at the start of
-	@# its run. Otherwise last night's mock/Copr failure evidence is destroyed
-	@# unread (see docs/CHANGELOG.md BUG-0041). pkg-log-analysis.py exits non-zero when
-	@# it finds issues (not an error), so this must not abort the recipe.
-	$(MAKE) stage-log-analyze || true
+	@# stage-log-analyze runs here, after readme's gen-report.py has polled Copr and
+	@# fetched any newly-failed chroot logs (see lib.copr.poll_copr_status), and
+	@# writes docs/nightly-summary.md (#COPR-0022) -- each run's logs live under
+	@# their own logs/runs/<run_id>/ (see lib.paths.get_run_log_dir), pruned by
+	@# retention policy rather than destroyed at the start of the next run, so
+	@# there's no ordering constraint against a future run's log setup any more
+	@# (formerly BUG-0041). pkg-log-analysis.py exits non-zero when it finds
+	@# issues (not an error), so this must not abort the recipe.
+	$(MAKE) stage-log-analyze LOG_SUMMARY_OUTPUT=docs/nightly-summary.md || true
 	git add packages.yaml packages/ submodules/ sources.lock.yaml README.md docs/README.copr.md docs/full-report.md || exit 1
+	@[ -f docs/nightly-summary.md ] && git add docs/nightly-summary.md || true
 	@if git diff --cached --quiet; then \
 		echo "$(HIGHLIGHT_PREFIX) Nothing to commit (no version/doc changes tonight)."; \
 	else \
@@ -690,7 +693,7 @@ _update-daily:
 	@echo $(HIGHLIGHT_PREFIX) "$$(cat logs/.update-versions-count 2>/dev/null || echo '?') package(s) updated tonight"
 	@if [ -f logs/.update-daily-failed ]; then \
 		rm -f logs/.update-daily-failed; \
-		echo "$(HIGHLIGHT_PREFIX) ✗ Some packages failed to build tonight (docs and commit were still produced; see stage-log-analyze output above, or check logs/build/<pkg>)"; \
+		echo "$(HIGHLIGHT_PREFIX) ✗ Some packages failed to build tonight (docs and commit were still produced; see stage-log-analyze output above, docs/nightly-summary.md, or logs/runs/latest/<target>/<pkg>)"; \
 		exit 1; \
 	fi
 
@@ -788,5 +791,8 @@ stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (P
 
 _LOG_PKGS := $(filter-out $(subst $(comma),$(space),$(SKIP_PACKAGES)),$(_PKGS))
 
-stage-log-analyze: check-image check-venv setup-volumes ## Analyze build logs for packages and report actionable errors (PACKAGE=<name> for one, runs for all by default, respects SKIP_PACKAGES)
-	@$(CONTAINER_PYTHON) scripts/pkg-log-analysis.py $(_LOG_PKGS)
+stage-log-analyze: check-image check-venv setup-volumes ## Analyze build logs for packages and report actionable errors (PACKAGE=<name> for one, runs for all by default, respects SKIP_PACKAGES). LOG_SUMMARY_OUTPUT=<path> also writes a durable Markdown summary there (#COPR-0022)
+	@$(CONTAINER_PYTHON) scripts/pkg-log-analysis.py $(_LOG_PKGS) $(if $(LOG_SUMMARY_OUTPUT),--output $(LOG_SUMMARY_OUTPUT),)
+
+prune-logs: check-image check-venv ## Enforce log retention on logs/runs/ (#COPR-0022). Dry-run by default; CONFIRM=1 to delete. KEEP=<n> overrides LOG_RETENTION_RUNS (default 10)
+	@$(CONTAINER_PYTHON) scripts/prune-logs.py $(if $(KEEP),--keep $(KEEP),) $(if $(filter 1,$(CONFIRM)),--confirm,)

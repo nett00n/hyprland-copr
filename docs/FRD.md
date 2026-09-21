@@ -26,7 +26,7 @@ file and `docs/features/` work together.
 - [ ] [COPR-0019. Distro/arch-agnostic build target](features/COPR-0019-build-target.md) - `#matrix` `#build`
 - [ ] [COPR-0020. aarch64 local build support](features/COPR-0020-aarch64-local-builds.md) - `#matrix` `#build` `#arch`
 - [ ] [COPR-0021. Per-chroot Copr rows and a package × target matrix report](features/COPR-0021-copr-chroot-matrix.md) - `#matrix` `#copr` `#reporting`
-- [ ] [COPR-0022. Run-scoped logs and a durable nightly summary](features/COPR-0022-run-scoped-logs-and-summary.md) - `#daily` `#diagnostics` `#logs`
+- [X] [COPR-0022. Run-scoped logs and a durable nightly summary](features/COPR-0022-run-scoped-logs-and-summary.md) - `#daily` `#diagnostics` `#logs`
 - [ ] [COPR-0023. Upstream source signature verification](features/COPR-0023-source-signature-verification.md) - `#security` `#provenance`
 
 ## Tags

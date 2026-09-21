@@ -14,7 +14,6 @@ import yaml
 from . import build_db
 from . import paths
 from .paths import (
-    BUILD_LOG_DIR,
     GROUPS_YAML,
     PACKAGES_YAML,
     REPO_YAML,
@@ -215,7 +214,6 @@ def prepare_stage(
     packages = filter_packages(all_packages, package_env)
     packages = skip_packages(packages, skip_env)
 
-    BUILD_LOG_DIR.mkdir(parents=True, exist_ok=True)
     if not proceed:
         build_db.clear_stage(stage_name, target, packages=list(packages))
 

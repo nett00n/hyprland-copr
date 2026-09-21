@@ -487,19 +487,31 @@ def download_chroot_log(result_url: str, dest: Path) -> bool:
     return False
 
 
-def fetch_failed_chroot_logs(pkg: str, build_id: int) -> None:
-    """On a failed Copr build, download logs for the chroots that failed.
+def fetch_failed_chroot_logs(
+    pkg: str, build_id: int, target: str, run_id: int | None = None
+) -> None:
+    """#COPR-0022: on a failed Copr build, download logs for the chroots that failed.
 
     Writes `<pkg-log-dir>/31-copr-<chroot>.log` for each failed chroot and a
     `<pkg-log-dir>/30-copr-chroots.log` summary (one line per chroot: name,
     state, result_url) so log-analysis can flag "failed on X only, Y
     succeeded" without another network round-trip. Best-effort: never raises.
+
+    `run_id`, when the caller has one (stage-copr.py's synchronous path
+    does), is written to. gen-report.py's standalone poll doesn't, so falls
+    back to `target`'s most recent run -- there is always at least one by
+    the time a build can be in this function (its copr stage row exists).
     """
+    if run_id is None:
+        latest = build_db.latest_run(target)
+        run_id = latest["id"] if latest else None
+    if run_id is None:
+        return
     try:
         chroots = get_build_chroots(build_id)
         if not chroots:
             return
-        pkg_log_dir = get_package_log_dir(pkg)
+        pkg_log_dir = get_package_log_dir(pkg, run_id, target)
         pkg_log_dir.mkdir(parents=True, exist_ok=True)
         summary_lines = [
             f"{c.get('name')} {c.get('state')} {c.get('result_url')}" for c in chroots
@@ -576,7 +588,7 @@ def poll_copr_status(
         if new_state and new_state != state:
             build_db.update_state(pkg, "copr", target, new_state, run_id=run_id)
             if new_state == "failed":
-                fetch_failed_chroot_logs(pkg, build_id)
+                fetch_failed_chroot_logs(pkg, build_id, target, run_id)
             updated = True
 
     return updated

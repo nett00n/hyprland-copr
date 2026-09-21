@@ -140,7 +140,7 @@ class TestFullCycleFinalize:
 
         assert exc.value.code == 1
         mock_report_copr.assert_called_once_with(
-            packages, full_cycle.BUILD_LOG_DIR, {"pkg1": "-"}
+            packages, full_cycle.get_run_log_dir(run_id, TARGET), {"pkg1": "-"}
         )
 
     def test_async_copr_failed_state_does_not_report(self):
@@ -800,8 +800,9 @@ class TestSkipReleaseBumpFlag:
                 full_cycle, "prepare_packages", return_value={"hyprutils": {}}
             ),
             patch.object(full_cycle, "preflight_autoheal"),
-            patch.object(full_cycle, "get_package_log_dir") as log_dir_mock,
-            patch.object(full_cycle, "BUILD_LOG_DIR"),
+            patch.object(full_cycle, "get_run_log_dir"),
+            patch.object(full_cycle, "refresh_latest_link"),
+            patch.object(full_cycle, "prune_run_logs"),
             patch.object(full_cycle, "setup_run", return_value=1),
             patch.object(
                 full_cycle, "update_package_releases", return_value={}
@@ -812,7 +813,6 @@ class TestSkipReleaseBumpFlag:
                 side_effect=SystemExit("stop-here"),
             ),
         ):
-            log_dir_mock.return_value.exists.return_value = False
             with pytest.raises(SystemExit):
                 full_cycle.main()
 
@@ -1551,19 +1551,25 @@ class TestUpdateDailyResilience:
         assert "fmt" not in stdout[second_validate_pos:line_end]
 
     def test_stage_log_analyze_runs_after_readme_before_commit(self):
-        """Coverage for docs/BUGS.md BUG-0041: full-cycle.py's next run rmtree's
-        logs/build/<pkg> before building, so any night's mock/Copr failure logs
-        must be analyzed *this* night or they're destroyed unread. Must run after
-        readme (whose gen-report.py poll fetches newly-failed Copr chroot logs)
-        and must not abort the chain -- pkg-log-analysis.py exits non-zero to mean
-        "issues found", not "this recipe failed".
+        """#COPR-0022: stage-log-analyze must run after readme (whose
+        gen-report.py poll fetches newly-failed Copr chroot logs) and must not
+        abort the chain -- pkg-log-analysis.py exits non-zero to mean "issues
+        found", not "this recipe failed". It also writes docs/nightly-summary.md,
+        which must land in the commit.
         """
         stdout = self._dry_run()
-        assert "make stage-log-analyze || true" in stdout
+        assert "make stage-log-analyze LOG_SUMMARY_OUTPUT=docs/nightly-summary.md || true" in stdout
         readme_pos = stdout.index("make readme copr-description")
-        analyze_pos = stdout.index("make stage-log-analyze || true")
+        analyze_pos = stdout.index(
+            "make stage-log-analyze LOG_SUMMARY_OUTPUT=docs/nightly-summary.md || true"
+        )
         commit_pos = stdout.index('git commit -m "Daily update:')
         assert readme_pos < analyze_pos < commit_pos
+
+    def test_nightly_summary_is_committed(self):
+        """#COPR-0022: docs/nightly-summary.md must be staged if it was written."""
+        stdout = self._dry_run()
+        assert "docs/nightly-summary.md" in stdout
 
 
 class TestDevToolingPrerequisite:

@@ -441,7 +441,7 @@ class TestCopyMockResults:
         with patch.object(stage_mock, "get_package_log_dir", return_value=log_dir), \
              patch.object(stage_mock, "ROOT", tmp_path), \
              patch.object(stage_mock, "Path", fake_path):
-            copied = stage_mock.copy_mock_results(TARGET, "test-pkg")
+            copied = stage_mock.copy_mock_results(1, TARGET, "test-pkg")
 
         assert copied == []
 

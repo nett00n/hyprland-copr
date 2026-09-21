@@ -34,7 +34,14 @@ from pathlib import Path
 
 from lib import build_db, vendor_store
 from lib.config import env_flag, setup_logging
-from lib.paths import ARCH, DISTRO, ROOT, SOURCES_DIR, resolve_target
+from lib.paths import (
+    ARCH,
+    DISTRO,
+    ROOT,
+    SOURCES_DIR,
+    get_package_log_dir,
+    resolve_target,
+)
 from lib.reporting import event, status
 from lib.vendor import (
     VendorError,
@@ -76,7 +83,7 @@ def run_for_package(
         return True
 
     ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
-    pkg_log_dir = ROOT / "logs" / "build" / pkg
+    pkg_log_dir = get_package_log_dir(pkg, run_id, target)
     pkg_log_dir.mkdir(parents=True, exist_ok=True)
     log = pkg_log_dir / "05-vendor.log"
     log.unlink(missing_ok=True)

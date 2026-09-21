@@ -136,13 +136,16 @@ incident) into something visible the same night.*
 
 Order:
 
-1. **[COPR-0022](features/COPR-0022-run-scoped-logs-and-summary.md)** (Planned
-   feature) — one path restructure, not two: add the distro/version segment *and*
-   the run-id nesting (`logs/<run_id>/<distro>-<version>/<package>/`) in a single
-   change, with the retention/prune policy in the same commit, then a durable
-   nightly summary (`pkg-log-analysis.py --output <file>`) linking to those
-   per-run logs. Split the live-tailing half (bind-mount mock's resultdir) out as
-   a separate, cheap follow-up — it's independent of the layout.
+1. **[COPR-0022](features/COPR-0022-run-scoped-logs-and-summary.md)**. **Done** —
+   logs nest under `logs/runs/<run_id>/<target>/<package>/` (`<target>`, not
+   merely `<distro>-<version>`, to actually avoid the arch collision — see the
+   doc's Quirks & Decisions), with count-based retention
+   (`LOG_RETENTION_RUNS`/`make prune-logs`) replacing the old
+   rmtree-at-next-run behavior, and a durable nightly summary
+   (`make stage-log-analyze LOG_SUMMARY_OUTPUT=docs/nightly-summary.md`, wired
+   into `_update-daily`) linking back to those per-run logs. The live-tailing
+   half (bind-mount mock's resultdir) stays a separate, cheap follow-up, per
+   the original plan — see `docs/CHANGELOG.md`'s `## Unreleased` section.
 2. **BUG-0100** — aggregate the 10 warn-and-continue sites in
    `update-versions.py` into one failure report. Today a single `git fetch`
    failure is invisible and a package silently sits on a stale version.
