@@ -12,6 +12,7 @@ import gzip
 import json
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -532,27 +533,21 @@ def fetch_failed_chroot_logs(
         return
 
 
-def poll_copr_status(
-    target: str, packages_list: list[str], run_id: int | None = None
-) -> bool:
-    """Poll COPR status for packages with non-terminal states using copr-cli.
-
-    Queries the status of pending builds and updates their state in
-    build-report.db (touching only the `state` column -- see
-    build_db.update_state). `run_id`, when given (full-cycle.py has one;
-    gen-report.py's standalone poll does not), mirrors a state change into
-    that run's `stage_history` row (#COPR-0015, #BUG-0063). Skips packages
-    that don't have a build_id or are
-    already in terminal states (success/failed).
-
-    Args:
-        target: build_db target key (mock chroot) to read/write copr rows for
-        packages_list: List of package names to check
+def _poll_copr_status_once(
+    target: str, packages_list: list[str], run_id: int | None
+) -> tuple[bool, bool]:
+    """One pass of the copr-cli status check -- see poll_copr_status() for the
+    retry wrapper around this.
 
     Returns:
-        True if any status was updated, False otherwise
+        (updated, pending): `updated` is True if any row's state changed this
+        pass; `pending` is True if a row with a build_id is still non-terminal
+        after this pass (a status-command failure or an unrecognized state
+        also counts as pending -- it's not resolved, so a retrying caller
+        should try again).
     """
     updated = False
+    pending = False
 
     for pkg in packages_list:
         entry = build_db.get_stage(pkg, "copr", target) or {}
@@ -566,6 +561,7 @@ def poll_copr_status(
         # Query copr-cli status
         ok, stdout, _ = run_cmd(["copr-cli", "status", str(build_id)])
         if not ok:
+            pending = True
             continue
 
         # copr-cli status prints a single state token (see _COPR_STATE_RE).
@@ -581,6 +577,7 @@ def poll_copr_status(
                     f"{stdout.strip()!r}",
                     file=sys.stderr,
                 )
+            pending = True
             continue
         new_state = _COPR_TERMINAL_STATE_MAP.get(copr_state)
 
@@ -590,5 +587,59 @@ def poll_copr_status(
             if new_state == "failed":
                 fetch_failed_chroot_logs(pkg, build_id, target, run_id)
             updated = True
+        else:
+            # copr_state mapped to a non-terminal state (running/starting/
+            # pending/importing/waiting): still building.
+            pending = True
+
+    return updated, pending
+
+
+def poll_copr_status(
+    target: str,
+    packages_list: list[str],
+    run_id: int | None = None,
+    deadline_s: float = 0,
+    interval_s: float = 30,
+) -> bool:
+    """Poll COPR status for packages with non-terminal states using copr-cli.
+
+    Queries the status of pending builds and updates their state in
+    build-report.db (touching only the `state` column -- see
+    build_db.update_state). `run_id`, when given (full-cycle.py has one;
+    gen-report.py's standalone poll does not), mirrors a state change into
+    that run's `stage_history` row (#COPR-0015, #BUG-0063). Skips packages
+    that don't have a build_id or are already in terminal states
+    (success/failed).
+
+    #BUG-0039: with `deadline_s` given (> 0), retries every `interval_s`
+    seconds until every polled row reaches a terminal state or `deadline_s`
+    seconds have elapsed since the first pass -- so a caller like
+    `scripts/copr-wait.py` can wait out an async `--nowait` submission before
+    the docs are rendered, instead of the single early pass `gen-report.py`'s
+    render used to see. `deadline_s=0` (the default) makes exactly one pass,
+    identical to this function's behavior before #BUG-0039 -- the pre-submit
+    poll in full-cycle.py and gen-report.py's own poll both rely on that.
+
+    Args:
+        target: build_db target key (mock chroot) to read/write copr rows for
+        packages_list: List of package names to check
+        deadline_s: total time budget across all retry passes; 0 = one pass
+        interval_s: sleep between passes while retrying
+
+    Returns:
+        True if any status was updated, False otherwise
+    """
+    updated = False
+    deadline = time.monotonic() + deadline_s if deadline_s > 0 else None
+
+    while True:
+        pass_updated, pending = _poll_copr_status_once(target, packages_list, run_id)
+        updated = updated or pass_updated
+        if not pending or deadline is None:
+            break
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(interval_s)
 
     return updated

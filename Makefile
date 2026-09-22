@@ -162,7 +162,7 @@ LOCK_DISABLE ?= # bypass for hosts without flock, or a deliberate parallel run
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export db-nuke submodules-update submodules-purge sync-hard-reset
+.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr copr-wait stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export db-export-docs check-docs-drift db-nuke submodules-update submodules-purge sync-hard-reset
 
 save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
 	@mkdir -p logs
@@ -345,8 +345,11 @@ pre-commit: check-venv validate-packages ## Run all checks and formatting (test 
 		$(MAKE) coverage || exit 1; \
 	fi
 
-update-versions: check-image check-venv setup-volumes ## Fetch latest semver tags from submodules and update packages.yaml
-	$(CONTAINER_PYTHON) scripts/update-versions.py
+UPDATE_VERSIONS_JOBS ?= 8
+
+update-versions: check-image check-venv setup-volumes ## Fetch latest semver tags from submodules and update packages.yaml. UPDATE_VERSIONS_JOBS=<n> (default 8; 1 = serial, #BUG-0101)
+	$(CONTAINER_RUN) env UPDATE_VERSIONS_JOBS=$(UPDATE_VERSIONS_JOBS) \
+		/work/.venv/bin/python3 scripts/update-versions.py
 
 list-tags: check-image check-venv setup-volumes ## List all tags for submodules, highlighting latest semver (PACKAGE=<name>, single package only, for one)
 	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
@@ -440,6 +443,32 @@ db-prune: check-image check-venv setup-volumes ## Remove all but the newest arti
 db-export: check-image check-venv setup-volumes ## Snapshot runs/stage_results/stage_history/artifacts for offline diffing. FORMAT=yaml|json (default yaml), OUTPUT=path (default stdout)
 	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --export \
 		$(if $(FORMAT),--format $(FORMAT),) $(if $(OUTPUT),--output $(OUTPUT),)
+
+DOCS_SNAPSHOT := docs/db-snapshot.yaml
+
+db-export-docs: check-image check-venv setup-volumes ## #BUG-0031: snapshot latest run + stage_results per target, for CI docs-drift checking. OUTPUT=path (default docs/db-snapshot.yaml)
+	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --export-docs \
+		$(if $(FORMAT),--format $(FORMAT),) --output $(if $(OUTPUT),$(OUTPUT),$(DOCS_SNAPSHOT))
+
+check-docs-drift: check-venv ## #BUG-0031: fail if README.md/docs/README.copr.md/docs/full-report.md don't match docs/db-snapshot.yaml + packages.yaml (no container -- pure render+diff, safe for CI)
+	@test -f $(DOCS_SNAPSHOT) || (echo "$(HIGHLIGHT_PREFIX) ✗ $(DOCS_SNAPSHOT) not found -- run make db-export-docs first"; exit 1)
+	@rm -rf .docs-drift-check && mkdir -p .docs-drift-check
+	@FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) .venv/bin/python3 scripts/gen-report.py \
+		--db-snapshot $(DOCS_SNAPSHOT) \
+		--format github      --output .docs-drift-check/README.md \
+		--format copr        --output .docs-drift-check/README.copr.md \
+		--format full-report --output .docs-drift-check/full-report.md \
+	|| (echo "$(HIGHLIGHT_PREFIX) ✗ docs-drift render failed"; rm -rf .docs-drift-check; exit 1)
+	@if diff -u README.md .docs-drift-check/README.md \
+		&& diff -u docs/README.copr.md .docs-drift-check/README.copr.md \
+		&& diff -u docs/full-report.md .docs-drift-check/full-report.md; then \
+		echo "$(HIGHLIGHT_PREFIX) ✓ Docs match $(DOCS_SNAPSHOT) + packages.yaml"; \
+	else \
+		echo "$(HIGHLIGHT_PREFIX) ✗ Generated docs drifted from $(DOCS_SNAPSHOT)/packages.yaml -- run make readme && make db-export-docs"; \
+		rm -rf .docs-drift-check; \
+		exit 1; \
+	fi
+	@rm -rf .docs-drift-check
 
 db-shell: check-image check-venv ## Open an interactive sqlite3 shell on build-report.db. NO_CONTAINER=1 opens it directly on the host (#BUG-0062)
 ifeq ($(NO_CONTAINER),1)
@@ -537,6 +566,11 @@ SKIP_COPR ?=
 SKIP_RELEASE_BUMP ?=
 SYNCHRONOUS_COPR_BUILD ?=
 REQUIRE_CHROOT_COVERAGE ?=
+# #BUG-0039: how long/often `make copr-wait` retries polling Copr for a build
+# submitted async (--nowait) to reach a terminal state, before `make readme`
+# renders the nightly docs.
+COPR_POLL_TIMEOUT ?= 1800
+COPR_POLL_INTERVAL ?= 30
 
 full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr (PACKAGE, COPR_REPO, FORCE_REBUILD, env vars)
 	@mkdir -p logs
@@ -635,6 +669,8 @@ _full-cycle-matrix:
 	if [ -n "$(COPR_REPO)" ]; then \
 		$(MAKE) stage-copr FEDORA_VERSION=$(FEDORA_VERSION) PACKAGE=$(PACKAGE) COPR_REPO=$(COPR_REPO) \
 			REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) || overall=1; \
+		$(MAKE) copr-wait FEDORA_VERSION=$(FEDORA_VERSION) PACKAGE=$(PACKAGE) \
+			COPR_POLL_TIMEOUT=$(COPR_POLL_TIMEOUT) COPR_POLL_INTERVAL=$(COPR_POLL_INTERVAL) || true; \
 	else \
 		echo $(HIGHLIGHT_PREFIX) "COPR_REPO not set -- skipping Copr submission (local matrix build only)"; \
 	fi; \
@@ -670,6 +706,10 @@ _update-daily:
 	@# already goes through write_yaml_file's FORMAT_FILE, same as format-yaml.py.
 	$(MAKE) validate-packages || exit 1
 	$(MAKE) readme copr-description || exit 1
+	@# #BUG-0031: snapshot right after readme so docs/db-snapshot.yaml always
+	@# matches the docs just rendered from the same build-report.db state --
+	@# CI's `make check-docs-drift` re-renders from this snapshot and diffs.
+	$(MAKE) db-export-docs || exit 1
 	@# stage-log-analyze runs here, after readme's gen-report.py has polled Copr and
 	@# fetched any newly-failed chroot logs (see lib.copr.poll_copr_status), and
 	@# writes docs/nightly-summary.md (#COPR-0022) -- each run's logs live under
@@ -679,7 +719,7 @@ _update-daily:
 	@# (formerly BUG-0041). pkg-log-analysis.py exits non-zero when it finds
 	@# issues (not an error), so this must not abort the recipe.
 	$(MAKE) stage-log-analyze LOG_SUMMARY_OUTPUT=docs/nightly-summary.md || true
-	git add packages.yaml packages/ submodules/ sources.lock.yaml README.md docs/README.copr.md docs/full-report.md || exit 1
+	git add packages.yaml packages/ submodules/ sources.lock.yaml README.md docs/README.copr.md docs/full-report.md $(DOCS_SNAPSHOT) || exit 1
 	@[ -f docs/nightly-summary.md ] && git add docs/nightly-summary.md || true
 	@if git diff --cached --quiet; then \
 		echo "$(HIGHLIGHT_PREFIX) Nothing to commit (no version/doc changes tonight)."; \
@@ -781,7 +821,7 @@ stage-mock: check-image check-venv setup-volumes ## Run mock build stage (PACKAG
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-mock.py,Mock build stage passed,Mock build stage failed)
 
-stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, MOCK_CHROOT, REQUIRE_CHROOT_COVERAGE, PROCEED_BUILD, CMD_TIMEOUT, runs in container)
+stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, MOCK_CHROOT, REQUIRE_CHROOT_COVERAGE, PROCEED_BUILD, SYNCHRONOUS_COPR_BUILD, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		MOCK_CHROOT=$(MOCK_CHROOT) \
@@ -789,8 +829,18 @@ stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (P
 		COPR_REPO=$(COPR_REPO) \
 		REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) \
 		PROCEED_BUILD=$(PROCEED_BUILD) \
+		SYNCHRONOUS_COPR_BUILD=$(SYNCHRONOUS_COPR_BUILD) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-copr.py,Copr submission stage passed,Copr submission stage failed)
+
+copr-wait: check-image check-venv setup-volumes ## #BUG-0039: bound-retry-poll Copr until this run's submitted builds resolve (PACKAGE=<name>, MOCK_CHROOT, COPR_POLL_TIMEOUT, COPR_POLL_INTERVAL, runs in container)
+	$(call run_with_result,$(CONTAINER_RUN) env \
+		FEDORA_VERSION=$(FEDORA_VERSION) \
+		MOCK_CHROOT=$(MOCK_CHROOT) \
+		PACKAGE=$(PACKAGE) \
+		COPR_POLL_TIMEOUT=$(COPR_POLL_TIMEOUT) \
+		COPR_POLL_INTERVAL=$(COPR_POLL_INTERVAL) \
+		/work/.venv/bin/python3 scripts/copr-wait.py,Copr wait passed,Copr wait failed)
 
 _LOG_PKGS := $(filter-out $(subst $(comma),$(space),$(SKIP_PACKAGES)),$(_PKGS))
 

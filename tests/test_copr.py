@@ -382,6 +382,124 @@ class TestPollCoprStatus:
         assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "failed"
 
 
+class TestPollCoprStatusBoundedRetry:
+    """#BUG-0039: poll_copr_status(deadline_s=, interval_s=) retries a
+    non-terminal build until it resolves or the deadline elapses."""
+
+    @patch("lib.copr.time.sleep")
+    @patch("lib.copr.run_cmd")
+    def test_default_deadline_zero_makes_exactly_one_pass(
+        self, mock_run_cmd, mock_sleep
+    ):
+        """No deadline given -> identical to the pre-#BUG-0039 single pass:
+        full-cycle.py's pre-submit poll and gen-report.py's own poll must not
+        change behavior."""
+        mock_run_cmd.return_value = (True, "running", "")
+
+        _seed_copr("pkg1", build_id=123, state="unknown")
+        result = poll_copr_status(TARGET, ["pkg1"])
+
+        assert result is False
+        assert mock_run_cmd.call_count == 1
+        mock_sleep.assert_not_called()
+
+    @patch("lib.copr.time.sleep")
+    @patch("lib.copr.run_cmd")
+    def test_returns_as_soon_as_terminal_no_extra_sleep(self, mock_run_cmd, mock_sleep):
+        """Every row terminal after the first pass -> no retry, no sleep,
+        even with a large deadline."""
+        mock_run_cmd.return_value = (True, "succeeded", "")
+
+        _seed_copr("pkg1", build_id=123, state="unknown")
+        result = poll_copr_status(TARGET, ["pkg1"], deadline_s=1800, interval_s=30)
+
+        assert result is True
+        assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "success"
+        assert mock_run_cmd.call_count == 1
+        mock_sleep.assert_not_called()
+
+    @patch("lib.copr.time.monotonic")
+    @patch("lib.copr.time.sleep")
+    @patch("lib.copr.run_cmd")
+    def test_retries_until_terminal_honouring_interval(
+        self, mock_run_cmd, mock_sleep, mock_monotonic
+    ):
+        """Stays pending for two passes, resolves on the third -- each gap
+        between passes is `interval_s`."""
+        # First call establishes the deadline; each pass calls monotonic()
+        # once to check it. 3 passes total before resolving.
+        mock_monotonic.side_effect = [0, 1, 2, 3]
+        mock_run_cmd.side_effect = [
+            (True, "running", ""),
+            (True, "starting", ""),
+            (True, "succeeded", ""),
+        ]
+
+        _seed_copr("pkg1", build_id=123, state="unknown")
+        result = poll_copr_status(TARGET, ["pkg1"], deadline_s=1800, interval_s=30)
+
+        assert result is True
+        assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "success"
+        assert mock_run_cmd.call_count == 3
+        assert mock_sleep.call_count == 2
+        mock_sleep.assert_called_with(30)
+
+    @patch("lib.copr.time.monotonic")
+    @patch("lib.copr.time.sleep")
+    @patch("lib.copr.run_cmd")
+    def test_gives_up_at_deadline_leaves_state_unknown(
+        self, mock_run_cmd, mock_sleep, mock_monotonic
+    ):
+        """Still non-terminal when the deadline is reached -> stops polling,
+        row keeps its non-terminal state (does not fabricate a result)."""
+        # First monotonic() call sets the deadline (t=0, deadline=100).
+        # Then each pass's check reports past the deadline immediately.
+        mock_monotonic.side_effect = [0, 200]
+        mock_run_cmd.return_value = (True, "running", "")
+
+        _seed_copr("pkg1", build_id=123, state="unknown")
+        result = poll_copr_status(TARGET, ["pkg1"], deadline_s=100, interval_s=30)
+
+        assert result is False
+        assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "unknown"
+        assert mock_run_cmd.call_count == 1
+        mock_sleep.assert_not_called()
+
+    @patch("lib.copr.time.sleep")
+    @patch("lib.copr.run_cmd")
+    def test_row_without_build_id_never_blocks_the_deadline(
+        self, mock_run_cmd, mock_sleep
+    ):
+        """A row with no build_id yet is skipped every pass -- it must not
+        force retries; the function isn't waiting on it."""
+        _seed_copr("pkg1", state="pending")  # no build_id
+
+        result = poll_copr_status(TARGET, ["pkg1"], deadline_s=1800, interval_s=30)
+
+        assert result is False
+        mock_run_cmd.assert_not_called()
+        mock_sleep.assert_not_called()
+
+    @patch("lib.copr.fetch_failed_chroot_logs")
+    @patch("lib.copr.run_cmd")
+    def test_failed_transition_fetches_logs_exactly_once(
+        self, mock_run_cmd, mock_fetch_logs
+    ):
+        """A non-terminal -> failed transition under retry still calls
+        fetch_failed_chroot_logs exactly once, not once per pass."""
+        mock_run_cmd.side_effect = [
+            (True, "running", ""),
+            (True, "failed", ""),
+        ]
+
+        _seed_copr("pkg1", build_id=123, state="unknown")
+        result = poll_copr_status(TARGET, ["pkg1"], deadline_s=1800, interval_s=0)
+
+        assert result is True
+        assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "failed"
+        mock_fetch_logs.assert_called_once_with("pkg1", 123, TARGET, None)
+
+
 CHROOT_LIST_RESPONSE = {
     "items": [
         {

@@ -130,7 +130,10 @@ run, and a missing dependency RPM invalidates the cache that depends on it.
 
 ## Epic 4 — Observability
 
-*Depends on Epic 3's `run_id` being a real, queryable dimension. This is what
+**Complete.** All items closed; see `docs/CHANGELOG.md`'s `## Unreleased` section
+for the #COPR-0022 #BUG-0100 #BUG-0039 #BUG-0031 #BUG-0101 entries.
+
+*Depended on Epic 3's `run_id` being a real, queryable dimension. This is what
 turns "update-daily reported success and pushed nothing" (the 2026-09-07/08
 incident) into something visible the same night.*
 
@@ -156,18 +159,20 @@ Order:
    [COPR-0004](features/COPR-0004-version-auto-bump.md)'s Behavior section for
    why — see `docs/CHANGELOG.md`'s `## Unreleased` section.
 3. **BUG-0039** — resubmitted packages publish as `unknown` (async `--nowait`
-   submit, `readme` runs seconds later, one poll too early).
+   submit, `readme` runs seconds later, one poll too early). **Done** — see
+   `docs/CHANGELOG.md`'s `## Unreleased` section.
 4. **BUG-0031** — CI check that generated docs still match
    `packages.yaml`/`build-report.db`. Needs the design decision its entry names
    (snapshot vs. partial diff) — **BUG-0060's `db-export` from Epic 3 is the
-   natural answer**, which is why it's sequenced after.
+   natural answer**, which is why it's sequenced after. **Done** — see
+   `docs/CHANGELOG.md`'s `## Unreleased` section.
 5. **BUG-0101** — concurrency in `update-versions.py`'s per-submodule loop.
    Split from BUG-0100 as materially riskier (shared `.git/modules`); its
    aggregate reporting has shipped (item 2 above), so this can now show what
-   broke.
+   broke. **Done** — see `docs/CHANGELOG.md`'s `## Unreleased` section.
 
 **Done when:** a failed nightly leaves a committed summary pointing at logs that still
-exist tomorrow.
+exist tomorrow. **Met** — all 5 items above are done.
 
 ---
 

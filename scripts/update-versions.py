@@ -11,10 +11,13 @@ Usage:
 import contextlib
 import datetime
 import sys
-from typing import NamedTuple
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, NamedTuple
 
 import yaml
 
+from lib.config import env_int
 from lib.gitmodules import (
     fetch_tags,
     get_submodule_commit_with_base,
@@ -162,11 +165,14 @@ def pull_submodule(
     fetch_result = run_git("fetch", "--tags", "origin", cwd=repo)
     if fetch_result.returncode != 0:
         detail = "git fetch failed"
+        msg = f"  warning: git fetch failed for {mod['name']}"
         if fetch_result.stderr:
             detail += f": {fetch_result.stderr.strip()}"
-        print(f"  warning: git fetch failed for {mod['name']}", file=sys.stderr)
-        if fetch_result.stderr:
-            print(f"  {fetch_result.stderr.strip()}", file=sys.stderr)
+            msg += f"\n  {fetch_result.stderr.strip()}"
+        # #BUG-0101: one print() call, not two -- under UPDATE_VERSIONS_JOBS>1
+        # another thread's output can land between two separate print()
+        # calls but never inside one.
+        print(msg, file=sys.stderr)
         if failures is not None:
             failures.append(Failure(mod["name"], "fetch", detail))
         return None
@@ -195,11 +201,11 @@ def pull_submodule(
         checkout_result = run_git("switch", "-C", target_branch, moving_ref, cwd=repo)
         if checkout_result.returncode != 0:
             detail = "git switch failed"
+            msg = f"  warning: git switch failed for {mod['name']}"
             if checkout_result.stderr:
                 detail += f": {checkout_result.stderr.strip()}"
-            print(f"  warning: git switch failed for {mod['name']}", file=sys.stderr)
-            if checkout_result.stderr:
-                print(f"  {checkout_result.stderr.strip()}", file=sys.stderr)
+                msg += f"\n  {checkout_result.stderr.strip()}"
+            print(msg, file=sys.stderr)  # #BUG-0101: one atomic print() call
             if failures is not None:
                 failures.append(Failure(mod["name"], "switch", detail))
         else:
@@ -244,14 +250,11 @@ def pull_submodule(
     checkout_result = run_git("checkout", "--force", "--detach", target, cwd=repo)
     if checkout_result.returncode != 0:
         detail = f"git checkout failed at pinned {target}"
+        msg = f"  warning: git checkout failed for {mod['name']} at pinned {target}"
         if checkout_result.stderr:
             detail += f": {checkout_result.stderr.strip()}"
-        print(
-            f"  warning: git checkout failed for {mod['name']} at pinned {target}",
-            file=sys.stderr,
-        )
-        if checkout_result.stderr:
-            print(f"  {checkout_result.stderr.strip()}", file=sys.stderr)
+            msg += f"\n  {checkout_result.stderr.strip()}"
+        print(msg, file=sys.stderr)  # #BUG-0101: one atomic print() call
         if failures is not None:
             failures.append(Failure(mod["name"], "switch", detail))
     else:
@@ -262,6 +265,151 @@ def pull_submodule(
     return moving_ref
 
 
+def _run_parallel(
+    jobs: int, worker: "Callable[[Any], None]", items: "list[Any]"
+) -> None:
+    """#BUG-0101: run `worker(item)` for each of `items`, either serially
+    (jobs <= 1 -- also the path every existing ordered-side_effect test in
+    tests/test_update_versions.py relies on) or across a `jobs`-worker
+    ThreadPoolExecutor. `worker` is expected to mutate shared dicts/lists by
+    itself (each item owns a distinct key, so concurrent writes from CPython
+    threads need no lock -- see docs/features/COPR-0004-version-auto-bump.md).
+    `list(...)` over `.map()` forces every task to finish (and re-raises any
+    worker exception) before returning.
+    """
+    if jobs <= 1 or len(items) <= 1:
+        for item in items:
+            worker(item)
+        return
+    with ThreadPoolExecutor(max_workers=jobs) as executor:
+        list(executor.map(worker, items))
+
+
+def _resolve_package_version(
+    pkg_name: str,
+    pkg_data: dict,
+    url_to_module: dict,
+    url_to_ref: dict,
+    pkg_to_latest: dict,
+    pkg_to_commit_info: dict,
+    failures: "list[Failure]",
+) -> None:
+    """Resolve one package's latest version/commit per its
+    `auto_update.release_type`, writing the result into `pkg_to_latest` or
+    `pkg_to_commit_info` (each package writes only its own key).
+
+    #BUG-0101: this is main()'s per-package Loop B body, extracted so it can
+    run under `_run_parallel()` -- it's the embarrassingly parallel half
+    (`fetch_tags()` is `git ls-remote` against a URL, no local repo touched),
+    and most of the wall-clock time this loop spends is network wait.
+    """
+    url = pkg_data.get("url", "")
+    mod = url_to_module.get(url)
+    if mod is None:
+        return
+    auto_update = pkg_data.get("auto_update") or {}
+    release_type = auto_update.get("release_type", "")
+    repo = ROOT / mod["path"]
+    ref = url_to_ref.get(url)
+
+    # Handle pinned versions/commits - skip update
+    if release_type == "pinned-version":
+        return
+    if release_type == "pinned-commit":
+        return
+
+    # Handle pinned-tag
+    if release_type == "pinned-tag":
+        tag = auto_update.get("tag")
+        if tag:
+            print(f"fetching pinned tag: {pkg_name} (tag={tag}) ...", file=sys.stderr)
+            commit_info = get_tag_commit(repo, tag)
+            if commit_info:
+                pkg_to_commit_info[pkg_name] = commit_info
+        return
+
+    # Handle latest-version (semver only, no commit fallback)
+    if release_type == "latest-version":
+        print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
+        tags, fetch_error = fetch_tags(url)
+        if fetch_error:
+            failures.append(Failure(pkg_name, "tags", fetch_error))
+            return
+        latest = latest_semver(tags)
+        if latest:
+            pkg_to_latest[pkg_name] = latest.lstrip("v")
+        return
+
+    # Handle latest-tag (loosest match: any version-like tag, no commit
+    # fallback) -- for upstreams that don't tag strict semver, e.g.
+    # mpvpaper's "1.9" (two components). See docs/BUGS.md BUG-0014.
+    if release_type == "latest-tag":
+        print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
+        tags, fetch_error = fetch_tags(url)
+        if fetch_error:
+            failures.append(Failure(pkg_name, "tags", fetch_error))
+            return
+        latest = latest_tag(tags)
+        if latest:
+            rpm_version = rpm_version_from_tag(latest)
+            if rpm_version != latest.lstrip("v"):
+                print(
+                    f"  warning: {pkg_name}: tag {latest!r} became version "
+                    f"{rpm_version!r} for RPM compatibility; a source.archives "
+                    f"entry templated on %{{version}} will not match the tag",
+                    file=sys.stderr,
+                )
+            pkg_to_latest[pkg_name] = rpm_version
+        else:
+            detail = "no version-like tag found"
+            print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
+            failures.append(Failure(pkg_name, "resolve", detail))
+        return
+
+    # Handle latest-commit
+    if release_type == "latest-commit":
+        if ref is None:
+            detail = "submodule not pulled, cannot resolve latest commit"
+            print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
+            failures.append(Failure(pkg_name, "resolve", detail))
+            return
+        print(f"fetching HEAD commit: {pkg_name} ({ref}) ...", file=sys.stderr)
+        commit_info = get_submodule_commit_with_base(repo, ref)
+        if commit_info:
+            pkg_to_commit_info[pkg_name] = commit_info
+        return
+
+    # Unrecognized release_type: falls through to the default path below,
+    # same as before, but now says so -- `make validate-packages` rejects
+    # this before it gets here, but a stale/unvalidated run should still
+    # not fail silently. See docs/BUGS.md BUG-0014.
+    if release_type and release_type not in RELEASE_TYPES:
+        detail = (
+            f"unknown auto_update.release_type {release_type!r}, falling back "
+            f"to default (semver-or-commit) resolution"
+        )
+        print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
+        failures.append(Failure(pkg_name, "config", detail))
+
+    # Default: try semver, fall back to commit
+    print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
+    tags, fetch_error = fetch_tags(url)
+    if fetch_error:
+        failures.append(Failure(pkg_name, "tags", fetch_error))
+        return
+    latest = latest_semver(tags)
+    if latest:
+        pkg_to_latest[pkg_name] = latest.lstrip("v")
+    elif ref is None:
+        detail = "no semver tag and submodule not pulled, nothing to resolve"
+        print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
+        failures.append(Failure(pkg_name, "resolve", detail))
+    else:
+        commit_info = get_submodule_commit_with_base(repo, ref)
+        if commit_info:
+            pkg_to_commit_info[pkg_name] = commit_info
+
+
 def render_failure_block(failures: "list[Failure]") -> list[str]:
     """#COPR-0004, #BUG-0100: render the aggregated failure report for stdout.
 
@@ -269,6 +417,11 @@ def render_failure_block(failures: "list[Failure]") -> list[str]:
     real "fetch" outage doesn't bury the outage in the noise. Returns an empty
     list when there's nothing to report -- callers decide whether that's worth
     printing at all.
+
+    #BUG-0101: sorted by `scope` within each kind group -- `failures` is
+    appended to from multiple worker threads under UPDATE_VERSIONS_JOBS>1, so
+    append order is completion order, not something this (or the committed
+    docs/nightly-summary.md sentinel below) can afford to depend on.
     """
     if not failures:
         return []
@@ -277,7 +430,7 @@ def render_failure_block(failures: "list[Failure]") -> list[str]:
     for failure in failures:
         by_kind.setdefault(failure.kind, []).append(failure)
     for kind in sorted(by_kind):
-        group = by_kind[kind]
+        group = sorted(by_kind[kind], key=lambda f: f.scope)
         lines.append(f"  [{kind}] ({len(group)}):")
         for failure in group:
             lines.append(f"    {failure.scope}: {failure.detail}")
@@ -308,7 +461,7 @@ def render_failure_markdown(failures: "list[Failure]") -> str:
     for kind in sorted(by_kind):
         lines.append(f"### {kind}")
         lines.append("")
-        for failure in by_kind[kind]:
+        for failure in sorted(by_kind[kind], key=lambda f: f.scope):
             lines.append(f"- `{failure.scope}`: {failure.detail}")
         lines.append("")
     return "\n".join(lines)
@@ -377,9 +530,19 @@ def main() -> None:
             print(f"  warning: {url}: {detail}", file=sys.stderr)
             failures.append(Failure(url, "config", detail))
 
+    # #BUG-0101: UPDATE_VERSIONS_JOBS=1 (or a single item either loop) runs
+    # strictly serially -- the path every ordered-run_git-side_effect test in
+    # tests/test_update_versions.py relies on. >1 spreads pull/fetch across a
+    # thread pool: each iteration below writes only its own dict key
+    # (url_to_ref[url], pkg_to_latest[pkg_name], pkg_to_commit_info[pkg_name]),
+    # so concurrent writes from different threads never collide -- see
+    # docs/features/COPR-0004-version-auto-bump.md.
+    jobs = env_int("UPDATE_VERSIONS_JOBS", 8)
+
     print("pulling submodules ...", file=sys.stderr)
     url_to_ref: dict[str, str | None] = {}
-    for mod in modules:
+
+    def _pull_one(mod: dict) -> None:
         url = mod["url"]
         pin = url_to_pin.get(url)
         movers = url_to_movers.get(url, [])
@@ -394,118 +557,24 @@ def main() -> None:
             mod, branch=url_to_branch.get(url), pin=pin, failures=failures
         )
 
+    _run_parallel(jobs, _pull_one, modules)
+
     pkg_to_latest: dict[str, str] = {}
     pkg_to_commit_info: dict[str, tuple[str, str, str, str | None]] = {}
 
-    for pkg_name, pkg_data in packages.items():
-        url = pkg_data.get("url", "")
-        mod = url_to_module.get(url)
-        if mod is None:
-            continue
-        auto_update = pkg_data.get("auto_update") or {}
-        release_type = auto_update.get("release_type", "")
-        repo = ROOT / mod["path"]
-        ref = url_to_ref.get(url)
+    def _resolve_one(item: tuple[str, dict]) -> None:
+        pkg_name, pkg_data = item
+        _resolve_package_version(
+            pkg_name,
+            pkg_data,
+            url_to_module,
+            url_to_ref,
+            pkg_to_latest,
+            pkg_to_commit_info,
+            failures,
+        )
 
-        # Handle pinned versions/commits - skip update
-        if release_type == "pinned-version":
-            continue
-        if release_type == "pinned-commit":
-            continue
-
-        # Handle pinned-tag
-        if release_type == "pinned-tag":
-            tag = auto_update.get("tag")
-            if tag:
-                print(
-                    f"fetching pinned tag: {pkg_name} (tag={tag}) ...",
-                    file=sys.stderr,
-                )
-                commit_info = get_tag_commit(repo, tag)
-                if commit_info:
-                    pkg_to_commit_info[pkg_name] = commit_info
-            continue
-
-        # Handle latest-version (semver only, no commit fallback)
-        if release_type == "latest-version":
-            print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
-            tags, fetch_error = fetch_tags(url)
-            if fetch_error:
-                failures.append(Failure(pkg_name, "tags", fetch_error))
-                continue
-            latest = latest_semver(tags)
-            if latest:
-                pkg_to_latest[pkg_name] = latest.lstrip("v")
-            continue
-
-        # Handle latest-tag (loosest match: any version-like tag, no commit
-        # fallback) -- for upstreams that don't tag strict semver, e.g.
-        # mpvpaper's "1.9" (two components). See docs/BUGS.md BUG-0014.
-        if release_type == "latest-tag":
-            print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
-            tags, fetch_error = fetch_tags(url)
-            if fetch_error:
-                failures.append(Failure(pkg_name, "tags", fetch_error))
-                continue
-            latest = latest_tag(tags)
-            if latest:
-                rpm_version = rpm_version_from_tag(latest)
-                if rpm_version != latest.lstrip("v"):
-                    print(
-                        f"  warning: {pkg_name}: tag {latest!r} became version "
-                        f"{rpm_version!r} for RPM compatibility; a source.archives "
-                        f"entry templated on %{{version}} will not match the tag",
-                        file=sys.stderr,
-                    )
-                pkg_to_latest[pkg_name] = rpm_version
-            else:
-                detail = "no version-like tag found"
-                print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
-                failures.append(Failure(pkg_name, "resolve", detail))
-            continue
-
-        # Handle latest-commit
-        if release_type == "latest-commit":
-            if ref is None:
-                detail = "submodule not pulled, cannot resolve latest commit"
-                print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
-                failures.append(Failure(pkg_name, "resolve", detail))
-                continue
-            print(f"fetching HEAD commit: {pkg_name} ({ref}) ...", file=sys.stderr)
-            commit_info = get_submodule_commit_with_base(repo, ref)
-            if commit_info:
-                pkg_to_commit_info[pkg_name] = commit_info
-            continue
-
-        # Unrecognized release_type: falls through to the default path below,
-        # same as before, but now says so -- `make validate-packages` rejects
-        # this before it gets here, but a stale/unvalidated run should still
-        # not fail silently. See docs/BUGS.md BUG-0014.
-        if release_type and release_type not in RELEASE_TYPES:
-            detail = (
-                f"unknown auto_update.release_type {release_type!r}, falling back "
-                f"to default (semver-or-commit) resolution"
-            )
-            print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
-            failures.append(Failure(pkg_name, "config", detail))
-
-        # Default: try semver, fall back to commit
-        print(f"fetching tags: {pkg_name} ...", file=sys.stderr)
-        tags, fetch_error = fetch_tags(url)
-        if fetch_error:
-            failures.append(Failure(pkg_name, "tags", fetch_error))
-            continue
-        latest = latest_semver(tags)
-        if latest:
-            pkg_to_latest[pkg_name] = latest.lstrip("v")
-        elif ref is None:
-            detail = "no semver tag and submodule not pulled, nothing to resolve"
-            print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
-            failures.append(Failure(pkg_name, "resolve", detail))
-        else:
-            commit_info = get_submodule_commit_with_base(repo, ref)
-            if commit_info:
-                pkg_to_commit_info[pkg_name] = commit_info
+    _run_parallel(jobs, _resolve_one, list(packages.items()))
 
     # Print summary YAML to stdout
     summary = {}

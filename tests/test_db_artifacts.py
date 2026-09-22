@@ -407,3 +407,72 @@ class TestExportSnapshot:
         second = build_db.export_snapshot()
 
         assert first == second
+
+
+class TestExportDocsSnapshot:
+    """#BUG-0031: the narrow, committable snapshot gen-report.py reads back
+    via --db-snapshot / `make check-docs-drift`."""
+
+    def test_contains_exactly_runs_and_stage_results(self, capsys):
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", TARGET, run_id, "success")
+        f_path = "/tmp/a.rpm"
+        build_db.record_artifact(f_path, "repo", "rpm", "a", TARGET, "1.0-1.fc44")
+
+        db_artifacts.export_docs_snapshot("yaml", None)
+
+        out = capsys.readouterr().out
+        assert "runs:" in out
+        assert "stage_results:" in out
+        assert "stage_history:" not in out
+        assert "artifacts:" not in out
+
+    def test_json_export_has_exactly_two_keys(self, capsys):
+        build_db.start_run(TARGET, "fedora", "44", "x86_64")
+
+        db_artifacts.export_docs_snapshot("json", None)
+
+        import json
+
+        data = json.loads(capsys.readouterr().out)
+        assert set(data.keys()) == {"runs", "stage_results"}
+
+    def test_export_to_file(self, tmp_path):
+        build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        output = tmp_path / "docs-snapshot.yaml"
+
+        db_artifacts.export_docs_snapshot("yaml", str(output))
+
+        assert output.exists()
+        assert "runs:" in output.read_text()
+
+    def test_two_exports_with_no_changes_are_identical(self):
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", TARGET, run_id, "success")
+
+        first = build_db.export_docs_snapshot()
+        second = build_db.export_docs_snapshot()
+
+        assert first == second
+
+    def test_only_latest_run_per_target_is_included(self):
+        """Multiple runs recorded for the same target over time -> the
+        snapshot must carry only the latest, or it grows unboundedly."""
+        build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        latest_run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+
+        snapshot = build_db.export_docs_snapshot()
+
+        target_runs = [r for r in snapshot["runs"] if r["target"] == TARGET]
+        assert len(target_runs) == 1
+        assert target_runs[0]["id"] == latest_run_id
+
+    def test_picks_the_right_row_across_multiple_targets(self):
+        other_target = "fedora-43-x86_64"
+        run_a = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        run_b = build_db.start_run(other_target, "fedora", "43", "x86_64")
+
+        snapshot = build_db.export_docs_snapshot()
+
+        by_target = {r["target"]: r["id"] for r in snapshot["runs"]}
+        assert by_target == {TARGET: run_a, other_target: run_b}

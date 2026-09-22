@@ -1373,6 +1373,148 @@ class TestMain:
         assert "latest: null" in captured.out
 
 
+class TestConcurrency:
+    """#BUG-0101: UPDATE_VERSIONS_JOBS controls whether pull/fetch runs
+    serially or across a thread pool -- the load-bearing property is that the
+    outcome (packages.yaml, the stdout summary, the failure sentinel) must be
+    identical either way.
+    """
+
+    def _run(self, tmp_path, monkeypatch, jobs: int) -> tuple[str, str, str]:
+        """Run main() with UPDATE_VERSIONS_JOBS=`jobs` against 6 packages
+        spanning every release_type branch, one of which fails. Returns
+        (stdout, packages.yaml text, failure sentinel text or "").
+        """
+        gitmodules = tmp_path / ".gitmodules"
+        gitmodules.write_text(
+            "".join(
+                f'[submodule "{name}"]\n'
+                f"\tpath = submodules/{name}\n"
+                f"\turl = https://github.com/test/{name}.git\n"
+                for name in ("a", "b", "c", "d", "e", "f")
+            )
+        )
+        packages_yaml = tmp_path / "packages.yaml"
+        packages_yaml.write_text(
+            "a:\n"
+            "  url: https://github.com/test/a.git\n"
+            "  version: '1.0.0'\n"
+            "b:\n"
+            "  url: https://github.com/test/b.git\n"
+            "  version: '1.0.0'\n"
+            "  auto_update:\n"
+            "    release_type: latest-version\n"
+            "c:\n"
+            "  url: https://github.com/test/c.git\n"
+            "  version: '1.0.0'\n"
+            "  auto_update:\n"
+            "    release_type: latest-tag\n"
+            "d:\n"
+            "  url: https://github.com/test/d.git\n"
+            "  version: '1.0.0'\n"
+            "  auto_update:\n"
+            "    release_type: latest-commit\n"
+            "e:\n"
+            "  url: https://github.com/test/e.git\n"
+            "  version: '1.0.0'\n"
+            "f:\n"
+            "  url: https://github.com/test/f.git\n"
+            "  version: '1.0.0'\n"
+        )
+        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
+        monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
+        monkeypatch.setattr(uv, "LOG_DIR", tmp_path / "logs")
+        monkeypatch.setenv("UPDATE_VERSIONS_JOBS", str(jobs))
+
+        modules = [
+            {"name": n, "path": f"submodules/{n}", "url": f"https://github.com/test/{n}.git"}
+            for n in ("a", "b", "c", "d", "e", "f")
+        ]
+
+        def fake_pull_submodule(mod, branch=None, pin=None, failures=None):
+            # 'e' fails to pull -- must not abort its siblings.
+            if mod["name"] == "e":
+                if failures is not None:
+                    failures.append(uv.Failure("e", "fetch", "git fetch failed"))
+                return None
+            return f"origin/{mod['name']}-branch"
+
+        tags_by_pkg = {"a": "v1.1.1", "b": "v2.2.2", "c": "v3.3.3"}
+
+        def fake_fetch_tags(url):
+            # Keyed by url, not call order, so it's safe under any completion
+            # order a thread pool produces. 'e' has no valid tag -- combined
+            # with its pull failure below, it hits the "no semver tag and
+            # submodule not pulled" resolve failure. 'f' fails outright.
+            name = url.rsplit("/", 1)[-1].removesuffix(".git")
+            if name == "f":
+                return [], "failed to fetch tags"
+            if name in tags_by_pkg:
+                return [tags_by_pkg[name]], None
+            return [], None
+
+        with patch.object(uv, "parse_gitmodules", return_value=modules), \
+             patch.object(uv, "pull_submodule", side_effect=fake_pull_submodule), \
+             patch.object(uv, "fetch_tags", side_effect=fake_fetch_tags), \
+             patch.object(
+                 uv,
+                 "get_submodule_commit_with_base",
+                 return_value=("abc123full", "abc123f", "20260101", None),
+             ):
+            uv.main()
+
+        return packages_yaml.read_text(), tmp_path
+
+    def test_serial_and_parallel_produce_identical_packages_yaml(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        serial_dir = tmp_path / "serial"
+        parallel_dir = tmp_path / "parallel"
+        serial_dir.mkdir()
+        parallel_dir.mkdir()
+
+        serial_yaml, _ = self._run(serial_dir, monkeypatch, jobs=1)
+        serial_out = capsys.readouterr().out
+        serial_sentinel_path = serial_dir / "logs" / ".update-versions-failures.md"
+        serial_sentinel = (
+            serial_sentinel_path.read_text() if serial_sentinel_path.exists() else ""
+        )
+
+        parallel_yaml, _ = self._run(parallel_dir, monkeypatch, jobs=8)
+        parallel_out = capsys.readouterr().out
+        parallel_sentinel_path = parallel_dir / "logs" / ".update-versions-failures.md"
+        parallel_sentinel = (
+            parallel_sentinel_path.read_text() if parallel_sentinel_path.exists() else ""
+        )
+
+        assert serial_yaml == parallel_yaml
+        assert serial_out == parallel_out
+        assert serial_sentinel == parallel_sentinel
+        # Sanity: the run actually exercised every branch and the failures.
+        assert "2.2.2" in serial_yaml
+        assert "### fetch" in serial_sentinel
+        assert "### tags" in serial_sentinel
+
+    def test_jobs_1_never_uses_a_thread_pool(self, tmp_path, monkeypatch):
+        """UPDATE_VERSIONS_JOBS=1 must take the strictly-serial path -- the
+        one every ordered-run_git-side_effect test in TestPullSubmodule
+        relies on staying available."""
+        with patch.object(uv, "ThreadPoolExecutor") as mock_executor:
+            self._run(tmp_path, monkeypatch, jobs=1)
+
+        mock_executor.assert_not_called()
+
+    def test_a_failing_submodule_does_not_abort_its_siblings(self, tmp_path, monkeypatch):
+        """Package 'e's submodule pull fails; 'a'-'d' and 'f' must still be
+        resolved (or reported), whether run serially or in parallel."""
+        for jobs in (1, 8):
+            run_dir = tmp_path / f"jobs{jobs}"
+            run_dir.mkdir()
+            packages_yaml_text, _ = self._run(run_dir, monkeypatch, jobs=jobs)
+            assert "2.2.2" in packages_yaml_text
+            assert "3.3.3" in packages_yaml_text
+
+
 class TestRenderFailureBlock:
     """Tests for render_failure_block (the stdout aggregate)."""
 

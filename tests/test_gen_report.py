@@ -495,3 +495,128 @@ class TestGenReportMain:
                 gen_report.main()
 
         assert exc_info.value.code == 2
+
+
+class TestGenReportDbSnapshot:
+    """#BUG-0031: `--db-snapshot` renders from a `make db-export-docs` snapshot
+    instead of build-report.db, for CI (which has no build history)."""
+
+    @pytest.fixture(autouse=True)
+    def _build_db_path(self, tmp_path, monkeypatch):
+        """Point lib.paths.BUILD_DB at a fresh tmp file and close the cached connection after."""
+        monkeypatch.setattr(paths, "BUILD_DB", tmp_path / "build-report.db")
+        yield
+        build_db.close()
+
+    def _write_snapshot(self, tmp_path, target=TARGET) -> Path:
+        from lib.yaml_utils import dump_yaml_pretty
+
+        run_id = build_db.start_run(target, "fedora", "44", "x86_64")
+        build_db.set_stage("a", "mock", target, run_id, "success")
+        build_db.set_stage("a", "copr", target, run_id, "success", build_id=1)
+        snapshot = build_db.export_docs_snapshot()
+        snapshot_path = tmp_path / "db-snapshot.yaml"
+        snapshot_path.write_text(dump_yaml_pretty(snapshot))
+        (tmp_path / "repo.yaml").write_text("name: test-repo\n")
+        return snapshot_path
+
+    def _render(self, tmp_path, snapshot_path, extra_argv=None):
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
+             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
+             patch.object(gen_report, "ROOT", tmp_path), \
+             patch.object(gen_report, "poll_copr_status") as mock_poll, \
+             patch.object(gen_report, "create_jinja_env") as mock_env, \
+             patch(
+                 "sys.argv",
+                 ["gen-report.py", "--format", "github", "--db-snapshot", str(snapshot_path)]
+                 + (extra_argv or []),
+             ):
+            mock_template = MagicMock()
+            mock_template.render.return_value = "Generated output"
+            mock_jinja_env = MagicMock()
+            mock_jinja_env.get_template.return_value = mock_template
+            mock_env.return_value = mock_jinja_env
+            gen_report.main()
+        return mock_poll
+
+    def test_renders_without_touching_build_report_db(self, tmp_path, capsys):
+        """A fresh (empty) BUILD_DB, no run ever started -- the live
+        build_db.latest_run() hard-exit path must not fire."""
+        # Note: _write_snapshot() itself seeds a run in the tmp db, since
+        # export_docs_snapshot() reads from it -- but a real CI checkout has
+        # no build-report.db at all. Point BUILD_DB somewhere fresh again
+        # right after writing the snapshot, so main() truly can't fall back
+        # to a live db.
+        snapshot_path = self._write_snapshot(tmp_path)
+        build_db.close()
+
+        mock_poll = self._render(tmp_path, snapshot_path)
+
+        assert "Generated output" in capsys.readouterr().out
+        mock_poll.assert_not_called()
+
+    def test_missing_run_for_target_in_snapshot_errors(self, tmp_path):
+        snapshot_path = self._write_snapshot(tmp_path, target="fedora-43-x86_64")
+        build_db.close()
+
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
+             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
+             patch.object(gen_report, "ROOT", tmp_path), \
+             patch(
+                 "sys.argv",
+                 # default FEDORA_VERSION=44 -> TARGET, but snapshot only has fedora-43-x86_64
+                 ["gen-report.py", "--format", "github", "--db-snapshot", str(snapshot_path)],
+             ), \
+             pytest.raises(SystemExit) as exc_info:
+            gen_report.main()
+
+        assert exc_info.value.code == 1
+
+    def test_missing_snapshot_file_errors(self, tmp_path):
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
+             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
+             patch.object(gen_report, "ROOT", tmp_path), \
+             patch(
+                 "sys.argv",
+                 ["gen-report.py", "--db-snapshot", str(tmp_path / "nope.yaml")],
+             ), \
+             pytest.raises(SystemExit) as exc_info:
+            gen_report.main()
+
+        assert exc_info.value.code == 1
+
+    def test_snapshot_render_matches_live_render_for_same_data(self, tmp_path):
+        """The property the whole drift gate rests on: rendering from the
+        snapshot must produce byte-identical output to rendering live from
+        the same underlying data."""
+        snapshot_path = self._write_snapshot(tmp_path)
+
+        # Live render (no --db-snapshot, but skip the poll -- no copr-cli here).
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
+             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
+             patch.object(gen_report, "ROOT", tmp_path), \
+             patch("sys.argv", ["gen-report.py", "--format", "github", "--skip-copr-poll"]):
+            live_output = tmp_path / "live.md"
+            with patch("sys.argv", [
+                "gen-report.py", "--format", "github", "--skip-copr-poll",
+                "--output", str(live_output),
+            ]):
+                gen_report.main()
+
+        # Snapshot render.
+        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
+             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
+             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
+             patch.object(gen_report, "ROOT", tmp_path):
+            snapshot_output = tmp_path / "snapshot.md"
+            with patch("sys.argv", [
+                "gen-report.py", "--format", "github", "--db-snapshot", str(snapshot_path),
+                "--output", str(snapshot_output),
+            ]):
+                gen_report.main()
+
+        assert live_output.read_text() == snapshot_output.read_text()

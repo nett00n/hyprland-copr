@@ -16,6 +16,7 @@ Usage:
   db-artifacts.py --forget PACKAGE
   db-artifacts.py --forget-repo TARGET
   db-artifacts.py --export [--format yaml|json] [--output PATH]
+  db-artifacts.py --export-docs [--format yaml|json] [--output PATH]
 """
 
 import argparse
@@ -197,15 +198,7 @@ def prune(confirm: bool) -> None:
         print("Re-run with --confirm to actually delete.")
 
 
-def export_snapshot(fmt: str, output: str | None) -> None:
-    """#COPR-0015, #BUG-0060: dump every table (runs, stage_results,
-    stage_history, artifacts) to a deterministic yaml/json snapshot, for
-    offline diffing -- also the input BUG-0031's docs-drift CI check (see
-    COPR-0012) needs, since two exports of an unchanged db are byte-identical.
-
-    Prints to stdout by default; `output` writes to a file instead.
-    """
-    snapshot = build_db.export_snapshot()
+def _write_snapshot(snapshot: dict, fmt: str, output: str | None) -> None:
     text = (
         dump_yaml_pretty(snapshot)
         if fmt == "yaml"
@@ -216,6 +209,29 @@ def export_snapshot(fmt: str, output: str | None) -> None:
         print(f"Wrote {output}")
     else:
         print(text, end="")
+
+
+def export_snapshot(fmt: str, output: str | None) -> None:
+    """#COPR-0015, #BUG-0060: dump every table (runs, stage_results,
+    stage_history, artifacts) to a deterministic yaml/json snapshot, for
+    offline diffing. Unbounded (accumulates with every run) -- not meant to
+    be committed; see export_docs_snapshot() for that.
+
+    Prints to stdout by default; `output` writes to a file instead.
+    """
+    _write_snapshot(build_db.export_snapshot(), fmt, output)
+
+
+def export_docs_snapshot(fmt: str, output: str | None) -> None:
+    """#BUG-0031 (see COPR-0012): dump just the latest run per target plus
+    stage_results -- what `gen-report.py --db-snapshot` needs to re-render
+    the docs body without build-report.db (gitignored) or a Copr poll. Two
+    exports of an unchanged db are byte-identical, so `make check-docs-drift`
+    can diff a freshly regenerated snapshot against the committed one.
+
+    Prints to stdout by default; `output` writes to a file instead.
+    """
+    _write_snapshot(build_db.export_docs_snapshot(), fmt, output)
 
 
 def reset() -> None:
@@ -292,6 +308,13 @@ def main() -> None:
         "snapshot for offline diffing",
     )
     parser.add_argument(
+        "--export-docs",
+        action="store_true",
+        help="#BUG-0031: dump just the latest run per target + stage_results -- "
+        "the narrow, committable input to `gen-report.py --db-snapshot` / "
+        "`make check-docs-drift`",
+    )
+    parser.add_argument(
         "--format",
         choices=("yaml", "json"),
         default="yaml",
@@ -305,11 +328,19 @@ def main() -> None:
     args = parser.parse_args()
 
     if not any(
-        [args.usage, args.prune, args.reset, args.forget, args.forget_repo, args.export]
+        [
+            args.usage,
+            args.prune,
+            args.reset,
+            args.forget,
+            args.forget_repo,
+            args.export,
+            args.export_docs,
+        ]
     ):
         parser.error(
-            "one of --usage, --prune, --reset, --forget, --forget-repo, --export "
-            "is required"
+            "one of --usage, --prune, --reset, --forget, --forget-repo, --export, "
+            "--export-docs is required"
         )
 
     if args.usage:
@@ -324,6 +355,8 @@ def main() -> None:
         forget_repo(args.forget_repo)
     if args.export:
         export_snapshot(args.format, args.output)
+    if args.export_docs:
+        export_docs_snapshot(args.format, args.output)
 
 
 if __name__ == "__main__":

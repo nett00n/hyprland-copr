@@ -935,6 +935,80 @@ def export_snapshot() -> dict[str, list[dict[str, Any]]]:
     }
 
 
+def latest_runs_by_target() -> list[dict[str, Any]]:
+    """Return the most recent `runs` row per distinct `target`, ordered by
+    target. #BUG-0031: `gen-report.py` only ever reads `latest_run(target)`
+    for whichever one target it's rendering -- exporting every historical run
+    (`all_runs()`) into a committed snapshot would grow it unboundedly for no
+    reason a docs render needs.
+    """
+    conn = connect()
+    return [
+        _row_dict(row)
+        for row in conn.execute(
+            "SELECT * FROM runs WHERE id IN "
+            "(SELECT MAX(id) FROM runs GROUP BY target) ORDER BY target"
+        )
+    ]
+
+
+# Columns stage_map()/_stage_entry() strip from a stage_results row before
+# handing it to a caller -- kept alongside stage_map_from_export() so the two
+# reshape identically. See _stage_entry() above for the live-query version.
+_STAGE_ENTRY_DROP_FIELDS = (
+    "run_id",
+    "updated_at",
+    "package",
+    "stage",
+    "target",
+    "last_success_version",
+    "last_success_log",
+    "last_success_build_id",
+    "last_success_at",
+)
+
+
+def stage_map_from_export(
+    rows: list[dict[str, Any]], target: str
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Reshape all_stage_results()-style flat rows (read back from a
+    db-export/db-export-docs snapshot) into stage_map()'s {stage: {package:
+    entry}} shape, filtered to `target`.
+
+    #BUG-0031: lets `gen-report.py --db-snapshot` see the identical entry
+    shape whether it read live from build-report.db or from a committed
+    snapshot, so `collect_packages()` doesn't need two code paths. Relies on
+    `rows` already being ordered by package (all_stage_results()'s `ORDER BY
+    package, stage, target`) for the per-stage sub-dicts to come out in the
+    same deterministic package-name order stage_map() guarantees.
+    """
+    result: dict[str, dict[str, dict[str, Any]]] = {}
+    for row in rows:
+        if row.get("target") != target:
+            continue
+        entry = {k: v for k, v in row.items() if k not in _STAGE_ENTRY_DROP_FIELDS}
+        result.setdefault(row["stage"], {})[row["package"]] = entry
+    return result
+
+
+def export_docs_snapshot() -> dict[str, list[dict[str, Any]]]:
+    """Return just what `gen-report.py` reads out of the db: the latest run
+    per target, and every stage_results row (already "latest" per
+    package/stage/target -- it's updated in place, not appended).
+
+    #BUG-0031: this is the narrow, boundedly-sized half of export_snapshot()
+    meant to be *committed* (`make db-export-docs` -> docs/db-snapshot.yaml),
+    so `gen-report.py --db-snapshot` can re-render the docs body in CI without
+    build-report.db (gitignored) or a Copr poll. Deliberately excludes
+    stage_history/artifacts -- both append-only and unbounded, and
+    gen-report.py reads neither.
+    """
+    return {
+        "runs": latest_runs_by_target(),
+        "stage_results": all_stage_results(),
+    }
+
+
 # --- reset -------------------------------------------------------------
 
 

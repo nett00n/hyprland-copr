@@ -23,6 +23,34 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- BUG-0101: `make update-versions`'s per-submodule pull loop and per-package
+  version-resolution loop now run across a `UPDATE_VERSIONS_JOBS`-worker thread
+  pool (default 8; `1` = the old strictly-serial behavior). No locking needed —
+  every worker writes only its own dict key, and `lib.gitmodules` never touches
+  a process-global cwd. `render_failure_block()`/`render_failure_markdown()` now
+  sort each failure-kind group by `scope`, so the committed
+  `docs/nightly-summary.md` stays byte-stable regardless of thread completion
+  order. See [COPR-0004](features/COPR-0004-version-auto-bump.md).
+- BUG-0031: `make check-docs-drift` (CI, wired into `.github/workflows/ci.yml` with
+  `fetch-depth: 0`) fails when `README.md`/`docs/README.copr.md`/
+  `docs/full-report.md` no longer match their inputs. New `make db-export-docs`
+  (`docs/db-snapshot.yaml`, `db-artifacts.py --export-docs` /
+  `lib.build_db.export_docs_snapshot()`) is a narrow, committed export of just the
+  latest `runs` row per target plus `stage_results` — kept in sync by
+  `_update-daily` right after `readme`. `gen-report.py --db-snapshot PATH` renders
+  from that snapshot instead of `build-report.db` (gitignored, so CI never had
+  build history to check against before this). See
+  [COPR-0012](features/COPR-0012-docs-generation.md).
+- BUG-0039: `make copr-wait` (new `scripts/copr-wait.py`) bound-retry-polls Copr
+  until this run's just-submitted builds reach a terminal state (or
+  `COPR_POLL_TIMEOUT`/`COPR_POLL_INTERVAL`, default 1800s/30s, elapse), and now
+  runs between `stage-copr` and `readme` in `_full-cycle-matrix`, so committed
+  docs show tonight's real Copr result instead of a stale `unknown`.
+  `lib.copr.poll_copr_status()` gained `deadline_s`/`interval_s` (default 0 = the
+  old single pass, unchanged for its other two call sites). Also fixed: the
+  `stage-copr` Makefile target wasn't forwarding `SYNCHRONOUS_COPR_BUILD` into
+  the container, so `.env`'s setting never reached the nightly path. See
+  [COPR-0007](features/COPR-0007-copr-submission.md).
 - COPR-0024: adds an optional [HyperMnesia](https://github.com/Recluse/HyperMnesia)-backed
   memory layer for AI coding agents working in this repo — a hand-authored component map
   (`memory/seed.sql`) injects the `must` rules for a file before it's edited, plus hybrid

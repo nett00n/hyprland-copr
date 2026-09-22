@@ -17,6 +17,13 @@ jobs:
         run: dnf install -y -q make python3 python3-pip rpmlint rpmdevtools cargo git
 
       - uses: actions/checkout@v4
+        with:
+          # #BUG-0031: check-docs-drift re-renders contributors from git log
+          # (collect_contributors()) -- a shallow clone sees one author,
+          # which would never match the committed docs and always fail this
+          # check. Also avoids re-triggering BUG-0030's concat/dedupe defect
+          # for a different reason than the committed docs were generated with.
+          fetch-depth: 0
 
       - name: Mark workspace as safe for git
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -26,3 +33,6 @@ jobs:
 
       - name: Lint + test (no container -- already running in one)
         run: make lint test NO_CONTAINER=1
+
+      - name: Check generated docs match packages.yaml + docs/db-snapshot.yaml (#BUG-0031)
+        run: make check-docs-drift

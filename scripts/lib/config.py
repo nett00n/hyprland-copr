@@ -8,7 +8,8 @@ Environment variables:
   PACKAGER        Packager name/email for RPM headers (format: "Name <email@example.com>").
 
 See also env_flag() below for the shared boolean-flag parser used by other scripts' own
-env vars (e.g. FORCE_REBUILD in full-cycle.py/stage-show-plan.py).
+env vars (e.g. FORCE_REBUILD in full-cycle.py/stage-show-plan.py), and env_int() for the
+equivalent integer parser (e.g. COPR_POLL_TIMEOUT/COPR_POLL_INTERVAL in copr-wait.py).
 """
 
 import logging
@@ -27,6 +28,22 @@ def env_flag(name: str) -> bool:
     flags instead of adding another inline variant.
     """
     return os.environ.get(name, "").strip().lower() in ("1", "true", "yes")
+
+
+def env_int(name: str, default: int) -> int:
+    """Read env var `name` as an int, falling back to `default` when unset,
+    blank, or not a valid integer (never raises).
+
+    #BUG-0039 introduced this for COPR_POLL_TIMEOUT/COPR_POLL_INTERVAL; use it
+    for any other numeric env knob instead of a bare `int(os.environ[...])`.
+    """
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
 
 
 def get_packager() -> str:

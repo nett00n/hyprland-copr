@@ -74,41 +74,6 @@ Shipped behavior doing the wrong thing.
   `{%- endif -%}` (or restructure without the inline if) in the template, and
   `collect_contributors()` deduping by email instead of name [P3/D1]
 
-- #BUG-0031 nothing verifies that the generated docs body (packages table + build
-  status in `README.md`, `docs/README.copr.md`, `docs/full-report.md`) still matches
-  `packages.yaml`/`build-report.db`. The README *shell* is CI-regenerated on every
-  push to main via `publish-readme.yml` + `gen-readme-shell.py`, but the body needs
-  `make readme`, which needs `build-report.db` -- gitignored, so CI has no build
-  history to render from. Live drift as of 2026-08-18: README's build-status line says
-  `Fedora 44 · 2026-08-09`, `packages.yaml` now has 49 packages, `docs/full-report.md`
-  still renders 45 rows. A CI step running `make readme && git diff --exit-code` would
-  catch it but needs a design decision first (commit a report snapshot? skip the
-  COPR-status-dependent parts of the diff check?) [P2/D3]
-
-### update-daily
-
-`make update-daily` (Makefile) chains update-versions -> validate-packages+fmt ->
-refresh-checksums -> full-cycle-matrix -> validate-packages -> readme+copr-description ->
-stage-log-analyze -> git commit -> optional push, and is documented
-(docs/operations.md) as the unattended nightly job. Audited end to end 2026-08,
-re-verified 2026-08-18, revalidation step added 2026-08-29 (BUG-0044). `full-cycle`
-was replaced by `full-cycle-matrix` in ce1d02de (2026-09-08, "run full matrix build
-before pushing to copr"), found while investigating why three consecutive
-2026-09-07/08 runs (commits d303dced, f7363082) pushed nothing to Copr despite
-`update-daily` reporting success and committing normally. All three causes found in
-that investigation are now fixed -- BUG-0053 (`make -k` plus an order-only
-prerequisite silently skipped every non-canonical chroot whenever the canonical one
-had any package failure), BUG-0050 (`stage-copr`'s exit code being discarded), and
-BUG-0051 (a chroot with zero locally-verified packages silently held back the whole
-submission and still exited 0) -- see docs/CHANGELOG.md's 2026-09-08 section:
-
-- #BUG-0039 any package resubmitted tonight is published as `unknown`; only unchanged
-  (cached) packages keep showing yesterday's resolved state (as of 2026-08-18,
-  `docs/full-report.md` shows 45 `copr-success` rows and 1 `copr-unknown`, not "every
-  build"). `full-cycle` submits with `--nowait` (async is the default; `update-daily`
-  never sets `SYNCHRONOUS_COPR_BUILD`, though it is read at `stage-copr.py:184` and
-  `full-cycle.py:153`), and `readme`+`copr-description` run seconds later -- the
-  publish step is simply one poll too early for whatever was just resubmitted [P2/D3]
 ### Packaging metadata
 
 - #BUG-0047 `lib/rpm_macros.py:normalize_file_entry`'s forward direction (abs -> macro)
@@ -260,16 +225,6 @@ distro/arch-agnostic build-target work itself is tracked as a feature, not here 
   become true. `gen-spec.py:410`'s `url_to_submodule: dict[str, object]` is the
   same tell in the other direction -- values are `Path`, declared `object`, and
   the parameter receiving it (`gen-spec.py:214`) is a bare `dict` [P2/D3]
-
-### Daily update
-
-Design/complexity items found while auditing `make update-daily` end to end
-(2026-08). Automation actually misbehaving from these findings is filed under
-`## Bugs & quirks` "update-daily" above instead.
-
-- #BUG-0101 add concurrency (e.g. `ThreadPoolExecutor`) to `update-versions.py`'s
-  per-submodule pull/fetch loop -- split out from BUG-0100 because it's a different
-  risk profile (shared `.git/modules` state) from the reporting fix [P3/D3]
 
 ## Chores
 

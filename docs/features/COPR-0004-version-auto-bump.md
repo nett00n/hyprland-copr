@@ -62,7 +62,8 @@ fatality — see `_update-daily`'s pattern for `full-cycle-matrix` (recorded via
 
 ## Implementation
 
-- `scripts/update-versions.py`, `lib/version.py`, `lib/gitmodules.py` (`fetch_tags()`).
+- `scripts/update-versions.py` (`_run_parallel()`, `_resolve_package_version()`),
+  `lib/version.py`, `lib/gitmodules.py` (`fetch_tags()`).
 - Runs first in `make update-daily` (COPR-0003), before the quality gate.
 
 ## Quirks & Decisions
@@ -79,10 +80,24 @@ fatality — see `_update-daily`'s pattern for `full-cycle-matrix` (recorded via
   failure for tag-based packages was silently swallowed. It now returns
   `TagFetch(tags, error)`; `error` is non-`None` only on an actual fetch
   failure. (BUG-0100, closed)
-- Quirk: the per-submodule pull/fetch loop runs serially with no concurrency.
-  Proposed: add `ThreadPoolExecutor`-based concurrency, now that the
-  aggregate-reporting fix above can show what broke; split out separately
-  since it's a different risk profile (shared `.git/modules` state). (BUG-0101)
+- Decision: `UPDATE_VERSIONS_JOBS` (default 8; `1` = strictly serial) runs the
+  submodule-pull loop and the per-package version-resolution loop each across
+  a `ThreadPoolExecutor`. Safe without any locking: `lib.gitmodules` always
+  uses `git -C <repo>` (never `cwd=`/`os.chdir`, so no process-global cwd
+  hazard), `.gitmodules` has no duplicate urls (no two tasks ever touch the
+  same submodule gitdir), and every worker writes only its own dict key
+  (`url_to_ref[url]`, `pkg_to_latest[pkg]`, `pkg_to_commit_info[pkg]`) --
+  CPython's GIL makes those individual writes atomic, and nothing downstream
+  reads a dict's *iteration* order (the stdout summary and `packages.yaml`
+  rewrite both iterate `packages.yaml`'s own order, not the dicts'). The one
+  real hazard was output, not git: `failures` is appended to from every
+  worker, so append order became completion order, and the two render
+  functions above already sorted only by `kind` -- fixed by also sorting each
+  kind's group by `scope`, so the committed `docs/nightly-summary.md` stays
+  byte-stable regardless of thread completion order. Each multi-line stderr
+  warning (e.g. a fetch failure plus its detail) is now one `print()` call
+  instead of two, so one thread's output can't land in the middle of
+  another's. (BUG-0101, closed)
 - `update-versions.py` now exits cleanly (130) on Ctrl+C instead of a raw traceback.
   (BUG-0072, closed)
 - Decision: the drift check (`lib.validation.validate_dependency_drift()`) is
@@ -97,7 +112,10 @@ fatality — see `_update-daily`'s pattern for `full-cycle-matrix` (recorded via
 
 ### Unit
 
-- `tests/test_update_versions.py`, `tests/test_version.py`, `tests/test_gitmodules.py`
+- `tests/test_update_versions.py` (incl. `TestConcurrency`: `UPDATE_VERSIONS_JOBS=1`
+  vs `=8` produce byte-identical stdout/packages.yaml/failure sentinel; a failing
+  submodule doesn't abort its siblings; `jobs=1` never touches
+  `ThreadPoolExecutor`), `tests/test_version.py`, `tests/test_gitmodules.py`
   (`TagFetch`), `tests/test_pkg_log_analysis.py` (folding the failure report into
   `docs/nightly-summary.md`).
 

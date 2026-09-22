@@ -44,8 +44,13 @@ so the previous known-good build stays discoverable. `stage_history` is what ans
 instead of overwriting in place, since `run_id` already threads through every call
 site.
 
-`db-export`'s deterministic snapshot is the natural input for the docs-drift CI
-check in [COPR-0012](COPR-0012-docs-generation.md)'s BUG-0031.
+`make db-export-docs [OUTPUT=path]` (#BUG-0031) is `db-export`'s narrower sibling: a
+*committed* second tracked read path out of the db, carrying only the latest `runs`
+row per target plus every `stage_results` row — bounded, unlike `db-export`'s
+four-table dump, and byte-identical across two exports of an unchanged db. It's the
+input the docs-drift CI check in [COPR-0012](COPR-0012-docs-generation.md) reads via
+`gen-report.py --db-snapshot`, since CI has no `build-report.db` (gitignored) to
+render from otherwise.
 
 ## Implementation
 

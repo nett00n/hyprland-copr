@@ -50,6 +50,14 @@ applies both to a plain `full-cycle` run and to standalone `make stage-copr` (th
 back a failed package's dependents, `stage-copr` did not. By default COPR builds are submitted
 with `--nowait` (async); `SYNCHRONOUS_COPR_BUILD=true` waits for completion instead.
 
+After `full-cycle-matrix` submits, run `make copr-wait COPR_REPO=nett00n/hyprland` to bound-retry
+polling until every submitted build reaches a terminal state (or `COPR_POLL_TIMEOUT` seconds
+elapse, default 1800, re-checking every `COPR_POLL_INTERVAL` seconds, default 30) — `_update-daily`
+does this automatically before `readme`, so committed docs reflect tonight's real Copr result
+instead of the stale `unknown` an async submission starts with (#BUG-0039). A build still
+in-progress at the deadline resolves on the next run's own pre-submit poll instead;
+`copr-wait` always exits 0.
+
 If a locally-buildable chroot has **zero** verified/skipped packages at all — a `blackout`
 chroot, `lib.copr.blackout_chroots()` — every package in the run gets held back at once, and
 `stage-copr` now fails loudly instead of silently exiting 0 with nothing submitted (docs/BUGS.md
@@ -331,6 +339,24 @@ build-data end to end and stays a `make readme`-local artifact.
 committing (`[skip ci]`, to avoid re-triggering itself) and pushing if anything changed. Safe by
 construction: the script cannot touch the packages/build-status region, so there's no path to
 an empty-package README landing on `main` even from a from-scratch checkout.
+
+### CI docs-drift check (#BUG-0031)
+
+`.github/workflows/ci.yml` also runs `make check-docs-drift` on every push/PR (full clone,
+`fetch-depth: 0`, so `collect_contributors()` matches a real local `make readme`'s output --
+see `docs/BUGS.md` BUG-0030). It re-renders `README.md`/`docs/README.copr.md`/
+`docs/full-report.md` from `packages.yaml` + the committed `docs/db-snapshot.yaml` and fails on
+any diff against the committed files:
+
+```shell
+make db-export-docs   # writes docs/db-snapshot.yaml (runs latest-per-target + stage_results only)
+make check-docs-drift # no container -- pure render+diff, safe to run the same way in CI
+```
+
+`docs/db-snapshot.yaml` is kept fresh by `_update-daily`, which runs `db-export-docs` right
+after `readme` and commits it alongside the other generated docs. If you hand-edit a generated
+doc, or run `make readme` outside the nightly job, re-run `make db-export-docs` before pushing
+or CI will (correctly) flag the drift.
 
 ## `update-daily`
 

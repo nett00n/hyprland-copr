@@ -7,6 +7,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import yaml
+
 from lib import build_db
 from lib.copr import COPR_BUILD_URL, poll_copr_status
 from lib.jinja_utils import create_jinja_env
@@ -231,6 +233,13 @@ def main() -> None:
         action="store_true",
         help="Skip polling COPR status updates (use cached status from build-report.db).",
     )
+    parser.add_argument(
+        "--db-snapshot",
+        metavar="PATH",
+        help="#BUG-0031: render from a `make db-export-docs` snapshot (docs/db-snapshot.yaml) "
+        "instead of build-report.db -- for CI, which has no build history. Implies "
+        "--skip-copr-poll (a snapshot has no live build_ids to poll against).",
+    )
     args = parser.parse_args()
     formats = args.formats or ["github"]
     outputs = args.outputs or [None] * len(formats)
@@ -240,12 +249,48 @@ def main() -> None:
     target = resolve_target(
         os.environ.get("FEDORA_VERSION", "44"), os.environ.get("MOCK_CHROOT", "")
     )
-    run_row = build_db.latest_run(target)
-    if run_row is None:
-        print(
-            f"error: no build recorded for {target} in build-report.db", file=sys.stderr
+
+    if args.db_snapshot:
+        # #BUG-0031: CI has no build-report.db (gitignored) to render from --
+        # read the committed `make db-export-docs` snapshot instead. No Copr
+        # poll: a snapshot's rows have no live process to poll against, and
+        # the whole point is a byte-reproducible render.
+        snapshot_path = Path(args.db_snapshot)
+        if not snapshot_path.exists():
+            print(f"error: --db-snapshot {snapshot_path} not found", file=sys.stderr)
+            sys.exit(1)
+        try:
+            snapshot = yaml.safe_load(snapshot_path.read_text()) or {}
+        except yaml.YAMLError as e:
+            print(f"error: failed to parse {snapshot_path}: {e}", file=sys.stderr)
+            sys.exit(1)
+        run_rows = [r for r in snapshot.get("runs", []) if r.get("target") == target]
+        run_row = run_rows[0] if run_rows else None
+        if run_row is None:
+            print(
+                f"error: no run for {target} in {snapshot_path}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        stages = build_db.stage_map_from_export(
+            snapshot.get("stage_results", []), target
         )
-        sys.exit(1)
+    else:
+        run_row = build_db.latest_run(target)
+        if run_row is None:
+            print(
+                f"error: no build recorded for {target} in build-report.db",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        stages = build_db.stage_map(target)
+
+        # Poll COPR status for packages with non-terminal states (unless skipped)
+        if not args.skip_copr_poll:
+            packages_list = list(stages.get("copr", {}).keys())
+            if poll_copr_status(target, packages_list):
+                # Status was updated in the DB; reload to pick it up.
+                stages = build_db.stage_map(target)
 
     run = {
         "fedora_version": run_row.get("distro_version", target),
@@ -253,14 +298,6 @@ def main() -> None:
         "timestamp": _iso(run_row.get("started_at")),
         "completed_at": run_row.get("completed_at"),
     }
-    stages = build_db.stage_map(target)
-
-    # Poll COPR status for packages with non-terminal states (unless skipped)
-    if not args.skip_copr_poll:
-        packages_list = list(stages.get("copr", {}).keys())
-        if poll_copr_status(target, packages_list):
-            # Status was updated in the DB; reload to pick it up.
-            stages = build_db.stage_map(target)
 
     pkg_meta = get_packages() if PACKAGES_YAML.exists() else {}
     repo = load_repo_yaml() if REPO_YAML.exists() else {}
