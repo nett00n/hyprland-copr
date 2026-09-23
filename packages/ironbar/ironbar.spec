@@ -1,12 +1,12 @@
 
 Name:           ironbar
-Version:        0.19.0
-Release:        16%{?dist}
+Version:        0.19.1
+Release:        1%{?dist}
 Summary:        Customisable Wayland GTK4 bar written in Rust
 License:        MIT
 URL:            https://github.com/JakeStanger/ironbar
-Source0:        https://github.com/JakeStanger/ironbar/archive/refs/tags/v0.19.0.tar.gz#/ironbar-0.19.0.tar.gz
-Source1:        ironbar-0.19.0-vendor.tar.gz
+Source0:        https://github.com/JakeStanger/ironbar/archive/refs/tags/v0.19.1.tar.gz#/ironbar-0.19.1.tar.gz
+Source1:        ironbar-0.19.1-vendor.tar.gz
 
 BuildRequires:  cairo-gobject-devel
 BuildRequires:  cargo
@@ -36,8 +36,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.19.0
-Commit:            607e28284b69f9e4089d8908a55aa770634224e3
+Tag:               v0.19.1
+Commit:            cac7d684ddc7e26315b4e269b93143ab92c71757
 
 %prep
 %autosetup -p1
@@ -64,6 +64,6 @@ Development files for ironbar.
 %files devel
 
 %changelog
-* Sun May 17 2026 nett00n <copr@nett00n.org> - 0.19.0-16
+* Sun Sep 20 2026 nett00n <copr@nett00n.org> - 0.19.1-1
 
-- chore(release): v0.19.0
+- chore(release): v0.19.1

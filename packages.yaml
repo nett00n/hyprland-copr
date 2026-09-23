@@ -1399,7 +1399,7 @@ ironbar:
   - '%license LICENSE'
   - '%{_bindir}/ironbar'
   license: MIT
-  release: 16
+  release: 1
   requires: []
   rpm:
     no_debug_package: false
@@ -1409,7 +1409,7 @@ ironbar:
     - '%{name}-%{version}-vendor.tar.gz'
   summary: Customisable Wayland GTK4 bar written in Rust
   url: https://github.com/JakeStanger/ironbar
-  version: 0.19.0
+  version: 0.19.1
 lambdock:
   build:
     commands:
