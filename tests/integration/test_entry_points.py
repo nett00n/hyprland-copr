@@ -554,7 +554,65 @@ class TestStageCoprBlocking:
         entry = build_db.get_stage(pkg, "copr", TARGET)
         assert entry["state"] == "failed"
         assert entry["build_id"] == 10798066
+        assert entry["reason"]
         mock_fetch_logs.assert_called_once_with(pkg, 10798066, TARGET, run_id)
+
+    def test_copr_sync_watch_timeout_is_unknown_not_failed(self, run_id, tmp_path):
+        """#BUG-0107: run_cmd() hitting CMD_TIMEOUT mid-watch (the submission
+        itself already succeeded -- copr-cli printed "Created builds: N"
+        before the watch even started) must not be recorded as a terminal
+        "failed" with no build_id. That combination is unresolvable:
+        poll_copr_status() only resumes a row that has a build_id *and* a
+        non-terminal state (docs/BUGS.md, the run-159 postmortem: 5 packages
+        stuck `failed`/build_id=NULL/reason=NULL after a 15h synchronous
+        nightly hit CMD_TIMEOUT, even though all 5 had already succeeded on
+        Copr). It must instead land as "unknown" (same as an async
+        submission), carry the build_id, carry a reason, and be reported as
+        an overall success (submission succeeded; only the watch didn't).
+        """
+        pkg = "test-pkg"
+        meta = {"version": "1.0.0", "release": 1}
+        srpm_path = tmp_path / "path.src.rpm"
+        srpm_path.write_bytes(b"srpm")
+        build_db.set_stage(
+            pkg, "srpm", CANONICAL_TARGET, run_id, "success", path=str(srpm_path)
+        )
+        build_db.set_stage(pkg, "mock", CANONICAL_TARGET, run_id, "success")
+
+        stdout = (
+            f"Uploading package {srpm_path}\n"
+            "Build was added to hyprland:\n"
+            "Created builds: 11022849\n"
+            "Watching build(s): (this may be safely interrupted)\n"
+            "  03:08:49 Build 11022849: pending\n"
+        )
+        stderr = "command timed out after 3600s: copr-cli build nett00n/hyprland ..."
+
+        with (
+            patch.object(
+                stage_copr, "run_cmd", return_value=(False, stdout, stderr)
+            ),
+            patch.object(stage_copr, "fetch_failed_chroot_logs") as mock_fetch_logs,
+            patch.object(stage_copr, "get_package_log_dir", return_value=tmp_path),
+            patch.object(stage_copr, "ROOT", tmp_path),
+        ):
+            result = stage_copr.run_for_package(
+                pkg,
+                meta,
+                "43",
+                "nett00n/hyprland",
+                proceed=False,
+                target=TARGET,
+                run_id=run_id,
+                synchronous=True,
+            )
+
+        assert result is True
+        entry = build_db.get_stage(pkg, "copr", TARGET)
+        assert entry["state"] == "unknown"
+        assert entry["build_id"] == 11022849
+        assert entry["reason"]
+        mock_fetch_logs.assert_not_called()
 
 
 class TestStageCoprMainGating:

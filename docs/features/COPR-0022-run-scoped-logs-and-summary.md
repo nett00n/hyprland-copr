@@ -73,6 +73,20 @@ below it. Absent that sentinel (a clean refresh, or an ad-hoc `stage-log-analyze
 with no preceding `update-versions`), the section is simply omitted — no error.
 (#BUG-0100)
 
+The summary also covers Copr submission state, not just what pattern-matching
+`30-copr.log` finds (#BUG-0108): for every package actually analyzed this run,
+`collect_copr_issues()` reads its `copr` row straight from `build-report.db` (target
+taken from the resolved log dir's parent) and flags any row whose state isn't
+`success`/`skipped` into a `## Copr submission` table — package, target, version,
+state, a link to the Copr build (when a `build_id` was recorded), and `reason`. This
+exists because a log-only view is blind to a row that never wrote a recognizable
+`30-copr.log` pattern in the first place — the run-159 case: `nightly-summary.md`
+reported "With issues: 0" the same night 5 packages were recorded copr state
+`failed` with `reason` `NULL` (see [COPR-0007](COPR-0007-copr-submission.md)
+#BUG-0107). Only a genuinely `failed` row fails the overall run (`main()`'s exit
+code); `unknown` (still pending, e.g. mid-poll or a watch that hit `CMD_TIMEOUT`) is
+shown but does not turn an otherwise-clean night red.
+
 `delete-package.py` used the old flat layout's `<pkg-log-dir>.parent.iterdir()` trick
 for case-insensitive name discovery; it now globs `logs/runs/*/*/<pkg>` via
 `lib.paths.iter_package_log_dirs()` and removes every match across every run/target
@@ -89,7 +103,9 @@ still on disk.
   print-per-section body, now building a line list reused by both the stdout printer
   and the Markdown renderer), `render_markdown_summary()` (now takes an optional
   `upstream_report` string, read from `logs/.update-versions-failures.md` when
-  present — #BUG-0100), `--run-id`/`--target`/`--output` flags.
+  present — #BUG-0100), `--run-id`/`--target`/`--output` flags,
+  `collect_copr_issues()` (#BUG-0108, reads `build_db.get_stage(pkg, "copr", target)`
+  directly rather than parsing logs).
 - Every stage script (`stage-spec.py`, `stage-vendor.py`, `stage-srpm.py`,
   `stage-mock.py`, `stage-copr.py`) and `lib/copr.py`'s `fetch_failed_chroot_logs()`
   now pass `run_id`/`target` into `get_package_log_dir()`.
@@ -130,7 +146,9 @@ still on disk.
 - Unit (`tests/test_pkg_log_analysis.py`): `resolve_log_dirs()` picks the newest run
   with the package, returns every target within a matrix run, and an explicit
   `--run-id`/`--target` pins one directory even if it doesn't exist; `--output` writes
-  a Markdown summary linking to the real log dir.
+  a Markdown summary linking to the real log dir. `TestCoprIssuesInSummary`
+  (#BUG-0108): a `failed` copr row is flagged and fails the run, an `unknown` one is
+  flagged but does not, a `success` row and "no row at all" are both not flagged.
 - Integration (`tests/integration/test_make_targets.py`): no rmtree of a prior run's
   logs; `stage-log-analyze` still runs between `readme` and the commit and writes
   `docs/nightly-summary.md`, which is staged.

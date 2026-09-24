@@ -63,11 +63,15 @@ def run_for_package(
     run_id: int,
     synchronous: bool = False,
 ) -> bool:
-    """Submit SRPM to Copr for a single package. Return True on success/skip, False on failure.
+    """#COPR-0007, #BUG-0107. Submit SRPM to Copr for a single package.
+
+    Returns True on success/skip, False on a genuine build failure.
 
     Writes the copr stage row for `pkg`.
 
     If synchronous=False (default), uses --nowait flag for async submission.
+    A synchronous watch that hits run_cmd()'s CMD_TIMEOUT is treated as a
+    still-pending submission ("unknown" state), not a build failure.
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
@@ -148,25 +152,61 @@ def run_for_package(
     if not synchronous:
         cmd.append("--nowait")
     cmd.extend([copr_repo, srpm_path])
-    ok, stdout, _ = run_cmd(cmd, log)
-
-    # In async mode: successful submission → "unknown" state (build is pending)
-    # In sync mode: successful submission → "success", failed submission → "failed"
-    state = ("unknown" if not synchronous else "success") if ok else "failed"
+    ok, stdout, stderr = run_cmd(cmd, log)
 
     # copr-cli prints "Created builds: N" as soon as the build is submitted,
     # before it starts watching/waiting -- so a build_id can exist even when
     # the overall command later fails (synchronous mode watched the build to
-    # a "failed" terminal state). Parse it unconditionally so failed builds
-    # still get a build_id recorded, which fetch_failed_chroot_logs needs.
+    # a "failed" terminal state, or run_cmd's own CMD_TIMEOUT killed the watch
+    # -- #BUG-0107, and #BUG-0106 makes run_cmd() preserve that partial
+    # stdout for a killed command). Parse it unconditionally so a failed or
+    # killed watch still gets a build_id recorded, which fetch_failed_chroot_logs
+    # and the "unknown" state below (via poll_copr_status) both need.
     build_id = parse_build_id(stdout)
+
+    # A synchronous watch killed by CMD_TIMEOUT is not a build failure: the
+    # submission already succeeded (that's how we have a build_id) and the
+    # build is still running on Copr. Recording it as terminal "failed" with
+    # no build_id (the old behavior) permanently stranded the row --
+    # poll_copr_status() (lib/copr.py) only resumes polling a row that has a
+    # build_id *and* a non-terminal state. #BUG-0107: treat a watch timeout
+    # like an async submission -- "unknown", resolved later by `copr-wait` or
+    # the next run's pre-submit poll -- and report success, since the
+    # submission itself did succeed (docs/features/COPR-0007-copr-submission.md).
+    timed_out = not ok and "timed out" in stderr
+    if timed_out:
+        ok = True
+
+    # In async mode, or a synchronous watch that timed out (see above):
+    # successful submission → "unknown" state (build pending/still running).
+    # In sync mode that actually watched to a terminal state: "success"/"failed".
+    state = "unknown" if (not synchronous or timed_out) else ("success" if ok else "failed")
+
     status("copr", pkg, "ok" if ok else "fail", target, version=ver)
 
     if not ok and synchronous and build_id:
         fetch_failed_chroot_logs(pkg, build_id, target, run_id)
 
+    # #BUG-0107: a failed/timed-out row must carry why -- `reason` used to be
+    # dropped on the floor here, leaving every such row NULL in the DB and the
+    # rendered docs.
+    reason = None
+    if timed_out:
+        reason = (
+            f"copr watch timed out; build {build_id} still running on Copr"
+            if build_id
+            else "copr watch timed out before a build id was seen"
+        )
+    elif not ok:
+        # Prefer stderr's last line (copr-cli's own errors go there); a build
+        # that submitted fine but was watched to a "failed" terminal state
+        # leaves stderr empty, so fall back to stdout's last non-blank line
+        # (copr-cli prints the terminal "... Build N: failed" line there).
+        tail = stderr.strip() or stdout.strip()
+        reason = tail.splitlines()[-1] if tail else "copr-cli exited non-zero"
+
     extra: dict[str, Any] = {}
-    if ok and synchronous:
+    if ok and synchronous and not timed_out:
         extra["completed_at"] = build_db.now_epoch()
     build_db.set_stage(
         pkg,
@@ -178,6 +218,7 @@ def run_for_package(
         build_id=build_id,
         log=str(log.relative_to(ROOT)),
         has_devel=has_devel,
+        reason=reason,
         **extra,
     )
 

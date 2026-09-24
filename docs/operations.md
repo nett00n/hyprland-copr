@@ -48,7 +48,11 @@ same run still submits (`lib.copr.ineligible_packages()`/`block_transitive_depen
 applies both to a plain `full-cycle` run and to standalone `make stage-copr` (the path
 `full-cycle-matrix` submits through) — the two previously had a gap here: only `full-cycle` held
 back a failed package's dependents, `stage-copr` did not. By default COPR builds are submitted
-with `--nowait` (async); `SYNCHRONOUS_COPR_BUILD=true` waits for completion instead.
+with `--nowait` (async); `SYNCHRONOUS_COPR_BUILD=true` waits for completion instead — use it for
+a deliberate single-package run like the one above, not the nightly: `.env`'s nightly default is
+async (watching dozens of builds serially can take 15h+ and hit `CMD_TIMEOUT` mid-watch, #BUG-0107).
+A watch that does hit `CMD_TIMEOUT` is recorded `unknown` (not a failure) with its `build_id`, and
+resolves via `make copr-wait` or the next run's pre-submit poll, same as an async submission.
 
 After `full-cycle-matrix` submits, run `make copr-wait COPR_REPO=nett00n/hyprland` to bound-retry
 polling until every submitted build reaches a terminal state (or `COPR_POLL_TIMEOUT` seconds

@@ -23,6 +23,29 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- BUG-0107: a synchronous `stage-copr` watch (`SYNCHRONOUS_COPR_BUILD=true`) killed
+  mid-watch by `run_cmd()`'s `CMD_TIMEOUT` is now recorded `unknown` (with its
+  `build_id` and a `reason`) instead of a terminal `failed` with both `NULL` — the
+  latter was unresolvable by `poll_copr_status()` and reported a build as failed
+  when the submission had actually succeeded. `.env`'s nightly default is async
+  again (`SYNCHRONOUS_COPR_BUILD=""`), reaffirming COPR-0007's original decision —
+  a stale `true` there is what turned run 159 (2026-09-22) into a ~15h nightly with
+  5 false-negative failures once #BUG-0039's Makefile-forwarding fix made it live.
+  A failed/timed-out `copr` row now always carries a non-`NULL` `reason`. See
+  [COPR-0007](features/COPR-0007-copr-submission.md).
+- BUG-0106: `run_cmd()` (`lib/subprocess_utils.py`) discarded a killed command's
+  partial stdout/stderr and wrote nothing to `log_path` on `TimeoutExpired` — a
+  command that had already printed useful output (e.g. `copr-cli build`'s "Created
+  builds: N", printed before it starts watching) lost it entirely, and its log dir
+  was left empty. Both are now preserved.
+- BUG-0108: `docs/nightly-summary.md` only ever analyzed build logs
+  (`30-copr.log` pattern-matching); a `copr` stage row recorded `failed`/`unknown`
+  in `build-report.db` with no recognizable log pattern was invisible to it (run
+  159: "With issues: 0" the same night 5 packages were `copr` state `failed`).
+  `pkg-log-analysis.py` now reads each analyzed package's `copr` row directly and
+  renders a `## Copr submission` table for anything not `success`/`skipped`; only a
+  genuinely `failed` row fails the run. See
+  [COPR-0022](features/COPR-0022-run-scoped-logs-and-summary.md).
 - BUG-0101: `make update-versions`'s per-submodule pull loop and per-package
   version-resolution loop now run across a `UPDATE_VERSIONS_JOBS`-worker thread
   pool (default 8; `1` = the old strictly-serial behavior). No locking needed —

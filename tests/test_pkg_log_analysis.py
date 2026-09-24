@@ -15,13 +15,26 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import importlib
 
-from lib import paths as paths_module
+from lib import build_db, paths as paths_module
 
 pkg_log_analysis = importlib.import_module("pkg-log-analysis")
+
+
+@pytest.fixture(autouse=True)
+def build_db_path(tmp_path, monkeypatch):
+    """Point lib.paths.BUILD_DB at a fresh tmp file for every test in this
+    module. #BUG-0108's collect_copr_issues() (called unconditionally from
+    main()) reads build-report.db -- without this, tests that don't otherwise
+    touch the DB would silently open/create the real repo-root one."""
+    monkeypatch.setattr(paths_module, "BUILD_DB", tmp_path / "build-report.db")
+    yield
+    build_db.close()
 
 
 class TestMain:
@@ -243,3 +256,87 @@ class TestOutputMode:
 
         assert exit_code == 0
         assert "Upstream version refresh" not in out_file.read_text()
+
+
+class TestCoprIssuesInSummary:
+    """#BUG-0108: build-report.db's copr-stage state must be visible in the
+    nightly summary, not just what pattern-matching `30-copr.log` finds --
+    the run-159 postmortem: nightly-summary.md said "With issues: 0" the same
+    night 5 packages were recorded copr state `failed` with no reason."""
+
+    def _make_run(self, tmp_path, monkeypatch, pkg, target="fedora-44-x86_64"):
+        runs_dir = tmp_path / "logs" / "runs"
+        monkeypatch.setattr(pkg_log_analysis, "RUNS_LOG_DIR", runs_dir)
+        monkeypatch.setattr(paths_module, "RUNS_LOG_DIR", runs_dir)
+        monkeypatch.setattr(pkg_log_analysis, "LOG_DIR", tmp_path / "logs")
+        (runs_dir / "1" / target / pkg).mkdir(parents=True)
+        return build_db.start_run(target, "fedora", "44", "x86_64")
+
+    def test_failed_copr_row_is_flagged_and_fails_the_run(self, tmp_path, monkeypatch):
+        run_id = self._make_run(tmp_path, monkeypatch, "satty")
+        build_db.set_stage(
+            "satty",
+            "copr",
+            "fedora-44-x86_64",
+            run_id,
+            "failed",
+            reason="copr-cli exited non-zero",
+        )
+
+        out_file = tmp_path / "summary.md"
+        exit_code = pkg_log_analysis.main(["satty", "--output", str(out_file)])
+
+        assert exit_code == 1
+        content = out_file.read_text()
+        assert "## Copr submission" in content
+        assert "satty" in content
+        assert "copr-cli exited non-zero" in content
+
+    def test_unknown_copr_row_is_flagged_but_does_not_fail_the_run(
+        self, tmp_path, monkeypatch
+    ):
+        """#BUG-0107: a watch that hit CMD_TIMEOUT is recorded `unknown`, not
+        `failed` -- still pending, so it must show up in the summary for
+        visibility but not turn an otherwise-clean night red."""
+        run_id = self._make_run(tmp_path, monkeypatch, "uwsm")
+        build_db.set_stage(
+            "uwsm",
+            "copr",
+            "fedora-44-x86_64",
+            run_id,
+            "unknown",
+            build_id=11022371,
+            reason="copr watch timed out; build 11022371 still running on Copr",
+        )
+
+        out_file = tmp_path / "summary.md"
+        exit_code = pkg_log_analysis.main(["uwsm", "--output", str(out_file)])
+
+        assert exit_code == 0
+        content = out_file.read_text()
+        assert "## Copr submission" in content
+        assert "11022371" in content
+
+    def test_success_copr_row_is_not_flagged(self, tmp_path, monkeypatch):
+        run_id = self._make_run(tmp_path, monkeypatch, "hyprland")
+        build_db.set_stage(
+            "hyprland", "copr", "fedora-44-x86_64", run_id, "success", build_id=1
+        )
+
+        out_file = tmp_path / "summary.md"
+        exit_code = pkg_log_analysis.main(["hyprland", "--output", str(out_file)])
+
+        assert exit_code == 0
+        assert "## Copr submission" not in out_file.read_text()
+
+    def test_no_copr_row_at_all_is_not_flagged(self, tmp_path, monkeypatch):
+        """A package never submitted this run (e.g. a `PACKAGE=` filtered
+        run) has no copr row -- collect_copr_issues() must not treat "no row"
+        the same as "bad row"."""
+        self._make_run(tmp_path, monkeypatch, "untouched-pkg")
+
+        out_file = tmp_path / "summary.md"
+        exit_code = pkg_log_analysis.main(["untouched-pkg", "--output", str(out_file)])
+
+        assert exit_code == 0
+        assert "## Copr submission" not in out_file.read_text()

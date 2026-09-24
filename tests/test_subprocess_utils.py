@@ -74,6 +74,39 @@ class TestRunCmd:
         assert ok is False
         assert "timed out" in stderr
 
+    def test_timeout_preserves_partial_stdout(self):
+        """#BUG-0106: a killed process's partial stdout must not be discarded --
+        e.g. copr-cli prints 'Created builds: N' before it starts watching, and
+        a caller killed mid-watch still needs that build id. Exact-match (not
+        substring) so a raw-bytes leak -- str(b'Created builds: 12345\\n')
+        stringifies to "b'Created builds: 12345\\n'", which *contains* the
+        plain substring too -- can't slip past this test the way it did before
+        (subprocess.run(text=True) does not always decode TimeoutExpired's
+        exc.stdout/exc.stderr on this interpreter)."""
+        ok, stdout, stderr = run_cmd(
+            ["sh", "-c", "printf 'Created builds: 12345\\n'; sleep 10"],
+            timeout=1,
+        )
+        assert ok is False
+        assert stdout == "Created builds: 12345\n"
+        assert isinstance(stdout, str) and not stdout.startswith("b'")
+        assert "timed out" in stderr
+
+    def test_timeout_writes_log(self, tmp_path):
+        """#BUG-0106: a timeout must not leave log_path untouched -- the killed
+        command's partial output plus a timeout marker should be logged, same
+        as a completed command is."""
+        log_file = tmp_path / "test.log"
+        run_cmd(
+            ["sh", "-c", "printf 'partial output\\n'; sleep 10"],
+            log_path=log_file,
+            timeout=1,
+        )
+        assert log_file.exists()
+        content = log_file.read_text()
+        assert "partial output" in content
+        assert "timed out" in content
+
     def test_command_with_stderr(self):
         """Should capture stderr."""
         # Use a command that writes to stderr

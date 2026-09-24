@@ -16,6 +16,8 @@ import argparse
 import sys
 from pathlib import Path
 
+from lib import build_db
+from lib.copr import COPR_BUILD_URL
 from lib.log_analysis import (
     _analyze_srpm_log,
     _analyze_mock_log,
@@ -172,11 +174,56 @@ def analyze_package(pkg: str, log_dir: Path) -> tuple[int, list[str]]:
     return 1, lines
 
 
+def collect_copr_issues(
+    results: list[tuple[str, Path, int, list[str]]],
+) -> list[dict]:
+    """#BUG-0108, #COPR-0022: find copr-stage rows worth flagging in the summary.
+
+    `collect_issues()` above only ever reads `30-copr.log` for patterns it
+    recognizes -- it has no notion of the stage's actual recorded state, so a
+    row stuck `failed` (or `unknown` past its poll deadline) with a log that
+    doesn't match any known pattern is invisible to "With issues" (the
+    run-159 postmortem: `nightly-summary.md` said "Clean: 51, With issues: 0"
+    the same night 5 packages were recorded `copr` state `failed`). This reads
+    build-report.db directly instead of the logs, for every package actually
+    analyzed this run, and flags any row not in a settled-good state.
+
+    The `target` for each package is read off its log dir's parent (logs are
+    stored at `logs/runs/<run_id>/<target>/<pkg>/`) rather than threaded
+    through as a parameter, since resolve_log_dirs() already picked it.
+    """
+    flagged = []
+    seen: set[tuple[str, str]] = set()
+    for pkg, log_dir, _result, _issues in results:
+        if log_dir == Path("(none)"):
+            continue
+        target = log_dir.parent.name
+        if (pkg, target) in seen:
+            continue
+        seen.add((pkg, target))
+        entry = build_db.get_stage(pkg, "copr", target)
+        if not entry or entry.get("state") in ("success", "skipped"):
+            continue
+        build_id = entry.get("build_id")
+        flagged.append(
+            {
+                "package": pkg,
+                "target": target,
+                "state": entry.get("state"),
+                "version": entry.get("version"),
+                "build_id": build_id,
+                "build_url": COPR_BUILD_URL.format(build_id) if build_id else None,
+                "reason": entry.get("reason"),
+            }
+        )
+    return flagged
+
+
 def render_markdown_summary(
     results: list[tuple[str, Path, int, list[str]]],
     upstream_report: str | None = None,
 ) -> str:
-    """#COPR-0022: render a durable Markdown summary for --output.
+    """#COPR-0022, #BUG-0108: render a durable Markdown summary for --output.
 
     One section per (package, log_dir) analyzed, linking back to that exact
     run-scoped log directory so a failure found tonight can still be traced
@@ -192,6 +239,7 @@ def render_markdown_summary(
     no_logs = [pkg for pkg, _d, result, _i in results if result == 2]
     clean = [pkg for pkg, _d, result, _i in results if result == 0]
     failing = [(pkg, d, i) for pkg, d, result, i in results if result == 1]
+    copr_issues = collect_copr_issues(results)
 
     if upstream_report:
         lines.append(upstream_report.rstrip("\n"))
@@ -201,7 +249,31 @@ def render_markdown_summary(
     lines.append(f"- Clean: {len(clean)}")
     lines.append(f"- With issues: {len(failing)}")
     lines.append(f"- No logs found: {len(no_logs)}")
+    lines.append(f"- Copr submission not settled-success: {len(copr_issues)}")
     lines.append("")
+
+    if copr_issues:
+        lines.append("## Copr submission")
+        lines.append("")
+        lines.append(
+            "Rows below have a build-report.db `copr` state that isn't "
+            "`success`/`skipped` -- includes a genuine build failure as well as "
+            "a submission still pending/unresolved (e.g. a watch that hit "
+            "`CMD_TIMEOUT`, see #BUG-0107); check the build_id link before "
+            "treating one as a real failure."
+        )
+        lines.append("")
+        lines.append("| Package | Target | Version | State | Build | Reason |")
+        lines.append("|:--------|:-------|:--------|:------|:------|:-------|")
+        for row in copr_issues:
+            build_cell = (
+                f"[#{row['build_id']}]({row['build_url']})" if row["build_url"] else "—"
+            )
+            lines.append(
+                f"| {row['package']} | {row['target']} | {row['version'] or '—'} "
+                f"| {row['state']} | {build_cell} | {row['reason'] or '—'} |"
+            )
+        lines.append("")
 
     if failing:
         lines.append("## Issues")
@@ -221,7 +293,9 @@ def render_markdown_summary(
             lines.append(f"- {pkg}")
         lines.append("")
 
-    return "\n".join(lines) + ("\n" if had_issues or no_logs or upstream_report else "")
+    return "\n".join(lines) + (
+        "\n" if had_issues or no_logs or copr_issues or upstream_report else ""
+    )
 
 
 def main(argv: list[str]) -> int:
@@ -231,7 +305,10 @@ def main(argv: list[str]) -> int:
 
     A package with no log dir (analyze_package() -> 2) is just noted, not a
     failure -- that's the common case across the whole set and must not abort
-    the rest. Returns 1 only if a package reported real issues.
+    the rest. Returns 1 if a package reported real log issues, or (#BUG-0108)
+    has a copr-stage row genuinely `failed` in build-report.db -- a row merely
+    `unknown` (still pending, e.g. a watch that hit CMD_TIMEOUT, #BUG-0107)
+    does not count, since that isn't a failure yet.
     """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("packages", nargs="*")
@@ -258,6 +335,9 @@ def main(argv: list[str]) -> int:
             if result == 1:
                 had_issues = True
             summary_results.append((pkg, log_dir, result, issue_lines))
+
+    if any(row["state"] == "failed" for row in collect_copr_issues(summary_results)):
+        had_issues = True
 
     if args.output:
         # #BUG-0100: fold scripts/update-versions.py's aggregated failure
