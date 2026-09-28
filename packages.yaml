@@ -162,7 +162,7 @@ cpptrace:
   - '%license LICENSE'
   - '%{_libdir}/libcpptrace.so*'
   license: MIT
-  release: 41
+  release: 42
   requires: []
   rpm:
     no_debug_package: false
@@ -239,7 +239,7 @@ glaze:
   - '%doc README.md'
   - '%license LICENSE'
   license: MIT
-  release: 2
+  release: 1
   rpm:
     no_debug_package: true
   source:
@@ -247,7 +247,7 @@ glaze:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Extremely fast, in memory, JSON and reflection library for modern C++.
   url: https://github.com/stephenberry/glaze
-  version: 8.4.0
+  version: 9.0.0
 glaze-v7:
   auto_update:
     release_type: pinned-version
@@ -1118,7 +1118,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 27
+  release: 28
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1196,7 +1196,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 27
+  release: 28
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1606,7 +1606,7 @@ libdwarf-code:
   - '%{_libdir}/libdwarf.so.*'
   - '%{_mandir}/man1/dwarfdump.1.gz'
   license: LGPL 2.1
-  release: 6
+  release: 1
   requires: []
   rpm:
     no_debug_package: false
@@ -1616,7 +1616,7 @@ libdwarf-code:
     bundled_deps: []
   summary: Library to access DWARF debugging information
   url: https://github.com/davea42/libdwarf-code
-  version: 2.3.2
+  version: 2.3.3
 mpvpaper:
   auto_update:
     release_type: latest-tag
@@ -1745,7 +1745,7 @@ quickshell:
   - '%{_datadir}/applications/org.quickshell.desktop'
   - '%{_datadir}/icons/hicolor/scalable/apps/org.quickshell.svg'
   license: LGPL-3.0-or-later
-  release: 3
+  release: 4
   requires: []
   rpm:
     no_debug_package: false

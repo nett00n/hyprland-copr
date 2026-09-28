@@ -1,11 +1,11 @@
 
 Name:           libdwarf-code
-Version:        2.3.2
-Release:        6%{?dist}
+Version:        2.3.3
+Release:        1%{?dist}
 Summary:        Library to access DWARF debugging information
 License:        LGPL 2.1
 URL:            https://github.com/davea42/libdwarf-code
-Source0:        https://github.com/davea42/libdwarf-code/archive/refs/tags/v2.3.2.tar.gz#/libdwarf-code-2.3.2.tar.gz
+Source0:        https://github.com/davea42/libdwarf-code/archive/refs/tags/v2.3.3.tar.gz#/libdwarf-code-2.3.3.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -27,8 +27,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v2.3.2
-Commit:            af7b278c6aa2ae9daad94fb7f8bffdc0e9980993
+Tag:               v2.3.3
+Commit:            1c267616a4c8dc46b3380f0be4296ff8767bdfbb
 
 %prep
 %autosetup -p1
@@ -70,22 +70,22 @@ Development files for libdwarf-code.
 %{_libdir}/pkgconfig/libdwarf.pc
 
 %changelog
-* Tue Jul 07 2026 nett00n <copr@nett00n.org> - 2.3.2-6
+* Thu Sep 24 2026 nett00n <copr@nett00n.org> - 2.3.3-1
 
-- Release=2.3.2
+- Release=2.3.3
 - -----BEGIN PGP SIGNATURE-----
-- iQJKBAABCgA0FiEENP8JYcUMx44Ucot6i1vmhXJeCPEFAmpNbdcWHGRhdmVhNDJA
-- bGludXhtYWlsLm9yZwAKCRCLW+aFcl4I8d+xD/98p5qkw1nwyClxfgv5YgicrAKA
-- /A2uWYaCGzu6SRnhGwQ/q6ofl2/95D1CuOnYgFR6pZUtAAYb8MySVDmhNEY4gexw
-- qDDAfWZ2IT9jtDla35VN1CVsa8LKt1PeA4gMJDw0dx7D+8xEIP+V3cQshdSS2Cg+
-- 0ozjdGE9ea6xptJRbe+4rMwNbHmxkmtiWdV5h9DNARi9hWs6L5R1+HzX6SRpa/qY
-- B99QK9UNXazepq7PFPljUf+DoVpzRkEg3u3IY4qZmGzdc6dpIDC5bVv58Opn3cKt
-- /r9dKf5ugHNW48fqE4otVQjThkbnrHNTaubR6HFcPkoh0g5Ec1X++TLK1DOFvQyk
-- BKf3yKrBIaWhcKvdvoUDw6tlexq+ptsEksMt7UVogyrQmRaI0ahgB0kYShhx67oi
-- egsK/Uf0HsqJagjhJPehQYkYgTdV33xsu4wQgdP2lxdVnRh7RakjVVoaSh4G3T7C
-- n5AQoq8o3t5Q1fDEq/QXdJHEzIsTdZhpQ6oERCz0yLUwYGcUioDOEhIYBMASgUU5
-- rjM8WCyt1yGcQ8hp95f4B5A0MbVVALTDEJ8R23gA00GYd8zqF7lWbitS6LbvmNup
-- geehICCqhD9Vy52j1AsN9QL1QaPfrCRyU6US1HxIMIM5ab7g/1wZu3G3ApkQmUOc
-- lBRf9z+LidYtkrPqAA==
-- =igRZ
+- iQJKBAABCgA0FiEENP8JYcUMx44Ucot6i1vmhXJeCPEFAmq1S6cWHGRhdmVhNDJA
+- bGludXhtYWlsLm9yZwAKCRCLW+aFcl4I8VqoD/9hbNLERhw26d0mE487kD/ZfP4D
+- cf6mylOHZpWpaLNI+Cq535z25lNJDyUnNK9EmV0xH1EI73rAidmTUy/HpYVgSysq
+- VVuZT+lC5B1dWVoRPSXh5fUM8pgp/1cLAx2tZxN8/NOVBOMw5cdCZ2v0dD12W4i9
+- 1/A7N+i++DfE++b5oELAxWmTIQuMiapmHiO8jYLuJ3qElXTFfmsdM4KOcmFZo2Z2
+- 7JDNfYY1xQG42/NPrgwkf2TrsF1Ne0iUFbu4TCnwHxmnkyL6NFy1sMDMRIMvsLmM
+- zRxXI7TDtB1OOrvL0s5TNVUHCEbAWKNp99rhlvhlRdIkv8YWimgGV4CTY+vggqI+
+- bXUlOeWmYymtfFTU00/rarWkbPC3LJQqKCqzVmpHoKXjhv02epz27hsfedKgdcyR
+- ntGvZqD7yuXZiuIZuLG2lULGlrYtfTH+iyrJQCFoytmQgkz5badebSmehTFvMTLa
+- 55geSji7585v9Qw0SY09zMcMuyLwH/bBsl1QAdEvDLLttHajy1mVgIFLSUzYSD2D
+- li2of+f78ki8qs7uY5U1MBtEJ6/Whx1Jb+l9TAPqSbGFxo85lSzId4ja4XTTjyUM
+- Us7wo/w8+ZTOgt71Bi+FoUfYt64mX2kjz5RSKDsnFlRcX7DUrwEX4PPdAZFvP/lJ
+- dWF852wC1bFAxVH4Nw==
+- =VgER
 - -----END PGP SIGNATURE-----
