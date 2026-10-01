@@ -633,7 +633,17 @@ class TestStageCoprMainGating:
         monkeypatch.delenv("REQUIRE_CHROOT_COVERAGE", raising=False)
         submitted = []
 
-        def fake_run_for_package(pkg, meta, fedora_version, copr_repo, proceed, target, run_id, synchronous=False):
+        def fake_run_for_package(
+            pkg,
+            meta,
+            fedora_version,
+            copr_repo,
+            proceed,
+            target,
+            run_id,
+            synchronous=False,
+            after_build_id=None,
+        ):
             submitted.append(pkg)
             build_db.set_stage(pkg, "copr", target, run_id, "success")
             return True
@@ -643,6 +653,10 @@ class TestStageCoprMainGating:
             patch.object(stage_copr, "preflight", return_value=True),
             patch.object(stage_copr, "print_chroot_coverage", return_value=True),
             patch.object(stage_copr, "run_for_package", side_effect=fake_run_for_package),
+            # #COPR-0022: main() refreshes logs/runs/latest for every real run
+            # -- stub both out so this test never touches the real logs/ tree.
+            patch.object(stage_copr, "get_run_log_dir"),
+            patch.object(stage_copr, "refresh_latest_link"),
             # ineligible_packages() (unconditionally called by main() now)
             # hits the real Copr API via get_project_chroots() unless pinned --
             # [] falls through to the same SUPPORTED_FEDORA_VERSIONS-derived

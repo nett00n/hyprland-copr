@@ -32,6 +32,7 @@ from lib.copr import (
     poll_copr_status,
     preflight,
     print_chroot_coverage,
+    resolve_batch_chain,
     validate_copr_repo,
 )
 
@@ -965,3 +966,64 @@ class TestFetchFailedChrootLogs:
         the log dir to, so this is a no-op rather than a guess."""
         monkeypatch.setattr(build_db, "latest_run", lambda target: None)
         fetch_failed_chroot_logs("pkg", 1, TARGET)  # should not raise
+
+
+class TestResolveBatchChain:
+    """#COPR-0007: resolve_batch_chain() -- the --after-build-id a package
+    should submit with, so a dependency rebuilt the same run lands before its
+    consumers resubmit against it (the run-163 `hyprtoolkit` incident)."""
+
+    ALL_PACKAGES = {
+        "hyprtoolkit": {"depends_on": []},
+        "hyprpaper": {"depends_on": ["hyprtoolkit"]},
+        "hyprlauncher": {"depends_on": ["hyprtoolkit"]},
+        "standalone": {"depends_on": []},
+        "diamond-top": {"depends_on": ["hyprpaper", "hyprlauncher"]},
+    }
+
+    def test_no_dependency_submitted_this_run_chains_to_nothing(self):
+        after, depth = resolve_batch_chain("standalone", self.ALL_PACKAGES, {}, {})
+        assert after is None
+        assert depth == 0
+
+    def test_dependency_not_submitted_this_run_is_not_a_chain_target(self):
+        """`hyprtoolkit` already published (not rebuilt this run) -- nothing
+        for `hyprpaper` to wait on, so it submits plain, not blocked forever."""
+        after, depth = resolve_batch_chain("hyprpaper", self.ALL_PACKAGES, {}, {})
+        assert after is None
+        assert depth == 0
+
+    def test_chains_behind_submitted_dependency(self):
+        after, depth = resolve_batch_chain(
+            "hyprpaper", self.ALL_PACKAGES, {"hyprtoolkit": 100}, {"hyprtoolkit": 0}
+        )
+        assert after == 100
+        assert depth == 1
+
+    def test_diamond_chains_behind_deepest_dependency_not_last_submitted(self):
+        """`diamond-top` depends on both `hyprpaper` and `hyprlauncher`, which
+        both themselves depend on `hyprtoolkit`. Copr's build batches are a
+        strict global sequence (batch N fully completes before N+1 starts,
+        whichever build in N you named) -- so chaining behind whichever
+        dependency has the greatest depth is enough to wait on both, even
+        though `hyprlauncher` (depth 1) was submitted after `hyprpaper`
+        (promoted here to depth 2 to simulate it having its own extra
+        dependency satisfied first)."""
+        after, depth = resolve_batch_chain(
+            "diamond-top",
+            self.ALL_PACKAGES,
+            {"hyprpaper": 201, "hyprlauncher": 202},
+            {"hyprpaper": 2, "hyprlauncher": 1},
+        )
+        assert after == 201
+        assert depth == 3
+
+    def test_held_back_dependency_contributes_no_chain_edge(self):
+        """A dependency absent from submitted_build_ids (held back by the
+        ineligible/blocked gate, or skipped) is indistinguishable here from
+        one that was never rebuilt -- both mean "nothing new to wait on"."""
+        after, depth = resolve_batch_chain(
+            "hyprpaper", self.ALL_PACKAGES, {}, {"hyprtoolkit": 5}
+        )
+        assert after is None
+        assert depth == 0

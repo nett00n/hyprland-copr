@@ -113,6 +113,15 @@ still on disk.
   called without a `run_id` (gen-report.py's standalone poll has none of its own).
 - `full-cycle.py`: the old rmtree loop is gone; `main()` now creates this run's log
   dir, refreshes `logs/runs/latest`, and prunes right after `setup_run()`.
+- `stage-copr.py`'s `main()` now also refreshes `logs/runs/latest` right after its
+  own `build_db.start_run()` call — a standalone `make stage-copr` (the entry point
+  `full-cycle-matrix` actually submits through nightly) opens its own run,
+  independent of any `full-cycle.py` run that may have preceded it that night, and
+  used to leave `latest` pointing at the last `full-cycle`/`full-cycle-matrix`
+  chroot run even once a newer `stage-copr` run existed — exactly the run a human
+  most wants after a nightly, since it's the one that talks to Copr (#COPR-0007).
+  It does not call `prune_run_logs()` itself; `full-cycle.py`'s own prune (run
+  first, earlier in the same nightly) already enforces retention.
 - `Makefile`: `clean-logs` removes `logs/runs` (was `logs/build`); `stage-log-analyze`
   gained `LOG_SUMMARY_OUTPUT`; `_update-daily` passes it and stages
   `docs/nightly-summary.md`; new `prune-logs` target.

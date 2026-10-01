@@ -197,22 +197,36 @@ def prepare_stage(
     WHOLE stage regardless of the PACKAGE filter (see docs/BUGS.md/#8).
 
     This is the `make stage-<x>` standalone entry-point helper: its six
-    callers are exactly the six `stage-*.py` `main()` functions, where
-    starting each requested package's row from scratch is the point.
+    callers are exactly the six `stage-*.py` `main()` functions. Like
+    `full-cycle.py`'s own `prepare_packages()`, the returned `packages` is
+    topo-sorted dependency-first (#COPR-0007) -- unlike that function, it is
+    *not* transitive-deps-expanded: a `stage-<x> PACKAGE=foo` run must submit
+    exactly `foo`, not every package `foo` depends on. Without the sort,
+    `stage-copr.py` iterated `packages.yaml`'s alphabetical order and could
+    submit a package before a same-run rebuild of its own dependency (the
+    motivating case: `hyprtoolkit`'s consumers submitted, alphabetically,
+    before `hyprtoolkit` itself -- see docs/features/COPR-0007-copr-submission.md).
     `full-cycle.py` deliberately never calls this (for any stage, not just
-    vendor -- see docs/BUGS.md, formerly BUG-0020): it filters packages via
-    its own `prepare_packages()` instead (which additionally topo-sorts and
-    expands transitive deps), and calling `build_db.clear_stage()` here
-    would delete `hashes_json` off the very rows `lib.pipeline.is_cached()`
-    depends on, turning every stage into a permanent cache miss on every
-    full-cycle/update-daily run.
+    vendor -- see docs/BUGS.md, formerly BUG-0020): calling
+    `build_db.clear_stage()` here would delete `hashes_json` off the very rows
+    `lib.pipeline.is_cached()` depends on, turning every stage into a
+    permanent cache miss on every full-cycle/update-daily run.
     """
+    # Local import: lib.deps imports filter_packages/skip_packages from this
+    # module, so importing it at module scope here would be circular.
+    from lib.deps import build_dep_graph, topological_sort
+
     package_env = os.environ.get("PACKAGE", "")
     skip_env = os.environ.get("SKIP_PACKAGES", "")
 
     all_packages = get_packages()
+    try:
+        order = topological_sort(build_dep_graph(all_packages))
+    except ValueError as e:
+        sys.exit(f"error: {e}")
     packages = filter_packages(all_packages, package_env)
     packages = skip_packages(packages, skip_env)
+    packages = {name: packages[name] for name in order if name in packages}
 
     if not proceed:
         build_db.clear_stage(stage_name, target, packages=list(packages))

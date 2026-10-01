@@ -18,6 +18,10 @@ Environment variables:
   REQUIRE_CHROOT_COVERAGE  If 'true', abort instead of warning when a Copr chroot has no
                           verified local mock build for a package being submitted (see
                           docs/BUGS.md BUG-0018). Default: warn and submit anyway.
+  COPR_BATCH_DEPS       If 'false', submit every package independently instead of
+                        chaining a package behind its same-run dependencies via
+                        Copr build batches (`--after-build-id`). Default: true.
+                        See docs/features/COPR-0007-copr-submission.md.
   LOG_LEVEL       Logging level: DEBUG, INFO (default), WARNING, ERROR
 """
 
@@ -37,13 +41,16 @@ from lib.copr import (
     parse_build_id,
     preflight,
     print_chroot_coverage,
+    resolve_batch_chain,
 )
+from lib.log_retention import refresh_latest_link
 from lib.paths import (
     ARCH,
     CANONICAL_FEDORA_VERSION,
     DISTRO,
     ROOT,
     get_package_log_dir,
+    get_run_log_dir,
     mock_chroot,
     resolve_target,
 )
@@ -62,6 +69,7 @@ def run_for_package(
     target: str,
     run_id: int,
     synchronous: bool = False,
+    after_build_id: int | None = None,
 ) -> bool:
     """#COPR-0007, #BUG-0107. Submit SRPM to Copr for a single package.
 
@@ -72,6 +80,11 @@ def run_for_package(
     If synchronous=False (default), uses --nowait flag for async submission.
     A synchronous watch that hits run_cmd()'s CMD_TIMEOUT is treated as a
     still-pending submission ("unknown" state), not a build failure.
+
+    `after_build_id`, when given, is passed to `copr-cli build` as
+    `--after-build-id` so Copr holds this submission in the next build batch
+    behind the named build -- see `lib.copr.resolve_batch_chain()`, which
+    callers use to resolve it from this run's own dependency graph.
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
@@ -151,6 +164,8 @@ def run_for_package(
     cmd = ["copr-cli", "build"]
     if not synchronous:
         cmd.append("--nowait")
+    if after_build_id is not None:
+        cmd.extend(["--after-build-id", str(after_build_id)])
     cmd.extend([copr_repo, srpm_path])
     ok, stdout, stderr = run_cmd(cmd, log)
 
@@ -180,7 +195,9 @@ def run_for_package(
     # In async mode, or a synchronous watch that timed out (see above):
     # successful submission → "unknown" state (build pending/still running).
     # In sync mode that actually watched to a terminal state: "success"/"failed".
-    state = "unknown" if (not synchronous or timed_out) else ("success" if ok else "failed")
+    state = (
+        "unknown" if (not synchronous or timed_out) else ("success" if ok else "failed")
+    )
 
     status("copr", pkg, "ok" if ok else "fail", target, version=ver)
 
@@ -251,6 +268,13 @@ def main() -> None:
         copr_repo=copr_repo,
         package_filter=os.environ.get("PACKAGE", ""),
     )
+    # #COPR-0022: a standalone `make stage-copr` opens its own run, separate
+    # from full-cycle.py's -- without this, `logs/runs/latest` kept pointing
+    # at the last full-cycle-matrix run even after a newer stage-copr run
+    # existed (the run humans most want to inspect after a nightly, since
+    # it's the one that talks to Copr).
+    get_run_log_dir(run_id, target).mkdir(parents=True, exist_ok=True)
+    refresh_latest_link(run_id)
 
     all_packages, packages = prepare_stage("copr", target, proceed, include_all=True)
 
@@ -278,6 +302,22 @@ def main() -> None:
     ineligible = ineligible_packages(copr_repo, packages)
     blocked = block_transitive_dependents(sorted(ineligible), packages, all_packages)
 
+    # #COPR-0007: chain a package behind its own same-run dependencies as
+    # Copr build batches, so a dependency rebuilt this same run (e.g. a
+    # soname bump forcing a rebuild) lands before its consumers resubmit
+    # against it, instead of racing them on packages.yaml's alphabetical
+    # order (see docs/features/COPR-0007-copr-submission.md). `packages` is
+    # already topologically sorted (prepare_stage()/lib.deps), so by the time
+    # a package is reached here every same-run dependency it has has already
+    # been submitted (or deliberately skipped -- see below).
+    batch_deps = os.environ.get("COPR_BATCH_DEPS", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+    )
+    submitted_build_ids: dict[str, int] = {}
+    submitted_depths: dict[str, int] = {}
+
     failed = False
     submitted = 0
     for pkg, meta in packages.items():
@@ -302,11 +342,36 @@ def main() -> None:
             build_db.set_stage(pkg, "copr", target, run_id, "skipped", reason=reason)
             continue
 
+        after_build_id = None
+        depth = 0
+        if batch_deps:
+            after_build_id, depth = resolve_batch_chain(
+                pkg, all_packages, submitted_build_ids, submitted_depths
+            )
+
         submitted += 1
         if not run_for_package(
-            pkg, meta, fedora_version, copr_repo, proceed, target, run_id, synchronous
+            pkg,
+            meta,
+            fedora_version,
+            copr_repo,
+            proceed,
+            target,
+            run_id,
+            synchronous,
+            after_build_id,
         ):
             failed = True
+
+        # Only a row this call actually (re)submitted carries a fresh
+        # build_id -- a "_skip"/missing-srpm/missing-mock skip writes no
+        # build_id at all, so it naturally never becomes a chain target
+        # (there is no new build for a dependent to wait on).
+        copr_row = build_db.get_stage(pkg, "copr", target)
+        row_build_id = copr_row.get("build_id") if copr_row else None
+        if row_build_id:
+            submitted_build_ids[pkg] = row_build_id
+            submitted_depths[pkg] = depth
 
     # A per-package hold-back (ineligible/blocked above) is normal and stays
     # quiet -- that's the gate working as designed, including a run where

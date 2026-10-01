@@ -18,7 +18,7 @@ import urllib.request
 from pathlib import Path
 
 from lib import build_db
-from lib.deps import build_dep_graph, reverse_graph, transitive_deps
+from lib.deps import build_dep_graph, effective_deps, reverse_graph, transitive_deps
 from lib.paths import ARCH, get_package_log_dir, mock_chroot
 from lib.subprocess_utils import run_cmd
 from lib.yaml_utils import SUPPORTED_FEDORA_VERSIONS
@@ -422,6 +422,43 @@ def block_transitive_dependents(
             if dependent in packages:
                 blocked.setdefault(dependent, []).append(name)
     return blocked
+
+
+def resolve_batch_chain(
+    pkg: str,
+    all_packages: dict,
+    submitted_build_ids: dict[str, int],
+    submitted_depths: dict[str, int],
+) -> tuple[int | None, int]:
+    """#COPR-0007: resolve the `--after-build-id` to submit `pkg` with, plus
+    `pkg`'s own batch depth once submitted (for the next call's
+    `submitted_depths`).
+
+    Copr's build-batches feature serializes submission into a strict sequence
+    of batches: batch N's builds all reach a terminal state before batch N+1
+    starts, regardless of which build in batch N a later one named via
+    `--after-build-id` (see
+    https://pavel.raiskup.cz/blog/build-ordering-by-batches-in-copr.html).
+    So to make `pkg` wait on *every* same-run dependency it has (not just
+    one), it is enough to chain behind whichever already-submitted dependency
+    has the greatest batch depth -- that dependency's own chaining already
+    guarantees every shallower dependency's batch has already completed by
+    the time its batch runs. `submitted_build_ids`/`submitted_depths` hold
+    only packages already submitted *this run* (in topological order, by
+    construction of the caller's loop); a dependency absent from them is
+    either not being rebuilt this run (already published, nothing to wait
+    on) or was held back by the ineligible/blocked gate -- neither is a
+    reason to chain.
+
+    Returns (after_build_id, depth): `after_build_id` is None when `pkg` has
+    no same-run dependency to wait on (submit it plain, batch depth 0).
+    """
+    deps = effective_deps(pkg, all_packages[pkg], all_packages)
+    candidates = [d for d in deps if d in submitted_build_ids]
+    if not candidates:
+        return None, 0
+    deepest = max(candidates, key=lambda d: submitted_depths.get(d, 0))
+    return submitted_build_ids[deepest], submitted_depths.get(deepest, 0) + 1
 
 
 def copr_blocked_packages(

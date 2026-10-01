@@ -36,7 +36,12 @@ mock failure never loses the night's version bumps.
 - `Makefile` `update-daily`/`_update-daily` targets chain the steps above.
 - `flock` on `logs/.pipeline.lock` (shared with `full-cycle`/`full-cycle-matrix`)
   refuses a second concurrent run instead of corrupting shared state; bypass with
-  `LOCK_DISABLE=1`.
+  `LOCK_DISABLE=1`. The lock itself is released by the kernel the instant the
+  holding process exits, crash included — `logs/.pipeline.lock.owner` is a separate,
+  purely informational file ("who's running this," read by the refusal message),
+  and each guard now removes it once its recursive `$(MAKE)` call returns, success
+  or failure alike, instead of leaving a dead PID's name behind for the next person
+  who looks.
 - Intended to run from an external nightly cron — the repo has no scheduler of its
   own.
 

@@ -156,6 +156,13 @@ endef
 # of corrupting build-report.db, the shared podman volumes, or the git index. Not a
 # shared $(call ...) macro: make only recurses under `-n` when "$(MAKE)" is literal
 # text in the target's own recipe, so each guard is written out per-target.
+# The lock itself is `flock -n` on an fd, released by the kernel the moment the
+# holding process exits (including a crash) -- it was never the thing a dead
+# holder could leave stuck. `$(PIPELINE_LOCK_FILE).owner` is a plain file written
+# purely for a human to read ("who's running this"), so each guard removes it
+# itself once its recursive $(MAKE) call returns, success or failure alike; a
+# stale owner file naming a long-dead PID (#COPR-0022) was otherwise the only
+# thing actually wrong after a run died mid-flight.
 PIPELINE_LOCK_FILE ?= logs/.pipeline.lock
 PIPELINE_LOCK_HELD ?= # set below before recursing, so nested targets skip the lock instead of deadlocking on it
 LOCK_DISABLE ?= # bypass for hosts without flock, or a deliberate parallel run
@@ -586,7 +593,9 @@ full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr 
 			exit 1; \
 		}; \
 		echo "PID $$$$, started $$(date --rfc-3339=seconds), target _full-cycle" > $(PIPELINE_LOCK_FILE).owner; \
-		PIPELINE_LOCK_HELD=1 $(MAKE) _full-cycle; \
+		PIPELINE_LOCK_HELD=1 $(MAKE) _full-cycle; status=$$?; \
+		rm -f $(PIPELINE_LOCK_FILE).owner; \
+		exit $$status; \
 	fi
 
 _full-cycle: check-image check-venv setup-volumes
@@ -649,7 +658,9 @@ full-cycle-matrix: ## Build every MATRIX_VERSIONS chroot locally (default: all S
 			exit 1; \
 		}; \
 		echo "PID $$$$, started $$(date --rfc-3339=seconds), target _full-cycle-matrix" > $(PIPELINE_LOCK_FILE).owner; \
-		PIPELINE_LOCK_HELD=1 $(MAKE) _full-cycle-matrix; \
+		PIPELINE_LOCK_HELD=1 $(MAKE) _full-cycle-matrix; status=$$?; \
+		rm -f $(PIPELINE_LOCK_FILE).owner; \
+		exit $$status; \
 	fi
 
 # One chroot's failure must never prevent another chroot from being attempted
@@ -690,7 +701,9 @@ update-daily: ## Update versions, validate+format packages.yaml, build (package 
 			exit 1; \
 		}; \
 		echo "PID $$$$, started $$(date --rfc-3339=seconds), target _update-daily" > $(PIPELINE_LOCK_FILE).owner; \
-		PIPELINE_LOCK_HELD=1 $(MAKE) _update-daily; \
+		PIPELINE_LOCK_HELD=1 $(MAKE) _update-daily; status=$$?; \
+		rm -f $(PIPELINE_LOCK_FILE).owner; \
+		exit $$status; \
 	fi
 
 _update-daily:

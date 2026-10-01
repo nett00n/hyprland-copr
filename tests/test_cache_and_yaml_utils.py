@@ -634,6 +634,26 @@ class TestPrepareStage:
         assert entry is not None
         assert entry["state"] == "success"
 
+    def test_returns_packages_in_topological_order(self, tmp_path, monkeypatch):
+        """#COPR-0007: prepare_stage() must topo-sort, not return
+        packages.yaml's own (alphabetical) order -- `stage-copr.py` iterates
+        this dict directly to decide submission order, and used to submit a
+        package before a same-run rebuild of its own dependency purely
+        because its name sorted earlier (the run-163 `hyprtoolkit` incident:
+        its four consumers submitted, alphabetically, before `hyprtoolkit`
+        itself -- see docs/features/COPR-0007-copr-submission.md). Uses real
+        packages.yaml package names (see the class-level NOTE on why this
+        suite can't isolate from it): `hyprpaper` declares `hyprtoolkit` in
+        its own `depends_on`.
+        """
+        monkeypatch.delenv("PACKAGE", raising=False)
+        monkeypatch.delenv("SKIP_PACKAGES", raising=False)
+
+        packages = prepare_stage("spec", TARGET, proceed=False)
+
+        names = list(packages)
+        assert names.index("hyprtoolkit") < names.index("hyprpaper")
+
     def test_full_cycle_never_calls_prepare_stage_or_clear_stage(self):
         """full-cycle.py must never call prepare_stage() (or build_db.clear_stage()
         directly), for any stage -- not just vendor.

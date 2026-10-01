@@ -23,6 +23,27 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0007: `stage-copr` submission now visits packages in dependency order
+  (topo-sorted via `lib.deps`, shared with `prepare_stage()`'s other five
+  `stage-*.py` callers) and chains a package behind its own same-run dependencies
+  as Copr build batches (`--after-build-id`), so a dependency rebuilt the same
+  night lands before its consumers resubmit against it instead of racing them on
+  `packages.yaml`'s alphabetical order. `COPR_BATCH_DEPS=false` opts out. Fixes
+  the run-163 incident where a rawhide `abseil-cpp` soname bump broke the
+  already-published `hyprtoolkit`, and its rebuilt replacement submitted
+  alphabetically *after* the four consumers that needed it, failing all four on
+  `dnf5 builddep`. See [COPR-0007](features/COPR-0007-copr-submission.md).
+- COPR-0022: `stage-copr.py`'s `main()` now refreshes `logs/runs/latest` too (not
+  only `full-cycle.py`'s) — a standalone `make stage-copr` run, the entry point
+  `full-cycle-matrix` actually submits through, used to leave `latest` pointing at
+  the previous chroot-build run's directory even once a newer Copr-submission run
+  existed. See [COPR-0022](features/COPR-0022-run-scoped-logs-and-summary.md).
+- COPR-0003: the pipeline-lock guards (`full-cycle`/`full-cycle-matrix`/
+  `update-daily`) now remove `logs/.pipeline.lock.owner` once their recursive
+  `$(MAKE)` call returns, success or failure alike, instead of leaving a dead
+  PID's name behind for the next person to misread as a stuck lock (the `flock`
+  itself was never actually stuck — it releases with the holder, crash included).
+  See [COPR-0003](features/COPR-0003-daily-update.md).
 - BUG-0107: a synchronous `stage-copr` watch (`SYNCHRONOUS_COPR_BUILD=true`) killed
   mid-watch by `run_cmd()`'s `CMD_TIMEOUT` is now recorded `unknown` (with its
   `build_id` and a `reason`) instead of a terminal `failed` with both `NULL` — the

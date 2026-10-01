@@ -22,6 +22,18 @@ nothing submitted. `REQUIRE_CHROOT_COVERAGE=true` additionally blocks the whole
 submission on any gap; `ALLOW_EMPTY_COPR_SUBMISSION=true` opts out of the blackout
 failure for a deliberate no-op run.
 
+Submission visits packages in dependency order (`lib.deps`'s topological sort,
+via `prepare_stage()`), not `packages.yaml`'s alphabetical order — a package that
+itself depends on another package resubmitted this same run is chained behind it
+as a Copr build batch (`copr-cli build --after-build-id <id>`), so Copr holds the
+dependent's buildroot setup until the dependency finishes, instead of racing it
+(#COPR-0007, the `hyprtoolkit` incident below). The chain target is resolved by
+`lib.copr.resolve_batch_chain()` from this run's own submission history (a
+dependency not being rebuilt this run — already published, or held back by the
+ineligible/blocked gate above — contributes no chain edge, since there is nothing
+new to wait on). `COPR_BATCH_DEPS=false` disables this and submits every package
+independently, matching the old behavior.
+
 After the matrix submits, `make copr-wait` bounds a retry poll
 (`lib.copr.poll_copr_status(..., deadline_s=, interval_s=)`) for up to
 `COPR_POLL_TIMEOUT` seconds (default 1800), re-checking every `COPR_POLL_INTERVAL`
@@ -49,7 +61,8 @@ outcome, not just the skip-gate reasons above (#BUG-0107).
 
 - `scripts/stage-copr.py`, `scripts/copr-wait.py`, `scripts/lib/copr.py`
   (`ineligible_packages()`/`block_transitive_dependents()`/`blackout_chroots()`/
-  `poll_copr_status()`).
+  `poll_copr_status()`/`resolve_batch_chain()`), `scripts/lib/deps.py`
+  (`topological_sort()`, via `yaml_utils.prepare_stage()`).
 - Requires `copr-cli` configured with `~/.config/copr`.
 
 ## Quirks & Decisions
@@ -81,6 +94,33 @@ outcome, not just the skip-gate reasons above (#BUG-0107).
 - Quirk: aarch64 chroots always report "not verifiable locally" (no cross-arch build
   path exists) and can never satisfy the per-chroot coverage gate.
   Open: see [COPR-0020](COPR-0020-aarch64-local-builds.md) (Planned).
+- Quirk (motivating case for build-batch chaining): run 163 (2026-09-28) submitted
+  51 packages in `packages.yaml`'s alphabetical order. Rawhide bumped
+  `abseil-cpp`'s soname that day, making the `hyprtoolkit` already published on
+  Copr uninstallable (`nothing provides libabsl_hash.so.2605.0.0()(64bit)`
+  needed by the old `hyprtoolkit` build). Run 163 *did* submit a rebuilt
+  `hyprtoolkit` (build 11044603) that would have fixed this — but alphabetically
+  after its four consumers (`hyprland-guiutils`, `hyprlauncher`, `hyprpaper`,
+  `hyprpolkitagent`, builds 11044585/92/94/96), which resolved their
+  `hyprtoolkit-devel` buildreq against the still-broken old copy and failed
+  `dnf5 builddep` on both rawhide chroots. `depends_on` was declared correctly
+  for all four; it was only ever consulted for blocking
+  (`block_transitive_dependents()`), never for ordering. Fixed by this feature's
+  topo-sort + `--after-build-id` chaining.
+- Decision: chaining targets the dependency with the greatest existing batch
+  depth, not every submitted dependency — Copr's build-batches model serializes
+  globally (batch N fully completes before N+1 starts, regardless of which build
+  in N a later one names via `--after-build-id`), so waiting on the deepest
+  predecessor already implies every shallower one has finished. See
+  `resolve_batch_chain()`'s docstring and
+  https://pavel.raiskup.cz/blog/build-ordering-by-batches-in-copr.html.
+- Verified (#COPR-0007 implementation): Copr's build-batches feature and its
+  `copr-cli build --after-build-id BUILD_ID` flag are documented upstream
+  (https://pavel.raiskup.cz/blog/build-ordering-by-batches-in-copr.html); no
+  fallback wave/poll scheme was needed. (Not independently re-verified against
+  this repo's own `rpm-toolbox` image, which wasn't built on the implementing
+  host at the time — confirm with `copr-cli build --help` after
+  `make container-build` if upstream ever drops the flag.)
 
 ## Testing
 
