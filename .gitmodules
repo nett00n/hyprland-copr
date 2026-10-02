@@ -206,3 +206,7 @@
 	path = submodules/jjba23/lambdock
 	url = https://codeberg.org/jjba23/lambdock.git
 	ignore = dirty
+[submodule "submodules/Linus789/wl-clip-persist"]
+	path = submodules/Linus789/wl-clip-persist
+	url = https://github.com/Linus789/wl-clip-persist
+	ignore = dirty

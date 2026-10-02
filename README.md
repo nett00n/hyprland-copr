@@ -152,6 +152,7 @@ New packages: snappy switcher, mpvpaper.
 - `uwsm` — Universal Wayland Session Manager
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
 - `waypaper` — GUI wallpaper manager for Wayland and Xorg Linux systems
+- `wl-clip-persist` — Keep Wayland clipboard even after programs close
 
 ### Other dependencies
 
@@ -170,7 +171,7 @@ New packages: snappy switcher, mpvpaper.
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-09-28
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-10-02
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

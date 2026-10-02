@@ -2160,6 +2160,40 @@ waypaper:
   summary: GUI wallpaper manager for Wayland and Xorg Linux systems
   url: https://github.com/anufrievroman/waypaper
   version: '2.9'
+wl-clip-persist:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
+  build_requires:
+  - cargo
+  - rustc
+  depends_on: []
+  description: |
+    Keeps the Wayland clipboard populated after the application that owns the
+    selection exits. Wayland hands clipboard ownership to the source client, so
+    closing it normally loses the contents; wl-clip-persist watches the
+    data-control protocol, caches the selection in memory, and re-offers it on
+    the owner's behalf.
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/wl-clip-persist'
+  license: MIT
+  release: 3
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+  summary: Keep Wayland clipboard even after programs close
+  url: https://github.com/Linus789/wl-clip-persist
+  version: 0.5.0
 xdg-desktop-portal-hyprland:
   build:
     system: cmake

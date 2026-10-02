@@ -11,7 +11,6 @@ everything, that Hyprland recommended:
 - https://github.com/anyrun-org/anyrun #Rust
 - https://github.com/abenz1267/walker #Rust
 - https://github.com/vicinaehq/vicinae
-- https://github.com/Linus789/wl-clip-persist #Rust
 - https://github.com/rolv-apneseth/clipvault #Rust
 - https://github.com/savedra1/clipse
 - https://github.com/Sirulex/cursor-clip #Rust
