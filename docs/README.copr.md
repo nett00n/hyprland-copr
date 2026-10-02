@@ -217,7 +217,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- Vladimir nett00n Budylnikov
+- Vladimir Budylnikov
 ---
 
 ## Additional Information
