@@ -1,30 +1,33 @@
 runs:
-- id: 168
-  started_at: 1790910790
-  completed_at: 1790916639
+- id: 176
+  started_at: 1790934687
+  completed_at: 1790934853
   target: fedora-43-x86_64
   distro: fedora
   distro_version: '43'
   arch: x86_64
   copr_repo: nett00n/hyprland
+  package_filter: wl-clip-persist
   exit_state: ok
-- id: 171
-  started_at: 1790928868
-  completed_at: 1790929049
+- id: 177
+  started_at: 1790934864
+  completed_at: 1790935027
   target: fedora-44-x86_64
   distro: fedora
   distro_version: '44'
   arch: x86_64
   copr_repo: nett00n/hyprland
+  package_filter: wl-clip-persist
   exit_state: ok
-- id: 170
-  started_at: 1790922895
-  completed_at: 1790928865
+- id: 175
+  started_at: 1790934458
+  completed_at: 1790934619
   target: fedora-45-x86_64
   distro: fedora
   distro_version: '45'
   arch: x86_64
   copr_repo: nett00n/hyprland
+  package_filter: wl-clip-persist
   exit_state: ok
 stage_results:
 - package: Hyprland
@@ -6217,14 +6220,14 @@ stage_results:
 - package: hyprlang
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.6.8-16.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprlang/30-copr.log
   build_id: 11063099
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790928977
+  updated_at: 1790934379
 - package: hyprlang
   stage: mock
   target: fedora-43-x86_64
@@ -11594,14 +11597,14 @@ stage_results:
 - package: lambdock
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.7.4-6.fc44
   log: logs/runs/171/fedora-44-x86_64/lambdock/30-copr.log
   build_id: 11063095
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790928944
+  updated_at: 1790934394
 - package: lambdock
   stage: mock
   target: fedora-43-x86_64
@@ -14249,14 +14252,14 @@ stage_results:
 - package: snappy-switcher
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 4.5.0-3.fc44
   log: logs/runs/171/fedora-44-x86_64/snappy-switcher/30-copr.log
   build_id: 11063092
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790928937
+  updated_at: 1790934400
 - package: snappy-switcher
   stage: mock
   target: fedora-43-x86_64
@@ -15412,6 +15415,331 @@ stage_results:
   force_run: 0
   run_id: 170
   updated_at: 1790925084
+- package: wl-clip-persist
+  stage: copr
+  target: fedora-43-x86_64
+  state: unknown
+  version: 0.5.0-2.fc43
+  reason: SKIP_COPR
+  log: logs/runs/172/fedora-43-x86_64/wl-clip-persist/30-copr.log
+  build_id: 11063294
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934029
+  run_id: 172
+  updated_at: 1790934853
+- package: wl-clip-persist
+  stage: mock
+  target: fedora-43-x86_64
+  state: success
+  version: 0.5.0-3.fc43
+  reason: forced
+  log: logs/runs/176/fedora-43-x86_64/wl-clip-persist/20-mock.log
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934689
+  completed_at: 1790934853
+  run_id: 176
+  updated_at: 1790934853
+  last_success_version: 0.5.0-3.fc43
+  last_success_log: logs/runs/176/fedora-43-x86_64/wl-clip-persist/20-mock.log
+  last_success_at: 1790934853
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: mock
+  target: fedora-44-x86_64
+  state: success
+  version: 0.5.0-3.fc44
+  reason: forced
+  log: logs/runs/177/fedora-44-x86_64/wl-clip-persist/20-mock.log
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934866
+  completed_at: 1790935027
+  run_id: 177
+  updated_at: 1790935027
+  last_success_version: 0.5.0-3.fc44
+  last_success_log: logs/runs/177/fedora-44-x86_64/wl-clip-persist/20-mock.log
+  last_success_at: 1790935027
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: mock
+  target: fedora-45-x86_64
+  state: success
+  version: 0.5.0-3.fc45
+  reason: first-run
+  log: logs/runs/175/fedora-45-x86_64/wl-clip-persist/20-mock.log
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934461
+  completed_at: 1790934619
+  run_id: 175
+  updated_at: 1790934619
+  last_success_version: 0.5.0-3.fc45
+  last_success_log: logs/runs/175/fedora-45-x86_64/wl-clip-persist/20-mock.log
+  last_success_at: 1790934619
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: spec
+  target: fedora-43-x86_64
+  state: success
+  version: 0.5.0-3.fc43
+  reason: forced
+  log: logs/runs/176/fedora-43-x86_64/wl-clip-persist/00-spec.log
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934687
+  run_id: 176
+  updated_at: 1790934687
+  last_success_version: 0.5.0-3.fc43
+  last_success_log: logs/runs/176/fedora-43-x86_64/wl-clip-persist/00-spec.log
+  last_success_at: 1790934687
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: spec
+  target: fedora-44-x86_64
+  state: success
+  version: 0.5.0-3.fc44
+  reason: forced
+  log: logs/runs/177/fedora-44-x86_64/wl-clip-persist/00-spec.log
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934864
+  run_id: 177
+  updated_at: 1790934864
+  last_success_version: 0.5.0-3.fc44
+  last_success_log: logs/runs/177/fedora-44-x86_64/wl-clip-persist/00-spec.log
+  last_success_at: 1790934864
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: spec
+  target: fedora-45-x86_64
+  state: success
+  version: 0.5.0-3.fc45
+  reason: first-run
+  log: logs/runs/175/fedora-45-x86_64/wl-clip-persist/00-spec.log
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934459
+  run_id: 175
+  updated_at: 1790934459
+  last_success_version: 0.5.0-3.fc45
+  last_success_log: logs/runs/175/fedora-45-x86_64/wl-clip-persist/00-spec.log
+  last_success_at: 1790934459
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: srpm
+  target: fedora-43-x86_64
+  state: success
+  version: 0.5.0-3.fc43
+  reason: forced
+  log: logs/runs/176/fedora-43-x86_64/wl-clip-persist/10-srpm.log
+  path: /root/rpmbuild/SRPMS/wl-clip-persist-0.5.0-3.fc43.src.rpm
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934687
+  run_id: 176
+  updated_at: 1790934689
+  last_success_version: 0.5.0-3.fc43
+  last_success_log: logs/runs/176/fedora-43-x86_64/wl-clip-persist/10-srpm.log
+  last_success_at: 1790934689
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: srpm
+  target: fedora-44-x86_64
+  state: success
+  version: 0.5.0-3.fc44
+  reason: forced
+  log: logs/runs/177/fedora-44-x86_64/wl-clip-persist/10-srpm.log
+  path: /root/rpmbuild/SRPMS/wl-clip-persist-0.5.0-3.fc43.src.rpm
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934864
+  run_id: 177
+  updated_at: 1790934866
+  last_success_version: 0.5.0-3.fc44
+  last_success_log: logs/runs/177/fedora-44-x86_64/wl-clip-persist/10-srpm.log
+  last_success_at: 1790934866
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: srpm
+  target: fedora-45-x86_64
+  state: success
+  version: 0.5.0-3.fc45
+  reason: first-run
+  log: logs/runs/175/fedora-45-x86_64/wl-clip-persist/10-srpm.log
+  path: /root/rpmbuild/SRPMS/wl-clip-persist-0.5.0-3.fc43.src.rpm
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934459
+  run_id: 175
+  updated_at: 1790934461
+  last_success_version: 0.5.0-3.fc45
+  last_success_log: logs/runs/175/fedora-45-x86_64/wl-clip-persist/10-srpm.log
+  last_success_at: 1790934461
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: validate
+  target: fedora-43-x86_64
+  state: success
+  errors: 0
+  warnings: 0
+  has_devel: 0
+  force_run: 0
+  run_id: 176
+  updated_at: 1790934687
+  last_success_at: 1790934687
+- package: wl-clip-persist
+  stage: validate
+  target: fedora-44-x86_64
+  state: success
+  errors: 0
+  warnings: 0
+  has_devel: 0
+  force_run: 0
+  run_id: 177
+  updated_at: 1790934864
+  last_success_at: 1790934864
+- package: wl-clip-persist
+  stage: validate
+  target: fedora-45-x86_64
+  state: success
+  errors: 0
+  warnings: 0
+  has_devel: 0
+  force_run: 0
+  run_id: 175
+  updated_at: 1790934459
+  last_success_at: 1790934459
+- package: wl-clip-persist
+  stage: vendor
+  target: fedora-43-x86_64
+  state: success
+  version: 0.5.0-3.fc43
+  reason: forced
+  path: /root/rpmbuild/SOURCES/wl-clip-persist-0.5.0-vendor.tar.gz
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934687
+  run_id: 176
+  updated_at: 1790934687
+  last_success_version: 0.5.0-3.fc43
+  last_success_at: 1790934687
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: vendor
+  target: fedora-44-x86_64
+  state: success
+  version: 0.5.0-3.fc44
+  reason: forced
+  path: /root/rpmbuild/SOURCES/wl-clip-persist-0.5.0-vendor.tar.gz
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934864
+  run_id: 177
+  updated_at: 1790934864
+  last_success_version: 0.5.0-3.fc44
+  last_success_at: 1790934864
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
+- package: wl-clip-persist
+  stage: vendor
+  target: fedora-45-x86_64
+  state: success
+  version: 0.5.0-3.fc45
+  reason: first-run
+  path: /root/rpmbuild/SOURCES/wl-clip-persist-0.5.0-vendor.tar.gz
+  has_devel: 0
+  force_run: 0
+  started_at: 1790934459
+  run_id: 175
+  updated_at: 1790934459
+  last_success_version: 0.5.0-3.fc45
+  last_success_at: 1790934459
+  hashes:
+    content: 91a10aa09c4da452a4d008bc836ba0a32979c1f924472b6934321acafc9e4de7
+    dependencies: {}
+    generator: b9e023c5e7ea2010c0801d9e03a3a72f74e1f0d2ff876a5eaec72d793ed18cf7
+    package_version: 0.5.0
+    patches: {}
+    source_commit:
+    templates: efd1ed54695a7d69d1e6db6cd2b7bd07cfb23ace0084a90dd6196d6c097d8696
 - package: xdg-desktop-portal-hyprland
   stage: copr
   target: fedora-44-x86_64

@@ -152,6 +152,7 @@ New packages: snappy switcher, mpvpaper.
 - `uwsm` — Universal Wayland Session Manager
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
 - `waypaper` — GUI wallpaper manager for Wayland and Xorg Linux systems
+- `wl-clip-persist` — Keep Wayland clipboard even after programs close
 
 ### Other dependencies
 
