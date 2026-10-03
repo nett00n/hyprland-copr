@@ -210,3 +210,7 @@
 	path = submodules/Linus789/wl-clip-persist
 	url = https://github.com/Linus789/wl-clip-persist
 	ignore = dirty
+[submodule "submodules/AprilNEA/OpenLogi"]
+	path = submodules/AprilNEA/OpenLogi
+	url = https://github.com/AprilNEA/OpenLogi
+	ignore = dirty

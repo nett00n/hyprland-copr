@@ -671,6 +671,17 @@ class TestValidateFieldTypes:
         errors, _ = validate_field_types("pkg", meta)
         assert any("depends_on" in e for e in errors)
 
+    def test_string_where_vendor_prep_list_expected_is_rejected(self):
+        """#COPR-0025: build.vendor_prep must be a list of shell commands."""
+        meta = {"build": {"vendor_prep": "sed -i foo Cargo.toml"}}
+        errors, _ = validate_field_types("pkg", meta)
+        assert any("build.vendor_prep" in e for e in errors)
+
+    def test_list_vendor_prep_is_accepted(self):
+        meta = {"build": {"vendor_prep": ["sed -i foo Cargo.toml"]}}
+        errors, _ = validate_field_types("pkg", meta)
+        assert errors == []
+
     def test_missing_field_is_not_checked(self):
         """Absence is REQUIRED_FIELDS' job, not this one's."""
         errors, _ = validate_field_types("pkg", {})

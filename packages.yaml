@@ -1656,6 +1656,59 @@ mpvpaper:
   summary: A video wallpaper program for wlroots based wayland compositors.
   url: https://github.com/GhostNaN/mpvpaper
   version: '1.9'
+OpenLogi:
+  build:
+    commands:
+    - cargo build --offline --release -p openlogi -p openlogi-agent
+    install:
+    - install -Dpm0755 target/release/openlogi -t %{buildroot}%{_bindir}
+    - install -Dpm0755 target/release/openlogi-agent -t %{buildroot}%{_bindir}
+    - install -Dpm0644 packaging/linux/udev/70-openlogi.rules -t %{buildroot}%{_prefix}/lib/udev/rules.d
+    - install -Dpm0644 packaging/linux/systemd/openlogi-agent.service -t %{buildroot}%{_userunitdir}
+    no_lto: false
+    prep:
+    - sed -i -e '/crates\/openlogi-desktop/d' -e '/crates\/openlogi-overlay/d' -e '/"xtask"/d' Cargo.toml
+    - sed -i '/^\[patch\./,/^$/d' Cargo.toml
+    - rm -f Cargo.lock
+    - tar xf %{SOURCE1}
+    system: cargo
+    vendor_prep:
+    - sed -i -e '/crates\/openlogi-desktop/d' -e '/crates\/openlogi-overlay/d' -e '/"xtask"/d' Cargo.toml
+    - sed -i '/^\[patch\./,/^$/d' Cargo.toml
+  build_requires:
+  - cargo
+  - clang-devel
+  - gcc
+  - rustc
+  - systemd-rpm-macros
+  depends_on: []
+  description: |
+    OpenLogi is a local-first alternative to Logitech Options+ for HID++ devices: remap buttons, change DPI, and configure SmartShift from the command line or the background agent. No account and no telemetry; configuration lives in a plain TOML file.
+
+    This package ships the CLI and the background agent (a systemd user unit). Neither the GPUI desktop window nor the on-screen overlay is built: both depend on crates published only as git sources (gpui-kit, appicon), which cannot be vendored for offline COPR builds.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE-APACHE'
+  - '%license LICENSE-MIT'
+  - '%{_bindir}/openlogi'
+  - '%{_bindir}/openlogi-agent'
+  - '%{_prefix}/lib/udev/rules.d/70-openlogi.rules'
+  - '%{_userunitdir}/openlogi-agent.service'
+  license: MIT OR Apache-2.0
+  release: 1
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+    name: OpenLogi
+  summary: Local-first alternative to Logitech Options+ for HID++ devices
+  url: https://github.com/AprilNEA/OpenLogi
+  version: 0.8.11
 pyprland:
   build:
     commands:

@@ -379,6 +379,71 @@ class TestGenerateDispatch:
         )
         assert not created_tmpdir.exists()
 
+    def test_runs_vendor_prep_before_language_backend(self, tmp_path):
+        """#COPR-0025: vendor_prep commands run in src_dir, after extraction
+        and before the language backend is dispatched."""
+        output = tmp_path / "out-vendor.tar.gz"
+        created_tmpdir = tmp_path / "vendor-tmp"
+        created_tmpdir.mkdir()
+        src_dir = created_tmpdir / "src"
+        src_dir.mkdir()
+        meta = self._meta(["cargo"])
+        meta["build"] = {"vendor_prep": ["echo one", "echo two"]}
+
+        with patch("lib.vendor.tempfile.mkdtemp", return_value=str(created_tmpdir)), \
+             patch("lib.vendor._download"), \
+             patch("lib.vendor.verify_download"), \
+             patch("lib.vendor._extract", return_value=src_dir), \
+             patch("lib.vendor.run_cmd", return_value=(True, "", "")) as mock_run_cmd, \
+             patch("lib.vendor_rust.generate") as mock_rust_generate:
+            generate("test-pkg", meta, output)
+
+        assert mock_run_cmd.call_count == 2
+        calls = mock_run_cmd.call_args_list
+        assert calls[0].kwargs["cwd"] == src_dir
+        assert calls[1].kwargs["cwd"] == src_dir
+        mock_rust_generate.assert_called_once()
+
+    def test_vendor_prep_failure_raises_before_language_backend(self, tmp_path):
+        output = tmp_path / "out-vendor.tar.gz"
+        created_tmpdir = tmp_path / "vendor-tmp"
+        created_tmpdir.mkdir()
+        src_dir = created_tmpdir / "src"
+        src_dir.mkdir()
+        meta = self._meta(["cargo"])
+        meta["build"] = {"vendor_prep": ["false"]}
+
+        with patch("lib.vendor.tempfile.mkdtemp", return_value=str(created_tmpdir)), \
+             patch("lib.vendor._download"), \
+             patch("lib.vendor.verify_download"), \
+             patch("lib.vendor._extract", return_value=src_dir), \
+             patch("lib.vendor.run_cmd", return_value=(False, "", "boom")), \
+             patch("lib.vendor_rust.generate") as mock_rust_generate:
+            with pytest.raises(VendorError, match="vendor_prep"):
+                generate("test-pkg", meta, output)
+
+        mock_rust_generate.assert_not_called()
+
+    def test_absent_vendor_prep_is_a_noop(self, tmp_path):
+        """Regression guard: every existing package has no vendor_prep set."""
+        output = tmp_path / "out-vendor.tar.gz"
+        created_tmpdir = tmp_path / "vendor-tmp"
+        created_tmpdir.mkdir()
+        src_dir = created_tmpdir / "src"
+        src_dir.mkdir()
+        meta = self._meta(["cargo"])
+
+        with patch("lib.vendor.tempfile.mkdtemp", return_value=str(created_tmpdir)), \
+             patch("lib.vendor._download"), \
+             patch("lib.vendor.verify_download"), \
+             patch("lib.vendor._extract", return_value=src_dir), \
+             patch("lib.vendor.run_cmd") as mock_run_cmd, \
+             patch("lib.vendor_rust.generate") as mock_rust_generate:
+            generate("test-pkg", meta, output)
+
+        mock_run_cmd.assert_not_called()
+        mock_rust_generate.assert_called_once()
+
     def test_both_languages_raises(self, tmp_path):
         meta = self._meta(["golang", "cargo"])
         with pytest.raises(VendorError, match="ambiguous"):

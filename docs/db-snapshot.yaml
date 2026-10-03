@@ -1,46 +1,43 @@
 runs:
-- id: 176
-  started_at: 1790934687
-  completed_at: 1790934853
+- id: 202
+  started_at: 1790962184
+  completed_at: 1790962868
   target: fedora-43-x86_64
   distro: fedora
   distro_version: '43'
   arch: x86_64
-  copr_repo: nett00n/hyprland
-  package_filter: wl-clip-persist
+  package_filter: OpenLogi
   exit_state: ok
-- id: 177
-  started_at: 1790934864
-  completed_at: 1790935027
+- id: 197
+  started_at: 1790961469
+  completed_at: 1790962123
   target: fedora-44-x86_64
   distro: fedora
   distro_version: '44'
   arch: x86_64
-  copr_repo: nett00n/hyprland
-  package_filter: wl-clip-persist
+  package_filter: OpenLogi
   exit_state: ok
-- id: 175
-  started_at: 1790934458
-  completed_at: 1790934619
+- id: 205
+  started_at: 1790962899
+  completed_at: 1790963564
   target: fedora-45-x86_64
   distro: fedora
   distro_version: '45'
   arch: x86_64
-  copr_repo: nett00n/hyprland
-  package_filter: wl-clip-persist
+  package_filter: OpenLogi
   exit_state: ok
 stage_results:
 - package: Hyprland
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.56.2-17.fc44
   log: logs/runs/171/fedora-44-x86_64/Hyprland/30-copr.log
   build_id: 11063118
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790929032
+  updated_at: 1790963663
 - package: Hyprland
   stage: mock
   target: fedora-43-x86_64
@@ -685,17 +682,152 @@ stage_results:
   force_run: 0
   run_id: 170
   updated_at: 1790922910
+- package: OpenLogi
+  stage: mock
+  target: fedora-43-x86_64
+  state: success
+  version: 0.8.11-1.fc43
+  log: logs/runs/202/fedora-43-x86_64/OpenLogi/20-mock.log
+  has_devel: 1
+  force_run: 0
+  completed_at: 1790962868
+  run_id: 202
+  updated_at: 1790962868
+  last_success_version: 0.8.11-1.fc43
+  last_success_log: logs/runs/202/fedora-43-x86_64/OpenLogi/20-mock.log
+  last_success_at: 1790962868
+- package: OpenLogi
+  stage: mock
+  target: fedora-44-x86_64
+  state: success
+  version: 0.8.11-1.fc44
+  log: logs/runs/197/fedora-44-x86_64/OpenLogi/20-mock.log
+  has_devel: 1
+  force_run: 0
+  completed_at: 1790962123
+  run_id: 197
+  updated_at: 1790962123
+  last_success_version: 0.8.11-1.fc44
+  last_success_log: logs/runs/197/fedora-44-x86_64/OpenLogi/20-mock.log
+  last_success_at: 1790962123
+- package: OpenLogi
+  stage: mock
+  target: fedora-45-x86_64
+  state: success
+  version: 0.8.11-1.fc45
+  log: logs/runs/205/fedora-45-x86_64/OpenLogi/20-mock.log
+  has_devel: 1
+  force_run: 0
+  completed_at: 1790963564
+  run_id: 205
+  updated_at: 1790963564
+  last_success_version: 0.8.11-1.fc45
+  last_success_log: logs/runs/205/fedora-45-x86_64/OpenLogi/20-mock.log
+  last_success_at: 1790963564
+- package: OpenLogi
+  stage: spec
+  target: fedora-43-x86_64
+  state: success
+  version: 0.8.11-1.fc43
+  log: logs/runs/200/fedora-43-x86_64/OpenLogi/00-spec.log
+  has_devel: 1
+  force_run: 0
+  run_id: 200
+  updated_at: 1790962160
+  last_success_version: 0.8.11-1.fc43
+  last_success_log: logs/runs/200/fedora-43-x86_64/OpenLogi/00-spec.log
+  last_success_at: 1790962160
+- package: OpenLogi
+  stage: spec
+  target: fedora-44-x86_64
+  state: success
+  version: 0.8.11-1.fc44
+  log: logs/runs/194/fedora-44-x86_64/OpenLogi/00-spec.log
+  has_devel: 1
+  force_run: 0
+  run_id: 194
+  updated_at: 1790961412
+  last_success_version: 0.8.11-1.fc44
+  last_success_log: logs/runs/194/fedora-44-x86_64/OpenLogi/00-spec.log
+  last_success_at: 1790961412
+- package: OpenLogi
+  stage: spec
+  target: fedora-45-x86_64
+  state: success
+  version: 0.8.11-1.fc45
+  log: logs/runs/203/fedora-45-x86_64/OpenLogi/00-spec.log
+  has_devel: 1
+  force_run: 0
+  run_id: 203
+  updated_at: 1790962882
+  last_success_version: 0.8.11-1.fc45
+  last_success_log: logs/runs/203/fedora-45-x86_64/OpenLogi/00-spec.log
+  last_success_at: 1790962882
+- package: OpenLogi
+  stage: srpm
+  target: fedora-43-x86_64
+  state: success
+  version: 0.8.11-1.fc43
+  log: logs/runs/201/fedora-43-x86_64/OpenLogi/10-srpm.log
+  path: /root/rpmbuild/SRPMS/openlogi-0.8.11-1.fc43.src.rpm
+  has_devel: 1
+  force_run: 0
+  run_id: 201
+  updated_at: 1790962177
+  last_success_version: 0.8.11-1.fc43
+  last_success_log: logs/runs/201/fedora-43-x86_64/OpenLogi/10-srpm.log
+  last_success_at: 1790962177
+- package: OpenLogi
+  stage: srpm
+  target: fedora-44-x86_64
+  state: success
+  version: 0.8.11-1.fc44
+  log: logs/runs/196/fedora-44-x86_64/OpenLogi/10-srpm.log
+  path: /root/rpmbuild/SRPMS/openlogi-0.8.11-1.fc43.src.rpm
+  has_devel: 1
+  force_run: 0
+  run_id: 196
+  updated_at: 1790961458
+  last_success_version: 0.8.11-1.fc44
+  last_success_log: logs/runs/196/fedora-44-x86_64/OpenLogi/10-srpm.log
+  last_success_at: 1790961458
+- package: OpenLogi
+  stage: srpm
+  target: fedora-45-x86_64
+  state: success
+  version: 0.8.11-1.fc45
+  log: logs/runs/204/fedora-45-x86_64/OpenLogi/10-srpm.log
+  path: /root/rpmbuild/SRPMS/openlogi-0.8.11-1.fc43.src.rpm
+  has_devel: 1
+  force_run: 0
+  run_id: 204
+  updated_at: 1790962892
+  last_success_version: 0.8.11-1.fc45
+  last_success_log: logs/runs/204/fedora-45-x86_64/OpenLogi/10-srpm.log
+  last_success_at: 1790962892
+- package: OpenLogi
+  stage: vendor
+  target: fedora-44-x86_64
+  state: success
+  version: 0.8.11-1.fc44
+  path: /root/rpmbuild/SOURCES/openlogi-0.8.11-vendor.tar.gz
+  has_devel: 0
+  force_run: 0
+  run_id: 195
+  updated_at: 1790961441
+  last_success_version: 0.8.11-1.fc44
+  last_success_at: 1790961441
 - package: SwayOSD
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.3.2-6.fc44
   log: logs/runs/171/fedora-44-x86_64/SwayOSD/30-copr.log
   build_id: 11063097
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790928959
+  updated_at: 1790963664
 - package: SwayOSD
   stage: mock
   target: fedora-43-x86_64
@@ -1023,14 +1155,14 @@ stage_results:
 - package: Waybar
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.15.0-19.fc44
   log: logs/runs/171/fedora-44-x86_64/Waybar/30-copr.log
   build_id: 11063117
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790929024
+  updated_at: 1790963666
 - package: Waybar
   stage: mock
   target: fedora-43-x86_64
@@ -1328,14 +1460,14 @@ stage_results:
 - package: aquamarine
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.15.1-2.fc44
   log: logs/runs/171/fedora-44-x86_64/aquamarine/30-copr.log
   build_id: 11063102
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790928984
+  updated_at: 1790963667
 - package: aquamarine
   stage: mock
   target: fedora-43-x86_64
@@ -1633,14 +1765,14 @@ stage_results:
 - package: aylurs-gtk-shell
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 3.1.2-13.fc44
   log: logs/runs/171/fedora-44-x86_64/aylurs-gtk-shell/30-copr.log
   build_id: 11063096
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790928948
+  updated_at: 1790963668
 - package: aylurs-gtk-shell
   stage: mock
   target: fedora-43-x86_64
@@ -2291,14 +2423,14 @@ stage_results:
 - package: cpptrace
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 1.0.4-42.fc44
   log: logs/runs/171/fedora-44-x86_64/cpptrace/30-copr.log
   build_id: 11063104
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790928989
+  updated_at: 1790963669
 - package: cpptrace
   stage: mock
   target: fedora-43-x86_64
@@ -2587,14 +2719,14 @@ stage_results:
 - package: eww
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.6.0-16.fc44
   log: logs/runs/171/fedora-44-x86_64/eww/30-copr.log
   build_id: 11063075
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790928888
+  updated_at: 1790963670
 - package: eww
   stage: mock
   target: fedora-43-x86_64
@@ -3771,14 +3903,14 @@ stage_results:
 - package: hyprcursor
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.1.13-16.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprcursor/30-copr.log
   build_id: 11063113
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790929012
+  updated_at: 1790963671
 - package: hyprcursor
   stage: mock
   target: fedora-43-x86_64
@@ -4067,14 +4199,14 @@ stage_results:
 - package: hyprgraphics
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.5.1-16.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprgraphics/30-copr.log
   build_id: 11063101
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790928982
+  updated_at: 1790963672
 - package: hyprgraphics
   stage: mock
   target: fedora-43-x86_64
@@ -4363,14 +4495,14 @@ stage_results:
 - package: hypridle
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.1.8-13.fc44
   log: logs/runs/171/fedora-44-x86_64/hypridle/30-copr.log
   build_id: 11063112
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929011
+  updated_at: 1790963673
 - package: hypridle
   stage: mock
   target: fedora-43-x86_64
@@ -4686,14 +4818,14 @@ stage_results:
 - package: hyprland-guiutils
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.2.2-16.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprland-guiutils/30-copr.log
   build_id: 11063123
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929042
+  updated_at: 1790963674
 - package: hyprland-guiutils
   stage: mock
   target: fedora-43-x86_64
@@ -5341,14 +5473,14 @@ stage_results:
 - package: hyprland-plugins
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.56.0^20260805git00862ca-6.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprland-plugins/30-copr.log
   build_id: 11063126
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929049
+  updated_at: 1790963675
 - package: hyprland-plugins
   stage: mock
   target: fedora-43-x86_64
@@ -5924,14 +6056,14 @@ stage_results:
 - package: hyprland-qt-support
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.1.0-15.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprland-qt-support/30-copr.log
   build_id: 11063111
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929009
+  updated_at: 1790963676
 - package: hyprland-qt-support
   stage: mock
   target: fedora-43-x86_64
@@ -6516,14 +6648,14 @@ stage_results:
 - package: hyprlauncher
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.1.6-22.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprlauncher/30-copr.log
   build_id: 11063119
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929034
+  updated_at: 1790963677
 - package: hyprlauncher
   stage: mock
   target: fedora-43-x86_64
@@ -6857,14 +6989,14 @@ stage_results:
 - package: hyprlock
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.9.6-11.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprlock/30-copr.log
   build_id: 11063114
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929014
+  updated_at: 1790963678
 - package: hyprlock
   stage: mock
   target: fedora-43-x86_64
@@ -7180,14 +7312,14 @@ stage_results:
 - package: hyprpaper
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.8.4-22.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprpaper/30-copr.log
   build_id: 11063124
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929044
+  updated_at: 1790963679
 - package: hyprpaper
   stage: mock
   target: fedora-43-x86_64
@@ -7530,14 +7662,14 @@ stage_results:
 - package: hyprpicker
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.4.7-15.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprpicker/30-copr.log
   build_id: 11063103
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790928985
+  updated_at: 1790963680
 - package: hyprpicker
   stage: mock
   target: fedora-43-x86_64
@@ -7835,14 +7967,14 @@ stage_results:
 - package: hyprpolkitagent
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.2.0-6.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprpolkitagent/30-copr.log
   build_id: 11063122
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929041
+  updated_at: 1790963681
 - package: hyprpolkitagent
   stage: mock
   target: fedora-43-x86_64
@@ -8158,14 +8290,14 @@ stage_results:
 - package: hyprpwcenter
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.1.2-22.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprpwcenter/30-copr.log
   build_id: 11063120
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929036
+  updated_at: 1790963682
 - package: hyprpwcenter
   stage: mock
   target: fedora-43-x86_64
@@ -8481,14 +8613,14 @@ stage_results:
 - package: hyprqt6engine
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.1.0-15.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprqt6engine/30-copr.log
   build_id: 11063110
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929007
+  updated_at: 1790963683
 - package: hyprqt6engine
   stage: mock
   target: fedora-43-x86_64
@@ -8786,14 +8918,14 @@ stage_results:
 - package: hyprshutdown
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.1.1-28.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprshutdown/30-copr.log
   build_id: 11063121
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929039
+  updated_at: 1790963684
 - package: hyprshutdown
   stage: mock
   target: fedora-43-x86_64
@@ -9118,14 +9250,14 @@ stage_results:
 - package: hyprsunset
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.4.0-13.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprsunset/30-copr.log
   build_id: 11063108
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929003
+  updated_at: 1790963685
 - package: hyprsunset
   stage: mock
   target: fedora-43-x86_64
@@ -9441,14 +9573,14 @@ stage_results:
 - package: hyprsysteminfo
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.2.0-28.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprsysteminfo/30-copr.log
   build_id: 11063125
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929046
+  updated_at: 1790963686
 - package: hyprsysteminfo
   stage: mock
   target: fedora-43-x86_64
@@ -9773,14 +9905,14 @@ stage_results:
 - package: hyprtoolkit
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.6.0-6.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprtoolkit/30-copr.log
   build_id: 11063115
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790929017
+  updated_at: 1790963687
 - package: hyprtoolkit
   stage: mock
   target: fedora-43-x86_64
@@ -10679,14 +10811,14 @@ stage_results:
 - package: hyprwire
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.3.1-16.fc44
   log: logs/runs/171/fedora-44-x86_64/hyprwire/30-copr.log
   build_id: 11063100
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790928978
+  updated_at: 1790963688
 - package: hyprwire
   stage: mock
   target: fedora-43-x86_64
@@ -11262,14 +11394,14 @@ stage_results:
 - package: ironbar
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.19.1-1.fc44
   log: logs/runs/171/fedora-44-x86_64/ironbar/30-copr.log
   build_id: 11063098
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790928974
+  updated_at: 1790963689
 - package: ironbar
   stage: mock
   target: fedora-43-x86_64
@@ -11893,14 +12025,14 @@ stage_results:
 - package: libcava
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 1.0.0-9.fc44
   log: logs/runs/171/fedora-44-x86_64/libcava/30-copr.log
   build_id: 11063106
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790928996
+  updated_at: 1790963690
 - package: libcava
   stage: mock
   target: fedora-43-x86_64
@@ -12189,14 +12321,14 @@ stage_results:
 - package: libcava-v0
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.10.7-11.fc44
   log: logs/runs/171/fedora-44-x86_64/libcava-v0/30-copr.log
   build_id: 11063107
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790929001
+  updated_at: 1790963691
 - package: libcava-v0
   stage: mock
   target: fedora-43-x86_64
@@ -13346,14 +13478,14 @@ stage_results:
 - package: quickshell
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.3.1-4.fc44
   log: logs/runs/171/fedora-44-x86_64/quickshell/30-copr.log
   build_id: 11063116
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790929021
+  updated_at: 1790963692
 - package: quickshell
   stage: mock
   target: fedora-43-x86_64
@@ -13642,14 +13774,14 @@ stage_results:
 - package: satty
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 0.22.0-11.fc44
   log: logs/runs/171/fedora-44-x86_64/satty/30-copr.log
   build_id: 11063090
   has_devel: 1
   force_run: 0
   run_id: 171
-  updated_at: 1790928929
+  updated_at: 1790963693
 - package: satty
   stage: mock
   target: fedora-43-x86_64
@@ -15113,14 +15245,14 @@ stage_results:
 - package: waypaper
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 2.9-3.fc44
   log: logs/runs/171/fedora-44-x86_64/waypaper/30-copr.log
   build_id: 11063105
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790928991
+  updated_at: 1790963694
 - package: waypaper
   stage: mock
   target: fedora-43-x86_64
@@ -15743,14 +15875,14 @@ stage_results:
 - package: xdg-desktop-portal-hyprland
   stage: copr
   target: fedora-44-x86_64
-  state: unknown
+  state: success
   version: 1.4.1-12.fc44
   log: logs/runs/171/fedora-44-x86_64/xdg-desktop-portal-hyprland/30-copr.log
   build_id: 11063109
   has_devel: 0
   force_run: 0
   run_id: 171
-  updated_at: 1790929005
+  updated_at: 1790963695
 - package: xdg-desktop-portal-hyprland
   stage: mock
   target: fedora-43-x86_64
