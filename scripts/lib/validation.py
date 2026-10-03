@@ -53,6 +53,7 @@ FIELD_TYPES: dict[str, type] = {
     "build.install": list,
     "build.configure_flags": list,
     "build.cargo_update": list,
+    "build.vendor_prep": list,
     "build_requires": list,
     "depends_on": list,
     "requires": list,

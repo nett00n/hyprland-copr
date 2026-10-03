@@ -15,6 +15,9 @@
 #   auto_update: — enable automatic updates (latest-commit, etc.)
 #
 # build.system: cmake | meson | autotools | configure | make | python | cargo | golang
+# build.vendor_prep: shell commands run in the extracted source tree before cargo
+#   vendor/go mod vendor (not in %prep) -- trims/patches a workspace into a vendorable
+#   shape; mirror the same edit in build.prep so the chroot build sees it too
 # source.archives: list of plain URL strings; index (Source0, Source1, ...) is auto-assigned
 # source.commit: for git snapshots (no version tag); has full hash and date fields
 # source.patches: list of patch files to apply after %autosetup
@@ -392,6 +395,47 @@ myrustutil:
     source_dir: "%{name}-%{version}"
   build:
     system: cargo
+
+# --- cargo workspace trim (drop a member with an unvendorable git dep) ----
+# When only some workspace members pull a git-source crate dependency (not
+# resolvable offline), drop those members -- and any [patch] block only they
+# need -- from Cargo.toml before cargo vendor runs, then build/install just
+# the members that remain. vendor_prep must be mirrored in prep: vendor_prep
+# edits the copy vendoring downloads itself; prep edits the pristine tarball
+# the chroot build extracts, a separate extraction of the same source.
+myworkspaceutil:
+  version: "1.0.0"
+  release: "%autorelease"
+  license: MIT
+  summary: A Rust CLI from a workspace with an unvendorable GUI member
+  description: |
+    myworkspaceutil's workspace also contains a GUI crate that depends on a
+    git-only toolkit; only the CLI crate is packaged here.
+  url: https://github.com/myorg/myworkspaceutil
+  build_requires:
+    - cargo
+    - rustc
+  requires: []
+  files:
+    - "%license LICENSE"
+    - "%{_bindir}/myworkspaceutil"
+  devel:
+    files: []
+  source:
+    archives:
+      - "%{name}-%{version}.tar.gz"
+      - "%{name}-%{version}-vendor.tar.gz"
+    source_dir: "%{name}-%{version}"
+  build:
+    system: cargo
+    vendor_prep:
+      - "sed -i -e '/crates\\/myworkspaceutil-gui/d' Cargo.toml"
+      - "sed -i '/^\\[patch\\./,/^$/d' Cargo.toml"
+    prep:
+      - "sed -i -e '/crates\\/myworkspaceutil-gui/d' Cargo.toml"
+      - "sed -i '/^\\[patch\\./,/^$/d' Cargo.toml"
+    commands:
+      - "cargo build --offline --release -p myworkspaceutil"
 
 # --- git snapshot (latest commit, not version-tagged) ----------------------
 # For projects without version tags; uses commit hash and date for versioning.

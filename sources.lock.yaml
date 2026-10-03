@@ -467,3 +467,9 @@ wl-clip-persist:
     sha256: fdd2506e6556dda943a164d891fe498985838fdd0e94c54e595a8f1cd8c49b66
     size: 34671
     recorded: '2026-10-02'
+OpenLogi:
+  openlogi-0.8.11.tar.gz:
+    url: https://github.com/AprilNEA/OpenLogi/archive/refs/tags/v0.8.11.tar.gz#/openlogi-0.8.11.tar.gz
+    sha256: cb42ef21475d1c3e3d32ff8adeb190d7c47404a95b46e85da0c88a2546c9bc85
+    size: 5093046
+    recorded: '2026-10-02'

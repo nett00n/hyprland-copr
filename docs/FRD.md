@@ -29,6 +29,7 @@ file and `docs/features/` work together.
 - [X] [COPR-0022. Run-scoped logs and a durable nightly summary](features/COPR-0022-run-scoped-logs-and-summary.md) - `#daily` `#diagnostics` `#logs`
 - [ ] [COPR-0023. Upstream source signature verification](features/COPR-0023-source-signature-verification.md) - `#security` `#provenance`
 - [ ] [COPR-0024. Agent memory via HyperMnesia (Tier 0/1 constraints + doc search)](features/COPR-0024-hypermnesia-memory.md) - `#tooling` `#docs` `#agents`
+- [X] [COPR-0025. Pre-vendor source preparation](features/COPR-0025-pre-vendor-source-prep.md) - `#packaging` `#tooling`
 
 ## Tags
 
@@ -51,7 +52,7 @@ file and `docs/features/` work together.
 - `#mock`: COPR-0006
 - `#onboarding`: COPR-0001
 - `#packages`: COPR-0001, COPR-0013, COPR-0014
-- `#packaging`: COPR-0005, COPR-0008
+- `#packaging`: COPR-0005, COPR-0008, COPR-0025
 - `#persistence`: COPR-0015
 - `#pipeline`: COPR-0002
 - `#provenance`: COPR-0023
@@ -65,6 +66,6 @@ file and `docs/features/` work together.
 - `#srpm`: COPR-0018
 - `#state`: COPR-0015
 - `#testing`: COPR-0006, COPR-0010
-- `#tooling`: COPR-0024
+- `#tooling`: COPR-0024, COPR-0025
 - `#upstream`: COPR-0004
 - `#versioning`: COPR-0004

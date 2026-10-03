@@ -141,6 +141,7 @@ New packages: snappy switcher, mpvpaper.
 - `mpvpaper` — A video wallpaper program for wlroots based wayland compositors.
 - `network-manager-applet` — Tray applet and an advanced network connection editor
 - `nnn` — n³ The unorthodox terminal file manager
+- `openlogi` — Local-first alternative to Logitech Options+ for HID++ devices
 - `pyprland` — Scratchpads & many goodies for Hyprland
 - `quickshell` — Flexible QtQuick based desktop shell toolkit
 - `ranger` — A VIM-inspired filemanager for the console
@@ -217,7 +218,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- Vladimir Budylnikov
+- Vladimir nett00n Budylnikov- Vladimir Budylnikov- [github-actions[bot]](https://github.com/github-actions[bot])
 ---
 
 ## Additional Information

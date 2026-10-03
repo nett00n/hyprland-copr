@@ -39,7 +39,6 @@ seems interesting:
 - https://github.com/amarqs182/hyprcaffeine
 - https://github.com/hbuddenberg/hyprcaffeine
 - https://github.com/funinkina/openeffects
-- https://github.com/AprilNEA/OpenLogi
 - https://github.com/gnomeria/usbtree
 
 hyprland-plugins:

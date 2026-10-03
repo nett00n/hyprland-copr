@@ -186,6 +186,14 @@ any crate without a registry checksum (`.cargo-checksum.json`'s `"package"` is `
 signature of a git/path source — rather than letting the build fail two stages later in the
 offline mock chroot.
 
+For a workspace where only *some* members pull a git dependency, `build.vendor_prep`
+(#COPR-0025) runs shell commands against the extracted source tree before `cargo vendor`,
+so a member that can't be vendored (and its `[patch]` block, if any) can be dropped from
+`Cargo.toml` first — see the `myworkspaceutil` ("cargo workspace trim") entry in
+`packages.yaml.example`. Mirror the same edit in `build.prep`, since the chroot build
+compiles a *different* extraction of the pristine tarball and would otherwise try to build
+the excluded member too.
+
 Vendoring always runs against a downloaded, hash-pinned tarball in a scratch tmpdir — it never
 touches `submodules/`, for either language.
 

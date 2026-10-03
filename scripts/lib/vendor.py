@@ -7,6 +7,8 @@ import urllib.request
 from collections.abc import Callable
 from pathlib import Path
 
+from lib.subprocess_utils import run_cmd
+
 
 class VendorError(Exception):
     pass
@@ -138,6 +140,23 @@ def _extract(archive: Path, target_dir: Path) -> Path:
     return target_dir
 
 
+def _run_vendor_prep(
+    pkg_meta: dict, src_dir: Path, log_path: Path | None, log: Callable[[str], None]
+) -> None:
+    """#COPR-0025: run build.vendor_prep shell commands in src_dir before the
+    language-specific vendor tool, so a workspace/module with an unvendorable
+    member can be trimmed into a vendorable shape first.
+
+    Must be mirrored by build.prep for the chroot build, which extracts its
+    own copy of the pristine tarball and never sees this edit otherwise.
+    """
+    for cmd in pkg_meta.get("build", {}).get("vendor_prep", []):
+        log(f"running vendor_prep: {cmd}")
+        ok, _, stderr = run_cmd(["sh", "-c", cmd], log_path=log_path, cwd=src_dir)
+        if not ok:
+            raise VendorError(f"vendor_prep command failed: {cmd!r}: {stderr.strip()}")
+
+
 def generate(
     pkg_name: str,
     pkg_meta: dict,
@@ -175,6 +194,7 @@ def generate(
         _download(source_url, archive)
         verify_download(pkg_name, pkg_meta, source_url, archive)
         src_dir = _extract(archive, tmpdir)
+        _run_vendor_prep(pkg_meta, src_dir, log_path, _log)
         return lang_generate(
             pkg_name,
             pkg_meta,
