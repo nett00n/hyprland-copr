@@ -1,11 +1,11 @@
 
 Name:           quickshell
-Version:        0.3.1
-Release:        4%{?dist}
+Version:        0.3.2
+Release:        0%{?dist}
 Summary:        Flexible QtQuick based desktop shell toolkit
 License:        LGPL-3.0-or-later
 URL:            https://git.outfoxxed.me/quickshell/quickshell.git
-Source0:        https://git.outfoxxed.me/quickshell/quickshell/archive/refs/tags/v0.3.1.tar.gz
+Source0:        https://git.outfoxxed.me/quickshell/quickshell/archive/refs/tags/v0.3.2.tar.gz
 
 BuildRequires:  cli11-devel
 BuildRequires:  cmake
@@ -40,8 +40,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.3.1
-Commit:            1a4716cde794a59928d9d9fc15f2afc7a95de360
+Tag:               v0.3.2
+Commit:            4f508be500dea6e5732cc3d50382a0048b17e7b1
 
 %prep
 %autosetup -p1 -n quickshell
@@ -71,11 +71,11 @@ Development files for quickshell.
 %files devel
 
 %changelog
-* Fri Aug 21 2026 nett00n <copr@nett00n.org> - 0.3.1-4
+* Thu Oct 08 2026 nett00n <copr@nett00n.org> - 0.3.2-0
 
 - -----BEGIN PGP SIGNATURE-----
-- iHUEABYKAB0WIQQBgf+JTzR/zOsGVxBMiKGF+4kwHgUCaoe4DgAKCRBMiKGF+4kw
-- HvRhAP9bXanwfCoX0ESaFhqaCsQQf+7WYjDNDQQTo8UIel2Q3wEApi4vMjJ0v/yR
-- +kWUNUah79yg1+Cdwb25mbGFcaffRwg=
-- =b+fZ
+- iHUEABYKAB0WIQQBgf+JTzR/zOsGVxBMiKGF+4kwHgUCasdjrQAKCRBMiKGF+4kw
+- Hi6GAPwP1fO6npxCrCqH7PxuOaOZ4qBqTOvxhI4V0GVVyAK08gD/Rt0BjMt9Xy2X
+- rgsghlBNPCYXdHFoe+osdA+k6kIgBgA=
+- =5rN0
 - -----END PGP SIGNATURE-----

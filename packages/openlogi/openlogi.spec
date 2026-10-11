@@ -1,13 +1,13 @@
 %global debug_package %{nil}
 
 Name:           openlogi
-Version:        0.8.11
+Version:        0.8.13
 Release:        1%{?dist}
 Summary:        Local-first alternative to Logitech Options+ for HID++ devices
 License:        MIT OR Apache-2.0
 URL:            https://github.com/AprilNEA/OpenLogi
-Source0:        https://github.com/AprilNEA/OpenLogi/archive/refs/tags/v0.8.11.tar.gz#/openlogi-0.8.11.tar.gz
-Source1:        openlogi-0.8.11-vendor.tar.gz
+Source0:        https://github.com/AprilNEA/OpenLogi/archive/refs/tags/v0.8.13.tar.gz#/openlogi-0.8.13.tar.gz
+Source1:        openlogi-0.8.13-vendor.tar.gz
 
 BuildRequires:  cargo
 BuildRequires:  clang-devel
@@ -29,8 +29,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.8.11
-Commit:            7a9d092a7dda0cb3b7ec18ada4424d681fca65ca
+Tag:               v0.8.13
+Commit:            9fcca74ac5bd745c2ced2ffdd813f9b32fb54f82
 
 %prep
 %autosetup -p1 -n OpenLogi-%{version}
@@ -67,6 +67,6 @@ Development files for openlogi.
 %files devel
 
 %changelog
-* Fri Oct 02 2026 nett00n <copr@nett00n.org> - 0.8.11-1
+* Fri Oct 09 2026 nett00n <copr@nett00n.org> - 0.8.13-1
 
-- chore: Release package openlogi version 0.8.11
+- chore: Release package openlogi version 0.8.13
