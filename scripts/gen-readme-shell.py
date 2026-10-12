@@ -2,7 +2,7 @@
 """Regenerate only the branding shell (logo/description/news/docs/support/license/
 people) of generated docs, leaving the packages/build-status body untouched.
 
-Unlike gen-report.py, this needs no build-report.db -- only repo.yaml, blog/NEWS.md,
+Unlike gen-report.py, this needs no build-report.db -- only repo.yaml, docs/NEWS.md,
 and git log. Meant for environments with no build history (CI): see
 docs/operations.md "CI docs-shell publish" for why gen-report.py can't run there.
 

@@ -299,7 +299,7 @@ to do — resolve them explicitly so they stop sitting in `## Unsorted`.*
    no stated problem or acceptance criterion today.
 7. **TODO-0013** — split management system from repo content (`#2.0`). **Decide or
    delete** — a repo-topology ruling, not a task.
-8. Unresolved note in `blog/NEWS.md` (2026-08-09): Hyprland f43 builds locally with
+8. Unresolved note in `docs/NEWS.md` (2026-08-09): Hyprland f43 builds locally with
    LionHeartP's patch but still fails on Copr. Not filed in either tracker —
    **file it as BUG-0104 or record that it's stale**, since it's the same shape as
    BUG-0018.

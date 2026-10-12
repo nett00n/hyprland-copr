@@ -306,7 +306,7 @@ and (below) the News feed and per-section visibility. Package data itself comes 
 ```yaml
 documents:
   badge_style: for-the-badge
-  news_limit: 8          # how many blog/NEWS.md entries the README shows (default: 8)
+  news_limit: 8          # how many docs/NEWS.md entries the README shows (default: 8)
   sections:               # per-block visibility in generated docs; unset keys default to true
     news: true
     docs: true
@@ -333,7 +333,7 @@ make readme-shell   # regenerate only the branding shell, no build-report.db nee
 ```
 
 `scripts/gen-readme-shell.py` renders `__header.j2`/`__footer.j2` (logo, description, News,
-Docs, Support, License, People) from `repo.yaml`/`blog/NEWS.md`/git log, and splices the result
+Docs, Support, License, People) from `repo.yaml`/`docs/NEWS.md`/git log, and splices the result
 into `README.md`/`docs/README.copr.md` between their existing `<!-- BEGIN: X -->`/
 `<!-- END: X -->` markers -- everything between the header and footer (the packages table,
 build status) is left exactly as committed. `docs/full-report.md` isn't touched at all; it's
@@ -399,7 +399,7 @@ ran, and that's the file the commit and the generated docs are built from (docs/
 BUG-0044); it skips `fmt` because the rewrite already goes through the same formatter `make
 fmt` itself uses, so there's nothing left to reformat. Only stages `packages.yaml packages/
 submodules/ README.md docs/README.copr.md docs/full-report.md` — the automation never touches
-`templates/`/`blog/`, so hand-edits there are never swept into a daily commit. Intended to run
+`templates/`/`docs/NEWS.md`, so hand-edits there are never swept into a daily commit. Intended to run
 unattended from an external nightly cron (the repo itself has no scheduler); pass `PUSH=1` for
 that.
 

@@ -39,7 +39,7 @@ belongs to [COPR-0012](COPR-0012-docs-generation.md), BUG-0030).
 
 ### Human
 
-- Push a branding-only change (`repo.yaml`, `blog/NEWS.md`) to `main`; confirm the CI
+- Push a branding-only change (`repo.yaml`, `docs/NEWS.md`) to `main`; confirm the CI
   workflow commits the regenerated shell with no packages-table diff.
 
 ## Status

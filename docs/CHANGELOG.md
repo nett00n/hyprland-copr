@@ -3,7 +3,7 @@
 Tracks changes to this repo's automation - Makefile targets, script behavior,
 `packages.yaml` schema, build pipeline stages, breaking contributor-facing
 changes. Routine package adds/version bumps/release increments are NOT logged
-here (see `packages.yaml` git history, `docs/full-report.md`, or `blog/`
+here (see `packages.yaml` git history, `docs/full-report.md`, or `docs/NEWS.md`
 instead).
 
 **Format (2026-09-15 on, per `docs/DOCS-DRIVEN-DEVELOPMENT.md`):** newest first;

@@ -63,40 +63,40 @@ class TestCollectContributors:
 class TestGetRecentNews:
     """Test get_recent_news function."""
 
-    def test_no_blog_dir(self, tmp_path):
-        """Should return empty list when blog/ directory doesn't exist."""
+    def test_no_docs_dir(self, tmp_path):
+        """Should return empty list when docs/ directory doesn't exist."""
         result = readme_content.get_recent_news(tmp_path)
         assert result == []
 
     def test_no_news_file(self, tmp_path):
-        """Should return empty list when blog/NEWS.md doesn't exist."""
-        (tmp_path / "blog").mkdir()
+        """Should return empty list when docs/NEWS.md doesn't exist."""
+        (tmp_path / "docs").mkdir()
         result = readme_content.get_recent_news(tmp_path)
         assert result == []
 
     def test_no_sections(self, tmp_path):
         """Should return empty list when NEWS.md has no `## ` headings."""
-        blog_dir = tmp_path / "blog"
-        blog_dir.mkdir()
-        (blog_dir / "NEWS.md").write_text("# News\n\nNo dated entries yet.\n")
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+        (docs_dir / "NEWS.md").write_text("# News\n\nNo dated entries yet.\n")
 
         result = readme_content.get_recent_news(tmp_path)
         assert result == []
 
     def test_single_section(self, tmp_path):
         """Should return one entry with parsed date and body."""
-        blog_dir = tmp_path / "blog"
-        blog_dir.mkdir()
-        (blog_dir / "NEWS.md").write_text("# News\n\n## 2026-01-01\n\nFirst post\n")
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+        (docs_dir / "NEWS.md").write_text("# News\n\n## 2026-01-01\n\nFirst post\n")
 
         result = readme_content.get_recent_news(tmp_path)
         assert result == [{"date": "2026-01-01", "body": "First post"}]
 
     def test_newest_first_order_preserved(self, tmp_path):
         """Should return entries in file order (newest first), not re-sort them."""
-        blog_dir = tmp_path / "blog"
-        blog_dir.mkdir()
-        (blog_dir / "NEWS.md").write_text(
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+        (docs_dir / "NEWS.md").write_text(
             "# News\n\n"
             "## 2026-03-01\n\nLatest\n\n"
             "## 2026-02-01\n\nSecond\n\n"
@@ -109,9 +109,9 @@ class TestGetRecentNews:
 
     def test_respects_limit(self, tmp_path):
         """Should return at most `limit` entries, dropping the oldest."""
-        blog_dir = tmp_path / "blog"
-        blog_dir.mkdir()
-        (blog_dir / "NEWS.md").write_text(
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+        (docs_dir / "NEWS.md").write_text(
             "# News\n\n"
             "## 2026-03-01\n\nLatest\n\n"
             "## 2026-02-01\n\nSecond\n\n"
@@ -123,10 +123,10 @@ class TestGetRecentNews:
 
     def test_default_limit_is_eight(self, tmp_path):
         """Should default to 8 entries when limit isn't specified."""
-        blog_dir = tmp_path / "blog"
-        blog_dir.mkdir()
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
         text = "# News\n\n" + "".join(f"## 2026-01-{i:02d}\n\nEntry {i}\n\n" for i in range(1, 11))
-        (blog_dir / "NEWS.md").write_text(text)
+        (docs_dir / "NEWS.md").write_text(text)
 
         result = readme_content.get_recent_news(tmp_path)
         assert len(result) == 8

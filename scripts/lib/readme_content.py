@@ -28,12 +28,12 @@ def collect_contributors(repo_root: Path) -> list[dict]:
 
 
 def get_recent_news(repo_root: Path, limit: int = 8) -> list[dict]:
-    """Get the `limit` most recent entries from blog/NEWS.md (newest first).
+    """Get the `limit` most recent entries from docs/NEWS.md (newest first).
 
     Each `## YYYY-MM-DD` heading starts one entry; its body is the text up to the
     next `## ` heading or end of file.
     """
-    news_file = repo_root / "blog" / "NEWS.md"
+    news_file = repo_root / "docs" / "NEWS.md"
     if not news_file.exists():
         return []
 

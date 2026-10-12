@@ -26,6 +26,12 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-10-12
+
+Added Packages:
+- wl-clip-persist
+- OpenLogi
+
 ### 2026-09-17
 
 Added Packages:
@@ -63,13 +69,7 @@ Added packages:
 Updated packages:
 - Waybar - now built with cava support
 
-### 2026-08-01
-
-Big automation update. SQLite is now used to store build-related info instead of plain yaml file.
-Not so simple, but yaml was really messed up and limits architechture.
-New packages: snappy switcher, mpvpaper.
-
-[📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/blog/NEWS.md)
+[📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 
 
 <!-- END: Header -->
@@ -218,7 +218,7 @@ as well and make the source available. No warranty is provided
 
 ### Contributors
 
-- [github-actions[bot]](https://github.com/github-actions[bot])- Vladimir Budylnikov- Vladimir nett00n Budylnikov
+- Vladimir nett00n Budylnikov- [github-actions[bot]](https://github.com/github-actions[bot])- Vladimir Budylnikov
 ---
 
 ## Additional Information
