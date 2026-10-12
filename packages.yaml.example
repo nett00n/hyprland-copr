@@ -1,7 +1,7 @@
 # packages.yaml.example — reference for reusing this repo's structure in another COPR project
 #
 # Run `python3 scripts/gen-spec.py` (or `make gen-spec`) to regenerate spec files from this file.
-# Run `python3 scripts/scaffold-package.py <name>` to auto-detect fields from a git submodule.
+# Run `python3 scripts/scaffold-package.py <name>` to auto-detect fields from the upstream mirror in .cache/upstream.
 #
 # Build metadata is split across three files:
 #   packages.yaml — one entry per RPM package (packages at root level, no wrapper key)

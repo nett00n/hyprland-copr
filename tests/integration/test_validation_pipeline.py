@@ -12,7 +12,7 @@ from lib.validation import (
     validate_env_file,
     validate_package,
     validate_group_membership,
-    validate_gitmodules,
+    validate_upstream_urls,
 )
 from lib.yaml_utils import get_packages, load_groups_yaml
 
@@ -72,65 +72,19 @@ class TestValidationPipeline:
         errors, warnings = validate_group_membership(packages)
         assert any("orphan-pkg" in e and "not listed in any group" in e for e in errors)
 
-    def test_gitmodules_http_url_fails(self, fake_repo):
-        """HTTP URL in .gitmodules fails validation."""
-        bad_gitmodules = fake_repo["root"] / ".gitmodules"
-
-        # Write bad .gitmodules with http URL (also missing ignore = dirty,
-        # but the http:// check is what this test is pinning)
-        bad_gitmodules.write_text("""[submodule "bad-pkg"]
-\tpath = submodules/bad-pkg
-\turl = http://github.com/example/bad-pkg.git
-\tignore = dirty
-""")
-
-        # validate_gitmodules reads root_path / ".gitmodules" directly -- no
-        # monkeypatch needed (formerly the root_path arg was dead and every
-        # caller had to monkeypatch the module-level GITMODULES constant
-        # instead, see docs/BUGS.md formerly BUG-0012)
-        errors, warnings = validate_gitmodules(fake_repo["root"])
+    def test_upstream_http_url_fails(self, fake_repo, minimal_package):
+        """A plain http:// upstream url fails validation (#COPR-0004)."""
+        minimal_package["url"] = "http://github.com/example/bad-pkg"
+        errors, warnings = validate_upstream_urls({"bad-pkg": minimal_package})
         assert any("not https://" in e for e in errors)
 
-    def test_gitmodules_wrong_path_prefix_fails(self, fake_repo):
-        """Wrong path prefix in .gitmodules fails."""
-        bad_gitmodules = fake_repo["root"] / ".gitmodules"
-
-        bad_gitmodules.write_text("""[submodule "bad-pkg"]
-\tpath = pkgs/bad-pkg
-\turl = https://github.com/example/bad-pkg.git
-\tignore = dirty
-""")
-
-        errors, warnings = validate_gitmodules(fake_repo["root"])
-        assert any("does not start with submodules/" in e for e in errors)
-
-    def test_gitmodules_missing_ignore_dirty_fails(self, fake_repo):
-        """Submodule missing `ignore = dirty` fails (formerly only checked by
-        scripts/validate-packages.py, docs/BUGS.md formerly BUG-0012)."""
-        bad_gitmodules = fake_repo["root"] / ".gitmodules"
-
-        bad_gitmodules.write_text("""[submodule "bad-pkg"]
-\tpath = submodules/bad-pkg
-\turl = https://github.com/example/bad-pkg.git
-""")
-
-        errors, warnings = validate_gitmodules(fake_repo["root"])
-        assert any("missing 'ignore = dirty'" in e for e in errors)
-
-    def test_gitmodules_wrong_ignore_value_fails(self, fake_repo):
-        """Submodule with `ignore = <not dirty>` fails."""
-        bad_gitmodules = fake_repo["root"] / ".gitmodules"
-
-        bad_gitmodules.write_text("""[submodule "bad-pkg"]
-\tpath = submodules/bad-pkg
-\turl = https://github.com/example/bad-pkg.git
-\tignore = all
-""")
-
-        errors, warnings = validate_gitmodules(fake_repo["root"])
-        assert any(
-            "ignore=all" in e and "should be 'ignore = dirty'" in e for e in errors
-        )
+    def test_upstream_url_variants_warn(self, fake_repo, minimal_package):
+        """The same repo spelled with/without .git warns (one mirror each)."""
+        a = dict(minimal_package, url="https://github.com/example/pkg.git")
+        b = dict(minimal_package, url="https://github.com/example/pkg")
+        errors, warnings = validate_upstream_urls({"a": a, "b": b})
+        assert errors == []
+        assert any("differing urls" in w for w in warnings)
 
     def test_unknown_depends_on_fails(self, fake_repo, minimal_package):
         """Package with unknown dependency fails."""
@@ -176,17 +130,9 @@ class TestValidationPipeline:
         assert any("license" in e for e in errors_no_lic)
         assert any("source.archives" in e for e in errors_no_arc)
 
-    def test_gitmodules_valid_passes(self, fake_repo):
-        """Valid .gitmodules (fake_repo's fixture already sets ignore = dirty)
-        passes validation."""
-        errors, warnings = validate_gitmodules(fake_repo["root"])
-        assert errors == []
-
-    def test_gitmodules_missing_returns_empty(self, fake_repo):
-        """Missing .gitmodules returns no errors (allowed)."""
-        (fake_repo["root"] / ".gitmodules").unlink()
-
-        errors, warnings = validate_gitmodules(fake_repo["root"])
+    def test_upstream_urls_valid_passes(self, fake_repo, minimal_package):
+        """A single https url passes validation."""
+        errors, warnings = validate_upstream_urls({"valid-pkg": minimal_package})
         assert errors == []
 
     def test_deprecated_debuginfo_section_fails(self, fake_repo, minimal_package):

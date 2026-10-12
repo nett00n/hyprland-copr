@@ -1197,10 +1197,11 @@ class TestPackageVarSemantics:
             env=self.NO_CONTAINER_ENV,
         )
 
-    def test_add_submodule_rejects_comma_list(self):
+    def test_add_submodule_target_is_gone(self):
+        """#COPR-0004: add-submodule left with the submodules."""
         result = self._run_comma_guard("add-submodule")
         assert result.returncode != 0
-        assert "single package name" in result.stdout
+        assert "No rule to make target" in result.stderr
 
     def test_delete_package_rejects_comma_list(self):
         result = self._run_comma_guard("delete-package")

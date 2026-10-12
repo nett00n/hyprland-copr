@@ -455,19 +455,22 @@ class TestGenerateDispatch:
             generate("test-pkg", meta, tmp_path / "out.tar.gz")
 
 
-class TestNoSubmoduleAccess:
+class TestNoUpstreamCacheAccess:
     """Vendoring always downloads a hash-verified tarball into a scratch
-    tmpdir; nothing here may read or write the live submodules/ checkout
-    (see docs/TODO.md TODO-0001, TODO-0060).
+    tmpdir; nothing here may read or write the live .cache/upstream mirrors
+    (#COPR-0004).
     """
 
     @pytest.mark.parametrize(
         "relative_path",
         ["lib/vendor.py", "lib/vendor_rust.py", "lib/vendor_golang.py", "stage-vendor.py"],
     )
-    def test_module_never_mentions_submodule(self, relative_path):
+    def test_module_never_touches_upstream_cache(self, relative_path):
         module_path = Path(__file__).parent.parent / "scripts" / relative_path
-        text = module_path.read_text()
-        assert "submodule" not in text.lower()
+        lowered = module_path.read_text().lower()
+        assert "submodule" not in lowered
+        assert "lib.upstream" not in lowered
+        assert "upstream_dir" not in lowered
+        assert ".cache/upstream" not in lowered
 
 

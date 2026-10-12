@@ -31,16 +31,15 @@ One command:
 make add-new URL=https://github.com/org/repo
 ```
 
-Registers the git submodule and scaffolds the `packages.yaml` entry in one step. Step by step,
-that's:
+Fetches the upstream into the gitignored `.cache/upstream/` mirror cache and scaffolds the
+`packages.yaml` entry in one step. To re-run just the scaffold against a cached mirror:
 
 ```shell
-git submodule add <url> submodules/<org>/<name>
-make add-submodule PACKAGE=<name>       # registers ignore=dirty in .gitmodules
 make scaffold-package PACKAGE=<name>    # adds the packages.yaml entry
+make upstream-sync                      # (re)build the whole mirror cache
 ```
 
-`make list-tags PACKAGE=<name>` (or with no `PACKAGE` for all submodules) shows available
+`make list-tags PACKAGE=<name>` (or with no `PACKAGE` for all upstreams) shows available
 upstream tags first, if useful.
 
 Scaffolding produces an entry like:

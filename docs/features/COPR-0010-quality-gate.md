@@ -12,7 +12,7 @@ after.
 
 | Command | Runs |
 | --- | --- |
-| `make validate-packages` | `packages.yaml`/`.gitmodules` sanity (fast, no container) |
+| `make validate-packages` | `packages.yaml` sanity (fast, no container) |
 | `make lint` | `lint-ruff` + `lint-flake` + `lint-mypy` + `lint-rpm` + `lint-yaml` |
 | `make fmt` | `fmt-ruff` + `fmt-yaml` + `normalize-paths` + `sort-lists` |
 | `make pre-commit` | `validate-packages` + `test` + `lint` + `fmt` (`COVERAGE=1` adds a coverage report) |
@@ -40,14 +40,14 @@ pass too.
   (#BUG-0089)
 
 ... and, offline and degrading by design (skips silently rather than warning
-whenever a submodule isn't initialized or its ref isn't resolvable locally, so CI
+whenever an upstream mirror isn't cached or its ref isn't resolvable locally, so CI
 and fresh clones stay green), as **warnings**:
 
 - A commit-tracked package (`latest-commit`/`pinned-commit`) whose
   `source.commit.date` is newer than a tag/version-pinned `depends_on` sibling's
   pinned tag date — possible API drift ahead of a pinned dependency. (#BUG-0056)
 - A package's declared `build.system` whose marker file (`CMakeLists.txt`,
-  `meson.build`, ...) is missing from its submodule's tagged/pinned-commit tree
+  `meson.build`, ...) is missing from its upstream mirror's tagged/pinned-commit tree
   (read via `git ls-tree`, never the working tree) — upstream likely switched build
   systems; names the system it looks like instead. (#BUG-0105)
 

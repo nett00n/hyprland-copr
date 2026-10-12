@@ -47,7 +47,6 @@ from lib.copr import (
     print_chroot_coverage,
 )
 from lib.deps import effective_deps, ordered_packages
-from lib.gitmodules import ensure_initialized, parse_gitmodules
 from lib.log_analysis import report_mock_failures, report_copr_failures
 from lib.pipeline import (
     compute_forced_stages,
@@ -59,14 +58,13 @@ from lib.log_retention import prune_run_logs, refresh_latest_link, retention_fro
 from lib.paths import (
     ARCH,
     DISTRO,
-    GITMODULES,
-    ROOT,
     get_run_log_dir,
     local_repo,
     resolve_target,
 )
 from lib.reporting import event, print_summary
 from lib.source_lock import missing_entries
+from lib.upstream import fetch_mirror, list_upstreams, mirror_path
 from lib.version import VERSION_STAGE_PRECEDENCE, nvr, recorded_version, versions_for
 from lib.yaml_utils import (
     STAGES,
@@ -127,9 +125,9 @@ def preflight_autoheal(packages: dict) -> None:
     """Auto-fix two known "forgot a manual step" causes of pipeline failure
     before the per-package loop even starts (TODO-0072):
 
-    - A package's git submodule was never checked out (fresh clone without
-      --recurse-submodules, or newly added via add-new/add-submodule and never
-      pulled) -- init it in place via `git submodule update --init`.
+    - A package's upstream mirror was never fetched (fresh clone, or a deleted
+      `.cache/upstream`) -- clone it now via `lib.upstream.fetch_mirror()`
+      (#COPR-0004).
     - A package has a remote source with no entry in sources.lock.yaml yet
       (newly scaffolded/added package, refresh-checksums never run) -- record
       it now instead of letting stage-srpm fail closed on it (BUG-0025).
@@ -137,12 +135,17 @@ def preflight_autoheal(packages: dict) -> None:
     Both are idempotent no-ops when there's nothing to fix, so this is safe to
     run unconditionally on every full-cycle invocation.
     """
-    if GITMODULES.exists():
-        modules = parse_gitmodules(GITMODULES)
-        urls = {meta.get("url", "") for meta in packages.values() if meta.get("url")}
-        pulled = ensure_initialized(ROOT, modules, urls)
-        if pulled:
-            print(f"\nAuto-initialized submodules: {', '.join(pulled)}")
+    pulled = []
+    for mod in list_upstreams(packages):
+        if mirror_path(mod["url"]).exists():
+            continue
+        error = fetch_mirror(mod["url"])
+        if error:
+            print(f"  warning: could not fetch upstream {mod['name']}: {error}")
+        else:
+            pulled.append(mod["name"])
+    if pulled:
+        print(f"\nAuto-fetched upstream mirrors: {', '.join(pulled)}")
 
     stale = missing_entries(packages)
     if stale:

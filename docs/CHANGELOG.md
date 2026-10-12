@@ -23,6 +23,14 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0004: replaced git submodules with a disposable, gitignored upstream mirror
+  cache (`.cache/upstream/<org>/<name>.git` bare mirror + detached worktree, derived
+  from `packages.yaml` urls, `lib/upstream.py` replaces `lib/gitmodules.py`).
+  `.gitmodules` and the `submodules/` gitlinks are gone, so branches no longer
+  conflict on them and `update-daily` no longer commits moved gitlinks. `make
+  submodules-update`/`submodules-purge` became `upstream-sync`/`upstream-clean`;
+  `make add-submodule` was removed (`add-new` syncs the mirror itself). BUG-0070 loses
+  its git-submodule-surgery half.
 - COPR-0007: `stage-copr` submission now visits packages in dependency order
   (topo-sorted via `lib.deps`, shared with `prepare_stage()`'s other five
   `stage-*.py` callers) and chains a package behind its own same-run dependencies

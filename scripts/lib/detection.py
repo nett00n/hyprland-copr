@@ -68,7 +68,7 @@ def detect_license(repo: Path) -> str | None:
 #
 # This is the single source of truth behind both detect_build_system() (below) and
 # lib.validation.validate_build_system_drift() -- which warns in `make
-# validate-packages` when a submodule's tagged tree no longer ships the marker its
+# validate-packages` when an upstream's tagged tree no longer ships the marker its
 # packages.yaml build.system declares (#BUG-0105). Add a system here, in priority
 # order, and both call sites pick it up.
 BUILD_SYSTEM_MARKERS: dict[str, tuple[str | tuple[str, ...], ...]] = {

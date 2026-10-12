@@ -41,11 +41,11 @@ def _source_commit(pkg: str, meta: dict) -> str | None:
 
     Read from packages.yaml `source.commit.full` -- the exact value the spec
     expands into `%{commit}`, and therefore the only commit the build ever
-    sees. Deliberately NOT read from the submodule checkout: the checkout is
+    sees. Deliberately NOT read from the upstream checkout: the checkout is
     not a build input at all (spectool downloads the archive over the network),
     so hashing it just made the cache depend on wherever update-versions.py
-    last left the working tree -- including a nightly submodule pull that
-    moves every submodule to upstream HEAD regardless of this package's own
+    last left the working tree -- including a nightly upstream pull that
+    moves every worktree to upstream HEAD regardless of this package's own
     release_type (see docs/BUGS.md BUG-0033).
 
     Only meaningful for packages in lib.version.COMMIT_TRACKED_RELEASE_TYPES

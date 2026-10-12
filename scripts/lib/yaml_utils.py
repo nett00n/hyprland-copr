@@ -250,7 +250,7 @@ def update_package_versions(
     Returns {pkg_name: (old_version, new_version)} for changed packages.
 
     Both dicts are keyed by PACKAGE NAME (not url): multiple packages can point
-    at the same submodule url (e.g. a stable package and its "-git" sibling)
+    at the same upstream url (e.g. a stable package and its "-git" sibling)
     and need independent version resolution.
 
     pkg_to_commit_info values are 4-tuples: (full_hash, short_hash, date_YYYYMMDD, base_semver | None)

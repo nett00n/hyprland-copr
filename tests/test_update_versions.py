@@ -100,370 +100,205 @@ class TestCheckoutPin:
         assert pin.detail
 
 
-class TestPullSubmodule:
-    """Tests for pull_submodule function."""
+class TestPullUpstream:
+    """Tests for pull_upstream (#COPR-0004): mirror fetch + worktree positioning.
 
-    def test_repo_not_exist(self, tmp_path, monkeypatch, capsys):
-        """Test warning when repo path doesn't exist."""
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
+    The git plumbing itself (bare mirror, relative worktree, dirty-reset) is covered
+    against real repos in tests/test_upstream.py; here lib.upstream's fetch_mirror /
+    checkout_worktree are stubbed and only pull_upstream's branching is exercised.
+    """
 
-        uv.pull_submodule(mod)
+    MOD = {
+        "name": "test-pkg",
+        "path": ".cache/upstream/test/test",
+        "url": "https://github.com/test/test.git",
+    }
+
+    @staticmethod
+    def _head(returncode=0, stdout="refs/remotes/origin/main"):
+        return MagicMock(returncode=returncode, stdout=stdout)
+
+    def _run(self, *, fetch=None, checkout=None, git=None, **kwargs):
+        """Run pull_upstream with stubs; return (ref, fetch_mock, checkout_mock, git_mock)."""
+        with (
+            patch.object(uv, "fetch_mirror", return_value=fetch) as m_fetch,
+            patch.object(uv, "checkout_worktree", return_value=checkout) as m_checkout,
+            patch.object(uv, "run_git", side_effect=git or []) as m_git,
+        ):
+            ref = uv.pull_upstream(self.MOD, **kwargs)
+        return ref, m_fetch, m_checkout, m_git
+
+    def test_fetch_fails(self, capsys):
+        failures = []
+        ref, _, m_checkout, _ = self._run(fetch="boom", failures=failures)
 
         captured = capsys.readouterr()
-        assert "does not exist" in captured.err
-        assert "skipping pull" in captured.err
-
-    def test_fetch_fails(self, tmp_path, monkeypatch, capsys):
-        """Test handling of git fetch failure."""
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
-
-        mock_result = MagicMock()
-        mock_result.returncode = 1
-        mock_result.stderr = ""
-
-        with patch.object(uv, "run_git", return_value=mock_result):
-            uv.pull_submodule(mod)
-
-        captured = capsys.readouterr()
+        assert ref is None
         assert "git fetch failed" in captured.err
         assert "test-pkg" in captured.err
+        assert "boom" in captured.err
+        m_checkout.assert_not_called()
+        assert failures == [uv.Failure("test-pkg", "fetch", "boom")]
 
-    def test_fetch_fails_with_stderr_msg(self, tmp_path, monkeypatch, capsys):
-        """Test fetch failure with stderr message."""
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
+    def test_fetches_the_mirror_for_the_url(self):
+        _, m_fetch, _, _ = self._run(git=[self._head()])
+        m_fetch.assert_called_once_with(self.MOD["url"])
 
-        mock_result = MagicMock()
-        mock_result.returncode = 1
-        mock_result.stderr = "Connection timeout"
-
-        with patch.object(uv, "run_git", return_value=mock_result):
-            uv.pull_submodule(mod)
-
-        captured = capsys.readouterr()
-        assert "Connection timeout" in captured.err
-
-    def test_no_branch_symbolic_ref_fails(self, tmp_path, monkeypatch, capsys):
-        """Test failure to determine default branch."""
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
-
-        fetch_result = MagicMock()
-        fetch_result.returncode = 0
-        head_result = MagicMock()
-        head_result.returncode = 1
-
-        with patch.object(uv, "run_git", side_effect=[fetch_result, head_result]):
-            uv.pull_submodule(mod)
+    def test_no_branch_symbolic_ref_fails(self, capsys):
+        failures = []
+        ref, _, m_checkout, _ = self._run(
+            git=[self._head(returncode=1)], failures=failures
+        )
 
         captured = capsys.readouterr()
+        assert ref is None
         assert "could not determine default branch" in captured.err
+        m_checkout.assert_not_called()
+        assert failures[0].kind == "branch"
 
-    def test_no_branch_success(self, tmp_path, monkeypatch, capsys):
-        """Test successful pull with default branch detection."""
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
-
-        fetch_result = MagicMock()
-        fetch_result.returncode = 0
-        head_result = MagicMock()
-        head_result.returncode = 0
-        head_result.stdout = "refs/remotes/origin/main"
-        switch_result = MagicMock()
-        switch_result.returncode = 0
-
-        with patch.object(
-            uv, "run_git", side_effect=[fetch_result, head_result, switch_result]
-        ):
-            uv.pull_submodule(mod)
+    def test_no_branch_success(self, capsys):
+        ref, _, m_checkout, m_git = self._run(git=[self._head()])
 
         captured = capsys.readouterr()
         assert "updated test-pkg to main" in captured.err
+        assert ref == "origin/main"
+        m_checkout.assert_called_once_with(self.MOD["url"], "origin/main")
+        # symbolic-ref is read from the bare mirror
+        assert m_git.call_args_list[0].args[:2] == (
+            "symbolic-ref",
+            "refs/remotes/origin/HEAD",
+        )
+        assert m_git.call_args_list[0].kwargs["cwd"].name == "test.git"
 
-    def test_branch_specified_success(self, tmp_path, monkeypatch, capsys):
-        """Test successful pull with explicit branch."""
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
-
-        fetch_result = MagicMock()
-        fetch_result.returncode = 0
-        switch_result = MagicMock()
-        switch_result.returncode = 0
-
-        with patch.object(
-            uv, "run_git", side_effect=[fetch_result, switch_result]
-        ):
-            uv.pull_submodule(mod, branch="dev")
+    def test_branch_specified_success(self, capsys):
+        ref, _, m_checkout, m_git = self._run(branch="dev")
 
         captured = capsys.readouterr()
         assert "updated test-pkg to dev" in captured.err
+        assert ref == "origin/dev"
+        m_checkout.assert_called_once_with(self.MOD["url"], "origin/dev")
+        m_git.assert_not_called()
 
-    def test_checkout_fails(self, tmp_path, monkeypatch, capsys):
-        """Test failure during git switch."""
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
-
-        fetch_result = MagicMock()
-        fetch_result.returncode = 0
-        head_result = MagicMock()
-        head_result.returncode = 0
-        head_result.stdout = "refs/remotes/origin/main"
-        switch_result = MagicMock()
-        switch_result.returncode = 1
-        switch_result.stderr = "Branch not found"
-
-        with patch.object(
-            uv, "run_git", side_effect=[fetch_result, head_result, switch_result]
-        ):
-            uv.pull_submodule(mod)
+    def test_checkout_fails(self, capsys):
+        failures = []
+        ref, _, _, _ = self._run(
+            checkout="Branch not found", git=[self._head()], failures=failures
+        )
 
         captured = capsys.readouterr()
-        assert "git switch failed" in captured.err
+        assert "git checkout failed" in captured.err
         assert "Branch not found" in captured.err
-
-    def test_fetches_with_tags_flag(self, tmp_path, monkeypatch):
-        """--tags: a pinned tag need not be reachable from the tracked branch."""
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
-
-        fetch_result = MagicMock(returncode=0)
-        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
-        switch_result = MagicMock(returncode=0)
-
-        with patch.object(
-            uv, "run_git", side_effect=[fetch_result, head_result, switch_result]
-        ) as mock_run:
-            uv.pull_submodule(mod)
-
-        assert mock_run.call_args_list[0].args[:3] == ("fetch", "--tags", "origin")
-
-    def test_moving_returns_ref_even_when_switch_fails(self, tmp_path, monkeypatch):
-        """Version resolution reads the remote-tracking ref, so it must still
-        get one back even when the working-tree switch itself failed."""
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
-
-        fetch_result = MagicMock(returncode=0)
-        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
-        switch_result = MagicMock(returncode=1, stderr="boom")
-
-        with patch.object(
-            uv, "run_git", side_effect=[fetch_result, head_result, switch_result]
-        ):
-            ref = uv.pull_submodule(mod)
-
+        # Version resolution reads the remote-tracking ref, so it must still get
+        # one back even when the worktree move itself failed.
         assert ref == "origin/main"
+        assert failures[0].kind == "switch"
 
-    def test_pinned_tag_checks_out_detached(self, tmp_path, monkeypatch, capsys):
-        """A pinned-tag package is checked out detached, never via `switch`."""
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
+    def test_pinned_tag_checks_out_resolved_sha(self, capsys):
         pin = uv.Pin("tag", ("refs/tags/v1.2.3",), "pinned-pkg")
+        sha = "deadbeef" * 5
+        ref, _, m_checkout, _ = self._run(
+            git=[self._head(), MagicMock(returncode=0, stdout=sha)], pin=pin
+        )
 
-        fetch_result = MagicMock(returncode=0)
-        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
-        rev_parse_result = MagicMock(returncode=0, stdout="deadbeef" * 5)
-        checkout_result = MagicMock(returncode=0)
-
-        with patch.object(
-            uv,
-            "run_git",
-            side_effect=[fetch_result, head_result, rev_parse_result, checkout_result],
-        ) as mock_run:
-            ref = uv.pull_submodule(mod, pin=pin)
-
-        calls = [c.args for c in mock_run.call_args_list]
-        assert ("checkout", "--force", "--detach", "refs/tags/v1.2.3") in calls
-        assert not any(c[0] == "switch" for c in calls)
+        m_checkout.assert_called_once_with(self.MOD["url"], sha)
         assert ref == "origin/main"
         captured = capsys.readouterr()
         assert "pinned test-pkg to refs/tags/v1.2.3" in captured.err
         assert "pinned-pkg" in captured.err
 
-    def test_pinned_commit_checks_out_sha(self, tmp_path, monkeypatch):
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
+    def test_pinned_commit_checks_out_sha(self):
         pin = uv.Pin("commit", ("abc123def456",), "pinned-pkg")
+        _, _, m_checkout, _ = self._run(
+            git=[self._head(), MagicMock(returncode=0, stdout="abc123def456")], pin=pin
+        )
+        m_checkout.assert_called_once_with(self.MOD["url"], "abc123def456")
 
-        fetch_result = MagicMock(returncode=0)
-        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
-        rev_parse_result = MagicMock(returncode=0, stdout="abc123def456")
-        checkout_result = MagicMock(returncode=0)
-
-        with patch.object(
-            uv,
-            "run_git",
-            side_effect=[fetch_result, head_result, rev_parse_result, checkout_result],
-        ) as mock_run:
-            uv.pull_submodule(mod, pin=pin)
-
-        calls = [c.args for c in mock_run.call_args_list]
-        assert ("checkout", "--force", "--detach", "abc123def456") in calls
-
-    def test_pinned_version_falls_through_to_bare_tag(self, tmp_path, monkeypatch):
+    def test_pinned_version_falls_through_to_bare_tag(self, capsys):
         """34/45 packages tag `v<version>`, 6/45 tag bare `<version>` -- the
         v-prefixed candidate is tried first, the bare one second."""
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
         pin = uv.Pin("version", ("refs/tags/v1.2.3", "refs/tags/1.2.3"), "pinned-pkg")
+        _, _, m_checkout, m_git = self._run(
+            git=[
+                self._head(),
+                MagicMock(returncode=1, stdout=""),
+                MagicMock(returncode=0, stdout="cafebabe" * 5),
+            ],
+            pin=pin,
+        )
+        m_checkout.assert_called_once_with(self.MOD["url"], "cafebabe" * 5)
+        assert "refs/tags/1.2.3" in capsys.readouterr().err
 
-        fetch_result = MagicMock(returncode=0)
-        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
-        v_miss = MagicMock(returncode=1, stdout="")
-        bare_hit = MagicMock(returncode=0, stdout="cafebabe" * 5)
-        checkout_result = MagicMock(returncode=0)
-
-        with patch.object(
-            uv,
-            "run_git",
-            side_effect=[fetch_result, head_result, v_miss, bare_hit, checkout_result],
-        ) as mock_run:
-            uv.pull_submodule(mod, pin=pin)
-
-        calls = [c.args for c in mock_run.call_args_list]
-        assert ("checkout", "--force", "--detach", "refs/tags/1.2.3") in calls
-
-    def test_pinned_ref_missing_leaves_tree_untouched(
-        self, tmp_path, monkeypatch, capsys
-    ):
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
+    def test_pinned_ref_missing_leaves_tree_untouched(self, capsys):
         pin = uv.Pin("tag", ("refs/tags/v99.99.99",), "pinned-pkg")
+        failures = []
+        ref, _, m_checkout, _ = self._run(
+            git=[self._head(), MagicMock(returncode=1, stdout="")],
+            pin=pin,
+            failures=failures,
+        )
 
-        fetch_result = MagicMock(returncode=0)
-        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
-        rev_parse_miss = MagicMock(returncode=1, stdout="")
-
-        with patch.object(
-            uv, "run_git", side_effect=[fetch_result, head_result, rev_parse_miss]
-        ) as mock_run:
-            ref = uv.pull_submodule(mod, pin=pin)
-
-        assert mock_run.call_count == 3
-        assert not any(c.args[0] == "checkout" for c in mock_run.call_args_list)
+        m_checkout.assert_not_called()
         assert ref == "origin/main"
         captured = capsys.readouterr()
         assert "none of which exist in the fetched repo" in captured.err
         assert "pinned-pkg" in captured.err
+        assert failures[0].kind == "pin"
 
-    def test_unresolved_pin_leaves_tree_untouched(self, tmp_path, monkeypatch, capsys):
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
+    def test_unresolved_pin_leaves_tree_untouched(self, capsys):
         pin = uv.Pin(
             "unresolved", (), "pinned-pkg", "pinned-commit with no source.commit.full"
         )
+        ref, _, m_checkout, m_git = self._run(git=[self._head()], pin=pin)
 
-        fetch_result = MagicMock(returncode=0)
-        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
-
-        with patch.object(
-            uv, "run_git", side_effect=[fetch_result, head_result]
-        ) as mock_run:
-            ref = uv.pull_submodule(mod, pin=pin)
-
-        assert mock_run.call_count == 2
+        m_checkout.assert_not_called()
+        assert m_git.call_count == 1
         assert ref == "origin/main"
         captured = capsys.readouterr()
         assert "pinned-pkg" in captured.err
         assert "pinned-commit with no source.commit.full" in captured.err
 
-    def test_pinned_checkout_failure_warns(self, tmp_path, monkeypatch, capsys):
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
+    def test_pinned_checkout_failure_warns(self, capsys):
         pin = uv.Pin("tag", ("refs/tags/v1.2.3",), "pinned-pkg")
-
-        fetch_result = MagicMock(returncode=0)
-        head_result = MagicMock(returncode=0, stdout="refs/remotes/origin/main")
-        rev_parse_result = MagicMock(returncode=0, stdout="deadbeef" * 5)
-        checkout_result = MagicMock(returncode=1, stderr="fatal: bad object")
-
-        with patch.object(
-            uv,
-            "run_git",
-            side_effect=[fetch_result, head_result, rev_parse_result, checkout_result],
-        ):
-            uv.pull_submodule(mod, pin=pin)
-
+        self._run(
+            checkout="fatal: bad object",
+            git=[self._head(), MagicMock(returncode=0, stdout="deadbeef" * 5)],
+            pin=pin,
+        )
         captured = capsys.readouterr()
         assert "git checkout failed" in captured.err
         assert "fatal: bad object" in captured.err
 
-    def test_pinned_with_explicit_branch_skips_symbolic_ref(
-        self, tmp_path, monkeypatch
-    ):
-        repo_dir = tmp_path / "submodules" / "test"
-        repo_dir.mkdir(parents=True)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
-        mod = {"name": "test-pkg", "path": "submodules/test"}
+    def test_pinned_with_explicit_branch_skips_symbolic_ref(self):
         pin = uv.Pin("tag", ("refs/tags/v1.2.3",), "pinned-pkg")
-
-        fetch_result = MagicMock(returncode=0)
-        rev_parse_result = MagicMock(returncode=0, stdout="deadbeef" * 5)
-        checkout_result = MagicMock(returncode=0)
-
-        with patch.object(
-            uv,
-            "run_git",
-            side_effect=[fetch_result, rev_parse_result, checkout_result],
-        ) as mock_run:
-            ref = uv.pull_submodule(mod, branch="dev", pin=pin)
-
-        assert mock_run.call_count == 3
+        ref, _, m_checkout, m_git = self._run(
+            git=[MagicMock(returncode=0, stdout="deadbeef" * 5)], branch="dev", pin=pin
+        )
+        assert m_git.call_count == 1  # only the rev-parse
+        m_checkout.assert_called_once()
         assert ref == "origin/dev"
 
 
 class TestMain:
     """Tests for main function."""
 
-    def test_no_gitmodules(self, tmp_path, monkeypatch):
-        """Test exit when .gitmodules not found."""
-        monkeypatch.setattr(uv, "GITMODULES", tmp_path / ".gitmodules")
+    def test_no_packages_yaml_syncs_nothing(self, tmp_path, monkeypatch, capsys):
+        """#COPR-0004: the upstream registry is derived from packages.yaml, so a
+        missing manifest means no upstreams -- nothing is fetched, nothing crashes."""
+        monkeypatch.setattr(uv, "PACKAGES_YAML", tmp_path / "packages.yaml")
+        monkeypatch.setattr(uv, "LOG_DIR", tmp_path / "logs")
 
-        with pytest.raises(SystemExit) as exc_info:
+        with (
+            patch.object(uv, "pull_upstream") as mock_pull,
+            patch.object(uv, "update_package_versions", return_value={}),
+        ):
             uv.main()
-        assert exc_info.value.code == 1
+
+        mock_pull.assert_not_called()
 
     def test_pinned_version_skipped(self, tmp_path, monkeypatch, capsys):
         """Test that pinned-version release type is skipped."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
 
         packages = {
@@ -473,9 +308,9 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(
                             uv, "update_package_versions", return_value={}
@@ -483,7 +318,7 @@ class TestMain:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -493,15 +328,8 @@ class TestMain:
 
     def test_pinned_commit_skipped(self, tmp_path, monkeypatch, capsys):
         """Test that pinned-commit release type is skipped."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
 
         packages = {
@@ -511,11 +339,11 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(
-                        uv, "get_submodule_commit_with_base"
+                        uv, "get_commit_with_base"
                     ) as mock_commit:
                         with patch.object(
                             uv, "update_package_versions", return_value={}
@@ -523,7 +351,7 @@ class TestMain:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -533,15 +361,8 @@ class TestMain:
 
     def test_pinned_tag(self, tmp_path, monkeypatch, capsys):
         """Test pinned-tag release type fetches specific tag."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
 
         packages = {
@@ -551,9 +372,9 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(
                         uv, "get_tag_commit"
                     ) as mock_tag_commit:
@@ -563,7 +384,7 @@ class TestMain:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -581,13 +402,6 @@ class TestMain:
 
     def test_latest_version(self, tmp_path, monkeypatch, capsys):
         """Test latest-version release type uses semver only."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -599,9 +413,9 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             with patch.object(
@@ -610,7 +424,7 @@ class TestMain:
                                 mock_parse.return_value = [
                                     {
                                         "name": "test",
-                                        "path": "submodules/test",
+                                        "path": ".cache/upstream/test/test",
                                         "url": "https://github.com/test/test.git",
                                     }
                                 ]
@@ -626,13 +440,6 @@ class TestMain:
         mpvpaper's real tag list has only one strict-semver entry (1.2.1),
         which latest-version/default would pick -- latest-tag must pick 1.9.
         """
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -644,9 +451,9 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(
                             uv, "update_package_versions", return_value={}
@@ -654,7 +461,7 @@ class TestMain:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -676,13 +483,6 @@ class TestMain:
 
     def test_latest_tag_no_match_warns_and_skips(self, tmp_path, monkeypatch, capsys):
         """No version-like tag found: warn, leave the version unresolved."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -694,9 +494,9 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(
                             uv, "update_package_versions", return_value={}
@@ -704,7 +504,7 @@ class TestMain:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -723,13 +523,6 @@ class TestMain:
         `make validate-packages`/`stage-validate` reject this before it gets
         here in the normal flow -- this covers a stale/unvalidated run.
         """
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -741,9 +534,9 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             with patch.object(
@@ -752,7 +545,7 @@ class TestMain:
                                 mock_parse.return_value = [
                                     {
                                         "name": "test",
-                                        "path": "submodules/test",
+                                        "path": ".cache/upstream/test/test",
                                         "url": "https://github.com/test/test.git",
                                     }
                                 ]
@@ -766,13 +559,6 @@ class TestMain:
 
     def test_latest_commit(self, tmp_path, monkeypatch, capsys):
         """Test latest-commit release type fetches HEAD commit."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -784,11 +570,11 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(
-                        uv, "get_submodule_commit_with_base"
+                        uv, "get_commit_with_base"
                     ) as mock_commit:
                         with patch.object(
                             uv, "update_package_versions", return_value={}
@@ -796,7 +582,7 @@ class TestMain:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -813,13 +599,6 @@ class TestMain:
 
     def test_default_semver(self, tmp_path, monkeypatch, capsys):
         """Test default (no release_type) uses semver when available."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -831,9 +610,9 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             with patch.object(
@@ -842,7 +621,7 @@ class TestMain:
                                 mock_parse.return_value = [
                                     {
                                         "name": "test",
-                                        "path": "submodules/test",
+                                        "path": ".cache/upstream/test/test",
                                         "url": "https://github.com/test/test.git",
                                     }
                                 ]
@@ -855,13 +634,6 @@ class TestMain:
 
     def test_default_commit_fallback(self, tmp_path, monkeypatch, capsys):
         """Test default falls back to commit when no semver found."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -873,13 +645,13 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             with patch.object(
-                                uv, "get_submodule_commit_with_base"
+                                uv, "get_commit_with_base"
                             ) as mock_commit:
                                 with patch.object(
                                     uv,
@@ -889,7 +661,7 @@ class TestMain:
                                     mock_parse.return_value = [
                                         {
                                             "name": "test",
-                                            "path": "submodules/test",
+                                            "path": ".cache/upstream/test/test",
                                             "url": "https://github.com/test/test.git",
                                         }
                                     ]
@@ -908,24 +680,17 @@ class TestMain:
 
     def test_no_packages_yaml(self, tmp_path, monkeypatch, capsys):
         """Test warning when packages.yaml not found."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         monkeypatch.setattr(uv, "PACKAGES_YAML", tmp_path / "packages.yaml")
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", side_effect=SystemExit()):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -938,13 +703,6 @@ class TestMain:
 
     def test_packages_yaml_updated(self, tmp_path, monkeypatch, capsys):
         """Test that update_package_versions is called with correct args."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -956,9 +714,9 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             with patch.object(
@@ -967,7 +725,7 @@ class TestMain:
                                 mock_parse.return_value = [
                                     {
                                         "name": "test",
-                                        "path": "submodules/test",
+                                        "path": ".cache/upstream/test/test",
                                         "url": "https://github.com/test/test.git",
                                     }
                                 ]
@@ -986,19 +744,12 @@ class TestMain:
     def test_shared_url_packages_resolved_independently(
         self, tmp_path, monkeypatch, capsys
     ):
-        """Regression: two packages sharing one submodule url (e.g. a stable
+        """Regression: two packages sharing one upstream url (e.g. a stable
         package and its "-git" sibling) must each get their own release_type
         applied. Keying by url instead of package name let the "-git" sibling's
         config silently shadow the stable package's, freezing it forever
         (see docs/BUGS.md / issue #8).
         """
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -1015,13 +766,13 @@ class TestMain:
             },
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule"):
+                with patch.object(uv, "pull_upstream"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(uv, "latest_semver") as mock_semver:
                             with patch.object(
-                                uv, "get_submodule_commit_with_base"
+                                uv, "get_commit_with_base"
                             ) as mock_commit:
                                 with patch.object(
                                     uv, "update_package_versions"
@@ -1029,7 +780,7 @@ class TestMain:
                                     mock_parse.return_value = [
                                         {
                                             "name": "test",
-                                            "path": "submodules/test",
+                                            "path": ".cache/upstream/test/test",
                                             "url": "https://github.com/test/test",
                                         }
                                     ]
@@ -1064,21 +815,13 @@ class TestMain:
         self, tmp_path, monkeypatch, capsys
     ):
         """Regression for the fix's core claim: a pinned package must win the
-        submodule checkout over a moving sibling sharing the same url, and the
+        upstream checkout over a moving sibling sharing the same url, and the
         sibling must still get its own version resolved -- against the remote
         branch, not the (now pinned) working tree.
         """
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
 
         packages = {
             "Pinned": {
@@ -1091,14 +834,14 @@ class TestMain:
             },
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
                 with patch.object(
-                    uv, "pull_submodule", return_value="origin/main"
+                    uv, "pull_upstream", return_value="origin/main"
                 ) as mock_pull:
                     with patch.object(uv, "get_tag_commit") as mock_tag_commit:
                         with patch.object(
-                            uv, "get_submodule_commit_with_base"
+                            uv, "get_commit_with_base"
                         ) as mock_commit:
                             with patch.object(
                                 uv, "update_package_versions", return_value={}
@@ -1106,7 +849,7 @@ class TestMain:
                                 mock_parse.return_value = [
                                     {
                                         "name": "test",
-                                        "path": "submodules/test",
+                                        "path": ".cache/upstream/test/test",
                                         "url": "https://github.com/test/test",
                                     }
                                 ]
@@ -1124,14 +867,14 @@ class TestMain:
                                 )
                                 uv.main()
 
-        # pull_submodule ran once (one physical checkout) and got the pin
+        # pull_upstream ran once (one physical checkout) and got the pin
         # from "Pinned", not from "Sibling-git".
         mock_pull.assert_called_once()
         assert mock_pull.call_args.kwargs["pin"].owner == "Pinned"
 
         # Sibling-git resolved its version against the remote-tracking ref
-        # returned by pull_submodule, not the working tree.
-        repo = tmp_path / "submodules" / "test"
+        # returned by pull_upstream, not the working tree.
+        repo = uv.mirror_path("https://github.com/test/test")
         mock_commit.assert_called_once_with(repo, "origin/main")
 
         captured = capsys.readouterr()
@@ -1140,13 +883,6 @@ class TestMain:
         assert "Sibling-git" in captured.err
 
     def test_conflicting_pins_first_in_file_wins(self, tmp_path, monkeypatch, capsys):
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -1162,10 +898,10 @@ class TestMain:
             },
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
                 with patch.object(
-                    uv, "pull_submodule", return_value="origin/main"
+                    uv, "pull_upstream", return_value="origin/main"
                 ) as mock_pull:
                     with patch.object(uv, "get_tag_commit", return_value=None):
                         with patch.object(
@@ -1174,7 +910,7 @@ class TestMain:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test",
                                 }
                             ]
@@ -1187,13 +923,6 @@ class TestMain:
         assert "Second" in captured.err
 
     def test_identical_pins_do_not_warn(self, tmp_path, monkeypatch, capsys):
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -1209,9 +938,9 @@ class TestMain:
             },
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                with patch.object(uv, "pull_upstream", return_value="origin/main"):
                     with patch.object(uv, "get_tag_commit", return_value=None):
                         with patch.object(
                             uv, "update_package_versions", return_value={}
@@ -1219,7 +948,7 @@ class TestMain:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test",
                                 }
                             ]
@@ -1231,17 +960,9 @@ class TestMain:
     def test_latest_commit_resolves_remote_ref_not_head(
         self, tmp_path, monkeypatch, capsys
     ):
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
 
         packages = {
             "test": {
@@ -1250,11 +971,11 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                with patch.object(uv, "pull_upstream", return_value="origin/main"):
                     with patch.object(
-                        uv, "get_submodule_commit_with_base"
+                        uv, "get_commit_with_base"
                     ) as mock_commit:
                         with patch.object(
                             uv, "update_package_versions", return_value={}
@@ -1262,7 +983,7 @@ class TestMain:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -1274,21 +995,13 @@ class TestMain:
                             )
                             uv.main()
 
-        repo = tmp_path / "submodules" / "test"
+        repo = uv.mirror_path("https://github.com/test/test")
         mock_commit.assert_called_once_with(repo, "origin/main")
 
     def test_default_fallback_resolves_remote_ref(self, tmp_path, monkeypatch):
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
-        monkeypatch.setattr(uv, "ROOT", tmp_path)
 
         packages = {
             "test": {
@@ -1297,13 +1010,13 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                with patch.object(uv, "pull_upstream", return_value="origin/main"):
                     with patch.object(uv, "fetch_tags", return_value=([], None)):
                         with patch.object(uv, "latest_semver", return_value=None):
                             with patch.object(
-                                uv, "get_submodule_commit_with_base"
+                                uv, "get_commit_with_base"
                             ) as mock_commit:
                                 with patch.object(
                                     uv,
@@ -1313,7 +1026,7 @@ class TestMain:
                                     mock_parse.return_value = [
                                         {
                                             "name": "test",
-                                            "path": "submodules/test",
+                                            "path": ".cache/upstream/test/test",
                                             "url": "https://github.com/test/test.git",
                                         }
                                     ]
@@ -1325,19 +1038,12 @@ class TestMain:
                                     )
                                     uv.main()
 
-        repo = tmp_path / "submodules" / "test"
+        repo = uv.mirror_path("https://github.com/test/test")
         mock_commit.assert_called_once_with(repo, "origin/main")
 
     def test_skips_commit_resolution_when_pull_failed(
         self, tmp_path, monkeypatch, capsys
     ):
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -1349,11 +1055,11 @@ class TestMain:
             }
         }
 
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule", return_value=None):
+                with patch.object(uv, "pull_upstream", return_value=None):
                     with patch.object(
-                        uv, "get_submodule_commit_with_base"
+                        uv, "get_commit_with_base"
                     ) as mock_commit:
                         with patch.object(
                             uv, "update_package_versions", return_value={}
@@ -1361,7 +1067,7 @@ class TestMain:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -1369,7 +1075,7 @@ class TestMain:
 
         mock_commit.assert_not_called()
         captured = capsys.readouterr()
-        assert "submodule not pulled" in captured.err
+        assert "upstream not fetched" in captured.err
         assert "latest: null" in captured.out
 
 
@@ -1385,15 +1091,6 @@ class TestConcurrency:
         spanning every release_type branch, one of which fails. Returns
         (stdout, packages.yaml text, failure sentinel text or "").
         """
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            "".join(
-                f'[submodule "{name}"]\n'
-                f"\tpath = submodules/{name}\n"
-                f"\turl = https://github.com/test/{name}.git\n"
-                for name in ("a", "b", "c", "d", "e", "f")
-            )
-        )
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text(
             "a:\n"
@@ -1421,17 +1118,16 @@ class TestConcurrency:
             "  url: https://github.com/test/f.git\n"
             "  version: '1.0.0'\n"
         )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
         monkeypatch.setattr(uv, "LOG_DIR", tmp_path / "logs")
         monkeypatch.setenv("UPDATE_VERSIONS_JOBS", str(jobs))
 
         modules = [
-            {"name": n, "path": f"submodules/{n}", "url": f"https://github.com/test/{n}.git"}
+            {"name": n, "path": f".cache/upstream/test/{n}", "url": f"https://github.com/test/{n}.git"}
             for n in ("a", "b", "c", "d", "e", "f")
         ]
 
-        def fake_pull_submodule(mod, branch=None, pin=None, failures=None):
+        def fake_pull_upstream(mod, branch=None, pin=None, failures=None):
             # 'e' fails to pull -- must not abort its siblings.
             if mod["name"] == "e":
                 if failures is not None:
@@ -1445,7 +1141,7 @@ class TestConcurrency:
             # Keyed by url, not call order, so it's safe under any completion
             # order a thread pool produces. 'e' has no valid tag -- combined
             # with its pull failure below, it hits the "no semver tag and
-            # submodule not pulled" resolve failure. 'f' fails outright.
+            # upstream not fetched" resolve failure. 'f' fails outright.
             name = url.rsplit("/", 1)[-1].removesuffix(".git")
             if name == "f":
                 return [], "failed to fetch tags"
@@ -1453,12 +1149,12 @@ class TestConcurrency:
                 return [tags_by_pkg[name]], None
             return [], None
 
-        with patch.object(uv, "parse_gitmodules", return_value=modules), \
-             patch.object(uv, "pull_submodule", side_effect=fake_pull_submodule), \
+        with patch.object(uv, "list_upstreams", return_value=modules), \
+             patch.object(uv, "pull_upstream", side_effect=fake_pull_upstream), \
              patch.object(uv, "fetch_tags", side_effect=fake_fetch_tags), \
              patch.object(
                  uv,
-                 "get_submodule_commit_with_base",
+                 "get_commit_with_base",
                  return_value=("abc123full", "abc123f", "20260101", None),
              ):
             uv.main()
@@ -1497,15 +1193,15 @@ class TestConcurrency:
 
     def test_jobs_1_never_uses_a_thread_pool(self, tmp_path, monkeypatch):
         """UPDATE_VERSIONS_JOBS=1 must take the strictly-serial path -- the
-        one every ordered-run_git-side_effect test in TestPullSubmodule
+        one every ordered-run_git-side_effect test in TestPullUpstream
         relies on staying available."""
         with patch.object(uv, "ThreadPoolExecutor") as mock_executor:
             self._run(tmp_path, monkeypatch, jobs=1)
 
         mock_executor.assert_not_called()
 
-    def test_a_failing_submodule_does_not_abort_its_siblings(self, tmp_path, monkeypatch):
-        """Package 'e's submodule pull fails; 'a'-'d' and 'f' must still be
+    def test_a_failing_upstream_does_not_abort_its_siblings(self, tmp_path, monkeypatch):
+        """Package 'e's upstream pull fails; 'a'-'d' and 'f' must still be
         resolved (or reported), whether run serially or in parallel."""
         for jobs in (1, 8):
             run_dir = tmp_path / f"jobs{jobs}"
@@ -1557,13 +1253,6 @@ class TestFailureReport:
     """Tests for the aggregated failure report end-to-end through main(). #BUG-0100"""
 
     def _run(self, tmp_path, monkeypatch, **fetch_tags_kwargs):
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text(
-            '[submodule "test"]\n'
-            "\tpath = submodules/test\n"
-            "\turl = https://github.com/test/test.git\n"
-        )
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         packages_yaml = tmp_path / "packages.yaml"
         packages_yaml.write_text("")
         monkeypatch.setattr(uv, "PACKAGES_YAML", packages_yaml)
@@ -1584,9 +1273,9 @@ class TestFailureReport:
                 "auto_update": {"release_type": "latest-version"},
             }
         }
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                with patch.object(uv, "pull_upstream", return_value="origin/main"):
                     with patch.object(uv, "fetch_tags") as mock_fetch:
                         with patch.object(
                             uv, "update_package_versions", return_value={}
@@ -1594,7 +1283,7 @@ class TestFailureReport:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -1619,9 +1308,9 @@ class TestFailureReport:
                 "auto_update": {"release_type": "latest-version"},
             }
         }
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                with patch.object(uv, "pull_upstream", return_value="origin/main"):
                     with patch.object(
                         uv, "fetch_tags", return_value=(["v1.0.0"], None)
                     ):
@@ -1632,7 +1321,7 @@ class TestFailureReport:
                                 mock_parse.return_value = [
                                     {
                                         "name": "test",
-                                        "path": "submodules/test",
+                                        "path": ".cache/upstream/test/test",
                                         "url": "https://github.com/test/test.git",
                                     }
                                 ]
@@ -1654,9 +1343,9 @@ class TestFailureReport:
                 "auto_update": {"release_type": "latest-version"},
             }
         }
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule", return_value="origin/main"):
+                with patch.object(uv, "pull_upstream", return_value="origin/main"):
                     with patch.object(
                         uv, "fetch_tags", return_value=(["v1.0.0"], None)
                     ):
@@ -1667,7 +1356,7 @@ class TestFailureReport:
                                 mock_parse.return_value = [
                                     {
                                         "name": "test",
-                                        "path": "submodules/test",
+                                        "path": ".cache/upstream/test/test",
                                         "url": "https://github.com/test/test.git",
                                     }
                                 ]
@@ -1686,9 +1375,9 @@ class TestFailureReport:
                 "auto_update": {"release_type": "latest-version"},
             }
         }
-        with patch.object(uv, "parse_gitmodules") as mock_parse:
+        with patch.object(uv, "list_upstreams") as mock_parse:
             with patch.object(uv, "get_packages", return_value=packages):
-                with patch.object(uv, "pull_submodule", return_value=None):
+                with patch.object(uv, "pull_upstream", return_value=None):
                     with patch.object(
                         uv, "fetch_tags", return_value=([], "failed to fetch")
                     ):
@@ -1698,7 +1387,7 @@ class TestFailureReport:
                             mock_parse.return_value = [
                                 {
                                     "name": "test",
-                                    "path": "submodules/test",
+                                    "path": ".cache/upstream/test/test",
                                     "url": "https://github.com/test/test.git",
                                 }
                             ]
@@ -1712,14 +1401,11 @@ class TestFailureReport:
         """Regression guard: the early-return path (packages.yaml missing)
         used to skip the sentinel writes entirely, leaving a previous run's
         count/failures sentinel stale for tonight's (nonexistent) run."""
-        gitmodules = tmp_path / ".gitmodules"
-        gitmodules.write_text("")
-        monkeypatch.setattr(uv, "GITMODULES", gitmodules)
         monkeypatch.setattr(uv, "PACKAGES_YAML", tmp_path / "does-not-exist.yaml")
         log_dir = tmp_path / "logs"
         monkeypatch.setattr(uv, "LOG_DIR", log_dir)
 
-        with patch.object(uv, "parse_gitmodules", return_value=[]):
+        with patch.object(uv, "list_upstreams", return_value=[]):
             with patch.object(uv, "get_packages", return_value={}):
                 uv.main()
 

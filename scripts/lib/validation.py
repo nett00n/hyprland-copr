@@ -1,13 +1,13 @@
 """Package validation utilities.
 
-Validates package.yaml entries, group membership, and .gitmodules conventions.
+Validates package.yaml entries, group membership, and upstream url conventions.
 """
 
 import re
 from pathlib import Path
 
 from lib.detection import BUILD_SYSTEM_MARKERS, matches_build_system
-from lib.gitmodules import get_tag_commit, get_tag_info, parse_gitmodules
+from lib.upstream import get_tag_commit, get_tag_info, mirror_path, upstream_name
 from lib.paths import ROOT
 from lib.subprocess_utils import run_git
 from lib.vendor import needs_vendoring
@@ -177,14 +177,12 @@ def validate_vendoring(name: str, meta: dict) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
-def validate_dependency_drift(
-    all_packages: dict, root_path: Path = ROOT
-) -> tuple[list[str], list[str]]:
+def validate_dependency_drift(all_packages: dict) -> tuple[list[str], list[str]]:
     """#BUG-0056: warn when a commit-tracked package outruns a tag-pinned dependency.
 
-    Offline and degrading by design: reads only local submodule git state via the
-    existing lib.gitmodules.get_tag_commit(), and skips silently -- no warning --
-    whenever a submodule isn't initialized or its dependency's tag isn't fetched
+    Offline and degrading by design: reads only local upstream-mirror git state via
+    the existing lib.upstream.get_tag_commit() (#COPR-0004), and skips silently -- no
+    warning -- whenever a mirror isn't cached or its dependency's tag isn't fetched
     locally, so CI and fresh clones stay green. This is the drift class that broke
     `hyprland-plugins` (pinned-commit, tracking Hyprland's unreleased main API)
     against `Hyprland` (pinned to v0.56.2) across all three chroots (runs 76-78)
@@ -196,8 +194,6 @@ def validate_dependency_drift(
 
     Args:
         all_packages: Dict of all packages
-        root_path: Path to repository root (submodules live under
-            `root_path / "submodules"`, resolved via .gitmodules)
 
     Returns:
         Tuple of (errors, warnings) as lists of strings -- always empty errors
@@ -205,12 +201,6 @@ def validate_dependency_drift(
     errors: list[str] = []
     warnings: list[str] = []
 
-    gitmodules_path = root_path / ".gitmodules"
-    if not gitmodules_path.exists():
-        return errors, warnings
-
-    modules = parse_gitmodules(gitmodules_path)
-    url_to_path = {mod["url"]: mod.get("path") for mod in modules}
     pkg_by_lower = {k.lower(): k for k in all_packages}
 
     for name, meta in sorted(all_packages.items()):
@@ -231,12 +221,12 @@ def validate_dependency_drift(
             if dep_release_type in COMMIT_TRACKED_RELEASE_TYPES:
                 continue  # only compare against tag/version-pinned siblings
 
-            dep_path = url_to_path.get(dep_meta.get("url", ""))
-            if not dep_path:
+            dep_url = dep_meta.get("url", "")
+            if not dep_url:
                 continue
-            repo = root_path / dep_path
+            repo = mirror_path(dep_url)
             if not repo.is_dir():
-                continue  # submodule not initialized
+                continue  # upstream mirror not cached
 
             dep_version = str(dep_meta.get("version", ""))
             if not dep_version:
@@ -258,17 +248,15 @@ def validate_dependency_drift(
     return errors, warnings
 
 
-def validate_build_system_drift(
-    all_packages: dict, root_path: Path = ROOT
-) -> tuple[list[str], list[str]]:
-    """#COPR-0010, #BUG-0105: warn when a submodule's tagged tree no longer ships the
+def validate_build_system_drift(all_packages: dict) -> tuple[list[str], list[str]]:
+    """#COPR-0010, #BUG-0105: warn when an upstream's tagged tree no longer ships the
     build_system marker packages.yaml declares.
 
     Offline and degrading by design, same contract as validate_dependency_drift():
-    reads only local submodule git state (a tag's committed tree via `git ls-tree`,
-    never the checked-out working tree, so a stale checkout can't produce a false
-    verdict) and skips silently -- no warning, no error -- whenever a submodule isn't
-    initialized or the version tag isn't resolvable locally. This is the drift class
+    reads only local upstream-mirror git state (a tag's committed tree via `git
+    ls-tree`, never a checked-out working tree, so a stale checkout can't produce a
+    false verdict) and skips silently -- no warning, no error -- whenever a mirror
+    isn't cached or the version tag isn't resolvable locally (#COPR-0004). This is the drift class
     that broke `hyprland-protocols` 0.7.1 (upstream's `meson -> cmake` commit dropped
     meson.build; packages.yaml still said `build.system: meson`) across all three
     chroots (runs 136-138) before mock caught it -- nothing flagged it beforehand.
@@ -279,8 +267,6 @@ def validate_build_system_drift(
 
     Args:
         all_packages: Dict of all packages
-        root_path: Path to repository root (submodules live under
-            `root_path / "submodules"`, resolved via .gitmodules)
 
     Returns:
         Tuple of (errors, warnings) as lists of strings -- always empty errors
@@ -288,24 +274,17 @@ def validate_build_system_drift(
     errors: list[str] = []
     warnings: list[str] = []
 
-    gitmodules_path = root_path / ".gitmodules"
-    if not gitmodules_path.exists():
-        return errors, warnings
-
-    modules = parse_gitmodules(gitmodules_path)
-    url_to_path = {mod["url"]: mod.get("path") for mod in modules}
-
     for name, meta in sorted(all_packages.items()):
         declared = (meta.get("build") or {}).get("system")
         if declared not in BUILD_SYSTEM_MARKERS:
             continue  # unknown/unset system, or one with no marker to check
 
-        pkg_path = url_to_path.get(meta.get("url", ""))
-        if not pkg_path:
+        pkg_url = meta.get("url", "")
+        if not pkg_url:
             continue
-        repo = root_path / pkg_path
+        repo = mirror_path(pkg_url)
         if not repo.is_dir():
-            continue  # submodule not initialized
+            continue  # upstream mirror not cached
 
         commit = meta.get("source", {}).get("commit")
         ref: str | None = None
@@ -545,7 +524,7 @@ def validate_group_membership(all_packages: dict) -> tuple[list[str], list[str]]
 def validate_no_duplicate_urls(all_packages: dict) -> tuple[list[str], list[str]]:
     """Warn when two or more packages declare the exact same url.
 
-    update-versions.py resolves each package's submodule by matching its url;
+    update-versions.py resolves each package's upstream mirror by matching its url;
     a duplicate is legitimate (e.g. a stable package and its "-git" sibling
     tracking the same upstream repo) as long as each package's own
     auto_update.release_type is applied independently. This check exists to
@@ -578,90 +557,44 @@ def validate_no_duplicate_urls(all_packages: dict) -> tuple[list[str], list[str]
     return errors, warnings
 
 
-def validate_submodule_url_resolution(
-    all_packages: dict, modules: list[dict]
-) -> tuple[list[str], list[str]]:
-    """Warn when a package's url won't resolve to any .gitmodules submodule.
+def validate_upstream_urls(all_packages: dict) -> tuple[list[str], list[str]]:
+    """Validate the package urls that key the upstream mirror cache. #COPR-0004
 
-    update-versions.py resolves each package's submodule via an EXACT string
-    match against .gitmodules urls (`url_to_module = {mod["url"]: mod}`), not
-    a normalized one. A mismatch -- commonly a stray or missing trailing
-    `.git` -- means the package is silently skipped every run: no error, no
-    warning at update time, auto_update simply never fires again. See
-    docs/BUGS.md BUG-0013: two packages went weeks with no update before this
-    was noticed by hand. (Distinct from validate_no_duplicate_urls, which
-    catches two *packages* colliding on the same url -- this catches one
-    package's url failing to match its own submodule at all.)
+    Every distinct `url` becomes one bare mirror under `.cache/upstream/<org>/<name>.git`
+    (see lib.upstream), so:
+
+    - an error when a url is not `https://` (carried over from the old .gitmodules checks: no `git://`,
+      `ssh://` or plain `http://` upstreams);
+    - a warning when two *different* urls map to the same cache key -- typically a
+      stray or missing `.git` suffix or trailing slash (docs/BUGS.md BUG-0013's
+      class). They would be mirrored and pinned independently, so a pin on one
+      silently stops applying to the other.
 
     Args:
         all_packages: Dict of all packages
-        modules: Parsed .gitmodules entries (see lib.gitmodules.parse_gitmodules)
-
-    Returns:
-        Tuple of (errors, warnings) as lists of strings -- always empty errors
-    """
-    errors: list[str] = []
-    warnings: list[str] = []
-
-    gitmodules_urls = {mod["url"] for mod in modules}
-
-    for pkg, meta in sorted(all_packages.items()):
-        url = meta.get("url", "")
-        if url and url not in gitmodules_urls:
-            warnings.append(
-                f"package '{pkg}' url '{url}' does not match any .gitmodules"
-                " submodule url -- update-versions.py will silently skip its"
-                " auto_update every run (check for a .git-suffix mismatch)"
-            )
-
-    return errors, warnings
-
-
-def validate_gitmodules(root_path: Path = ROOT) -> tuple[list[str], list[str]]:
-    """Validate .gitmodules conventions.
-
-    Checks:
-    - Submodule paths start with "submodules/"
-    - URLs use https://
-    - Every submodule has `ignore = dirty` set (formerly only checked by
-      scripts/validate-packages.py, one of the two divergences behind
-      docs/BUGS.md formerly BUG-0012 -- a submodule missing it shows as
-      locally "dirty" in `git status` on every commit its upstream makes,
-      even with nothing checked out differently)
-
-    Args:
-        root_path: Path to repository root (the .gitmodules file is read from
-            `root_path / ".gitmodules"`)
 
     Returns:
         Tuple of (errors, warnings) as lists of strings
     """
     errors: list[str] = []
     warnings: list[str] = []
-    gitmodules_path = root_path / ".gitmodules"
-    if not gitmodules_path.exists():
-        return errors, warnings
 
-    modules = parse_gitmodules(gitmodules_path)
-    for mod in modules:
-        path = mod.get("path", "")
-        url = mod.get("url", "")
-        ignore = mod.get("ignore")
-        if path and not path.startswith("submodules/"):
-            errors.append(
-                f".gitmodules: submodule '{mod['name']}' path '{path}' does not start with submodules/"
-            )
-        if url and not url.startswith("https://"):
-            errors.append(
-                f".gitmodules: submodule '{mod['name']}' URL '{url}' is not https://"
-            )
-        if ignore is None:
-            errors.append(
-                f".gitmodules: submodule '{mod['name']}' missing 'ignore = dirty'"
-            )
-        elif ignore != "dirty":
-            errors.append(
-                f".gitmodules: submodule '{mod['name']}' ignore={ignore}, should be 'ignore = dirty'"
+    key_to_urls: dict[str, dict[str, str]] = {}
+    for pkg, meta in sorted(all_packages.items()):
+        url = meta.get("url", "")
+        if not url:
+            continue
+        if not url.startswith("https://"):
+            errors.append(f"package '{pkg}' url '{url}' is not https://")
+        key_to_urls.setdefault(upstream_name(url), {}).setdefault(url, pkg)
+
+    for key, urls in sorted(key_to_urls.items()):
+        if len(urls) > 1:
+            variants = ", ".join(f"'{u}' ({p})" for u, p in sorted(urls.items()))
+            warnings.append(
+                f"upstream '{key}' is referenced by differing urls: {variants} -- "
+                "check for a .git-suffix or trailing-slash mismatch (each variant "
+                "gets its own mirror and pin)"
             )
 
     return errors, warnings

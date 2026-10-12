@@ -7,7 +7,7 @@
 As a maintainer working with an AI coding agent on this repo, I want the hard rules in
 `CLAUDE.md`/`docs/` delivered automatically to the agent before it edits a file — rather
 than relying on the whole of `CLAUDE.md` staying pinned in context and the agent
-remembering to grep `docs/` — so a rule like "never edit `submodules/` sources" or "every
+remembering to grep `docs/` — so a rule like "never edit `.cache/upstream/` sources" or "every
 top-level function carries its `#COPR-NNNN`" is not something the agent can silently drop
 once context fills up.
 
@@ -19,7 +19,7 @@ an agent working in this repo, keyed by the scope tag `hyprland-copr-daily`:
 
 - **Tier 0/1 — architectural constraints.** A hand-authored component map
   (`memory/seed.sql`) maps `key_paths` globs to components (`copr-pipeline`, `copr-lib`,
-  `copr-config`, `copr-templates`, `copr-vendored`, `copr-docs`, `copr-tests`) and attaches
+  `copr-config`, `copr-templates`, `copr-docs`, `copr-tests`) and attaches
   `must`/`should` constraints to each. Before an `Edit`/`Write`/`MultiEdit`, a `PreToolUse`
   hook (`arch_invariants.py`) resolves the target path to its component and injects the
   `must` constraints as context — deterministically, without the agent having to search or
@@ -81,7 +81,7 @@ hand-maintained *projection* of it into the map format — changing a rule means
   Memory distillation uses the `claude` CLI (`HM_LLM_BACKEND=cli`) rather than standing up a
   local model server.
 - **HyperMnesia itself is not vendored** — it lives at `~/personal-env/hypermnesia`, cloned
-  once, outside this repo's `submodules/`. That keeps `#COPR-0011`'s "vendored sources are
+  once, outside this repo's `.cache/upstream/`. That keeps `#COPR-0011`'s "vendored sources are
   read-only, edit via pre-build actions" rule from applying to a tool this repo doesn't ship.
 
 ## Testing
@@ -90,7 +90,8 @@ hand-maintained *projection* of it into the map format — changing a rule means
   constraint's component exists; no duplicate slugs.
 - Manual/integration (documented in `docs/operations.md`): `hm doctor` / `ci/doctor.py`
   clean; `arch_invariants.py` actually injects the vendored-sources `must` for a
-  `submodules/**` path and the `#COPR-NNNN` docstring `must` for a `scripts/lib/**` path;
+  `packages.yaml` path (the untracked `.cache/upstream/` cache can't carry a component of its
+  own: key_paths globs must match tracked files) and the `#COPR-NNNN` docstring `must` for a `scripts/lib/**` path;
   killing the store leaves edits working with one visible warning, not silence.
 
 ## Status

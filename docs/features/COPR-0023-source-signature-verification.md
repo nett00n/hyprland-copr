@@ -24,10 +24,10 @@ Two distinct, deliberately deferred mechanisms:
   archives, which GitHub does not sign. **Recommend parking** until a genuinely
   signed upstream release shows up; out of scope even then: which keyserver,
   TOFU-vs-pinned key trust, and revocation.
-- **Signed git tags**: `git tag -v <tag>` inside the submodule checkout, for upstreams
-  that sign tags (not the same as a signed release tarball). The old submodule-init
-  blocker for this is gone — `submodules-update` and `preflight_autoheal()` already
-  init missing submodules unconditionally; the only remaining substance is that
+- **Signed git tags**: `git tag -v <tag>` inside the upstream mirror
+  (`.cache/upstream/<org>/<name>.git`), for upstreams that sign tags (not the same as a
+  signed release tarball). The old init blocker for this is gone — `make upstream-sync`
+  and `preflight_autoheal()` already clone missing mirrors unconditionally; the only remaining substance is that
   `git tag -v` verification itself isn't implemented.
 
 ## Implementation (planned)

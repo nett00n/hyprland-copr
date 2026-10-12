@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch latest tags for submodules and update versions in packages.yaml.
+"""Fetch latest tags for upstream repos and update versions in packages.yaml.
 
 Prints a YAML summary of latest versions to stdout.
 Reports changed packages to stderr.
@@ -18,14 +18,17 @@ from typing import Any, NamedTuple
 import yaml
 
 from lib.config import env_int
-from lib.gitmodules import (
-    fetch_tags,
-    get_submodule_commit_with_base,
-    get_tag_commit,
-    parse_gitmodules,
-)
-from lib.paths import GITMODULES, LOG_DIR, PACKAGES_YAML, ROOT
+from lib.paths import LOG_DIR, PACKAGES_YAML
 from lib.subprocess_utils import run_git
+from lib.upstream import (
+    checkout_worktree,
+    fetch_mirror,
+    fetch_tags,
+    get_commit_with_base,
+    get_tag_commit,
+    list_upstreams,
+    mirror_path,
+)
 from lib.version import (
     PINNED_RELEASE_TYPES,
     RELEASE_TYPES,
@@ -45,7 +48,7 @@ from lib.yaml_utils import (
 
 
 class Pin(NamedTuple):
-    """A submodule checkout target derived from a package's pinned release_type.
+    """An upstream checkout target derived from a package's pinned release_type.
 
     kind:       "tag" | "commit" | "version" | "unresolved"
     candidates: commit-ishes to try in order, first that resolves wins; empty
@@ -68,13 +71,13 @@ class Failure(NamedTuple):
     or any of the other 10 warn sites -- shows up in the aggregated block
     printed at the end of main(), instead of only scrolling past on stderr.
 
-    scope:  submodule or package name the failure is about
+    scope:  upstream or package name the failure is about
     kind:   a small closed vocabulary grouping failures in the report --
-            "missing" (submodule dir absent), "fetch" (git fetch failed),
+            "missing" (upstream mirror absent), "fetch" (git fetch failed),
             "branch" (couldn't determine default branch), "switch" (git
             switch/checkout failed), "pin" (a pinned checkout couldn't be
             resolved), "tags" (fetch_tags() itself failed/timed out -- see
-            lib.gitmodules.TagFetch), "resolve" (no version could be derived
+            lib.upstream.TagFetch), "resolve" (no version could be derived
             from what was fetched), "config" (a packages.yaml value itself is
             the problem, e.g. an unknown release_type)
     detail: human-readable reason, already stripped of the "  warning: "
@@ -87,9 +90,9 @@ class Failure(NamedTuple):
 
 
 def checkout_pin(pkg_name: str, pkg_data: dict) -> "Pin | None":
-    """Return the Pin this package imposes on its submodule checkout, or None.
+    """Return the Pin this package imposes on its upstream checkout, or None.
 
-    None means "this package does not pin the checkout" -- the submodule
+    None means "this package does not pin the checkout" -- the upstream
     tracks its branch as before. A Pin with kind == "unresolved" means the
     package IS pinned but the target can't be derived from packages.yaml; the
     checkout is then left exactly where it is (never falls back to branch
@@ -125,63 +128,55 @@ def checkout_pin(pkg_name: str, pkg_data: dict) -> "Pin | None":
     return Pin("version", (f"refs/tags/v{version}", f"refs/tags/{version}"), pkg_name)
 
 
-def pull_submodule(
+def pull_upstream(
     mod: dict,
     branch: str | None = None,
     pin: "Pin | None" = None,
     failures: "list[Failure] | None" = None,
 ) -> str | None:
-    """Fetch origin and position the submodule working tree.
+    """Fetch the upstream's bare mirror and position its worktree. #COPR-0004
 
-    If pin is None, the submodule is force-switched to `origin/<branch>` as
-    before (branch defaults to origin's HEAD when not given). If pin is set,
-    the checkout is instead pinned *detached* at the resolved pin target and
-    is never moved to branch HEAD -- not even when the pin can't be resolved
-    (see docs/BUGS.md, BUG-0033's fix).
+    If pin is None, the worktree is force-detached at `origin/<branch>` (branch
+    defaults to origin's HEAD when not given). If pin is set, the worktree is instead
+    detached at the resolved pin target and is never moved to branch HEAD -- not even
+    when the pin can't be resolved (see docs/BUGS.md, BUG-0033's fix).
 
     Returns the remote-tracking ref ("origin/<branch>") that moving packages
-    sharing this submodule's url must resolve their versions against. This is
+    sharing this upstream's url must resolve their versions against. This is
     returned regardless of what was actually checked out (even on a pinned or
     failed checkout), so a pin on a shared url can't freeze a sibling's
-    version resolution. Returns None only when the submodule couldn't be
-    prepared at all (missing directory, failed fetch, undeterminable default
-    branch).
+    version resolution. Returns None only when the upstream couldn't be
+    prepared at all (failed fetch, undeterminable default branch).
 
     failures, when given, collects a Failure alongside every stderr warning
     below -- see Failure's docstring / BUG-0100. It defaults to None (rather
     than a caller-owned list) so direct callers/tests that only care about the
     return value and the stderr trace are unaffected.
     """
-    repo = ROOT / mod["path"]
-    if not repo.exists():
-        detail = f"{repo} does not exist, skipping pull"
-        print(f"  warning: {detail}", file=sys.stderr)
-        if failures is not None:
-            failures.append(Failure(mod["name"], "missing", detail))
-        return None
+    url = mod["url"]
+    mirror = mirror_path(url)
 
-    # --tags: a pinned tag need not be reachable from the tracked branch, and
-    # get_tag_commit() below resolves refs/tags/<tag> locally.
-    fetch_result = run_git("fetch", "--tags", "origin", cwd=repo)
-    if fetch_result.returncode != 0:
-        detail = "git fetch failed"
-        msg = f"  warning: git fetch failed for {mod['name']}"
-        if fetch_result.stderr:
-            detail += f": {fetch_result.stderr.strip()}"
-            msg += f"\n  {fetch_result.stderr.strip()}"
+    # fetch_mirror creates the bare mirror on first use (or re-creates a corrupt one),
+    # fetches branches + tags (a pinned tag need not be reachable from the tracked
+    # branch) and points origin/HEAD at the remote default branch.
+    fetch_error = fetch_mirror(url)
+    if fetch_error:
         # #BUG-0101: one print() call, not two -- under UPDATE_VERSIONS_JOBS>1
         # another thread's output can land between two separate print()
         # calls but never inside one.
-        print(msg, file=sys.stderr)
+        print(
+            f"  warning: git fetch failed for {mod['name']}\n  {fetch_error}",
+            file=sys.stderr,
+        )
         if failures is not None:
-            failures.append(Failure(mod["name"], "fetch", detail))
+            failures.append(Failure(mod["name"], "fetch", fetch_error))
         return None
 
     # Determine target branch
     target_branch = branch
     if target_branch is None:
         # Get the default branch from origin's HEAD
-        head_result = run_git("symbolic-ref", "refs/remotes/origin/HEAD", cwd=repo)
+        head_result = run_git("symbolic-ref", "refs/remotes/origin/HEAD", cwd=mirror)
         if head_result.returncode != 0:
             detail = "could not determine default branch"
             print(
@@ -197,14 +192,11 @@ def pull_submodule(
     moving_ref = f"origin/{target_branch}"
 
     if pin is None:
-        # Checkout and sync with origin
-        checkout_result = run_git("switch", "-C", target_branch, moving_ref, cwd=repo)
-        if checkout_result.returncode != 0:
-            detail = "git switch failed"
-            msg = f"  warning: git switch failed for {mod['name']}"
-            if checkout_result.stderr:
-                detail += f": {checkout_result.stderr.strip()}"
-                msg += f"\n  {checkout_result.stderr.strip()}"
+        # Detach the worktree at origin's tip
+        switch_error = checkout_worktree(url, moving_ref)
+        if switch_error:
+            detail = f"git checkout failed: {switch_error}"
+            msg = f"  warning: git checkout failed for {mod['name']}\n  {switch_error}"
             print(msg, file=sys.stderr)  # #BUG-0101: one atomic print() call
             if failures is not None:
                 failures.append(Failure(mod["name"], "switch", detail))
@@ -227,7 +219,7 @@ def pull_submodule(
     resolved: str | None = None
     for candidate in pin.candidates:
         check = run_git(
-            "rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}", cwd=repo
+            "rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}", cwd=mirror
         )
         if check.returncode == 0 and check.stdout.strip():
             resolved = check.stdout.strip()
@@ -247,13 +239,13 @@ def pull_submodule(
             failures.append(Failure(mod["name"], "pin", detail))
         return moving_ref
 
-    checkout_result = run_git("checkout", "--force", "--detach", target, cwd=repo)
-    if checkout_result.returncode != 0:
-        detail = f"git checkout failed at pinned {target}"
-        msg = f"  warning: git checkout failed for {mod['name']} at pinned {target}"
-        if checkout_result.stderr:
-            detail += f": {checkout_result.stderr.strip()}"
-            msg += f"\n  {checkout_result.stderr.strip()}"
+    switch_error = checkout_worktree(url, resolved)
+    if switch_error:
+        detail = f"git checkout failed at pinned {target}: {switch_error}"
+        msg = (
+            f"  warning: git checkout failed for {mod['name']} at pinned {target}"
+            f"\n  {switch_error}"
+        )
         print(msg, file=sys.stderr)  # #BUG-0101: one atomic print() call
         if failures is not None:
             failures.append(Failure(mod["name"], "switch", detail))
@@ -309,7 +301,9 @@ def _resolve_package_version(
         return
     auto_update = pkg_data.get("auto_update") or {}
     release_type = auto_update.get("release_type", "")
-    repo = ROOT / mod["path"]
+    # Metadata reads (tags, commits) go straight at the bare mirror: they need only
+    # refs, so a failed worktree checkout can't blind version resolution.
+    repo = mirror_path(url)
     ref = url_to_ref.get(url)
 
     # Handle pinned versions/commits - skip update
@@ -369,12 +363,12 @@ def _resolve_package_version(
     # Handle latest-commit
     if release_type == "latest-commit":
         if ref is None:
-            detail = "submodule not pulled, cannot resolve latest commit"
+            detail = "upstream not fetched, cannot resolve latest commit"
             print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
             failures.append(Failure(pkg_name, "resolve", detail))
             return
         print(f"fetching HEAD commit: {pkg_name} ({ref}) ...", file=sys.stderr)
-        commit_info = get_submodule_commit_with_base(repo, ref)
+        commit_info = get_commit_with_base(repo, ref)
         if commit_info:
             pkg_to_commit_info[pkg_name] = commit_info
         return
@@ -401,11 +395,11 @@ def _resolve_package_version(
     if latest:
         pkg_to_latest[pkg_name] = latest.lstrip("v")
     elif ref is None:
-        detail = "no semver tag and submodule not pulled, nothing to resolve"
+        detail = "no semver tag and upstream not fetched, nothing to resolve"
         print(f"  warning: {pkg_name}: {detail}", file=sys.stderr)
         failures.append(Failure(pkg_name, "resolve", detail))
     else:
-        commit_info = get_submodule_commit_with_base(repo, ref)
+        commit_info = get_commit_with_base(repo, ref)
         if commit_info:
             pkg_to_commit_info[pkg_name] = commit_info
 
@@ -468,13 +462,6 @@ def render_failure_markdown(failures: "list[Failure]") -> str:
 
 
 def main() -> None:
-    if not GITMODULES.exists():
-        print(f"error: {GITMODULES} not found", file=sys.stderr)
-        sys.exit(1)
-
-    modules = parse_gitmodules(GITMODULES)
-    url_to_module = {mod["url"]: mod for mod in modules}
-
     # #BUG-0100: every warn-and-continue site below also appends here, so one
     # aggregated report can be rendered/persisted at the end of the run
     # instead of failures only ever scrolling past on stderr.
@@ -482,7 +469,7 @@ def main() -> None:
 
     # Load packages.yaml. Config/versions below are keyed by PACKAGE NAME, not
     # url: multiple packages (e.g. Hyprland / Hyprland-git) can legitimately
-    # point at the same submodule url but need independent release_type
+    # point at the same upstream url but need independent release_type
     # handling. Keying by url let one package's config silently shadow
     # another's (see docs/BUGS.md).
     packages: dict = {}
@@ -491,7 +478,10 @@ def main() -> None:
         with contextlib.suppress(SystemExit):
             packages = get_packages(PACKAGES_YAML)
 
-    # One physical checkout per submodule url. Three things are derived per
+    modules = list_upstreams(packages)
+    url_to_module = {mod["url"]: mod for mod in modules}
+
+    # One physical checkout per upstream url. Three things are derived per
     # url below:
     #  - branch: which branch moving (non-pinned) packages track
     #  - pin:    a pinned package's checkout target; a pin beats every moving
@@ -522,7 +512,7 @@ def main() -> None:
             url_to_pin[url] = pin
         elif existing.candidates != pin.candidates or existing.kind != pin.kind:
             detail = (
-                f"{pin.owner} pins this submodule to "
+                f"{pin.owner} pins this upstream to "
                 f"{pin.candidates or '(unresolved)'} but {existing.owner} already "
                 f"pinned it to {existing.candidates or '(unresolved)'}; keeping "
                 f"{existing.owner}'s (first in packages.yaml)"
@@ -539,7 +529,7 @@ def main() -> None:
     # docs/features/COPR-0004-version-auto-bump.md.
     jobs = env_int("UPDATE_VERSIONS_JOBS", 8)
 
-    print("pulling submodules ...", file=sys.stderr)
+    print("syncing upstream mirrors ...", file=sys.stderr)
     url_to_ref: dict[str, str | None] = {}
 
     def _pull_one(mod: dict) -> None:
@@ -549,11 +539,11 @@ def main() -> None:
         if pin is not None and movers:
             print(
                 f"  note: {mod['name']} is pinned by {pin.owner}; "
-                f"{', '.join(movers)} share this submodule and still resolve their "
+                f"{', '.join(movers)} share this upstream and still resolve their "
                 f"versions from the remote branch, without moving the checkout",
                 file=sys.stderr,
             )
-        url_to_ref[url] = pull_submodule(
+        url_to_ref[url] = pull_upstream(
             mod, branch=url_to_branch.get(url), pin=pin, failures=failures
         )
 

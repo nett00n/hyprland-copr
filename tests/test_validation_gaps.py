@@ -13,7 +13,7 @@ from lib.source_lock import save_lock
 from lib.validation import (
     validate_package,
     validate_no_duplicate_urls,
-    validate_submodule_url_resolution,
+    validate_upstream_urls,
     validate_field_types,
     validate_vendoring,
     validate_tracker_ids,
@@ -23,6 +23,7 @@ from lib.validation import (
     REQUIRED_FIELDS,
     VALID_BUILD_SYSTEMS,
 )
+from lib.upstream import mirror_path
 from lib.version import RELEASE_TYPES
 
 
@@ -528,105 +529,81 @@ class TestValidateNoDuplicateUrls:
         assert warnings == []
 
 
-class TestValidateSubmoduleUrlResolution:
-    """Test validate_submodule_url_resolution function.
+class TestValidateUpstreamUrls:
+    """Test validate_upstream_urls (#COPR-0004).
 
-    Regression coverage for docs/BUGS.md BUG-0013: Waybar-git's and
-    hyprland-plugins-git's packages.yaml url didn't exactly match their
-    .gitmodules submodule's url (one missing a trailing ".git", the other
-    with a stray one), so update-versions.py's exact-match `url_to_module`
-    lookup silently skipped them every run -- no error, no warning, just
-    permanent version drift. This check mirrors that exact lookup.
+    Successor of the old .gitmodules url-resolution check (docs/BUGS.md BUG-0013:
+    Waybar-git's and hyprland-plugins-git's urls differed from their submodule's by
+    a stray/missing ".git", so update-versions silently skipped them). With the url
+    registry derived from packages.yaml itself, the same class shows up as two
+    differing urls mapping to one cache key.
     """
 
-    def test_matching_url_is_clean(self):
-        """A package url that exactly matches a .gitmodules url is fine."""
-        all_packages = {"pkg-a": {"url": "https://github.com/org/a"}}
-        modules = [{"name": "submodules/org/a", "path": "submodules/org/a",
-                    "url": "https://github.com/org/a"}]
-
-        errors, warnings = validate_submodule_url_resolution(all_packages, modules)
-
+    def test_single_https_url_is_clean(self):
+        errors, warnings = validate_upstream_urls(
+            {"pkg-a": {"url": "https://github.com/org/a"}}
+        )
         assert errors == []
         assert warnings == []
 
-    def test_missing_git_suffix_warns(self):
-        """packages.yaml url missing the .git suffix .gitmodules has."""
-        all_packages = {"Waybar-git": {"url": "https://github.com/Alexays/Waybar"}}
-        modules = [{"name": "submodules/Alexays/Waybar",
-                    "path": "submodules/Alexays/Waybar",
-                    "url": "https://github.com/Alexays/Waybar.git"}]
+    def test_non_https_url_is_an_error(self):
+        errors, warnings = validate_upstream_urls(
+            {"pkg-a": {"url": "git://github.com/org/a"}}
+        )
+        assert len(errors) == 1
+        assert "pkg-a" in errors[0]
+        assert "not https://" in errors[0]
+        assert warnings == []
 
-        errors, warnings = validate_submodule_url_resolution(all_packages, modules)
-
-        assert errors == []
-        assert len(warnings) == 1
-        assert "Waybar-git" in warnings[0]
-        assert "https://github.com/Alexays/Waybar" in warnings[0]
-
-    def test_stray_git_suffix_warns(self):
-        """packages.yaml url has a .git suffix .gitmodules doesn't."""
-        all_packages = {
-            "hyprland-plugins-git": {
-                "url": "https://github.com/hyprwm/hyprland-plugins.git"
-            }
-        }
-        modules = [{"name": "submodules/hyprwm/hyprland-plugins",
-                    "path": "submodules/hyprwm/hyprland-plugins",
-                    "url": "https://github.com/hyprwm/hyprland-plugins"}]
-
-        errors, warnings = validate_submodule_url_resolution(all_packages, modules)
-
-        assert errors == []
-        assert len(warnings) == 1
-        assert "hyprland-plugins-git" in warnings[0]
+    def test_http_url_is_an_error(self):
+        errors, _ = validate_upstream_urls({"pkg-a": {"url": "http://example.com/o/a"}})
+        assert len(errors) == 1
 
     def test_missing_url_ignored(self):
-        """Packages without a url produce no warning (nothing to resolve)."""
-        all_packages = {"pkg-a": {}}
-        modules = [{"name": "submodules/org/a", "path": "submodules/org/a",
-                    "url": "https://github.com/org/a"}]
-
-        errors, warnings = validate_submodule_url_resolution(all_packages, modules)
-
+        errors, warnings = validate_upstream_urls({"pkg-a": {}})
         assert errors == []
         assert warnings == []
 
-    def test_no_modules_at_all_warns_for_every_url(self):
-        """Empty .gitmodules means no package url can resolve."""
-        all_packages = {"pkg-a": {"url": "https://github.com/org/a"}}
+    def test_shared_identical_url_is_clean(self):
+        """Stable + -git siblings legitimately share one url (one mirror)."""
+        errors, warnings = validate_upstream_urls(
+            {
+                "Waybar": {"url": "https://github.com/Alexays/Waybar"},
+                "Waybar-git": {"url": "https://github.com/Alexays/Waybar"},
+            }
+        )
+        assert errors == []
+        assert warnings == []
 
-        errors, warnings = validate_submodule_url_resolution(all_packages, [])
-
+    def test_git_suffix_mismatch_warns(self):
+        errors, warnings = validate_upstream_urls(
+            {
+                "Waybar": {"url": "https://github.com/Alexays/Waybar.git"},
+                "Waybar-git": {"url": "https://github.com/Alexays/Waybar"},
+            }
+        )
         assert errors == []
         assert len(warnings) == 1
+        assert "Alexays/Waybar" in warnings[0]
+        assert "Waybar-git" in warnings[0]
 
-    def test_multiple_mismatches_each_warn_independently(self):
-        """Two independently mismatched packages each produce their own warning."""
-        all_packages = {
-            "Waybar-git": {"url": "https://github.com/Alexays/Waybar"},
-            "hyprland-plugins-git": {
-                "url": "https://github.com/hyprwm/hyprland-plugins.git"
-            },
-            "ok-pkg": {"url": "https://github.com/org/ok"},
-        }
-        modules = [
-            {"name": "submodules/Alexays/Waybar", "path": "submodules/Alexays/Waybar",
-             "url": "https://github.com/Alexays/Waybar.git"},
-            {"name": "submodules/hyprwm/hyprland-plugins",
-             "path": "submodules/hyprwm/hyprland-plugins",
-             "url": "https://github.com/hyprwm/hyprland-plugins"},
-            {"name": "submodules/org/ok", "path": "submodules/org/ok",
-             "url": "https://github.com/org/ok"},
-        ]
+    def test_trailing_slash_mismatch_warns(self):
+        _, warnings = validate_upstream_urls(
+            {
+                "a": {"url": "https://github.com/org/a"},
+                "b": {"url": "https://github.com/org/a/"},
+            }
+        )
+        assert len(warnings) == 1
 
-        errors, warnings = validate_submodule_url_resolution(all_packages, modules)
-
-        assert errors == []
-        assert len(warnings) == 2
-        assert any("Waybar-git" in w for w in warnings)
-        assert any("hyprland-plugins-git" in w for w in warnings)
-        assert not any("ok-pkg" in w for w in warnings)
+    def test_distinct_repos_do_not_warn(self):
+        _, warnings = validate_upstream_urls(
+            {
+                "a": {"url": "https://github.com/org/a"},
+                "b": {"url": "https://github.com/org/b"},
+            }
+        )
+        assert warnings == []
 
 
 class TestValidateFieldTypes:
@@ -809,24 +786,22 @@ class TestValidateTrackerIds:
 class TestValidateDependencyDrift:
     """Test validate_dependency_drift (#BUG-0056): offline commit-vs-tag drift."""
 
-    def _gitmodules(self, tmp_path, url, rel_path="submodules/dep"):
-        (tmp_path / ".gitmodules").write_text(
-            f'[submodule "dep"]\n\tpath = {rel_path}\n\turl = {url}\n'
-        )
-        (tmp_path / rel_path).mkdir(parents=True)
+    @pytest.fixture(autouse=True)
+    def _cache_dir(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(paths, "UPSTREAM_DIR", tmp_path / "cache")
 
-    def test_no_gitmodules_is_clean(self, tmp_path):
+    def _cached(self, tmp_path, url):
+        """Pretend `url`'s upstream mirror is cached."""
+        mirror_path(url).mkdir(parents=True)
+
+    def test_no_cached_mirror_is_clean(self, tmp_path):
         all_packages = {"a": {"auto_update": {"release_type": "pinned-commit"}}}
-        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        errors, warnings = validate_dependency_drift(all_packages)
         assert errors == []
         assert warnings == []
 
-    def test_uninitialized_submodule_is_silently_skipped(self, tmp_path):
-        """No warning when the dependency's submodule dir doesn't exist."""
-        (tmp_path / ".gitmodules").write_text(
-            '[submodule "dep"]\n\tpath = submodules/dep\n'
-            "\turl = https://example.com/dep\n"
-        )
+    def test_uncached_mirror_is_silently_skipped(self, tmp_path):
+        """No warning when the dependency's mirror dir isn't cached."""
         all_packages = {
             "a": {
                 "auto_update": {"release_type": "pinned-commit"},
@@ -835,13 +810,13 @@ class TestValidateDependencyDrift:
             },
             "dep": {"url": "https://example.com/dep", "version": "1.0"},
         }
-        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        errors, warnings = validate_dependency_drift(all_packages)
         assert errors == []
         assert warnings == []
 
     @patch("lib.validation.get_tag_commit")
     def test_newer_commit_than_pinned_dependency_warns(self, mock_get_tag, tmp_path):
-        self._gitmodules(tmp_path, "https://example.com/dep")
+        self._cached(tmp_path, "https://example.com/dep")
         mock_get_tag.return_value = ("abc123", "abc123", "20260101", None)
 
         all_packages = {
@@ -852,7 +827,7 @@ class TestValidateDependencyDrift:
             },
             "dep": {"url": "https://example.com/dep", "version": "1.0"},
         }
-        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        errors, warnings = validate_dependency_drift(all_packages)
         assert errors == []
         assert len(warnings) == 1
         assert "'a'" in warnings[0]
@@ -860,7 +835,7 @@ class TestValidateDependencyDrift:
 
     @patch("lib.validation.get_tag_commit")
     def test_older_commit_than_pinned_dependency_is_clean(self, mock_get_tag, tmp_path):
-        self._gitmodules(tmp_path, "https://example.com/dep")
+        self._cached(tmp_path, "https://example.com/dep")
         mock_get_tag.return_value = ("abc123", "abc123", "20260901", None)
 
         all_packages = {
@@ -871,13 +846,13 @@ class TestValidateDependencyDrift:
             },
             "dep": {"url": "https://example.com/dep", "version": "1.0"},
         }
-        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        errors, warnings = validate_dependency_drift(all_packages)
         assert errors == []
         assert warnings == []
 
     @patch("lib.validation.get_tag_commit")
     def test_unresolvable_tag_is_silently_skipped(self, mock_get_tag, tmp_path):
-        self._gitmodules(tmp_path, "https://example.com/dep")
+        self._cached(tmp_path, "https://example.com/dep")
         mock_get_tag.return_value = None
 
         all_packages = {
@@ -888,7 +863,7 @@ class TestValidateDependencyDrift:
             },
             "dep": {"url": "https://example.com/dep", "version": "1.0"},
         }
-        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        errors, warnings = validate_dependency_drift(all_packages)
         assert errors == []
         assert warnings == []
 
@@ -902,14 +877,14 @@ class TestValidateDependencyDrift:
             },
             "dep": {"url": "https://example.com/dep", "version": "1.0"},
         }
-        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        errors, warnings = validate_dependency_drift(all_packages)
         assert errors == []
         assert warnings == []
 
     @patch("lib.validation.get_tag_commit")
     def test_commit_tracked_dependency_is_skipped(self, mock_get_tag, tmp_path):
         """Comparing two commit-tracked packages isn't this check's job."""
-        self._gitmodules(tmp_path, "https://example.com/dep")
+        self._cached(tmp_path, "https://example.com/dep")
 
         all_packages = {
             "a": {
@@ -923,7 +898,7 @@ class TestValidateDependencyDrift:
                 "version": "1.0",
             },
         }
-        errors, warnings = validate_dependency_drift(all_packages, tmp_path)
+        errors, warnings = validate_dependency_drift(all_packages)
         assert errors == []
         assert warnings == []
         mock_get_tag.assert_not_called()
@@ -936,11 +911,13 @@ class TestValidateBuildSystemDrift:
     v0.7.1 tag ships CMakeLists.txt with no meson.build.
     """
 
-    def _gitmodules(self, tmp_path, url, rel_path="submodules/pkg"):
-        (tmp_path / ".gitmodules").write_text(
-            f'[submodule "pkg"]\n\tpath = {rel_path}\n\turl = {url}\n'
-        )
-        (tmp_path / rel_path).mkdir(parents=True)
+    @pytest.fixture(autouse=True)
+    def _cache_dir(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(paths, "UPSTREAM_DIR", tmp_path / "cache")
+
+    def _cached(self, tmp_path, url):
+        """Pretend `url`'s upstream mirror is cached."""
+        mirror_path(url).mkdir(parents=True)
 
     def _pkg(self, system="meson", version="0.7.1"):
         return {
@@ -951,30 +928,26 @@ class TestValidateBuildSystemDrift:
             }
         }
 
-    def test_no_gitmodules_is_clean(self, tmp_path):
-        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+    def test_no_cached_mirror_is_clean(self, tmp_path):
+        errors, warnings = validate_build_system_drift(self._pkg())
         assert errors == []
         assert warnings == []
 
-    def test_uninitialized_submodule_is_silently_skipped(self, tmp_path):
-        (tmp_path / ".gitmodules").write_text(
-            '[submodule "pkg"]\n\tpath = submodules/pkg\n'
-            "\turl = https://example.com/pkg\n"
-        )
-        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+    def test_uncached_mirror_is_silently_skipped(self, tmp_path):
+        errors, warnings = validate_build_system_drift(self._pkg())
         assert errors == []
         assert warnings == []
 
-    def test_no_matching_gitmodules_url_is_skipped(self, tmp_path):
-        self._gitmodules(tmp_path, "https://example.com/other")
-        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+    def test_other_urls_mirror_is_skipped(self, tmp_path):
+        self._cached(tmp_path, "https://example.com/other")
+        errors, warnings = validate_build_system_drift(self._pkg())
         assert errors == []
         assert warnings == []
 
     def test_unknown_build_system_is_skipped(self, tmp_path):
-        self._gitmodules(tmp_path, "https://example.com/pkg")
+        self._cached(tmp_path, "https://example.com/pkg")
         errors, warnings = validate_build_system_drift(
-            self._pkg(system="FIXME"), tmp_path
+            self._pkg(system="FIXME")
         )
         assert errors == []
         assert warnings == []
@@ -984,10 +957,10 @@ class TestValidateBuildSystemDrift:
     def test_unresolvable_tag_is_silently_skipped(
         self, mock_get_tag_info, mock_run_git, tmp_path
     ):
-        self._gitmodules(tmp_path, "https://example.com/pkg")
+        self._cached(tmp_path, "https://example.com/pkg")
         mock_get_tag_info.return_value = None
 
-        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        errors, warnings = validate_build_system_drift(self._pkg())
         assert errors == []
         assert warnings == []
         mock_run_git.assert_not_called()
@@ -995,13 +968,13 @@ class TestValidateBuildSystemDrift:
     @patch("lib.validation.run_git")
     @patch("lib.validation.get_tag_info")
     def test_marker_present_is_clean(self, mock_get_tag_info, mock_run_git, tmp_path):
-        self._gitmodules(tmp_path, "https://example.com/pkg")
+        self._cached(tmp_path, "https://example.com/pkg")
         mock_get_tag_info.return_value = {"tag": "v0.7.1"}
         mock_run_git.return_value = MagicMock(
             returncode=0, stdout="README.md\nmeson.build\nLICENSE\n"
         )
 
-        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        errors, warnings = validate_build_system_drift(self._pkg())
         assert errors == []
         assert warnings == []
 
@@ -1011,13 +984,13 @@ class TestValidateBuildSystemDrift:
         self, mock_get_tag_info, mock_run_git, tmp_path
     ):
         """The hyprland-protocols 0.7.1 case: meson.build gone, CMakeLists.txt added."""
-        self._gitmodules(tmp_path, "https://example.com/pkg")
+        self._cached(tmp_path, "https://example.com/pkg")
         mock_get_tag_info.return_value = {"tag": "v0.7.1"}
         mock_run_git.return_value = MagicMock(
             returncode=0, stdout="README.md\nCMakeLists.txt\nLICENSE\n"
         )
 
-        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        errors, warnings = validate_build_system_drift(self._pkg())
         assert errors == []
         assert len(warnings) == 1
         assert "'pkg'" in warnings[0]
@@ -1030,27 +1003,27 @@ class TestValidateBuildSystemDrift:
         self, mock_get_tag_info, mock_run_git, tmp_path
     ):
         """A repo mid-migration shipping both files is not drift."""
-        self._gitmodules(tmp_path, "https://example.com/pkg")
+        self._cached(tmp_path, "https://example.com/pkg")
         mock_get_tag_info.return_value = {"tag": "v0.7.1"}
         mock_run_git.return_value = MagicMock(
             returncode=0, stdout="meson.build\nCMakeLists.txt\n"
         )
 
-        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        errors, warnings = validate_build_system_drift(self._pkg())
         assert errors == []
         assert warnings == []
 
     @patch("lib.validation.run_git")
     def test_pinned_commit_uses_commit_hash_not_tag(self, mock_run_git, tmp_path):
         """A commit-tracked package resolves via source.commit.hash, no tag lookup."""
-        self._gitmodules(tmp_path, "https://example.com/pkg")
+        self._cached(tmp_path, "https://example.com/pkg")
         mock_run_git.return_value = MagicMock(returncode=0, stdout="CMakeLists.txt\n")
 
         packages = self._pkg(system="cmake")
         packages["pkg"]["source"] = {"commit": {"hash": "abc123"}}
         del packages["pkg"]["version"]
 
-        errors, warnings = validate_build_system_drift(packages, tmp_path)
+        errors, warnings = validate_build_system_drift(packages)
         assert errors == []
         assert warnings == []
         mock_run_git.assert_called_once()
@@ -1061,10 +1034,10 @@ class TestValidateBuildSystemDrift:
     def test_git_ls_tree_failure_is_silently_skipped(
         self, mock_get_tag_info, mock_run_git, tmp_path
     ):
-        self._gitmodules(tmp_path, "https://example.com/pkg")
+        self._cached(tmp_path, "https://example.com/pkg")
         mock_get_tag_info.return_value = {"tag": "v0.7.1"}
         mock_run_git.return_value = MagicMock(returncode=128, stdout="")
 
-        errors, warnings = validate_build_system_drift(self._pkg(), tmp_path)
+        errors, warnings = validate_build_system_drift(self._pkg())
         assert errors == []
         assert warnings == []

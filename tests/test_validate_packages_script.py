@@ -40,9 +40,8 @@ def _minimal_package(**overrides):
 @pytest.fixture
 def stub_environment(monkeypatch, tmp_path):
     """Stub every global check main() runs besides per-package validate_package
-    (group membership, duplicate urls, submodule url resolution, .gitmodules
-    conventions) so a test can exercise real per-package validation without a
-    real groups.yaml/.gitmodules on disk. Individual tests that care about one
+    (group membership, duplicate urls, upstream url conventions) so a test can
+    exercise real per-package validation without a real groups.yaml on disk. Individual tests that care about one
     of these can un-stub it.
     """
     monkeypatch.setattr(
@@ -52,17 +51,9 @@ def stub_environment(monkeypatch, tmp_path):
         validate_packages, "validate_no_duplicate_urls", lambda pkgs: ([], [])
     )
     monkeypatch.setattr(
-        validate_packages,
-        "validate_submodule_url_resolution",
-        lambda pkgs, mods: ([], []),
+        validate_packages, "validate_upstream_urls", lambda pkgs: ([], [])
     )
-    monkeypatch.setattr(validate_packages, "validate_gitmodules", lambda: ([], []))
     monkeypatch.setattr(validate_packages, "validate_env_file", lambda: [])
-    # No .gitmodules on disk -> main()'s `GITMODULES.exists()` guard short-circuits
-    # to an empty module list without needing a real file.
-    monkeypatch.setattr(
-        validate_packages, "GITMODULES", tmp_path / ".gitmodules-missing"
-    )
 
 
 def _set_packages(monkeypatch, packages):
@@ -174,13 +165,13 @@ class TestMainWiring:
     """
 
     def test_global_error_exits_nonzero(self, stub_environment, monkeypatch, capsys):
-        """A .gitmodules convention error (surfaced via validate_gitmodules,
-        stubbed here to simulate one) must fail the gate the same way a
-        per-package error does."""
+        """An upstream url error (surfaced via validate_upstream_urls, stubbed
+        here to simulate one) must fail the gate the same way a per-package
+        error does."""
         monkeypatch.setattr(
             validate_packages,
-            "validate_gitmodules",
-            lambda: (["submodule 'x' missing 'ignore = dirty'"], []),
+            "validate_upstream_urls",
+            lambda pkgs: (["package 'x' url 'git://x' is not https://"], []),
         )
         _set_packages(monkeypatch, {"pkg-a": _minimal_package()})
 
@@ -189,7 +180,7 @@ class TestMainWiring:
 
         assert exc_info.value.code != 0
         captured = capsys.readouterr()
-        assert "ignore = dirty" in captured.err
+        assert "not https://" in captured.err
 
     def test_global_warning_does_not_exit(self, stub_environment, monkeypatch, capsys):
         """A duplicate-url warning (see validate_no_duplicate_urls) is printed
@@ -224,37 +215,30 @@ class TestMainWiring:
         assert "SKIP_COPR" in captured.err
         assert "✓ packages.yaml validation passed" in captured.out
 
-    def test_submodule_url_mismatch_warns_but_does_not_exit(
+    def test_upstream_url_variants_warn_but_do_not_exit(
         self, stub_environment, monkeypatch, capsys
     ):
         """Real end-to-end wiring for the BUG-0013 url-mismatch check: main()
-        passes GITMODULES's parsed modules through to
-        validate_submodule_url_resolution (un-stubbed here) rather than
-        swallowing them."""
+        runs validate_upstream_urls (un-stubbed here) over the loaded packages."""
         import lib.validation as lib_validation
 
         monkeypatch.setattr(
             validate_packages,
-            "validate_submodule_url_resolution",
-            lib_validation.validate_submodule_url_resolution,
+            "validate_upstream_urls",
+            lib_validation.validate_upstream_urls,
         )
-        gitmodules = validate_packages.GITMODULES.parent / ".gitmodules-real"
-        gitmodules.write_text(
-            '[submodule "submodules/org/a"]\n'
-            "\tpath = submodules/org/a\n"
-            "\turl = https://github.com/org/a.git\n"
-        )
-        monkeypatch.setattr(validate_packages, "GITMODULES", gitmodules)
         _set_packages(
             monkeypatch,
-            {"pkg-a": _minimal_package(url="https://github.com/org/a")},
+            {
+                "pkg-a": _minimal_package(url="https://github.com/org/a"),
+                "pkg-b": _minimal_package(url="https://github.com/org/a.git"),
+            },
         )
 
         validate_packages.main()  # must not raise SystemExit
 
         captured = capsys.readouterr()
-        assert "pkg-a" in captured.err
-        assert "does not match any .gitmodules" in captured.err
+        assert "differing urls" in captured.err
         assert "✓ packages.yaml validation passed" in captured.out
 
 
@@ -290,11 +274,8 @@ class TestParity:
         )
         monkeypatch.setattr(
             validate_packages,
-            "validate_submodule_url_resolution",
-            _spy("validate_submodule_url_resolution"),
-        )
-        monkeypatch.setattr(
-            validate_packages, "validate_gitmodules", _spy("validate_gitmodules")
+            "validate_upstream_urls",
+            _spy("validate_upstream_urls"),
         )
         monkeypatch.setattr(
             validate_packages,
@@ -314,7 +295,6 @@ class TestParity:
             "validate_package": 1,
             "validate_group_membership": 1,
             "validate_no_duplicate_urls": 1,
-            "validate_submodule_url_resolution": 1,
-            "validate_gitmodules": 1,
+            "validate_upstream_urls": 1,
             "validate_env_file": 1,
         }

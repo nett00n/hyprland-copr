@@ -150,7 +150,7 @@ Order:
    half (bind-mount mock's resultdir) stays a separate, cheap follow-up, per
    the original plan — see `docs/CHANGELOG.md`'s `## Unreleased` section.
 2. **BUG-0100**. **Done** — every warn-and-continue site in `update-versions.py`
-   (plus `lib.gitmodules.fetch_tags()`'s own fetch/timeout failure, previously
+   (plus `lib.upstream.fetch_tags()`'s own fetch/timeout failure, previously
    indistinguishable from an upstream with no tags) now collects into one
    report: an aggregated stdout block, a `logs/.update-versions-failures.md`
    sentinel folded into `docs/nightly-summary.md`
@@ -166,7 +166,7 @@ Order:
    (snapshot vs. partial diff) — **BUG-0060's `db-export` from Epic 3 is the
    natural answer**, which is why it's sequenced after. **Done** — see
    `docs/CHANGELOG.md`'s `## Unreleased` section.
-5. **BUG-0101** — concurrency in `update-versions.py`'s per-submodule loop.
+5. **BUG-0101** — concurrency in `update-versions.py`'s per-upstream loop.
    Split from BUG-0100 as materially riskier (shared `.git/modules`); its
    aggregate reporting has shipped (item 2 above), so this can now show what
    broke. **Done** — see `docs/CHANGELOG.md`'s `## Unreleased` section.
@@ -256,8 +256,8 @@ Vendor + Makefile track:
    into memory. D1; `verify_download()` runs right after either way.
 9. **BUG-0092** — the vendor stage's missing `log` field on 5 skip paths. Decide
    first whether an empty-file log beats `NULL` for the report renderer.
-10. **BUG-0070 + BUG-0071** — move `add-submodule`/`add-new`/`delete-package`
-    logic out of Makefile recipes into `scripts/*.py` (untestable today), and in
+10. **BUG-0070 + BUG-0071** — move `delete-package`'s volume sweep
+    out of the Makefile recipe into `scripts/*.py` (untestable today), and in
     the same pass make `delete-package` unlink `local-repo/*/<pkg>-*.rpm` plus
     regenerate repo metadata. -0071 notes these RPMs are now *worse off* than
     before — they survive with no db row pointing at them.

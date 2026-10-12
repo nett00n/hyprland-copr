@@ -2,7 +2,7 @@
 """Stage 0: Validate packages.yaml entries.
 
 Checks required fields, deprecated sections, file placement, build_system
-validity, and .gitmodules conventions.
+validity, and upstream url conventions.
 
 Must be run inside the rpm toolbox container (invoked via Makefile).
 
@@ -19,15 +19,13 @@ import sys
 
 from lib import build_db
 from lib.config import env_flag, setup_logging
-from lib.gitmodules import parse_gitmodules
-from lib.paths import ARCH, DISTRO, GITMODULES, ROOT, resolve_target
+from lib.paths import ARCH, DISTRO, resolve_target
 from lib.reporting import event, status
 from lib.validation import (
-    validate_gitmodules,
     validate_group_membership,
     validate_no_duplicate_urls,
     validate_package,
-    validate_submodule_url_resolution,
+    validate_upstream_urls,
 )
 from lib.yaml_utils import apply_os_overrides, prepare_stage
 
@@ -79,7 +77,7 @@ def run_for_package(
 
 
 def run_global_checks(all_packages: dict, target: str) -> bool:
-    """Run global validation checks (group membership and .gitmodules).
+    """Run global validation checks (group membership and upstream urls).
 
     Returns True if all checks pass, False if any failed. Prints results;
     does not write any stage row (these checks aren't per-package).
@@ -107,28 +105,20 @@ def run_global_checks(all_packages: dict, target: str) -> bool:
     total_errors += len(dup_errors)
     total_warnings += len(dup_warnings)
 
-    # Warn when a package's url doesn't resolve to any .gitmodules submodule
-    # (see validate_submodule_url_resolution docstring, docs/BUGS.md BUG-0013)
-    modules = parse_gitmodules(GITMODULES) if GITMODULES.exists() else []
-    url_errors, url_warnings = validate_submodule_url_resolution(all_packages, modules)
+    # Validate the urls that key the upstream mirror cache (#COPR-0004,
+    # validate_upstream_urls docstring, docs/BUGS.md BUG-0013)
+    url_errors, url_warnings = validate_upstream_urls(all_packages)
+    if url_errors:
+        failed = True
+        status("validate", "upstream urls", "fail", target)
+        for e in url_errors:
+            print(f"    error: {e}")
+    else:
+        status("validate", "upstream urls", "ok", target)
     for w in url_warnings:
         print(f"    warn: {w}")
     total_errors += len(url_errors)
     total_warnings += len(url_warnings)
-
-    # Validate .gitmodules
-    gm_errors, gm_warnings = validate_gitmodules(ROOT)
-    if gm_errors:
-        failed = True
-        status("validate", ".gitmodules", "fail", target)
-        for e in gm_errors:
-            print(f"    error: {e}")
-    else:
-        status("validate", ".gitmodules", "ok", target)
-    for w in gm_warnings:
-        print(f"    warn: {w}")
-    total_errors += len(gm_errors)
-    total_warnings += len(gm_warnings)
 
     if total_warnings:
         print(f"\n  {total_warnings} warning(s) total")

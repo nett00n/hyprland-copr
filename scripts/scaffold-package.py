@@ -22,26 +22,31 @@ from lib.detection import (
     python_build_requires,
 )
 from lib.tarball import detect_tarball_source_name
-from lib.gitmodules import (
+from lib.paths import PACKAGES_YAML, ROOT
+from lib.upstream import (
+    UpstreamError,
     fetch_tags,
-    get_submodule_commit_with_base,
-    parse_gitmodules,
+    find_upstream,
+    get_commit_with_base,
     resolve_module,
+    sync_upstream,
+    upstream_entry,
 )
-from lib.paths import GITMODULES, PACKAGES_YAML, ROOT
 from lib.version import latest_semver
 from lib.yaml_config import DEFAULT as YAML_CONFIG
 from lib.yaml_utils import write_yaml_file
 
 
 def cmd_add(modules: list[dict], pkg_name: str) -> None:
-    """Extract info from a submodule repo and append a scaffold entry to packages.yaml."""
+    """Extract info from an upstream worktree and append a scaffold entry to packages.yaml."""
     mod = resolve_module(modules, pkg_name)
     if mod is None:
         print(
-            f"error: submodule '{pkg_name}' not found in .gitmodules", file=sys.stderr
+            f"error: upstream '{pkg_name}' not found in .cache/upstream "
+            "(pass --url <repo-url>)",
+            file=sys.stderr,
         )
-        print("available submodules:", file=sys.stderr)
+        print("available upstreams:", file=sys.stderr)
         for m in modules:
             print(f"  {Path(m['path']).name}", file=sys.stderr)
         sys.exit(1)
@@ -73,7 +78,7 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
             "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
         )
     else:
-        commit_info = get_submodule_commit_with_base(repo)
+        commit_info = get_commit_with_base(repo)
         if commit_info:
             full_hash, short_hash, date_str, base_semver = commit_info
             prefix = base_semver if base_semver else "0"
@@ -223,20 +228,30 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Scaffold a new packages.yaml entry from a submodule repo."
+        description="Scaffold a new packages.yaml entry from an upstream repo."
     )
     parser.add_argument(
         "package",
         metavar="PACKAGE",
-        help="submodule name, e.g. hyprpicker",
+        help="upstream repo name, e.g. hyprpicker",
+    )
+    parser.add_argument(
+        "--url",
+        help="git url to sync into .cache/upstream first (omit if already cached)",
     )
     args = parser.parse_args()
 
-    if not GITMODULES.exists():
-        print(f"error: {GITMODULES} not found", file=sys.stderr)
-        sys.exit(1)
-
-    modules = parse_gitmodules(GITMODULES)
+    # #COPR-0004: not in packages.yaml yet, so the registry is the cache itself.
+    mod = upstream_entry(args.url) if args.url else find_upstream(args.package)
+    modules = [mod] if mod else []
+    if mod is not None:
+        try:
+            sync_upstream(mod["url"])
+        except UpstreamError as exc:
+            print(
+                f"error: could not sync upstream {mod['url']}: {exc}", file=sys.stderr
+            )
+            sys.exit(1)
     cmd_add(modules, args.package)
 
 

@@ -25,37 +25,23 @@ class TestScaffoldPackageUrlHandling:
     """Test that scaffold-package.py and spec files handle .git URLs correctly."""
 
     def test_scaffold_preserves_git_suffix_in_url(self, tmp_path, monkeypatch):
-        """Should preserve .git suffix when scaffolding package from submodule."""
+        """The registry entry keeps the url exactly as given (incl. .git)."""
         from lib import paths
-        from lib.gitmodules import parse_gitmodules
+        from lib.upstream import upstream_entry
 
-        # Setup temp repo structure
         monkeypatch.setattr(paths, "ROOT", tmp_path)
-        monkeypatch.setattr(paths, "GITMODULES", tmp_path / ".gitmodules")
+        monkeypatch.setattr(paths, "UPSTREAM_DIR", tmp_path / ".cache" / "upstream")
         monkeypatch.setattr(paths, "PACKAGES_YAML", tmp_path / "packages.yaml")
 
-        # Create .gitmodules with .git suffix
-        gitmodules_content = """[submodule "submodules/example/test-pkg"]
-\tpath = submodules/example/test-pkg
-\turl = https://github.com/example/test-pkg.git
-"""
-        (tmp_path / ".gitmodules").write_text(gitmodules_content)
+        module = upstream_entry("https://github.com/example/test-pkg.git")
 
-        # Create submodule directory
-        pkg_path = tmp_path / "submodules" / "example" / "test-pkg"
-        pkg_path.mkdir(parents=True)
-
-        # Parse gitmodules to get the module
-        modules = parse_gitmodules(tmp_path / ".gitmodules")
-        assert len(modules) > 0
-
-        # Check that the URL is preserved with .git suffix
-        module = modules[0]
         assert module["url"] == "https://github.com/example/test-pkg.git"
         assert module["url"].endswith(".git")
+        assert module["name"] == "example/test-pkg"
+        assert module["path"] == ".cache/upstream/example/test-pkg"
 
     def test_packages_yaml_url_has_git_suffix(self):
-        """packages.yaml URLs should include .git suffix for consistency with .gitmodules."""
+        """packages.yaml URLs should include .git suffix for consistency with the upstream registry."""
         # This verifies the design principle that both sources keep .git
         url_with_suffix = "https://github.com/example/repo.git"
         assert url_with_suffix.endswith(".git")
@@ -78,7 +64,7 @@ class TestScaffoldPackageUrlHandling:
         assert archive_url == "https://github.com/example/repo/archive/refs/tags/v1.0.0.tar.gz"
 
     def test_url_consistency_packages_to_gitmodules(self):
-        """URLs in packages.yaml and .gitmodules should match (including .git)."""
+        """URLs in packages.yaml and the upstream registry should match (including .git)."""
         packages_yaml_url = "https://github.com/example/repo.git"
         gitmodules_url = "https://github.com/example/repo.git"
 
@@ -108,8 +94,8 @@ class TestScaffoldPackageCmdAdd:
         mock_license.return_value = "MIT"
         mock_build_system.return_value = "cmake"
 
-        # Create submodule directory
-        pkg_path = tmp_path / "submodules" / "example" / "testpkg"
+        # Create the upstream worktree directory
+        pkg_path = tmp_path / ".cache" / "upstream" / "example" / "testpkg"
         pkg_path.mkdir(parents=True)
 
         # Create minimal build files to avoid FIXME values
@@ -151,7 +137,7 @@ class TestScaffoldPackageCmdAdd:
         mock_license.return_value = "GPL-3.0-or-later"
         mock_build_system.return_value = "meson"
 
-        pkg_path = tmp_path / "submodules" / "org" / "mylib"
+        pkg_path = tmp_path / ".cache" / "upstream" / "org" / "mylib"
         pkg_path.mkdir(parents=True)
 
         modules = [{"path": str(pkg_path), "url": "https://github.com/org/mylib"}]
@@ -205,7 +191,7 @@ class TestScaffoldPackageCmdAdd:
         existing_data = {"existing_pkg": {"version": "1.0.0", "release": 1}}
         (tmp_path / "packages.yaml").write_text(yaml.dump(existing_data))
 
-        pkg_path = tmp_path / "submodules" / "rust" / "newpkg"
+        pkg_path = tmp_path / ".cache" / "upstream" / "rust" / "newpkg"
         pkg_path.mkdir(parents=True)
 
         modules = [{"path": str(pkg_path), "url": "https://github.com/rust/newpkg"}]
@@ -238,7 +224,7 @@ class TestScaffoldPackageCmdAdd:
         existing_data = {"dupkg": {"version": "1.0.0"}}
         (tmp_path / "packages.yaml").write_text(yaml.dump(existing_data))
 
-        pkg_path = tmp_path / "submodules" / "org" / "dupkg"
+        pkg_path = tmp_path / ".cache" / "upstream" / "org" / "dupkg"
         pkg_path.mkdir(parents=True)
 
         modules = [{"path": str(pkg_path), "url": "https://github.com/org/dupkg"}]
@@ -265,7 +251,7 @@ class TestScaffoldPackageCmdAdd:
         mock_license.return_value = "MIT"
         mock_build_system.return_value = "golang"
 
-        pkg_path = tmp_path / "submodules" / "cli" / "gocli"
+        pkg_path = tmp_path / ".cache" / "upstream" / "cli" / "gocli"
         pkg_path.mkdir(parents=True)
 
         modules = [{"path": str(pkg_path), "url": "https://github.com/cli/gocli"}]
@@ -277,3 +263,62 @@ class TestScaffoldPackageCmdAdd:
 
         # Should include %{_bindir}/gocli for golang
         assert any("%{_bindir}/gocli" in f for f in files)
+
+
+class TestMainSyncsUpstream:
+    """#COPR-0004: main() syncs the mirror before scaffolding."""
+
+    def _run(self, monkeypatch, argv, **patches):
+        import sys
+
+        scaffold = _import_scaffold_module()
+        monkeypatch.setattr(sys, "argv", ["scaffold-package.py", *argv])
+        calls = {}
+        monkeypatch.setattr(
+            scaffold, "sync_upstream", lambda url, *a: calls.setdefault("sync", url)
+        )
+        monkeypatch.setattr(
+            scaffold, "cmd_add", lambda modules, name: calls.update(add=(modules, name))
+        )
+        for name, value in patches.items():
+            monkeypatch.setattr(scaffold, name, value)
+        scaffold.main()
+        return calls
+
+    def test_url_flag_syncs_that_url(self, monkeypatch):
+        url = "https://github.com/org/pkg"
+        calls = self._run(monkeypatch, ["pkg", "--url", url])
+        assert calls["sync"] == url
+        modules, name = calls["add"]
+        assert name == "pkg"
+        assert modules[0]["url"] == url
+
+    def test_cached_name_is_looked_up(self, monkeypatch):
+        entry = {"name": "org/pkg", "path": ".cache/upstream/org/pkg", "url": "u"}
+        calls = self._run(monkeypatch, ["pkg"], find_upstream=lambda name: entry)
+        assert calls["sync"] == "u"
+        assert calls["add"] == ([entry], "pkg")
+
+    def test_unknown_name_without_url_reports_through_cmd_add(self, monkeypatch):
+        calls = self._run(monkeypatch, ["nope"], find_upstream=lambda name: None)
+        assert "sync" not in calls
+        assert calls["add"] == ([], "nope")
+
+    def test_sync_failure_exits_nonzero(self, monkeypatch, capsys):
+        import sys
+
+        import pytest
+
+        scaffold = _import_scaffold_module()
+        monkeypatch.setattr(
+            sys, "argv", ["scaffold-package.py", "pkg", "--url", "https://x/o/pkg"]
+        )
+
+        def boom(url, *a):
+            raise scaffold.UpstreamError("network down")
+
+        monkeypatch.setattr(scaffold, "sync_upstream", boom)
+        with pytest.raises(SystemExit) as exc:
+            scaffold.main()
+        assert exc.value.code == 1
+        assert "network down" in capsys.readouterr().err

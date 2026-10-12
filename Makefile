@@ -169,7 +169,7 @@ LOCK_DISABLE ?= # bypass for hosts without flock, or a deliberate parallel run
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-submodule add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr copr-wait stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export db-export-docs check-docs-drift db-nuke submodules-update submodules-purge sync-hard-reset
+.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr copr-wait stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export db-export-docs check-docs-drift db-nuke upstream-sync upstream-clean sync-hard-reset
 
 save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
 	@mkdir -p logs
@@ -198,39 +198,33 @@ clean-all: clean-logs clean-localrepo ## Clean logs, local repo, and mock cache;
 
 clean: save-last-build clean-logs ## Remove build logs (saves last build first)
 
-submodules-update: ## Sync submodule working trees to the commit recorded in git (safe, does not touch the main repo)
-	@git submodule sync --recursive
-	@git submodule update --init --recursive --force
-	@echo $(HIGHLIGHT_PREFIX) "✓ Submodules synced to git-tracked state"
+upstream-sync: check-image check-venv setup-volumes ## (Re)build the disposable upstream mirror cache under .cache/upstream (bare mirrors + detached worktrees, #COPR-0004); UPDATE_VERSIONS_JOBS=<n> sets parallelism
+	$(CONTAINER_PYTHON) scripts/upstream-sync.py
 
-submodules-purge: ## Deinit and wipe all submodule working trees + cached git data (irreversible; confirmation required; re-run submodules-update to restore)
-	@printf "$(HIGHLIGHT_PREFIX) Purge all submodule working trees and cached git data? [y/N] "; \
+upstream-clean: ## Delete the upstream mirror cache (.cache/upstream); it holds no state, `make upstream-sync` or `make update-versions` rebuilds it (confirmation required)
+	@printf "$(HIGHLIGHT_PREFIX) Delete .cache/upstream (all mirrors + worktrees)? [y/N] "; \
 		read ans; \
 		[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "$(HIGHLIGHT_PREFIX) Aborted."; exit 1; }
-	@git submodule deinit -f --all
-	@rm -rf .git/modules/submodules
-	@echo $(HIGHLIGHT_PREFIX) "✓ Purged submodule working trees and cached data"
+	@rm -rf .cache/upstream
+	@echo $(HIGHLIGHT_PREFIX) "✓ Removed .cache/upstream"
 
-sync-hard-reset: ## Hard-reset repo+submodules to origin/<current branch>, stashing/reapplying uncommitted main-repo changes; keeps .env* and build-report.db/.yaml (ignored, so `clean -x` would otherwise purge them) (resolves submodule conflicts; confirmation required)
-	@printf "$(HIGHLIGHT_PREFIX) Hard-reset repo and all submodules to origin/$$(git branch --show-current)? [y/N] "; \
+sync-hard-reset: ## Hard-reset repo to origin/<current branch>, stashing/reapplying uncommitted main-repo changes; keeps .env* and build-report.db/.yaml (ignored, so `clean -x` would otherwise purge them) (confirmation required)
+	@printf "$(HIGHLIGHT_PREFIX) Hard-reset repo to origin/$$(git branch --show-current)? [y/N] "; \
 		read ans; \
 		[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "$(HIGHLIGHT_PREFIX) Aborted."; exit 1; }
 	@branch=$$(git branch --show-current); \
 		stashed=0; \
-		if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$$(git status --porcelain --untracked-files=normal -- . ':!submodules')" ]; then \
+		if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$$(git status --porcelain --untracked-files=normal)" ]; then \
 			git stash push -u -m "pre-reset-backup-$$(date +%s)" || exit 1; \
 			stashed=1; \
 		fi; \
 		git fetch origin || exit 1; \
 		git reset --hard "origin/$$branch" || exit 1; \
-		git clean -ffdx -e '.env' -e '.env.*' -e 'build-report.db' -e 'build-report.db-*' -e 'build-report.yaml' -e 'build-report.*.yaml' || exit 1; \
-		git submodule sync --recursive || exit 1; \
-		git submodule update --init --recursive --force || exit 1; \
-		git submodule foreach --recursive 'git clean -ffdx' || exit 1; \
+		git clean -ffdx -e '.env' -e '.env.*' -e 'build-report.db' -e 'build-report.db-*' -e 'build-report.yaml' -e 'build-report.*.yaml' -e '.cache' || exit 1; \
 		if [ "$$stashed" -eq 1 ]; then \
 			git stash pop || (echo "$(HIGHLIGHT_PREFIX) ✗ stash pop conflict -- resolve manually, changes remain in git stash list"; exit 1); \
 		fi; \
-		echo $(HIGHLIGHT_PREFIX) "✓ Repo and submodules reset to origin/$$branch"
+		echo $(HIGHLIGHT_PREFIX) "✓ Repo reset to origin/$$branch"
 
 # Prerequisite checks - fail fast on missing dependencies
 check-image: ## Verify the (single, version-independent) container image exists (no-op under NO_CONTAINER=1)
@@ -285,10 +279,10 @@ help: ## Show this help
 	@echo "    make clean-localrepo    # Clear local repo RPMs (resolve conflicts)"
 	@echo "    make clean-all          # Remove logs and local repo"
 	@echo ""
-	@echo "  Submodules / git sync:"
-	@echo "    make submodules-update  # Sync submodules to git-tracked state (safe)"
-	@echo "    make submodules-purge   # Deinit + wipe all submodule working trees (destructive)"
-	@echo "    make sync-hard-reset    # Hard-reset repo+submodules to origin (destructive; resolves conflicts)"
+	@echo "  Upstream mirror cache / git sync:"
+	@echo "    make upstream-sync      # (Re)build .cache/upstream mirrors + worktrees (safe)"
+	@echo "    make upstream-clean     # Delete .cache/upstream (disposable; no state)"
+	@echo "    make sync-hard-reset    # Hard-reset repo to origin (destructive)"
 	@echo ""
 	@echo "  Build artifact tracking (build-report.db):"
 	@echo "    make db-usage           # Disk usage by package/target (VERIFY=1: flag corruption)"
@@ -342,7 +336,7 @@ fmt-ruff: install-dev ## Run ruff format on scripts
 fmt-yaml: check-image check-venv setup-volumes ## Format YAML files with consistent style
 	$(call run_with_result,$(CONTAINER_PYTHON) scripts/format-yaml.py '*.yaml',YAML format applied,YAML format failed)
 
-validate-packages: check-venv ## Validate packages.yaml and .gitmodules structure (fast, no container)
+validate-packages: check-venv ## Validate packages.yaml structure (fast, no container)
 	@$(PYTHON) scripts/validate-packages.py
 
 pre-commit: check-venv validate-packages ## Run all checks and formatting (test + lint + fmt). Use COVERAGE=1 to include coverage report
@@ -354,59 +348,32 @@ pre-commit: check-venv validate-packages ## Run all checks and formatting (test 
 
 UPDATE_VERSIONS_JOBS ?= 8
 
-update-versions: check-image check-venv setup-volumes ## Fetch latest semver tags from submodules and update packages.yaml. UPDATE_VERSIONS_JOBS=<n> (default 8; 1 = serial, #BUG-0101)
+update-versions: check-image check-venv setup-volumes ## Fetch latest semver tags from the upstream mirrors and update packages.yaml. UPDATE_VERSIONS_JOBS=<n> (default 8; 1 = serial, #BUG-0101)
 	$(CONTAINER_RUN) env UPDATE_VERSIONS_JOBS=$(UPDATE_VERSIONS_JOBS) \
 		/work/.venv/bin/python3 scripts/update-versions.py
 
-list-tags: check-image check-venv setup-volumes ## List all tags for submodules, highlighting latest semver (PACKAGE=<name>, single package only, for one)
+list-tags: check-image check-venv setup-volumes ## List all tags for upstreams, highlighting latest semver (PACKAGE=<name>, single package only, for one)
 	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
 	$(CONTAINER_PYTHON) scripts/list-tags.py $(PACKAGE)
 
-scaffold-package: check-image check-venv setup-volumes ## Scaffold a new packages.yaml entry from a submodule (PACKAGE=<name> required, single package only)
+scaffold-package: check-image check-venv setup-volumes ## Scaffold a new packages.yaml entry from a cached upstream (PACKAGE=<name> required, single package only; URL=<repo-url> syncs it first)
 	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
-	$(CONTAINER_PYTHON) scripts/scaffold-package.py $(PACKAGE)
+	$(CONTAINER_PYTHON) scripts/scaffold-package.py $(PACKAGE) $(if $(URL),--url $(URL),)
 	$(MAKE) fmt
 
-add-submodule: check-image check-venv setup-volumes ## Register git submodule for an existing package (PACKAGE=<name> required, single package only)
-	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE is required"; exit 1)
-	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
-	@_url=$$($(CONTAINER_PYTHON) -c "import yaml; d=yaml.safe_load(open('packages.yaml')); print(d['$(PACKAGE)']['url'])" 2>&1) || \
-		(echo "$(HIGHLIGHT_PREFIX) Error: Failed to read URL for $(PACKAGE) from packages.yaml"; exit 1); \
-	 _name=$$(basename $$_url); \
-	 _org=$$(basename $$(dirname $$_url)); \
-	 echo $(HIGHLIGHT_PREFIX) "adding submodule submodules/$$_org/$$_name"; \
-	 git submodule add $$_url submodules/$$_org/$$_name || exit 1; \
-	 git config -f .gitmodules submodule.submodules/$$_org/$$_name.ignore dirty || exit 1; \
-	 echo $(HIGHLIGHT_PREFIX) "✓ configured ignore=dirty for submodule"
-
-add-new: check-image check-venv setup-volumes ## Add submodule from URL and scaffold packages.yaml entry in one step (URL=<repo-url> required)
+add-new: check-image check-venv setup-volumes ## Sync the upstream mirror from URL and scaffold the packages.yaml entry in one step (URL=<repo-url> required)
 	@test -n "$(URL)" || (echo "$(HIGHLIGHT_PREFIX) Error: URL is required (e.g. URL=https://github.com/hyprwm/hyprpicker)"; exit 1)
 	@echo "$(URL)" | grep -qE '^https?://' || (echo "$(HIGHLIGHT_PREFIX) Error: URL must be http:// or https://, not git:// or other schemes"; exit 1)
 	@_name=$$(basename $(URL:.git=)); \
-	 _org=$$(basename $$(dirname $(URL))); \
-	 git submodule add $(URL) submodules/$$_org/$$_name || exit 1; \
-	 git config -f .gitmodules submodule.submodules/$$_org/$$_name.ignore dirty || exit 1; \
-	 $(CONTAINER_PYTHON) scripts/scaffold-package.py $$_name || exit 1
+	 $(CONTAINER_PYTHON) scripts/scaffold-package.py $$_name --url $(URL) || exit 1
 	$(MAKE) fmt
 
-delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, groups.yaml, sources.lock.yaml, build-report.db, logs/runs/*/*/<name>, packages/, submodules, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required, single package only)
+delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, groups.yaml, sources.lock.yaml, build-report.db, logs/runs/*/*/<name>, packages/, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required, single package only)
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PKG or PACKAGE is required (e.g. PKG=hyprpicker)"; exit 1)
 	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
 	@echo "$(HIGHLIGHT_PREFIX) Removing package '$(PACKAGE)'..."
 	@$(CONTAINER_PYTHON) scripts/delete-package.py $(PACKAGE)
 	@rm -rf packages/$(PACKAGE)
-	@_path=$$(git config -f .gitmodules --get-regexp '^submodule\.' | grep -E 'path\s' | grep '/$(PACKAGE)$$' | cut -d' ' -f2); \
-	 if [ -n "$$_path" ]; then \
-	   _sec=$$(git config -f .gitmodules --get-regexp '^submodule\.' | grep -E 'path\s' | grep '/$(PACKAGE)$$' | sed 's/submodule\.\(.*\)\.path.*/\1/'); \
-	   if [ -n "$$_sec" ]; then \
-	     git reset HEAD $$_path || exit 1; \
-	     git config -f .gitmodules --remove-section submodule.$$_sec || exit 1; \
-	     git add .gitmodules || exit 1; \
-	     git rm --cached $$_path || exit 1; \
-	     rm -rf $$_path .git/modules/$$_path || exit 1; \
-	     echo "$(HIGHLIGHT_PREFIX) Removed git submodule: $$_path"; \
-	   fi; \
-	 fi
 	@if $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(RPMBUILD_VOLUME) >/dev/null 2>&1; then \
 	  $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(RPMBUILD_MOUNT) $(IMAGE_NAME) \
 	    rm -rf /root/rpmbuild/SOURCES/$(PACKAGE)-* /root/rpmbuild/SRPMS/$(PACKAGE)-* /root/rpmbuild/RPMS/*/$(PACKAGE)-* || exit 1; \
@@ -732,7 +699,7 @@ _update-daily:
 	@# (formerly BUG-0041). pkg-log-analysis.py exits non-zero when it finds
 	@# issues (not an error), so this must not abort the recipe.
 	$(MAKE) stage-log-analyze LOG_SUMMARY_OUTPUT=docs/nightly-summary.md || true
-	git add packages.yaml packages/ submodules/ sources.lock.yaml README.md docs/README.copr.md docs/full-report.md $(DOCS_SNAPSHOT) || exit 1
+	git add packages.yaml packages/ sources.lock.yaml README.md docs/README.copr.md docs/full-report.md $(DOCS_SNAPSHOT) || exit 1
 	@[ -f docs/nightly-summary.md ] && git add docs/nightly-summary.md || true
 	@if git diff --cached --quiet; then \
 		echo "$(HIGHLIGHT_PREFIX) Nothing to commit (no version/doc changes tonight)."; \

@@ -151,10 +151,9 @@ distro/arch-agnostic build-target work itself is tracked as a feature, not here 
   it's a `$(shell)` evaluated at parse time on *every* make invocation, so a naive
   swap to python adds interpreter startup to every target -- needs a cache, not a
   straight swap [P2/D1]
-- #BUG-0070 `add-submodule`/`add-new` still embed real logic (yaml edits, git
-  submodule surgery) directly in Makefile recipes (`Makefile:330-349`) instead of
-  scripts/*.py -> untestable by pytest. `delete-package` still holds submodule surgery
-  and the volume sweep in the recipe after its script call (`Makefile:356-376`).
+- #BUG-0070 `delete-package` still holds the volume sweep in the Makefile recipe
+  after its script call -> untestable by pytest. (The `add-submodule`/`add-new`/
+  `delete-package` git-submodule surgery went away with the submodules, #COPR-0004.)
   `scaffold-package` is already done -- it fully delegates to
   `scripts/scaffold-package.py`, which is tested [P2/D3]
 
@@ -222,9 +221,10 @@ distro/arch-agnostic build-target work itself is tracked as a feature, not here 
   boundaries: `lib/yaml_utils.py:33`, `lib/github.py:54,121`. The annotation is
   the fake here -- the caller sees `str`, the value is `Any`. Fix: typed loader
   wrappers that validate at the parse boundary, after which the annotations
-  become true. `gen-spec.py:410`'s `url_to_submodule: dict[str, object]` is the
-  same tell in the other direction -- values are `Path`, declared `object`, and
-  the parameter receiving it (`gen-spec.py:214`) is a bare `dict` [P2/D3]
+  become true. `gen-spec.py`'s `url_to_mirror` map was the same tell in the other
+  direction (values are `Path`, declared `object`); the local is now typed
+  `dict[str, Path]`, but the parameter receiving it (`gen-spec.py:214`) is still a
+  bare `dict` [P2/D3]
 
 ## Chores
 

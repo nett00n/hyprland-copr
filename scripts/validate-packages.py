@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate packages.yaml and .gitmodules for configuration issues.
+"""Validate packages.yaml for configuration issues.
 
 Thin front-end over lib.validation -- the same validator scripts/stage-validate.py
 runs as the real build's stage 0. The two used to be independently-diverged
@@ -15,38 +15,34 @@ Checks (see lib.validation for the authoritative list):
 - Unknown auto_update.release_type values
 - fedora: override blocks only using the supported `skip` key
 - Group membership
-- .gitmodules conventions: submodules/ path prefix, https:// urls,
-  ignore = dirty
-- A package's url not matching any .gitmodules submodule url (warning only)
+- Upstream urls (the keys of the .cache/upstream mirror cache, #COPR-0004): https://
+  only; differing urls that map to one mirror (e.g. a .git suffix mismatch) warn
 - .env assigning the same key more than once (warning only; #BUG-0052)
 - No duplicate/misfiled #BUG-/#TODO- tracker IDs in docs/BUGS.md, docs/TODO.md
   (#BUG-0073)
 - A commit-tracked package outrunning a tag-pinned depends_on (warning only,
   offline; #BUG-0056)
 - A declared build.system whose marker file (CMakeLists.txt, meson.build, ...) is
-  missing from the submodule's tagged tree (warning only, offline; #BUG-0105)
+  missing from the upstream mirror's tagged tree (warning only, offline; #BUG-0105)
 """
 
 import sys
 
-from lib.gitmodules import parse_gitmodules
-from lib.paths import GITMODULES
 from lib.validation import (
     validate_build_system_drift,
     validate_dependency_drift,
     validate_env_file,
-    validate_gitmodules,
     validate_group_membership,
     validate_no_duplicate_urls,
     validate_package,
-    validate_submodule_url_resolution,
+    validate_upstream_urls,
     validate_tracker_ids,
 )
 from lib.yaml_utils import get_packages
 
 
 def main() -> None:
-    """Validate packages.yaml and .gitmodules. #COPR-0010"""
+    """Validate packages.yaml. #COPR-0010"""
     packages = get_packages()
 
     errors: list[str] = []
@@ -65,13 +61,9 @@ def main() -> None:
     errors.extend(f"  {e}" for e in dup_errors)
     warnings.extend(f"  {w}" for w in dup_warnings)
 
-    modules = parse_gitmodules(GITMODULES) if GITMODULES.exists() else []
-    url_errors, url_warnings = validate_submodule_url_resolution(packages, modules)
+    url_errors, url_warnings = validate_upstream_urls(packages)
     errors.extend(f"  {e}" for e in url_errors)
     warnings.extend(f"  {w}" for w in url_warnings)
-
-    gitmodules_errors, gitmodules_warnings = validate_gitmodules()
-    warnings.extend(f"  {w}" for w in gitmodules_warnings)
 
     warnings.extend(f"  {w}" for w in validate_env_file())
 
@@ -89,21 +81,12 @@ def main() -> None:
             print(err, file=sys.stderr)
         sys.exit(1)
 
-    if gitmodules_errors:
-        print("error: .gitmodules validation failed:", file=sys.stderr)
-        for err in gitmodules_errors:
-            print(f"  {err}", file=sys.stderr)
-        sys.exit(1)
-
     if warnings:
-        print(
-            "warning: packages.yaml/.gitmodules validation warning(s):", file=sys.stderr
-        )
+        print("warning: packages.yaml validation warning(s):", file=sys.stderr)
         for warn in warnings:
             print(warn, file=sys.stderr)
 
     print("✓ packages.yaml validation passed")
-    print("✓ .gitmodules validation passed")
 
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ rather than silently staying "cached" (#BUG-0064).
 
 | Stage | What it does |
 | --- | --- |
-| validate | packages.yaml entry + `.gitmodules` sanity |
+| validate | packages.yaml entry + upstream url sanity |
 | spec | render `packages/<name>/<name>.spec` from `templates/spec.j2` |
 | vendor | Go/Rust dependency tarball (no-op for other build systems) |
 | srpm | download sources, verify checksums, build the SRPM |

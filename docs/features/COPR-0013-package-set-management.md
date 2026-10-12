@@ -15,7 +15,7 @@ command.
 | --- | --- |
 | `make list-tags PACKAGE=<name>` | list upstream tags, highlighting latest semver |
 | `make set-release PACKAGE=<name> RELEASE=<n> [LOCK=1]` | set (and optionally lock) a release |
-| `make delete-package PACKAGE=<name>` | remove from `packages.yaml`, `groups.yaml`, `sources.lock.yaml`, `build-report.db`, `logs/build`, `packages/`, submodules, container rpmbuild dirs |
+| `make delete-package PACKAGE=<name>` | remove from `packages.yaml`, `groups.yaml`, `sources.lock.yaml`, `build-report.db`, `logs/build`, `packages/`, container rpmbuild dirs |
 
 ## Implementation
 
@@ -29,10 +29,11 @@ command.
   pointing at them anymore, worse off than before the ledger cleanup existed.
   Proposed: glob-and-unlink plus `regenerate_repo_metadata` per touched target.
   (BUG-0071)
-- Quirk: `delete-package` still holds submodule surgery and the volume sweep directly
-  in the Makefile recipe after its script call, untestable by pytest.
+- Quirk: `delete-package` still holds the volume sweep directly in the Makefile
+  recipe after its script call, untestable by pytest.
   Proposed: move into `scripts/*.py`, same as [COPR-0001](COPR-0001-add-package-from-url.md)'s
-  quirk about `add-submodule`/`add-new`. (BUG-0070)
+  quirk. (BUG-0070; the submodule surgery went away with the submodules. A cached
+  mirror under `.cache/upstream` is left in place: it is disposable and shared by url.)
 
 ## Testing
 

@@ -107,10 +107,10 @@ class TestStageValidate:
 
         with (
             patch.object(stage_validate, "validate_group_membership") as mock_group,
-            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+            patch.object(stage_validate, "validate_upstream_urls") as mock_urls,
         ):
             mock_group.return_value = ([], [])
-            mock_gitmodules.return_value = ([], [])
+            mock_urls.return_value = ([], [])
 
             result = run_global_checks(all_packages, "fedora-43-x86_64")
 
@@ -122,25 +122,25 @@ class TestStageValidate:
 
         with (
             patch.object(stage_validate, "validate_group_membership") as mock_group,
-            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+            patch.object(stage_validate, "validate_upstream_urls") as mock_urls,
         ):
             mock_group.return_value = (["Group error"], [])
-            mock_gitmodules.return_value = ([], [])
+            mock_urls.return_value = ([], [])
 
             result = run_global_checks(all_packages, "fedora-43-x86_64")
 
         assert result is False
 
-    def test_run_global_checks_with_gitmodules_errors(self):
-        """Test global checks fail when gitmodules has errors."""
+    def test_run_global_checks_with_upstream_url_errors(self):
+        """Test global checks fail when upstream urls have errors."""
         all_packages = {}
 
         with (
             patch.object(stage_validate, "validate_group_membership") as mock_group,
-            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+            patch.object(stage_validate, "validate_upstream_urls") as mock_urls,
         ):
             mock_group.return_value = ([], [])
-            mock_gitmodules.return_value = (["Gitmodules error"], [])
+            mock_urls.return_value = (["Upstream url error"], [])
 
             result = run_global_checks(all_packages, "fedora-43-x86_64")
 
@@ -152,10 +152,10 @@ class TestStageValidate:
 
         with (
             patch.object(stage_validate, "validate_group_membership") as mock_group,
-            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+            patch.object(stage_validate, "validate_upstream_urls") as mock_urls,
         ):
             mock_group.return_value = ([], ["Group warning"])
-            mock_gitmodules.return_value = ([], ["Gitmodules warning"])
+            mock_urls.return_value = ([], ["Upstream url warning"])
 
             result = run_global_checks(all_packages, "fedora-43-x86_64")
 
@@ -163,27 +163,18 @@ class TestStageValidate:
         captured = capsys.readouterr()
         assert "2 warning(s) total" in captured.out
 
-    def test_run_global_checks_warns_on_unresolvable_submodule_url(self, capsys):
-        """Regression test for BUG-0013: a package url that doesn't match any
-        .gitmodules submodule url warns (doesn't fail the build), surfacing
-        the exact drift that let Waybar-git's auto_update silently never fire.
+    def test_run_global_checks_warns_on_upstream_url_variants(self, capsys):
+        """Regression test for BUG-0013: two urls for one upstream (a stray or
+        missing .git) warn (don't fail the build), surfacing the drift that let
+        Waybar-git's auto_update silently never fire.
         """
-        all_packages = {"Waybar-git": {"url": "https://github.com/Alexays/Waybar"}}
+        all_packages = {
+            "Waybar": {"url": "https://github.com/Alexays/Waybar.git"},
+            "Waybar-git": {"url": "https://github.com/Alexays/Waybar"},
+        }
 
-        with (
-            patch.object(stage_validate, "validate_group_membership") as mock_group,
-            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
-            patch.object(stage_validate, "parse_gitmodules") as mock_parse,
-        ):
+        with patch.object(stage_validate, "validate_group_membership") as mock_group:
             mock_group.return_value = ([], [])
-            mock_gitmodules.return_value = ([], [])
-            mock_parse.return_value = [
-                {
-                    "name": "submodules/Alexays/Waybar",
-                    "path": "submodules/Alexays/Waybar",
-                    "url": "https://github.com/Alexays/Waybar.git",
-                }
-            ]
 
             result = run_global_checks(all_packages, "fedora-43-x86_64")
 
@@ -191,16 +182,16 @@ class TestStageValidate:
         captured = capsys.readouterr()
         assert "Waybar-git" in captured.out
 
-    def test_run_global_checks_with_both_group_and_gitmodules_errors(self):
-        """Test global checks fail when both group and gitmodules have errors."""
+    def test_run_global_checks_with_both_group_and_upstream_url_errors(self):
+        """Test global checks fail when both group and upstream urls have errors."""
         all_packages = {}
 
         with (
             patch.object(stage_validate, "validate_group_membership") as mock_group,
-            patch.object(stage_validate, "validate_gitmodules") as mock_gitmodules,
+            patch.object(stage_validate, "validate_upstream_urls") as mock_urls,
         ):
             mock_group.return_value = (["Group error 1"], [])
-            mock_gitmodules.return_value = (["Gitmodules error 1"], [])
+            mock_urls.return_value = (["Upstream url error 1"], [])
 
             result = run_global_checks(all_packages, "fedora-43-x86_64")
 

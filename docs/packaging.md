@@ -72,9 +72,9 @@ buildroot without file conflicts — e.g. `libcava` (1.0.0) / `libcava-v0` (0.10
 sharing `url: https://github.com/LukashonakV/cava`, or `glaze` (8.x) / `glaze7`
 (7.x) sharing `url: https://github.com/stephenberry/glaze`.
 
-Both entries point at the same `url`, so both resolve to the same git submodule
-(submodules are keyed by upstream url, not by package name) — no second
-`git submodule add` needed. `make stage-validate` warns on the shared `url`
+Both entries point at the same `url`, so both resolve to the same upstream mirror
+(`.cache/upstream` is keyed by upstream url, not by package name) — nothing extra to
+register. `make stage-validate` warns on the shared `url`
 (`validate_no_duplicate_urls`, `lib/validation.py`); that warning is expected and
 is the marker that a pair is a deliberate compat package rather than an accidental
 duplicate.
@@ -195,7 +195,7 @@ compiles a *different* extraction of the pristine tarball and would otherwise tr
 the excluded member too.
 
 Vendoring always runs against a downloaded, hash-pinned tarball in a scratch tmpdir — it never
-touches `submodules/`, for either language.
+touches `.cache/upstream/`, for either language.
 
 `make stage-mock` disables `rpmbuild_networking`/`use_host_resolv` for the local chroot, so an
 incomplete vendor tree fails locally instead of only on COPR.

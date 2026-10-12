@@ -23,11 +23,16 @@ from lib import build_db
 from lib.build_systems import BUILD_SYSTEMS
 from lib.config import env_flag, get_packager, setup_logging
 from lib.github import build_changelog
-from lib.gitmodules import get_changelog_info, parse_gitmodules, resolve_module
 from lib.jinja_utils import create_jinja_env
 from lib.paths import ARCH, DISTRO, ROOT, get_package_log_dir, resolve_target
 from lib.reporting import event, status
 from lib.spec_utils import process_archive_urls
+from lib.upstream import (
+    get_changelog_info,
+    list_upstreams,
+    mirror_path,
+    resolve_module,
+)
 from lib.version import nvr
 from lib.yaml_utils import (
     apply_os_overrides,
@@ -87,21 +92,17 @@ def generate_spec(
         build = pkg_meta.get("build", {})
         rpm = pkg_meta.get("rpm", {})
 
-        # Build changelog info from submodule if available
+        # Build changelog info from the upstream mirror if cached (#COPR-0004)
         changelog_info = None
-        if (ROOT / ".gitmodules").exists():
-            gitmodules = parse_gitmodules(ROOT / ".gitmodules")
-            module = resolve_module(gitmodules, pkg)
-            if module:
-                submodule_path = ROOT / module["path"]
-                version = str(pkg_meta.get("version", ""))
-                commit_meta = source.get("commit")
-                commit_hash = (
-                    commit_meta.get("full") if isinstance(commit_meta, dict) else None
-                )
-                changelog_info = get_changelog_info(
-                    submodule_path, version, commit_hash
-                )
+        module = resolve_module(list_upstreams(all_packages), pkg)
+        if module:
+            mirror_dir = mirror_path(module["url"])
+            version = str(pkg_meta.get("version", ""))
+            commit_meta = source.get("commit")
+            commit_hash = (
+                commit_meta.get("full") if isinstance(commit_meta, dict) else None
+            )
+            changelog_info = get_changelog_info(mirror_dir, version, commit_hash)
 
         # Build changelog object (simplified version of gen-spec.py)
         release = pkg_meta.get("release", 1)

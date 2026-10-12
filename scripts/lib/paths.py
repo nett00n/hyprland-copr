@@ -9,7 +9,9 @@ PACKAGES_YAML = ROOT / "packages.yaml"
 REPO_YAML = ROOT / "repo.yaml"
 GROUPS_YAML = ROOT / "groups.yaml"
 SOURCES_LOCK = ROOT / "sources.lock.yaml"
-GITMODULES = ROOT / ".gitmodules"
+# #COPR-0004: disposable, gitignored cache of bare mirrors + detached worktrees,
+# one pair per distinct packages.yaml `url` (replaces the old git submodules).
+UPSTREAM_DIR = ROOT / ".cache" / "upstream"
 LOG_DIR = ROOT / "logs"
 # #COPR-0022: build logs nest under a run identifier (build_db `runs.id`) and
 # the build target, so a failed run's evidence survives the next run instead

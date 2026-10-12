@@ -19,14 +19,13 @@ def fake_repo(tmp_path, monkeypatch):
     - root: repo root
     - packages_yaml: path to packages.yaml
     - groups_yaml: path to groups.yaml
-    - gitmodules: path to .gitmodules
     """
     # Monkeypatch lib.paths constants
     from lib import paths
     monkeypatch.setattr(paths, "ROOT", tmp_path)
     monkeypatch.setattr(paths, "PACKAGES_YAML", tmp_path / "packages.yaml")
     monkeypatch.setattr(paths, "GROUPS_YAML", tmp_path / "groups.yaml")
-    monkeypatch.setattr(paths, "GITMODULES", tmp_path / ".gitmodules")
+    monkeypatch.setattr(paths, "UPSTREAM_DIR", tmp_path / ".cache" / "upstream")
     monkeypatch.setattr(paths, "RUNS_LOG_DIR", tmp_path / "logs" / "runs")
     monkeypatch.setattr(paths, "BUILD_DB", tmp_path / "build-report.db")
     monkeypatch.setattr(paths, "TEMPLATE_DIR", tmp_path / "templates")
@@ -51,13 +50,6 @@ def fake_repo(tmp_path, monkeypatch):
     - valid-pkg
 """)
 
-    # Create minimal .gitmodules
-    (tmp_path / ".gitmodules").write_text("""[submodule "valid-pkg"]
-	path = submodules/valid-pkg
-	url = https://github.com/example/valid-pkg.git
-	ignore = dirty
-""")
-
     # Create templates dir
     (tmp_path / "templates").mkdir()
     (tmp_path / "templates" / "spec.j2").write_text("# placeholder spec template\n")
@@ -70,7 +62,6 @@ def fake_repo(tmp_path, monkeypatch):
         "root": tmp_path,
         "packages_yaml": tmp_path / "packages.yaml",
         "groups_yaml": tmp_path / "groups.yaml",
-        "gitmodules": tmp_path / ".gitmodules",
     }
 
 

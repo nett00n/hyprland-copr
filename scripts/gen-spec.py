@@ -18,10 +18,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from lib.build_systems import BUILD_SYSTEMS
-from lib.gitmodules import get_changelog_info, parse_gitmodules
 from lib.jinja_utils import create_jinja_env
-from lib.paths import GITMODULES, GITHUB_RELEASE_CACHE, ROOT
+from lib.paths import GITHUB_RELEASE_CACHE, ROOT
 from lib.spec_utils import process_archive_urls
+from lib.upstream import get_changelog_info, list_upstreams, mirror_path
 from lib.yaml_utils import apply_os_overrides, get_packages, load_repo_yaml
 
 
@@ -211,7 +211,7 @@ def build_context(
     name: str,
     pkg: dict,
     packager: str,
-    url_to_submodule: dict,
+    url_to_mirror: dict,
     project_packages: list | None = None,
     source_url: str | None = None,
     copr_url: str | None = None,
@@ -239,13 +239,13 @@ def build_context(
     version = str(pkg["version"])
     release = pkg.get("release", 1)
     pkg_url = pkg.get("url", "").rstrip("/")
-    submodule_path = url_to_submodule.get(pkg_url) or url_to_submodule.get(
+    mirror_dir = url_to_mirror.get(pkg_url) or url_to_mirror.get(
         pkg_url.removesuffix(".git")
     )
-    if submodule_path:
+    if mirror_dir:
         commit_meta = source.get("commit")
         commit_hash = commit_meta.get("full") if isinstance(commit_meta, dict) else None
-        release_info = get_changelog_info(submodule_path, str(version), commit_hash)
+        release_info = get_changelog_info(mirror_dir, str(version), commit_hash)
     else:
         release_info = None
     if release_info is None:
@@ -407,13 +407,13 @@ def main() -> None:
     template = env.get_template("spec.j2")
     packager = get_packager()
 
-    url_to_submodule: dict[str, object] = {}
-    if GITMODULES.exists():
-        for mod in parse_gitmodules(GITMODULES):
-            url = mod["url"].rstrip("/")
-            path = ROOT / mod["path"]
-            url_to_submodule[url] = path
-            url_to_submodule[url.removesuffix(".git")] = path
+    # Changelog metadata is read straight from the bare mirror (#COPR-0004).
+    url_to_mirror: dict[str, Path] = {}
+    for mod in list_upstreams(packages):
+        url = mod["url"].rstrip("/")
+        path = mirror_path(mod["url"])
+        url_to_mirror[url] = path
+        url_to_mirror[url.removesuffix(".git")] = path
 
     for name, raw_pkg in packages.items():
         if target and name != target:
@@ -432,7 +432,7 @@ def main() -> None:
                     pkg_name,
                     pkg,
                     packager,
-                    url_to_submodule,
+                    url_to_mirror,
                     list(packages.keys()),
                     source_url,
                     copr_url,

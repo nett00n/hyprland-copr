@@ -398,7 +398,7 @@ because `full-cycle.py`'s
 ran, and that's the file the commit and the generated docs are built from (docs/BUGS.md
 BUG-0044); it skips `fmt` because the rewrite already goes through the same formatter `make
 fmt` itself uses, so there's nothing left to reformat. Only stages `packages.yaml packages/
-submodules/ README.md docs/README.copr.md docs/full-report.md` — the automation never touches
+README.md docs/README.copr.md docs/full-report.md` — the automation never touches
 `templates/`/`docs/NEWS.md`, so hand-edits there are never swept into a daily commit. Intended to run
 unattended from an external nightly cron (the repo itself has no scheduler); pass `PUSH=1` for
 that.
@@ -414,7 +414,7 @@ scopes) or the host lacks `flock` (util-linux).
 
 A one-off package build failure (e.g. a chroot-specific mock failure) does **not** abort the
 run: it's recorded in `build-report.db` as usual, `readme`/`copr-description`/the docs commit
-still happen (so the night's version bumps and submodule moves aren't lost), and
+still happen (so the night's version bumps aren't lost), and
 `update-daily` reports the failure and exits non-zero only at the very end, after everything
 else has run. Check `docs/nightly-summary.md`, `logs/runs/latest/<target>/<pkg>`, or run
 `make stage-log-analyze` to see what failed.
@@ -435,7 +435,7 @@ make sources PACKAGE=<name>   # or omit PACKAGE for all
 make gather-requires RPM=path/to/package.rpm
 ```
 
-**Remove a package** entirely (`packages.yaml`, build logs, spec files, submodules, container
+**Remove a package** entirely (`packages.yaml`, build logs, spec files, container
 rpmbuild dirs):
 ```shell
 make delete-package PACKAGE=<name>   # PKG=<name> also works

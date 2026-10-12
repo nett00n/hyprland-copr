@@ -1,4 +1,4 @@
-"""Tests for gitmodules module."""
+"""Tests for lib.upstream (#COPR-0004)."""
 
 import subprocess
 import tempfile
@@ -7,17 +7,27 @@ from unittest.mock import patch
 
 import pytest
 
-from scripts.lib.gitmodules import (
+from lib import paths
+from tests.git_helpers import git as _git
+from lib.upstream import (
+    UpstreamError,
+    checkout_worktree,
+    ensure_mirror,
+    fetch_mirror,
+    find_upstream,
+    list_upstreams,
+    mirror_path,
+    sync_upstream,
+    upstream_name,
+    worktree_path,
     TagFetch,
-    ensure_initialized,
     fetch_tags,
     get_changelog_info,
     get_commit_info,
-    get_submodule_commit,
-    get_submodule_commit_with_base,
+    get_commit,
+    get_commit_with_base,
     get_tag_commit,
     get_tag_info,
-    parse_gitmodules,
     resolve_module,
 )
 
@@ -27,65 +37,10 @@ def _cp(returncode=0, stdout="", stderr=""):
     return subprocess.CompletedProcess(["git"], returncode, stdout, stderr)
 
 
-class TestParseGitmodules:
-    """Tests for parse_gitmodules function."""
-
-    def test_parse_empty_gitmodules(self):
-        """Test parsing empty .gitmodules file."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            gitmodules = Path(tmpdir) / ".gitmodules"
-            gitmodules.write_text("")
-            result = parse_gitmodules(gitmodules)
-            assert result == []
-
-    def test_parse_single_submodule(self):
-        """Test parsing .gitmodules with single submodule."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            gitmodules = Path(tmpdir) / ".gitmodules"
-            gitmodules.write_text(
-                '[submodule "hyprland"]\n'
-                "\tpath = submodules/hyprwm/hyprland\n"
-                "\turl = https://github.com/hyprwm/hyprland.git\n"
-            )
-            result = parse_gitmodules(gitmodules)
-            assert len(result) == 1
-            assert result[0]["name"] == "hyprland"
-            assert result[0]["path"] == "submodules/hyprwm/hyprland"
-            assert result[0]["url"] == "https://github.com/hyprwm/hyprland.git"
-
-    def test_parse_multiple_submodules(self):
-        """Test parsing .gitmodules with multiple submodules."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            gitmodules = Path(tmpdir) / ".gitmodules"
-            gitmodules.write_text(
-                '[submodule "pkg1"]\n'
-                "\tpath = submodules/org/pkg1\n"
-                "\turl = https://github.com/org/pkg1.git\n"
-                '[submodule "pkg2"]\n'
-                "\tpath = submodules/org/pkg2\n"
-                "\turl = https://github.com/org/pkg2.git\n"
-            )
-            result = parse_gitmodules(gitmodules)
-            assert len(result) == 2
-            assert result[0]["name"] == "pkg1"
-            assert result[1]["name"] == "pkg2"
-
-    def test_parse_submodule_missing_fields(self):
-        """Test parsing submodule with missing optional fields."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            gitmodules = Path(tmpdir) / ".gitmodules"
-            gitmodules.write_text('[submodule "incomplete"]\n')
-            result = parse_gitmodules(gitmodules)
-            assert len(result) == 1
-            assert result[0]["name"] == "incomplete"
-            assert result[0]["path"] == ""
-            assert result[0]["url"] == ""
-
-
 class TestFetchTags:
     """Tests for fetch_tags function."""
 
-    @patch("scripts.lib.gitmodules.run_git")
+    @patch("lib.upstream.run_git")
     def test_fetch_tags_success(self, mock_run):
         """Test successful tag fetch."""
         mock_run.return_value = _cp(
@@ -105,7 +60,7 @@ class TestFetchTags:
         # Dereferenced tag (^{}) should not be in results
         assert not any("^{}" in tag for tag in result.tags)
 
-    @patch("scripts.lib.gitmodules.run_git")
+    @patch("lib.upstream.run_git")
     def test_fetch_tags_command_failure(self, mock_run, capsys):
         """Test handling of git command failure."""
         mock_run.return_value = _cp(returncode=128, stdout="")
@@ -117,11 +72,13 @@ class TestFetchTags:
         captured = capsys.readouterr()
         assert "warning" in captured.err
 
-    @patch("scripts.lib.gitmodules.run_git")
+    @patch("lib.upstream.run_git")
     def test_fetch_tags_timeout(self, mock_run, capsys):
         """Test handling of timeout (run_git reports it as returncode=124)."""
         mock_run.return_value = _cp(
-            returncode=124, stdout="", stderr="command timed out after 30s: git ls-remote"
+            returncode=124,
+            stdout="",
+            stderr="command timed out after 30s: git ls-remote",
         )
 
         result = fetch_tags("https://slow-repo.git")
@@ -133,7 +90,7 @@ class TestFetchTags:
         assert "warning" in captured.err
         assert "timeout" in captured.err
 
-    @patch("scripts.lib.gitmodules.run_git")
+    @patch("lib.upstream.run_git")
     def test_fetch_tags_failure_vs_no_tags_are_distinguishable(self, mock_run):
         """A fetch failure and a genuinely tagless upstream must not collapse
         to the same (tags=[], error=None) shape -- that collapse is BUG-0100's
@@ -148,16 +105,12 @@ class TestFetchTags:
         assert failed.error is not None
         assert failed != no_tags
 
-    @patch("scripts.lib.gitmodules.run_git")
+    @patch("lib.upstream.run_git")
     def test_fetch_tags_malformed_output(self, mock_run):
         """Test handling of malformed output."""
         mock_run.return_value = _cp(
             returncode=0,
-            stdout=(
-                "malformed line\n"
-                "abc123\trefs/tags/v1.0.0\n"
-                "another bad line\n"
-            ),
+            stdout=("malformed line\nabc123\trefs/tags/v1.0.0\nanother bad line\n"),
         )
 
         result = fetch_tags("https://example.com/repo.git")
@@ -167,60 +120,6 @@ class TestFetchTags:
         assert result.error is None
 
 
-class TestEnsureInitialized:
-    """Tests for ensure_initialized function."""
-
-    def test_no_matching_urls_returns_empty(self):
-        """No module matches urls -> no subprocess calls, empty result."""
-        modules = [{"path": "submodules/org/pkg1", "url": "https://x/pkg1.git"}]
-        assert ensure_initialized(Path("/repo"), modules, {"https://x/other.git"}) == []
-
-    @patch("scripts.lib.gitmodules.run_git")
-    def test_status_failure_returns_empty(self, mock_run):
-        """`git submodule status` failing (e.g. timeout) yields [] rather than raising."""
-        mock_run.return_value = _cp(returncode=124, stderr="command timed out after 300s")
-        modules = [{"path": "submodules/org/pkg1", "url": "https://x/pkg1.git"}]
-
-        result = ensure_initialized(Path("/repo"), modules, {"https://x/pkg1.git"})
-
-        assert result == []
-
-    @patch("scripts.lib.gitmodules.run_git")
-    def test_already_initialized_returns_empty(self, mock_run):
-        """No leading '-' lines -> nothing to init, update is never called."""
-        mock_run.return_value = _cp(returncode=0, stdout=" abc123 submodules/org/pkg1 (v1.0)\n")
-        modules = [{"path": "submodules/org/pkg1", "url": "https://x/pkg1.git"}]
-
-        result = ensure_initialized(Path("/repo"), modules, {"https://x/pkg1.git"})
-
-        assert result == []
-        mock_run.assert_called_once()  # only the status call
-
-    @patch("scripts.lib.gitmodules.run_git")
-    def test_initializes_uninitialized_submodule(self, mock_run):
-        """A leading '-' line triggers `submodule update --init` for that path."""
-        status = _cp(returncode=0, stdout="-0000000000000000000000000000000000000000 submodules/org/pkg1\n")
-        update = _cp(returncode=0)
-        mock_run.side_effect = [status, update]
-        modules = [{"path": "submodules/org/pkg1", "url": "https://x/pkg1.git"}]
-
-        result = ensure_initialized(Path("/repo"), modules, {"https://x/pkg1.git"})
-
-        assert result == ["submodules/org/pkg1"]
-        assert mock_run.call_count == 2
-
-    @patch("scripts.lib.gitmodules.run_git")
-    def test_update_failure_raises(self, mock_run):
-        """`submodule update --init` failing must fail loud, not silently return []."""
-        status = _cp(returncode=0, stdout="-0000000000000000000000000000000000000000 submodules/org/pkg1\n")
-        update = _cp(returncode=1, stderr="fatal: unable to fetch")
-        mock_run.side_effect = [status, update]
-        modules = [{"path": "submodules/org/pkg1", "url": "https://x/pkg1.git"}]
-
-        with pytest.raises(RuntimeError, match="unable to fetch"):
-            ensure_initialized(Path("/repo"), modules, {"https://x/pkg1.git"})
-
-
 class TestResolveModule:
     """Tests for resolve_module function."""
 
@@ -228,7 +127,11 @@ class TestResolveModule:
         """Test finding a module by name."""
         modules = [
             {"name": "hyprland", "path": "submodules/hyprwm/hyprland", "url": "..."},
-            {"name": "hyprpicker", "path": "submodules/hyprwm/hyprpicker", "url": "..."},
+            {
+                "name": "hyprpicker",
+                "path": "submodules/hyprwm/hyprpicker",
+                "url": "...",
+            },
         ]
         result = resolve_module(modules, "hyprland")
         assert result is not None
@@ -256,7 +159,7 @@ class TestResolveModule:
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_tag_info_not_found(mock_run):
     """Test get_tag_info when tag doesn't exist."""
     mock_run.return_value = _cp(returncode=0, stdout="")
@@ -266,7 +169,7 @@ def test_get_tag_info_not_found(mock_run):
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_tag_info_with_lightweight_tag(mock_run):
     """Test get_tag_info with lightweight tag (no annotated info)."""
     # First call: git tag -l (tag exists)
@@ -289,7 +192,7 @@ def test_get_tag_info_with_lightweight_tag(mock_run):
         assert result["commit"] == "abc123def456"
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_commit_info_success(mock_run):
     """Test get_commit_info with valid commit."""
     mock_run.return_value = _cp(
@@ -305,7 +208,7 @@ def test_get_commit_info_success(mock_run):
         assert "Commit message" in result["body"]
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_commit_info_failure(mock_run):
     """Test get_commit_info when git command fails."""
     mock_run.return_value = _cp(returncode=128, stdout="")
@@ -315,8 +218,8 @@ def test_get_commit_info_failure(mock_run):
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.get_commit_info")
-@patch("scripts.lib.gitmodules.get_tag_info")
+@patch("lib.upstream.get_commit_info")
+@patch("lib.upstream.get_tag_info")
 def test_get_changelog_info_tag_preferred(mock_tag_info, mock_commit_info):
     """Test that get_changelog_info prefers tag over commit."""
     mock_tag_info.return_value = {
@@ -333,8 +236,8 @@ def test_get_changelog_info_tag_preferred(mock_tag_info, mock_commit_info):
         mock_commit_info.assert_not_called()
 
 
-@patch("scripts.lib.gitmodules.get_commit_info")
-@patch("scripts.lib.gitmodules.get_tag_info")
+@patch("lib.upstream.get_commit_info")
+@patch("lib.upstream.get_tag_info")
 def test_get_changelog_info_fallback_to_commit(mock_tag_info, mock_commit_info):
     """Test that get_changelog_info falls back to commit."""
     mock_tag_info.return_value = None
@@ -350,81 +253,81 @@ def test_get_changelog_info_fallback_to_commit(mock_tag_info, mock_commit_info):
         assert "Commit message" in result["body"]
 
 
-@patch("scripts.lib.gitmodules.run_git")
-def test_get_submodule_commit_success(mock_run):
-    """Test get_submodule_commit with valid commit."""
+@patch("lib.upstream.run_git")
+def test_get_commit_success(mock_run):
+    """Test get_commit with valid commit."""
     mock_run.return_value = _cp(returncode=0, stdout="abc123def456 20240101\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        result = get_submodule_commit(Path(tmpdir))
+        result = get_commit(Path(tmpdir))
         assert result is not None
         assert result[0] == "abc123def456"  # full hash
         assert result[1] == "abc123d"  # short hash
         assert result[2] == "20240101"  # date
 
 
-@patch("scripts.lib.gitmodules.run_git")
-def test_get_submodule_commit_failure(mock_run):
-    """Test get_submodule_commit with command failure (e.g. a timeout)."""
+@patch("lib.upstream.run_git")
+def test_get_commit_failure(mock_run):
+    """Test get_commit with command failure (e.g. a timeout)."""
     mock_run.return_value = _cp(returncode=124, stderr="command timed out after 300s")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        result = get_submodule_commit(Path(tmpdir))
+        result = get_commit(Path(tmpdir))
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.get_submodule_commit")
-@patch("scripts.lib.gitmodules.run_git")
-def test_get_submodule_commit_with_base_success(mock_run, mock_get_commit):
-    """Test get_submodule_commit_with_base finds base semver."""
+@patch("lib.upstream.get_commit")
+@patch("lib.upstream.run_git")
+def test_get_commit_with_base_success(mock_run, mock_get_commit):
+    """Test get_commit_with_base finds base semver."""
     mock_get_commit.return_value = ("abc123def456", "abc123d", "20240101")
     mock_run.return_value = _cp(returncode=0, stdout="v1.5.0\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        result = get_submodule_commit_with_base(Path(tmpdir))
+        result = get_commit_with_base(Path(tmpdir))
         assert result is not None
         assert result[0] == "abc123def456"
         assert result[3] == "1.5.0"  # v-prefix stripped
 
 
-@patch("scripts.lib.gitmodules.run_git")
-def test_get_submodule_commit_accepts_ref(mock_run):
+@patch("lib.upstream.run_git")
+def test_get_commit_accepts_ref(mock_run):
     """A ref other than HEAD (e.g. origin/<branch>) must reach `git log`, so
     version resolution doesn't depend on the working tree's checked-out
     commit (see docs/BUGS.md BUG-0033)."""
     mock_run.return_value = _cp(returncode=0, stdout="abc123def456 20240101\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        get_submodule_commit(Path(tmpdir), ref="origin/main")
+        get_commit(Path(tmpdir), ref="origin/main")
 
     argv = mock_run.call_args[0]
     assert argv[-1] == "origin/main"
 
 
-@patch("scripts.lib.gitmodules.run_git")
-def test_get_submodule_commit_defaults_to_head(mock_run):
+@patch("lib.upstream.run_git")
+def test_get_commit_defaults_to_head(mock_run):
     mock_run.return_value = _cp(returncode=0, stdout="abc123def456 20240101\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        get_submodule_commit(Path(tmpdir))
+        get_commit(Path(tmpdir))
 
     argv = mock_run.call_args[0]
     assert argv[-1] == "HEAD"
 
 
-@patch("scripts.lib.gitmodules.get_submodule_commit")
-@patch("scripts.lib.gitmodules.run_git")
-def test_get_submodule_commit_with_base_threads_ref(mock_run, mock_get_commit):
-    """get_submodule_commit_with_base must pass `ref` through to
-    get_submodule_commit, and describe the nearest semver tag from the
+@patch("lib.upstream.get_commit")
+@patch("lib.upstream.run_git")
+def test_get_commit_with_base_threads_ref(mock_run, mock_get_commit):
+    """get_commit_with_base must pass `ref` through to
+    get_commit, and describe the nearest semver tag from the
     *resolved commit hash* rather than the literal ref -- so it can't
-    disagree with get_submodule_commit if a remote-tracking ref moves
+    disagree with get_commit if a remote-tracking ref moves
     between the two subprocess calls."""
     mock_get_commit.return_value = ("abc123def456", "abc123d", "20240101")
     mock_run.return_value = _cp(returncode=0, stdout="v1.5.0\n")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        result = get_submodule_commit_with_base(Path(tmpdir), ref="origin/main")
+        result = get_commit_with_base(Path(tmpdir), ref="origin/main")
 
     mock_get_commit.assert_called_once_with(Path(tmpdir), "origin/main")
     describe_argv = mock_run.call_args[0]
@@ -432,7 +335,7 @@ def test_get_submodule_commit_with_base_threads_ref(mock_run, mock_get_commit):
     assert result[3] == "1.5.0"
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_tag_commit_success(mock_run):
     """Test get_tag_commit with valid tag."""
     rev = _cp(returncode=0, stdout="abc123def456\n")
@@ -450,7 +353,7 @@ def test_get_tag_commit_success(mock_run):
         assert result[3] == "1.5.0"
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_tag_commit_invalid_tag(mock_run):
     """Test get_tag_commit with invalid tag."""
     mock_run.return_value = _cp(returncode=128, stdout="")
@@ -460,7 +363,7 @@ def test_get_tag_commit_invalid_tag(mock_run):
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_tag_info_with_tagger_timestamp(mock_run):
     """Test extracting timestamp from tagger line."""
     check = _cp(returncode=0, stdout="v1.0.0\n")
@@ -487,7 +390,7 @@ def test_get_tag_info_with_tagger_timestamp(mock_run):
         assert "2024-01-01" in result["published_at"]
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_tag_info_no_tagger_uses_log(mock_run):
     """Test fallback to log when tagger line missing."""
     check = _cp(returncode=0, stdout="v1.0.0\n")
@@ -503,7 +406,7 @@ def test_get_tag_info_no_tagger_uses_log(mock_run):
         assert "2024-01-01" in result["published_at"]
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_commit_info_invalid_date(mock_run):
     """Test get_commit_info with invalid ISO date."""
     mock_run.return_value = _cp(returncode=0, stdout="abc123\ninvalid-date\nbody\n")
@@ -513,18 +416,20 @@ def test_get_commit_info_invalid_date(mock_run):
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_commit_info_missing_fields(mock_run):
     """Test get_commit_info with missing fields."""
-    mock_run.return_value = _cp(returncode=0, stdout="abc123\n")  # missing date and body
+    mock_run.return_value = _cp(
+        returncode=0, stdout="abc123\n"
+    )  # missing date and body
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_commit_info(Path(tmpdir), "HEAD")
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.get_commit_info")
-@patch("scripts.lib.gitmodules.get_tag_info")
+@patch("lib.upstream.get_commit_info")
+@patch("lib.upstream.get_tag_info")
 def test_get_changelog_info_no_tag_no_commit(mock_tag_info, mock_commit_info):
     """Test get_changelog_info when both tag and commit fail."""
     mock_tag_info.return_value = None
@@ -535,53 +440,55 @@ def test_get_changelog_info_no_tag_no_commit(mock_tag_info, mock_commit_info):
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.run_git")
-def test_get_submodule_commit_with_multiple_fields(mock_run):
-    """Test get_submodule_commit with output containing multiple fields."""
-    mock_run.return_value = _cp(returncode=0, stdout="abc123def456 20240101 extra stuff\n")
+@patch("lib.upstream.run_git")
+def test_get_commit_with_multiple_fields(mock_run):
+    """Test get_commit with output containing multiple fields."""
+    mock_run.return_value = _cp(
+        returncode=0, stdout="abc123def456 20240101 extra stuff\n"
+    )
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        result = get_submodule_commit(Path(tmpdir))
+        result = get_commit(Path(tmpdir))
         assert result is not None
         # Should use first two parts
         assert result[0] == "abc123def456"
         assert result[2] == "20240101"
 
 
-@patch("scripts.lib.gitmodules.run_git")
-def test_get_submodule_commit_empty_output(mock_run):
-    """Test get_submodule_commit with empty output."""
+@patch("lib.upstream.run_git")
+def test_get_commit_empty_output(mock_run):
+    """Test get_commit with empty output."""
     mock_run.return_value = _cp(returncode=0, stdout="")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        result = get_submodule_commit(Path(tmpdir))
+        result = get_commit(Path(tmpdir))
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.run_git")
-def test_get_submodule_commit_with_base_no_commit(mock_run):
-    """Test get_submodule_commit_with_base when commit call fails."""
+@patch("lib.upstream.run_git")
+def test_get_commit_with_base_no_commit(mock_run):
+    """Test get_commit_with_base when commit call fails."""
     mock_run.return_value = _cp(returncode=128, stdout="")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        result = get_submodule_commit_with_base(Path(tmpdir))
+        result = get_commit_with_base(Path(tmpdir))
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.get_submodule_commit")
-@patch("scripts.lib.gitmodules.run_git")
-def test_get_submodule_commit_with_base_no_semver(mock_run, mock_get_commit):
-    """Test get_submodule_commit_with_base when no semver tag found."""
+@patch("lib.upstream.get_commit")
+@patch("lib.upstream.run_git")
+def test_get_commit_with_base_no_semver(mock_run, mock_get_commit):
+    """Test get_commit_with_base when no semver tag found."""
     mock_get_commit.return_value = ("abc123def456", "abc123d", "20240101")
     mock_run.return_value = _cp(returncode=128, stdout="")  # tag not found
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        result = get_submodule_commit_with_base(Path(tmpdir))
+        result = get_commit_with_base(Path(tmpdir))
         assert result is not None
         assert result[3] is None  # base_semver should be None
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_tag_commit_date_failure(mock_run):
     """Test get_tag_commit when date retrieval fails."""
     rev = _cp(returncode=0, stdout="abc123def456\n")
@@ -594,7 +501,7 @@ def test_get_tag_commit_date_failure(mock_run):
         assert result is None
 
 
-@patch("scripts.lib.gitmodules.run_git")
+@patch("lib.upstream.run_git")
 def test_get_tag_commit_with_timeout(mock_run):
     """A run_git timeout (returncode=124) on the first call must not raise."""
     mock_run.return_value = _cp(returncode=124, stderr="command timed out after 10s")
@@ -602,3 +509,207 @@ def test_get_tag_commit_with_timeout(mock_run):
     with tempfile.TemporaryDirectory() as tmpdir:
         result = get_tag_commit(Path(tmpdir), "v1.0.0")
         assert result is None
+
+
+class TestUpstreamPaths:
+    """#COPR-0004: url -> mirror/worktree layout."""
+
+    def test_upstream_name_strips_dot_git_and_keeps_org_name(self):
+        assert (
+            upstream_name("https://github.com/hyprwm/hyprland.git") == "hyprwm/hyprland"
+        )
+        assert upstream_name("https://github.com/hyprwm/hyprland/") == "hyprwm/hyprland"
+
+    def test_upstream_name_takes_last_two_segments(self):
+        assert upstream_name("https://gitlab.com/a/b/c/repo") == "c/repo"
+
+    def test_upstream_name_single_segment_falls_back_to_host(self):
+        assert upstream_name("https://example.com/repo") == "example.com/repo"
+
+    def test_mirror_and_worktree_paths(self, upstream_repo):
+        url = "https://github.com/acme/widget.git"
+        assert mirror_path(url) == paths.UPSTREAM_DIR / "acme" / "widget.git"
+        assert worktree_path(url) == paths.UPSTREAM_DIR / "acme" / "widget"
+
+
+class TestListUpstreams:
+    """#COPR-0004: the registry is derived from packages.yaml urls."""
+
+    def test_dedupes_by_url_and_sorts(self, upstream_repo):
+        packages = {
+            "b": {"url": "https://github.com/z/zed"},
+            "a": {"url": "https://github.com/acme/widget"},
+            "a-git": {"url": "https://github.com/acme/widget"},
+            "no-url": {"description": "x"},
+        }
+        mods = list_upstreams(packages)
+        assert [m["url"] for m in mods] == [
+            "https://github.com/acme/widget",
+            "https://github.com/z/zed",
+        ]
+        assert mods[0]["name"] == "acme/widget"
+        assert mods[0]["path"] == ".cache/upstream/acme/widget"
+
+    def test_empty_packages(self, upstream_repo):
+        assert list_upstreams({}) == []
+
+
+class TestFindUpstream:
+    """#COPR-0004: look a cached mirror up by name (scaffold-package PACKAGE=)."""
+
+    def test_finds_cached_mirror_by_last_component(self, upstream_repo):
+        ensure_mirror(upstream_repo["url"])
+        found = find_upstream("widget")
+        assert found is not None
+        assert found["name"] == "acme/widget"
+
+    def test_missing_returns_none(self, upstream_repo):
+        assert find_upstream("nothing") is None
+
+
+class TestEnsureMirror:
+    """#COPR-0004: bare mirror creation and self-heal (real git)."""
+
+    def test_first_call_creates_bare_mirror_with_refspecs(self, upstream_repo):
+        assert ensure_mirror(upstream_repo["url"]) is None
+        mirror = mirror_path(upstream_repo["url"])
+        assert _git("rev-parse", "--is-bare-repository", cwd=mirror) == "true"
+        refspecs = _git("config", "--get-all", "remote.origin.fetch", cwd=mirror)
+        assert "+refs/heads/*:refs/remotes/origin/*" in refspecs
+        assert "+refs/tags/*:refs/tags/*" in refspecs
+
+    def test_second_call_is_noop(self, upstream_repo):
+        ensure_mirror(upstream_repo["url"])
+        marker = mirror_path(upstream_repo["url"]) / "marker"
+        marker.write_text("x")
+        assert ensure_mirror(upstream_repo["url"]) is None
+        assert marker.exists()
+
+    def test_corrupt_mirror_is_recreated(self, upstream_repo):
+        ensure_mirror(upstream_repo["url"])
+        mirror = mirror_path(upstream_repo["url"])
+        (mirror / "HEAD").unlink()
+        assert ensure_mirror(upstream_repo["url"]) is None
+        assert _git("rev-parse", "--is-bare-repository", cwd=mirror) == "true"
+
+
+class TestFetchMirror:
+    """#COPR-0004: fetch tags + branches, set origin/HEAD."""
+
+    def test_fetch_populates_branches_tags_and_head(self, upstream_repo):
+        assert fetch_mirror(upstream_repo["url"]) is None
+        mirror = mirror_path(upstream_repo["url"])
+        assert _git("rev-parse", "origin/main", cwd=mirror) == upstream_repo["second"]
+        assert (
+            _git("rev-parse", "refs/tags/v1.0.0^{commit}", cwd=mirror)
+            == upstream_repo["first"]
+        )
+        assert (
+            _git("symbolic-ref", "refs/remotes/origin/HEAD", cwd=mirror)
+            == "refs/remotes/origin/main"
+        )
+
+    def test_fetch_failure_returns_error_and_keeps_mirror(
+        self, upstream_repo, tmp_path
+    ):
+        fetch_mirror(upstream_repo["url"])
+        mirror = mirror_path(upstream_repo["url"])
+        _git("remote", "set-url", "origin", (tmp_path / "gone").as_uri(), cwd=mirror)
+        err = fetch_mirror(upstream_repo["url"])
+        assert err
+        assert mirror.exists()
+
+    def test_prune_drops_deleted_tag(self, upstream_repo):
+        fetch_mirror(upstream_repo["url"])
+        _git("tag", "-d", "v1.0.0", cwd=upstream_repo["path"])
+        fetch_mirror(upstream_repo["url"])
+        mirror = mirror_path(upstream_repo["url"])
+        assert "v1.0.0" not in _git("tag", "-l", cwd=mirror).split()
+
+
+class TestCheckoutWorktree:
+    """#COPR-0004: detached, relative-path, never-dirty worktree."""
+
+    def test_creates_detached_worktree_with_relative_gitdir(self, upstream_repo):
+        fetch_mirror(upstream_repo["url"])
+        assert checkout_worktree(upstream_repo["url"], "origin/main") is None
+        wt = worktree_path(upstream_repo["url"])
+        assert (wt / "meson.build").exists()
+        assert _git("rev-parse", "HEAD", cwd=wt) == upstream_repo["second"]
+        head = subprocess.run(
+            ["git", "symbolic-ref", "-q", "HEAD"], cwd=wt, capture_output=True
+        )
+        assert head.returncode != 0  # detached
+        gitfile = (wt / ".git").read_text().strip()
+        assert gitfile.startswith("gitdir: ..")
+
+    def test_moves_to_pinned_tag(self, upstream_repo):
+        fetch_mirror(upstream_repo["url"])
+        checkout_worktree(upstream_repo["url"], "origin/main")
+        assert checkout_worktree(upstream_repo["url"], "refs/tags/v1.0.0") is None
+        wt = worktree_path(upstream_repo["url"])
+        assert _git("rev-parse", "HEAD", cwd=wt) == upstream_repo["first"]
+
+    def test_moves_to_pinned_commit(self, upstream_repo):
+        fetch_mirror(upstream_repo["url"])
+        assert checkout_worktree(upstream_repo["url"], upstream_repo["first"]) is None
+        wt = worktree_path(upstream_repo["url"])
+        assert _git("rev-parse", "HEAD", cwd=wt) == upstream_repo["first"]
+
+    def test_dirty_worktree_is_reset(self, upstream_repo):
+        fetch_mirror(upstream_repo["url"])
+        checkout_worktree(upstream_repo["url"], "origin/main")
+        wt = worktree_path(upstream_repo["url"])
+        (wt / "stray.txt").write_text("junk")
+        (wt / "meson.build").write_text("tampered")
+        assert checkout_worktree(upstream_repo["url"], "origin/main") is None
+        assert not (wt / "stray.txt").exists()
+        assert _git("status", "--porcelain", cwd=wt) == ""
+
+    def test_deleted_worktree_dir_is_recreated(self, upstream_repo):
+        import shutil
+
+        fetch_mirror(upstream_repo["url"])
+        checkout_worktree(upstream_repo["url"], "origin/main")
+        shutil.rmtree(worktree_path(upstream_repo["url"]))
+        assert checkout_worktree(upstream_repo["url"], "origin/main") is None
+        assert (worktree_path(upstream_repo["url"]) / "meson.build").exists()
+
+    def test_unknown_ref_returns_error(self, upstream_repo):
+        fetch_mirror(upstream_repo["url"])
+        assert checkout_worktree(upstream_repo["url"], "refs/tags/nope")
+
+
+class TestSyncUpstream:
+    """#COPR-0004: clone/fetch/checkout in one call."""
+
+    def test_sync_from_nothing_defaults_to_origin_head(self, upstream_repo):
+        wt = sync_upstream(upstream_repo["url"])
+        assert wt == worktree_path(upstream_repo["url"])
+        assert _git("rev-parse", "HEAD", cwd=wt) == upstream_repo["second"]
+
+    def test_sync_with_ref(self, upstream_repo):
+        wt = sync_upstream(upstream_repo["url"], "refs/tags/v1.0.0")
+        assert _git("rev-parse", "HEAD", cwd=wt) == upstream_repo["first"]
+
+    def test_sync_picks_up_new_upstream_commit(self, upstream_repo):
+        sync_upstream(upstream_repo["url"])
+        origin = upstream_repo["path"]
+        (origin / "new.txt").write_text("n")
+        _git("add", ".", cwd=origin)
+        _git("commit", "-qm", "third", cwd=origin)
+        third = _git("rev-parse", "HEAD", cwd=origin)
+        wt = sync_upstream(upstream_repo["url"])
+        assert _git("rev-parse", "HEAD", cwd=wt) == third
+
+    def test_sync_unreachable_origin_raises(self, upstream_repo, tmp_path):
+        with pytest.raises(UpstreamError):
+            sync_upstream((tmp_path / "gone").as_uri())
+
+    def test_metadata_helpers_work_on_the_worktree(self, upstream_repo):
+        wt = sync_upstream(upstream_repo["url"])
+        commit = get_tag_commit(wt, "v1.0.0")
+        assert commit is not None
+        assert commit[0] == upstream_repo["first"]
+        info = get_changelog_info(wt, "1.1.0", None)
+        assert info is not None
