@@ -2,7 +2,7 @@
 
 ## Upstream version refresh
 
-_Generated 2026-10-12 07:28:50 UTC by `make update-versions`._
+_Generated 2026-10-14 03:40:50 UTC by `make update-versions`._
 
 1 failure(s):
 
@@ -14,7 +14,7 @@ _Generated 2026-10-12 07:28:50 UTC by `make update-versions`._
 - Clean: 53
 - With issues: 0
 - No logs found: 0
-- Copr submission not settled-success: 33
+- Copr submission not settled-success: 30
 
 ## Copr submission
 
@@ -22,37 +22,34 @@ Rows below have a build-report.db `copr` state that isn't `success`/`skipped` --
 
 | Package | Target | Version | State | Build | Reason |
 |:--------|:-------|:--------|:------|:------|:-------|
-| aquamarine | fedora-44-x86_64 | 0.15.1-2.fc44 | unknown | [#11112140](https://copr.fedorainfracloud.org/coprs/build/11112140/) | — |
-| cpptrace | fedora-44-x86_64 | 1.0.4-42.fc44 | unknown | [#11112142](https://copr.fedorainfracloud.org/coprs/build/11112142/) | — |
-| eww | fedora-44-x86_64 | 0.6.0-16.fc44 | unknown | [#11112109](https://copr.fedorainfracloud.org/coprs/build/11112109/) | — |
-| hyprcursor | fedora-44-x86_64 | 0.1.13-16.fc44 | unknown | [#11112155](https://copr.fedorainfracloud.org/coprs/build/11112155/) | — |
-| hyprgraphics | fedora-44-x86_64 | 0.5.1-16.fc44 | unknown | [#11112139](https://copr.fedorainfracloud.org/coprs/build/11112139/) | — |
-| hypridle | fedora-44-x86_64 | 0.1.8-13.fc44 | unknown | [#11112152](https://copr.fedorainfracloud.org/coprs/build/11112152/) | — |
-| Hyprland | fedora-44-x86_64 | 0.56.2-17.fc44 | unknown | [#11112162](https://copr.fedorainfracloud.org/coprs/build/11112162/) | — |
-| hyprland-guiutils | fedora-44-x86_64 | 0.2.2-16.fc44 | unknown | [#11112167](https://copr.fedorainfracloud.org/coprs/build/11112167/) | — |
-| hyprland-plugins | fedora-44-x86_64 | 0.56.0^20260805git00862ca-6.fc44 | unknown | [#11112177](https://copr.fedorainfracloud.org/coprs/build/11112177/) | — |
-| hyprland-qt-support | fedora-44-x86_64 | 0.1.0-15.fc44 | unknown | [#11112154](https://copr.fedorainfracloud.org/coprs/build/11112154/) | — |
-| hyprlang | fedora-44-x86_64 | 0.6.8-16.fc44 | unknown | [#11112138](https://copr.fedorainfracloud.org/coprs/build/11112138/) | — |
-| hyprlauncher | fedora-44-x86_64 | 0.1.6-22.fc44 | unknown | [#11112174](https://copr.fedorainfracloud.org/coprs/build/11112174/) | — |
-| hyprlock | fedora-44-x86_64 | 0.9.6-11.fc44 | unknown | [#11112157](https://copr.fedorainfracloud.org/coprs/build/11112157/) | — |
-| hyprpaper | fedora-44-x86_64 | 0.8.4-22.fc44 | unknown | [#11112163](https://copr.fedorainfracloud.org/coprs/build/11112163/) | — |
-| hyprpicker | fedora-44-x86_64 | 0.4.7-15.fc44 | unknown | [#11112141](https://copr.fedorainfracloud.org/coprs/build/11112141/) | — |
-| hyprpolkitagent | fedora-44-x86_64 | 0.2.0-6.fc44 | unknown | [#11112176](https://copr.fedorainfracloud.org/coprs/build/11112176/) | — |
-| hyprpwcenter | fedora-44-x86_64 | 0.1.2-22.fc44 | unknown | [#11112165](https://copr.fedorainfracloud.org/coprs/build/11112165/) | — |
-| hyprqt6engine | fedora-44-x86_64 | 0.1.0-15.fc44 | unknown | [#11112151](https://copr.fedorainfracloud.org/coprs/build/11112151/) | — |
-| hyprshutdown | fedora-44-x86_64 | 0.1.1-28.fc44 | unknown | [#11112170](https://copr.fedorainfracloud.org/coprs/build/11112170/) | — |
-| hyprsunset | fedora-44-x86_64 | 0.4.0-13.fc44 | unknown | [#11112156](https://copr.fedorainfracloud.org/coprs/build/11112156/) | — |
-| hyprsysteminfo | fedora-44-x86_64 | 0.2.0-28.fc44 | unknown | [#11112164](https://copr.fedorainfracloud.org/coprs/build/11112164/) | — |
-| hyprtoolkit | fedora-44-x86_64 | 0.6.0-6.fc44 | unknown | [#11112158](https://copr.fedorainfracloud.org/coprs/build/11112158/) | — |
-| hyprwire | fedora-44-x86_64 | 0.3.1-16.fc44 | unknown | [#11112137](https://copr.fedorainfracloud.org/coprs/build/11112137/) | — |
-| ironbar | fedora-44-x86_64 | 0.19.1-1.fc44 | unknown | [#11112135](https://copr.fedorainfracloud.org/coprs/build/11112135/) | — |
-| libcava | fedora-44-x86_64 | 1.0.0-9.fc44 | unknown | [#11112145](https://copr.fedorainfracloud.org/coprs/build/11112145/) | — |
-| libcava-v0 | fedora-44-x86_64 | 0.10.7-11.fc44 | unknown | [#11112144](https://copr.fedorainfracloud.org/coprs/build/11112144/) | — |
-| OpenLogi | fedora-44-x86_64 | 0.8.13-1.fc44 | unknown | [#11112124](https://copr.fedorainfracloud.org/coprs/build/11112124/) | — |
-| quickshell | fedora-44-x86_64 | 0.3.2-0.fc44 | unknown | [#11112159](https://copr.fedorainfracloud.org/coprs/build/11112159/) | — |
-| satty | fedora-44-x86_64 | 0.22.0-11.fc44 | unknown | [#11112126](https://copr.fedorainfracloud.org/coprs/build/11112126/) | — |
-| SwayOSD | fedora-44-x86_64 | 0.3.2-6.fc44 | unknown | [#11112133](https://copr.fedorainfracloud.org/coprs/build/11112133/) | — |
-| Waybar | fedora-44-x86_64 | 0.15.0-19.fc44 | unknown | [#11112160](https://copr.fedorainfracloud.org/coprs/build/11112160/) | — |
-| waypaper | fedora-44-x86_64 | 2.9-3.fc44 | unknown | [#11112143](https://copr.fedorainfracloud.org/coprs/build/11112143/) | — |
-| xdg-desktop-portal-hyprland | fedora-44-x86_64 | 1.4.1-12.fc44 | unknown | [#11112153](https://copr.fedorainfracloud.org/coprs/build/11112153/) | — |
+| aquamarine | fedora-44-x86_64 | 0.15.1-2.fc44 | unknown | [#11119618](https://copr.fedorainfracloud.org/coprs/build/11119618/) | — |
+| cpptrace | fedora-44-x86_64 | 1.0.4-42.fc44 | unknown | [#11119619](https://copr.fedorainfracloud.org/coprs/build/11119619/) | — |
+| hyprcursor | fedora-44-x86_64 | 0.1.13-16.fc44 | unknown | [#11119626](https://copr.fedorainfracloud.org/coprs/build/11119626/) | — |
+| hyprgraphics | fedora-44-x86_64 | 0.5.1-16.fc44 | unknown | [#11119615](https://copr.fedorainfracloud.org/coprs/build/11119615/) | — |
+| hypridle | fedora-44-x86_64 | 0.1.8-13.fc44 | unknown | [#11119624](https://copr.fedorainfracloud.org/coprs/build/11119624/) | — |
+| Hyprland | fedora-44-x86_64 | 0.56.2-17.fc44 | unknown | [#11119633](https://copr.fedorainfracloud.org/coprs/build/11119633/) | — |
+| hyprland-guiutils | fedora-44-x86_64 | 0.2.2-16.fc44 | unknown | [#11119634](https://copr.fedorainfracloud.org/coprs/build/11119634/) | — |
+| hyprland-plugins | fedora-44-x86_64 | 0.56.0^20260805git00862ca-6.fc44 | unknown | [#11119641](https://copr.fedorainfracloud.org/coprs/build/11119641/) | — |
+| hyprland-qt-support | fedora-44-x86_64 | 0.1.0-15.fc44 | unknown | [#11119628](https://copr.fedorainfracloud.org/coprs/build/11119628/) | — |
+| hyprlang | fedora-44-x86_64 | 0.6.8-16.fc44 | unknown | [#11119614](https://copr.fedorainfracloud.org/coprs/build/11119614/) | — |
+| hyprlauncher | fedora-44-x86_64 | 0.1.6-22.fc44 | unknown | [#11119637](https://copr.fedorainfracloud.org/coprs/build/11119637/) | — |
+| hyprlock | fedora-44-x86_64 | 0.9.6-11.fc44 | unknown | [#11119629](https://copr.fedorainfracloud.org/coprs/build/11119629/) | — |
+| hyprpaper | fedora-44-x86_64 | 0.8.4-22.fc44 | unknown | [#11119638](https://copr.fedorainfracloud.org/coprs/build/11119638/) | — |
+| hyprpicker | fedora-44-x86_64 | 0.4.7-15.fc44 | unknown | [#11119616](https://copr.fedorainfracloud.org/coprs/build/11119616/) | — |
+| hyprpolkitagent | fedora-44-x86_64 | 0.2.0-6.fc44 | unknown | [#11119635](https://copr.fedorainfracloud.org/coprs/build/11119635/) | — |
+| hyprpwcenter | fedora-44-x86_64 | 0.1.2-22.fc44 | unknown | [#11119639](https://copr.fedorainfracloud.org/coprs/build/11119639/) | — |
+| hyprqt6engine | fedora-44-x86_64 | 0.1.0-15.fc44 | unknown | [#11119623](https://copr.fedorainfracloud.org/coprs/build/11119623/) | — |
+| hyprshutdown | fedora-44-x86_64 | 0.1.1-28.fc44 | unknown | [#11119640](https://copr.fedorainfracloud.org/coprs/build/11119640/) | — |
+| hyprsunset | fedora-44-x86_64 | 0.4.0-13.fc44 | unknown | [#11119627](https://copr.fedorainfracloud.org/coprs/build/11119627/) | — |
+| hyprsysteminfo | fedora-44-x86_64 | 0.2.0-28.fc44 | unknown | [#11119636](https://copr.fedorainfracloud.org/coprs/build/11119636/) | — |
+| hyprtoolkit | fedora-44-x86_64 | 0.6.0-6.fc44 | unknown | [#11119630](https://copr.fedorainfracloud.org/coprs/build/11119630/) | — |
+| ironbar | fedora-44-x86_64 | 0.19.1-1.fc44 | unknown | [#11119611](https://copr.fedorainfracloud.org/coprs/build/11119611/) | — |
+| libcava | fedora-44-x86_64 | 1.0.0-9.fc44 | unknown | [#11119622](https://copr.fedorainfracloud.org/coprs/build/11119622/) | — |
+| libcava-v0 | fedora-44-x86_64 | 0.10.7-11.fc44 | unknown | [#11119621](https://copr.fedorainfracloud.org/coprs/build/11119621/) | — |
+| OpenLogi | fedora-44-x86_64 | 0.8.13-1.fc44 | unknown | [#11119600](https://copr.fedorainfracloud.org/coprs/build/11119600/) | — |
+| quickshell | fedora-44-x86_64 | 0.3.2-0.fc44 | unknown | [#11119631](https://copr.fedorainfracloud.org/coprs/build/11119631/) | — |
+| SwayOSD | fedora-44-x86_64 | 0.3.2-6.fc44 | unknown | [#11119608](https://copr.fedorainfracloud.org/coprs/build/11119608/) | — |
+| Waybar | fedora-44-x86_64 | 0.15.0-19.fc44 | unknown | [#11119632](https://copr.fedorainfracloud.org/coprs/build/11119632/) | — |
+| waypaper | fedora-44-x86_64 | 2.9-3.fc44 | unknown | [#11119620](https://copr.fedorainfracloud.org/coprs/build/11119620/) | — |
+| xdg-desktop-portal-hyprland | fedora-44-x86_64 | 1.4.1-12.fc44 | unknown | [#11119625](https://copr.fedorainfracloud.org/coprs/build/11119625/) | — |
 
