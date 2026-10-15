@@ -1708,7 +1708,7 @@ OpenLogi:
     name: OpenLogi
   summary: Local-first alternative to Logitech Options+ for HID++ devices
   url: https://github.com/AprilNEA/OpenLogi
-  version: 0.8.13
+  version: 0.8.14
 pyprland:
   build:
     commands:
