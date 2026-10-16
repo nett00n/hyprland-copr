@@ -1,12 +1,12 @@
 %global debug_package %{nil}
 
 Name:           hyprland-protocols
-Version:        0.7.1
-Release:        3%{?dist}
+Version:        0.8.0
+Release:        1%{?dist}
 Summary:        Wayland protocol extensions for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-protocols
-Source0:        https://github.com/hyprwm/hyprland-protocols/archive/refs/tags/v0.7.1.tar.gz#/hyprland-protocols-0.7.1.tar.gz
+Source0:        https://github.com/hyprwm/hyprland-protocols/archive/refs/tags/v0.8.0.tar.gz#/hyprland-protocols-0.8.0.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
@@ -36,8 +36,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.7.1
-Commit:            cc9a8fd253bdc00f48a967ecf4828211ef08751f
+Tag:               v0.8.0
+Commit:            044a434ec371f985655389bcef09286b1af3d77c
 
 %prep
 %autosetup -p1
@@ -65,6 +65,6 @@ Development files for hyprland-protocols.
 %{_datadir}/pkgconfig/%{name}.pc
 
 %changelog
-* Tue Sep 15 2026 nett00n <copr@nett00n.org> - 0.7.1-3
+* Fri Oct 16 2026 nett00n <copr@nett00n.org> - 0.8.0-1
 
-- VERSION: bump to 0.7.1
+- VERSION: bump to 0.8.0

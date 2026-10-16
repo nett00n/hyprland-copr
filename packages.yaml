@@ -430,7 +430,7 @@ hypridle:
   - '%{_datadir}/hypr/hypridle.conf'
   - '%{_userunitdir}/hypridle.service'
   license: BSD-3-Clause
-  release: 13
+  release: 14
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -538,7 +538,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 17
+  release: 18
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -666,7 +666,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 6
+  release: 7
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -705,7 +705,7 @@ hyprland-protocols:
   - '%doc README.md'
   - '%license LICENSE'
   license: BSD-3-Clause
-  release: 3
+  release: 1
   rpm:
     no_debug_package: true
   source:
@@ -713,7 +713,7 @@ hyprland-protocols:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Wayland protocol extensions for Hyprland
   url: https://github.com/hyprwm/hyprland-protocols
-  version: 0.7.1
+  version: 0.8.0
 hyprland-qt-support:
   build:
     commands:
@@ -1150,7 +1150,7 @@ hyprsunset:
   - '%{_prefix}/bin/hyprsunset'
   - '%{_prefix}/lib/systemd/user/hyprsunset.service'
   license: BSD-3-Clause
-  release: 13
+  release: 14
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -2095,7 +2095,7 @@ uwsm:
   - '%{_userunitdir}/wayland-wm-env@.service'
   - '%{_userunitdir}/wayland-wm@.service'
   license: MIT
-  release: 2
+  release: 1
   requires: []
   rpm:
     no_debug_package: true
@@ -2105,7 +2105,7 @@ uwsm:
     bundled_deps: []
   summary: Universal Wayland Session Manager
   url: https://github.com/Vladimir-csp/uwsm
-  version: 0.27.0
+  version: 0.27.1
 Waybar:
   build:
     commands:
@@ -2290,7 +2290,7 @@ xdg-desktop-portal-hyprland:
   - '%{_libexecdir}/%{name}'
   - '%{_userunitdir}/%{name}.service'
   license: BSD-3-Clause
-  release: 12
+  release: 13
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
