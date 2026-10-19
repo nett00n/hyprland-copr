@@ -112,15 +112,6 @@ Shipped behavior doing the wrong thing.
   promoting it to an error is worth revisiting once it's run quiet for a while
   [P3/D1]
 
-### Makefile
-
-- #BUG-0071 `delete-package.py:95-97` now cleans the artifacts ledger
-  (`build_db.forget_package`, `lib/build_db.py:431-436`) but never touches
-  `local-repo/*/<pkg>-*.rpm` -> stale RPMs linger across every target, and are now
-  *worse off* than before: they survive on disk with no DB row pointing at them
-  anymore. Fix needs a glob-and-unlink plus `regenerate_repo_metadata` per touched
-  target, or dnf metadata goes stale [P2/D2]
-
 ## Tech debt
 
 Refactor / typing / dedup / structure with no behavior change.
@@ -151,11 +142,6 @@ distro/arch-agnostic build-target work itself is tracked as a feature, not here 
   it's a `$(shell)` evaluated at parse time on *every* make invocation, so a naive
   swap to python adds interpreter startup to every target -- needs a cache, not a
   straight swap [P2/D1]
-- #BUG-0070 `delete-package` still holds the volume sweep in the Makefile recipe
-  after its script call -> untestable by pytest. (The `add-submodule`/`add-new`/
-  `delete-package` git-submodule surgery went away with the submodules, #COPR-0004.)
-  `scaffold-package` is already done -- it fully delegates to
-  `scripts/scaffold-package.py`, which is tested [P2/D3]
 
 ### Scripts
 

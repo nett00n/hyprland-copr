@@ -15,31 +15,34 @@ command.
 | --- | --- |
 | `make list-tags PACKAGE=<name>` | list upstream tags, highlighting latest semver |
 | `make set-release PACKAGE=<name> RELEASE=<n> [LOCK=1]` | set (and optionally lock) a release |
-| `make delete-package PACKAGE=<name>` | remove from `packages.yaml`, `groups.yaml`, `sources.lock.yaml`, `build-report.db`, `logs/build`, `packages/`, container rpmbuild dirs |
+| `make delete-package PACKAGE=<name>` | remove from `packages.yaml`, `groups.yaml`, `sources.lock.yaml`, `build-report.db`, `logs/runs/`, `local-repo/*/` RPMs (repo metadata regenerated), `packages/`, container rpmbuild dirs |
 
 ## Implementation
 
 - `scripts/list-tags.py`, `scripts/set-package-release.py`, `scripts/delete-package.py`.
-- `delete-package.py` cleans the `build_db.forget_package` artifacts ledger.
+- `delete-package.py` owns all cleanup except the `packages/<name>` `rm -rf`, which stays
+  in the Makefile recipe: it cleans the `build_db.forget_package` artifacts ledger, unlinks
+  the package's RPMs from every `local-repo/<target>/` and runs `createrepo_c` on each
+  touched target (`lib/local_repo.remove_package_rpms`), and sweeps the rpmbuild volume
+  (`sweep_rpmbuild`).
 
 ## Quirks & Decisions
 
-- Quirk: `delete-package.py` cleans the artifacts ledger but never touches
-  `local-repo/*/<pkg>-*.rpm` — stale RPMs linger across every target with no DB row
-  pointing at them anymore, worse off than before the ledger cleanup existed.
-  Proposed: glob-and-unlink plus `regenerate_repo_metadata` per touched target.
-  (BUG-0071)
-- Quirk: `delete-package` still holds the volume sweep directly in the Makefile
-  recipe after its script call, untestable by pytest.
-  Proposed: move into `scripts/*.py`, same as [COPR-0001](COPR-0001-add-package-from-url.md)'s
-  quirk. (BUG-0070; the submodule surgery went away with the submodules. A cached
-  mirror under `.cache/upstream` is left in place: it is disposable and shared by url.)
+- Decision: RPMs (in `local-repo/` and `RPMS/`) are matched by their `%{SOURCERPM}`
+  name, and `SOURCES/`/`SRPMS/` entries by `<name>-<digit>...`, never by a bare
+  `<name>-*` glob -- that would make deleting `hyprland` also remove
+  `hyprland-protocols` and `hyprland-plugins`.
+- Decision: a cached mirror under `.cache/upstream` is left in place: it is disposable and
+  shared by url. (The submodule surgery went away with the submodules.)
 
 ## Testing
 
 ### Unit
 
 - `tests/test_set_package_release.py`, `tests/test_db_artifacts.py`.
+- `tests/test_delete_package.py`: local-repo RPM removal per target (prefix-collision
+  sibling survives, metadata regenerated only for touched targets), rpmbuild-volume
+  sweep, summary line, already-clean exit.
 
 ## Status
 

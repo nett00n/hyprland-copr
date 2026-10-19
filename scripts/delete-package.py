@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Remove a package and every place it's tracked: packages.yaml entry, group
 membership in groups.yaml, its sources.lock.yaml entry, build-report.db rows,
-and every logs/runs/<run_id>/<target>/<name> directory still on disk
-(case-insensitive lookup by name).
+every logs/runs/<run_id>/<target>/<name> directory still on disk
+(case-insensitive lookup by name), its RPMs in local-repo/<target>/ (repo
+metadata regenerated), and its files in the rpmbuild dir (SOURCES/SRPMS/RPMS).
 
 Resolves the package primarily against packages.yaml. If it's already gone
 from there (e.g. a previous run only got as far as popping the yaml entry),
@@ -16,13 +17,14 @@ Example:
     python3 scripts/delete-package.py waybar-git
 """
 
+import re
 import shutil
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from lib import build_db  # noqa: E402
+from lib import build_db, local_repo  # noqa: E402
 from lib.paths import (  # noqa: E402
     GROUPS_YAML,
     PACKAGES_YAML,
@@ -59,6 +61,36 @@ def resolve_name(query: str, packages: dict, groups: dict, lock: dict) -> str | 
     if len(matches) > 1:
         sys.exit(f"error: ambiguous package name {query!r}, matches: {sorted(matches)}")
     return None
+
+
+RPMBUILD_DIR = Path.home() / "rpmbuild"
+
+
+def sweep_rpmbuild(pkg: str, rpmbuild: Path = RPMBUILD_DIR) -> int:
+    """#COPR-0013, #BUG-0070: remove `pkg`'s files from the rpmbuild dir
+    (the rpmbuild podman volume, mounted at ~/rpmbuild). Returns how many
+    entries were removed; no-op if the dir doesn't exist.
+
+    SOURCES/ and SRPMS/ entries match `<pkg>-<digit>...`; built RPMs under
+    RPMS/<arch>/ are matched by source package. A bare `<pkg>-*` glob would
+    also take `<pkg>-protocols-*` and the like.
+    """
+    own_file = re.compile(rf"{re.escape(pkg)}-\d.*")
+    removed = 0
+    for sub in ("SOURCES", "SRPMS"):
+        for entry in sorted((rpmbuild / sub).glob(f"{pkg}-*")):
+            if not own_file.fullmatch(entry.name):
+                continue
+            if entry.is_dir():
+                shutil.rmtree(entry)
+            else:
+                entry.unlink()
+            removed += 1
+    for rpm_path in sorted((rpmbuild / "RPMS").glob("*/*.rpm")):
+        if local_repo.rpm_source_name(rpm_path) == pkg:
+            rpm_path.unlink()
+            removed += 1
+    return removed
 
 
 def main() -> None:
@@ -107,6 +139,17 @@ def main() -> None:
         shutil.rmtree(log_dir)
     if log_dirs:
         parts.append(f"{len(log_dirs)} log dir(s) under logs/runs/")
+
+    repo_removed = local_repo.remove_package_rpms(pkg_name)
+    if repo_removed:
+        parts.append(
+            f"{sum(repo_removed.values())} RPM(s) in local-repo "
+            f"({', '.join(repo_removed)})"
+        )
+
+    volume_removed = sweep_rpmbuild(pkg_name)
+    if volume_removed:
+        parts.append(f"{volume_removed} file(s) in rpmbuild volume")
 
     if not parts:
         sys.exit(f"error: {pkg_name} matched but nothing to remove (already clean)")

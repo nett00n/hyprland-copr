@@ -368,16 +368,12 @@ add-new: check-image check-venv setup-volumes ## Sync the upstream mirror from U
 	 $(CONTAINER_PYTHON) scripts/scaffold-package.py $$_name --url $(URL) || exit 1
 	$(MAKE) fmt
 
-delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, groups.yaml, sources.lock.yaml, build-report.db, logs/runs/*/*/<name>, packages/, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required, single package only)
+delete-package: check-image check-venv setup-volumes ## Remove package from packages.yaml, groups.yaml, sources.lock.yaml, build-report.db, logs/runs/*/*/<name>, local-repo/*/ RPMs, packages/, and container rpmbuild dirs (PKG=<name> or PACKAGE=<name> required, single package only)
 	@test -n "$(PACKAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: PKG or PACKAGE is required (e.g. PKG=hyprpicker)"; exit 1)
 	@case "$(PACKAGE)" in *,*) echo "$(HIGHLIGHT_PREFIX) Error: PACKAGE must be a single package name here (got a comma-separated list: $(PACKAGE))"; exit 1;; esac
 	@echo "$(HIGHLIGHT_PREFIX) Removing package '$(PACKAGE)'..."
 	@$(CONTAINER_PYTHON) scripts/delete-package.py $(PACKAGE)
 	@rm -rf packages/$(PACKAGE)
-	@if $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(RPMBUILD_VOLUME) >/dev/null 2>&1; then \
-	  $(CONTAINER_SUDO) $(CONTAINER_RUNTIME) run --rm -v $(RPMBUILD_MOUNT) $(IMAGE_NAME) \
-	    rm -rf /root/rpmbuild/SOURCES/$(PACKAGE)-* /root/rpmbuild/SRPMS/$(PACKAGE)-* /root/rpmbuild/RPMS/*/$(PACKAGE)-* || exit 1; \
-	fi
 	@echo "$(HIGHLIGHT_PREFIX) ✓ Removed $(PACKAGE)"
 
 set-release: check-image check-venv setup-volumes ## Set package release value (PACKAGE=<name|name1,name2,...> RELEASE=<num> required; LOCK=1 to prevent auto-increment)

@@ -23,6 +23,11 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0013: `make delete-package` also removes the package's RPMs from
+  `local-repo/<target>/` (regenerating that repo's metadata) and its files from the
+  rpmbuild volume, matched by source package rather than name prefix so
+  `hyprland` never sweeps `hyprland-protocols`; the volume sweep moved out of the
+  Makefile recipe into `delete-package.py` (BUG-0071, BUG-0070).
 - COPR-0008: `release: 0` is resolved on every canonical pre-build (to the next
   release above any already built for that version), not only when content changed;
   `quickshell`/`pyprland` sat on `0` forever (BUG-0114).

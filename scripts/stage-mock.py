@@ -29,6 +29,8 @@ from typing import Any
 from lib import build_db
 from lib.config import env_flag, setup_logging
 from lib.deps import build_dep_graph, effective_deps, topological_sort
+from lib.local_repo import regenerate_repo_metadata
+from lib.local_repo import rpm_query as _rpm_query
 from lib.paths import (
     ARCH,
     DISTRO,
@@ -54,25 +56,6 @@ def failed_local_dep(
     return None
 
 
-def regenerate_repo_metadata(repo_dir: Path) -> None:
-    """Regenerate repo_dir's repo metadata to index all packages built for
-    that target. Creates repo_dir if this is the first build for it --
-    createrepo_c errors on a nonexistent directory."""
-    repo_dir.mkdir(parents=True, exist_ok=True)
-    result = subprocess.run(
-        ["createrepo_c", "--update", str(repo_dir)],
-        capture_output=True,
-        stdin=subprocess.DEVNULL,
-        check=False,
-    )
-    if result.returncode != 0:
-        logging.error(
-            "createrepo_c failed: %s",
-            result.stderr.decode() if result.stderr else "",
-        )
-        raise RuntimeError(f"createrepo_c failed with code {result.returncode}")
-
-
 def warn_if_flat_local_repo(local_repo_root: Path) -> None:
     """Warn (never delete) if pre-2026-08-11 flat RPMs are sitting directly
     under local-repo/ with no chroot subdirectory -- leftovers from before
@@ -86,17 +69,6 @@ def warn_if_flat_local_repo(local_repo_root: Path) -> None:
             "chroot, local-repo/<target>/); remove them with "
             "`rm -rf local-repo/*.rpm local-repo/repodata`"
         )
-
-
-def _rpm_query(rpm_path: Path, fmt: str) -> str:
-    """Query a single field from an RPM file via rpm --queryformat."""
-    result = subprocess.run(
-        ["rpm", "-qp", "--queryformat", fmt, str(rpm_path)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return result.stdout.strip()
 
 
 def _evr(rpm_path: Path) -> str:
@@ -124,7 +96,9 @@ def _vercmp(evr_a: str, evr_b: str) -> int:
     return 0
 
 
-def prune_local_repo(repo_dir: Path, keep: frozenset[str] | set[str] = frozenset()) -> bool:
+def prune_local_repo(
+    repo_dir: Path, keep: frozenset[str] | set[str] = frozenset()
+) -> bool:
     """#COPR-0002, #BUG-0115: delete all but the newest NVR per (name, arch) within
     repo_dir -- except that RPMs whose path is in `keep` (what this build just
     produced) always survive, and every other entry of their group goes, even if
