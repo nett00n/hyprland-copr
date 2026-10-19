@@ -1739,7 +1739,7 @@ pyprland:
   - '%{python3_sitelib}/pyprland'
   - '%{python3_sitelib}/pyprland-%{version}.dist-info'
   license: MIT
-  release: 2
+  release: 1
   requires:
   - python3-aiofiles
   - python3-aiohttp
@@ -1754,7 +1754,7 @@ pyprland:
     - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Scratchpads & many goodies for Hyprland
   url: https://github.com/hyprland-community/pyprland
-  version: 3.4.5
+  version: 3.4.6
 quickshell:
   build:
     commands:
