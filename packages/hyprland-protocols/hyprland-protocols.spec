@@ -2,13 +2,14 @@
 
 Name:           hyprland-protocols
 Version:        0.8.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Wayland protocol extensions for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-protocols
 Source0:        https://github.com/hyprwm/hyprland-protocols/archive/refs/tags/v0.8.0.tar.gz#/hyprland-protocols-0.8.0.tar.gz
 
 BuildRequires:  cmake
+BuildRequires:  gcc
 BuildRequires:  ninja-build
 
 
@@ -65,6 +66,6 @@ Development files for hyprland-protocols.
 %{_datadir}/pkgconfig/%{name}.pc
 
 %changelog
-* Fri Oct 16 2026 nett00n <copr@nett00n.org> - 0.8.0-1
+* Fri Oct 16 2026 nett00n <copr@nett00n.org> - 0.8.0-2
 
 - VERSION: bump to 0.8.0

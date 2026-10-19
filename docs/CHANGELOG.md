@@ -23,6 +23,34 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0008: `release: 0` is resolved on every canonical pre-build (to the next
+  release above any already built for that version), not only when content changed;
+  `quickshell`/`pyprland` sat on `0` forever (BUG-0114).
+- COPR-0002: stage caches compare the declared NVR with the recorded one
+  (`nvr-changed`), so release-only changes rebuild (BUG-0116); the local-repo prune keeps
+  the build it just produced instead of deleting it in favor of a stale higher release,
+  which made `quickshell` rebuild in mock every run (BUG-0115).
+- COPR-0002: a dependency-forced rebuild always names the rebuilt dependency, tagged
+  with the stage that reran (`forced (dep rebuilt: hyprutils [srpm])`); a bare `forced`
+  now means only operator force (BUG-0113).
+- COPR-0015: the `artifacts` ledger is keyed `(realm, path, target)` (migration v4), so
+  targets sharing one SRPM/vendor tarball stop stealing each other's row and triggering
+  a perpetual `artifact-missing` cascade rebuild; `db-prune` unlinks a file only when no
+  row references it, `db-usage` counts shared paths once (BUG-0112).
+- Packaging: `hyprland-protocols` 0.8.0 declares `LANGUAGES C`; added `gcc` to its
+  `build_requires` (mock failed `CMAKE_C_COMPILER not set` on all targets).
+- COPR-0018: `stage-srpm.py` takes the SRPM path from `rpmbuild -bs`'s `Wrote:` line
+  instead of a `<pkg>-*.src.rpm` glob that also matched `hyprland-git`,
+  `hyprland-protocols`, etc. (BUG-0109), and records upstream source tarballs as
+  `source` artifacts.
+- COPR-0015: `db-prune` keeps every row at a group's highest version (it used to keep
+  one row, deleting a build's `-devel`/`-debuginfo`/`-debugsource` RPMs; BUG-0110) and
+  now also prunes `source` artifacts; `update-daily` runs `db-prune CONFIRM=1`
+  (COPR-0003).
+- COPR-0022: `make clean-logs` also removes the orphaned legacy `logs/build/`.
+- COPR-0005: the vendor-store key includes the `cargo`/`go` toolchain version, so a
+  toolchain upgrade no longer reuses stale vendor trees (BUG-0111).
+
 - COPR-0004: replaced git submodules with a disposable, gitignored upstream mirror
   cache (`.cache/upstream/<org>/<name>.git` bare mirror + detached worktree, derived
   from `packages.yaml` urls, `lib/upstream.py` replaces `lib/gitmodules.py`).

@@ -64,6 +64,19 @@ class TestUsageReport:
         assert "1.5K" in out
         assert "TOTAL" in out
 
+    def test_total_counts_shared_path_once(self, tmp_path, capsys):
+        """#BUG-0112: one SRPM recorded for two targets is one file on disk."""
+        f = tmp_path / "pkg.src.rpm"
+        f.write_bytes(b"x" * 2048)
+        build_db.record_artifact(str(f), "repo", "srpm", "pkg", "fedora-43-x86_64", "1-1.fc43")
+        build_db.record_artifact(str(f), "repo", "srpm", "pkg", "fedora-44-x86_64", "1-1.fc44")
+
+        db_artifacts.usage_report()
+
+        total = [ln for ln in capsys.readouterr().out.splitlines() if ln.startswith("TOTAL")][0]
+        assert "2.0K" in total
+        assert "4.0K" not in total
+
     def test_flags_rows_whose_file_is_gone(self, tmp_path, capsys):
         f = tmp_path / "gone.rpm"
         f.write_bytes(b"x" * 10)
@@ -157,6 +170,32 @@ class TestPrune:
         assert len(remaining) == 1
         assert remaining[0]["path"] == str(new)
 
+    def test_keeps_file_still_referenced_by_another_target(self, tmp_path):
+        """#BUG-0112: a stale row's file is shared with another target -> row goes, file stays."""
+        shared = tmp_path / "pkg-1.0-1.fc43.src.rpm"
+        newer = tmp_path / "pkg-1.0-2.fc43.src.rpm"
+        t43, t44 = "fedora-43-x86_64", "fedora-44-x86_64"
+        _artifact(tmp_path, shared.name, "pkg", "srpm", 100, mtime=1, target=t43, version="1.0-1.fc43")
+        build_db.record_artifact(str(shared), "repo", "srpm", "pkg", t44, "1.0-1.fc44")
+        _artifact(tmp_path, newer.name, "pkg", "srpm", 100, mtime=2, target=t43, version="1.0-2.fc43")
+
+        db_artifacts.prune(confirm=True)
+
+        assert shared.exists()
+        assert newer.exists()
+        rows = {(r["target"], r["path"]) for r in build_db.artifacts(package="pkg", kind="srpm")}
+        assert rows == {(t43, str(newer)), (t44, str(shared))}
+
+    def test_unlinks_file_once_last_referencing_row_is_pruned(self, tmp_path):
+        old = tmp_path / "pkg-1.0-1.fc43.src.rpm"
+        t43 = "fedora-43-x86_64"
+        _artifact(tmp_path, old.name, "pkg", "srpm", 100, mtime=1, target=t43, version="1.0-1.fc43")
+        _artifact(tmp_path, "pkg-1.0-2.fc43.src.rpm", "pkg", "srpm", 100, mtime=2, target=t43, version="1.0-2.fc43")
+
+        db_artifacts.prune(confirm=True)
+
+        assert not old.exists()
+
     def test_different_kinds_pruned_independently(self, tmp_path):
         """Two rpm builds and one srpm build for the same package: each
         (package, target, kind) group is pruned on its own."""
@@ -168,6 +207,36 @@ class TestPrune:
 
         assert len(build_db.artifacts(package="a", kind="rpm")) == 1
         assert len(build_db.artifacts(package="a", kind="srpm")) == 1
+
+    def test_keeps_every_row_at_the_top_version(self, tmp_path):
+        """#BUG-0110: one build records several rpm rows at the same version
+        (main, -devel, -debuginfo, -debugsource). Only the older version's
+        rows are stale."""
+        new_names = ["a-2-1.rpm", "a-devel-2-1.rpm", "a-debuginfo-2-1.rpm"]
+        old_names = ["a-1-1.rpm", "a-devel-1-1.rpm", "a-debuginfo-1-1.rpm"]
+        for name in new_names:
+            _artifact(tmp_path, name, "a", "rpm", 100, mtime=2, version="2-1.fc44")
+        for name in old_names:
+            _artifact(tmp_path, name, "a", "rpm", 100, mtime=3, version="1-1.fc44")
+
+        db_artifacts.prune(confirm=True)
+
+        for name in new_names:
+            assert (tmp_path / name).exists()
+        for name in old_names:
+            assert not (tmp_path / name).exists()
+        assert len(build_db.artifacts(package="a", kind="rpm")) == 3
+
+    def test_source_kind_is_prunable_and_keeps_top_version(self, tmp_path):
+        _artifact(tmp_path, "a-1.tar.gz", "a", "source", 100, 1, version="1-1.fc44")
+        _artifact(tmp_path, "a-2.tar.gz", "a", "source", 100, 2, version="2-1.fc44")
+        _artifact(tmp_path, "a-2.patch", "a", "source", 100, 2, version="2-1.fc44")
+
+        db_artifacts.prune(confirm=True)
+
+        assert not (tmp_path / "a-1.tar.gz").exists()
+        assert (tmp_path / "a-2.tar.gz").exists()
+        assert (tmp_path / "a-2.patch").exists()
 
     def test_never_touches_logs(self, tmp_path):
         """mock_log artifacts are excluded from pruning entirely, even with

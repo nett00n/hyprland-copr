@@ -117,6 +117,33 @@ class TestPruneLocalRepo:
         assert str(old) not in remaining_paths
         assert str(new) in remaining_paths
 
+    def test_keep_protects_fresh_build_over_higher_stale(self, tmp_path, capsys):
+        """#BUG-0115: fresh -0 survives, stale -1 goes (row too), regression is logged."""
+        repo_dir = tmp_path / TARGET
+        repo_dir.mkdir()
+        stale = repo_dir / "quickshell@x86_64__stale.rpm"
+        fresh = repo_dir / "quickshell@x86_64__fresh.rpm"
+        stale.write_text("stale")
+        fresh.write_text("fresh")
+        build_db.record_artifact(str(stale), "repo", "rpm", "quickshell", TARGET, "0.3.2-1.fc44")
+        build_db.record_artifact(str(fresh), "repo", "rpm", "quickshell", TARGET, "0.3.2-0.fc44")
+
+        fake = _fake_rpm_query({("quickshell", "x86_64"): "0.3.2-1"})
+
+        def fake_evr(rpm_path: Path) -> str:
+            return "0:0.3.2-1" if rpm_path.name == stale.name else "0:0.3.2-0"
+
+        with patch.object(stage_mock, "_rpm_query", side_effect=fake):
+            with patch.object(stage_mock, "_evr", side_effect=fake_evr):
+                removed = stage_mock.prune_local_repo(repo_dir, keep=frozenset({str(fresh)}))
+
+        assert removed is True
+        assert fresh.exists()
+        assert not stale.exists()
+        remaining = {a["path"] for a in build_db.artifacts(package="quickshell")}
+        assert remaining == {str(fresh)}
+        assert "NVR regression" in capsys.readouterr().err
+
     def test_no_duplicates_removes_nothing(self, tmp_path):
         repo_dir = tmp_path / TARGET
         repo_dir.mkdir()

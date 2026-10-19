@@ -329,6 +329,8 @@ def run_build_pipeline(
 
     mock_failed: dict[str, bool] = {}
     rebuilt_packages: set[str] = set()
+    # #BUG-0113: package -> first stage that reran, so a dependent's reason can name it.
+    rebuilt_at: dict[str, str] = {}
 
     # NOTE: no lib.yaml_utils.prepare_stage() call anywhere in this file, for
     # any stage (see docs/BUGS.md, formerly BUG-0020). `packages` here already
@@ -369,12 +371,20 @@ def run_build_pipeline(
             # non-fatal: continue to spec (matches current behaviour)
 
         # Spec
-        if is_cached("spec", pkg, target, new_hashes, forced_stages):
+        if is_cached(
+            "spec",
+            pkg,
+            target,
+            new_hashes,
+            forced_stages,
+            expected_version=pkg_ver or None,
+        ):
             reason = cached_reason(pkg, "spec", target, new_hashes)
             event("spec", target, pkg, "skip", reason=reason, ver=pkg_ver)
             build_db.update_reason(pkg, "spec", target, reason, run_id=run_id)
         else:
             rebuilt_packages.add(pkg)
+            rebuilt_at.setdefault(pkg, "spec")
             started_at = int(time.time())
             prior_entry = build_db.get_stage(pkg, "spec", target)
             prior_state = prior_entry.get("state") if prior_entry else None
@@ -390,6 +400,8 @@ def run_build_pipeline(
                     forced_stages,
                     deps,
                     rebuilt_packages,
+                    rebuilt_at=rebuilt_at,
+                    expected_version=pkg_ver or None,
                 )
             )
             if not _stage["stage-spec"].run_for_package(
@@ -441,6 +453,7 @@ def run_build_pipeline(
             build_db.update_reason(pkg, "vendor", target, reason, run_id=run_id)
         else:
             rebuilt_packages.add(pkg)
+            rebuilt_at.setdefault(pkg, "vendor")
             started_at = int(time.time())
             prior_state = vendor_entry.get("state") if vendor_entry else None
             is_proceed_skip = pkg_proceed and prior_state == "success"
@@ -455,6 +468,7 @@ def run_build_pipeline(
                     forced_stages,
                     deps,
                     rebuilt_packages,
+                    rebuilt_at=rebuilt_at,
                 )
             )
             result = _stage["stage-vendor"].run_for_package(
@@ -485,12 +499,20 @@ def run_build_pipeline(
                 )
 
         # SRPM
-        if is_cached("srpm", pkg, target, new_hashes, forced_stages):
+        if is_cached(
+            "srpm",
+            pkg,
+            target,
+            new_hashes,
+            forced_stages,
+            expected_version=pkg_ver or None,
+        ):
             reason = cached_reason(pkg, "srpm", target, new_hashes)
             event("srpm", target, pkg, "skip", reason=reason, ver=pkg_ver)
             build_db.update_reason(pkg, "srpm", target, reason, run_id=run_id)
         else:
             rebuilt_packages.add(pkg)
+            rebuilt_at.setdefault(pkg, "srpm")
             started_at = int(time.time())
             prior_entry = build_db.get_stage(pkg, "srpm", target)
             prior_state = prior_entry.get("state") if prior_entry else None
@@ -506,6 +528,8 @@ def run_build_pipeline(
                     forced_stages,
                     deps,
                     rebuilt_packages,
+                    rebuilt_at=rebuilt_at,
+                    expected_version=pkg_ver or None,
                 )
             )
             if not _stage["stage-srpm"].run_for_package(
@@ -546,12 +570,14 @@ def run_build_pipeline(
                 new_hashes,
                 forced_stages,
                 all_packages=all_packages,
+                expected_version=pkg_ver or None,
             ):
                 reason = cached_reason(pkg, "mock", target, new_hashes)
                 event("mock", target, pkg, "skip", reason=reason, ver=pkg_ver)
                 build_db.update_reason(pkg, "mock", target, reason, run_id=run_id)
             else:
                 rebuilt_packages.add(pkg)
+                rebuilt_at.setdefault(pkg, "mock")
                 started_at = int(time.time())
                 prior_entry = build_db.get_stage(pkg, "mock", target)
                 prior_state = prior_entry.get("state") if prior_entry else None
@@ -568,6 +594,8 @@ def run_build_pipeline(
                         deps,
                         rebuilt_packages,
                         all_packages=all_packages,
+                        rebuilt_at=rebuilt_at,
+                        expected_version=pkg_ver or None,
                     )
                 )
                 if not _stage["stage-mock"].run_for_package(
@@ -717,12 +745,20 @@ def run_build_pipeline(
                 )
                 continue
 
-        if is_cached("copr", pkg, target, new_hashes, forced_stages):
+        if is_cached(
+            "copr",
+            pkg,
+            target,
+            new_hashes,
+            forced_stages,
+            expected_version=pkg_ver or None,
+        ):
             reason = cached_reason(pkg, "copr", target, new_hashes)
             event("copr", target, pkg, "skip", reason=reason, ver=pkg_ver)
             build_db.update_reason(pkg, "copr", target, reason, run_id=run_id)
         else:
             rebuilt_packages.add(pkg)
+            rebuilt_at.setdefault(pkg, "copr")
             started_at = int(time.time())
             prior_entry = build_db.get_stage(pkg, "copr", target)
             prior_state = prior_entry.get("state") if prior_entry else None
@@ -738,6 +774,8 @@ def run_build_pipeline(
                     forced_stages,
                     deps,
                     rebuilt_packages,
+                    rebuilt_at=rebuilt_at,
+                    expected_version=pkg_ver or None,
                 )
             )
             success = _stage["stage-copr"].run_for_package(

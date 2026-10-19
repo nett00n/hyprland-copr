@@ -307,9 +307,11 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
     2. Compare against stored content hash + version from last build
     3. If content differs OR force_run set OR dep was rebuilt:
        - Release needs increment (or reset if version changed)
-    4. If version changed (or release == 0):
+    4. If version changed:
        - Reset to 1
-    5. Otherwise:
+    5. If release == 0 (sentinel), resolved even when nothing else changed (#BUG-0114):
+       - max(1, highest release already built for this version + 1)
+    6. Otherwise:
        - Increment by 1 (with fallback to 1 if int conversion fails)
 
     Cascade: dependency rebuild forces all dependents to increment.
@@ -362,11 +364,14 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
             or dep_cascade
         )
 
-        if needs_rebuild:
-            dep_will_rebuild.add(pkg_name)
+        # #BUG-0114: the `release: 0` sentinel (update-versions writes it on a bump)
+        # resolves on every pre-build, not only when content changed -- otherwise a
+        # version already built under another release leaves it at 0 forever.
+        current_release = pkg_dict.get("release", 1)
+        sentinel = current_release == 0
 
-            # Determine new release value
-            current_release = pkg_dict.get("release", 1)
+        if needs_rebuild or sentinel:
+            dep_will_rebuild.add(pkg_name)
 
             # Version changed if we have a stored version that differs from current
             version_changed = (
@@ -374,10 +379,17 @@ def update_package_releases(packages: dict, target: str) -> dict[str, int]:
                 and str(pkg_dict.get("version", "")) != last_version
             )
 
-            # If version changed or release is 0, reset to 1
-            # Otherwise, increment release (package needs rebuild)
-            if version_changed or current_release == 0:
+            if version_changed:
                 new_release = 1
+            elif sentinel:
+                # Never go backwards for a version that already has builds.
+                new_release = max(
+                    1,
+                    build_db.highest_built_release(
+                        pkg_name, str(pkg_dict.get("version", ""))
+                    )
+                    + 1,
+                )
             else:
                 # Package needs rebuild: always bump release
                 try:

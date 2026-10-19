@@ -549,6 +549,85 @@ class TestCacheMissReason:
         assert "glaze" not in result
 
 
+class TestSharedSrpmAcrossTargets:
+    """#BUG-0112: one physical SRPM recorded per target must stay "present" for all."""
+
+    def test_srpm_present_for_every_target_that_recorded_it(self, tmp_path):
+        srpm = tmp_path / "pkg-1.0-1.fc43.src.rpm"
+        srpm.write_text("fake srpm")
+        for ver in ("43", "44", "45"):
+            build_db.record_artifact(
+                str(srpm), "rpmbuild-volume", "srpm", "pkg",
+                f"fedora-{ver}-x86_64", f"1.0-1.fc{ver}", arch="src",
+            )
+        for ver in ("43", "44", "45"):
+            assert artifacts_present("srpm", "pkg", f"fedora-{ver}-x86_64", f"1.0-1.fc{ver}") is True
+
+
+class TestDepRebuiltStageTag:
+    """#BUG-0113: a dep cached at this stage but rebuilt at a later one is still named."""
+
+    def test_cached_dep_rebuilt_at_later_stage_is_named_with_stage(self):
+        _seed("hyprutils", "spec", reason="cached (stale-generator)", state="success")
+        result = cache_miss_reason(
+            "spec", "pkg", TARGET, {}, {"spec"},
+            {"hyprutils"}, {"hyprutils"}, rebuilt_at={"hyprutils": "srpm"},
+        )
+        assert result == "forced (dep rebuilt: hyprutils [srpm])"
+
+    def test_uncached_dep_has_no_stage_tag(self):
+        _seed("hyprlang", "spec", reason="hash-mismatch", state="success")
+        result = cache_miss_reason(
+            "spec", "pkg", TARGET, {}, {"spec"},
+            {"hyprlang"}, {"hyprlang"}, rebuilt_at={"hyprlang": "spec"},
+        )
+        assert result == "forced (dep rebuilt: hyprlang)"
+
+    def test_mixed_deps_sorted(self):
+        _seed("hyprutils", "spec", reason="cached", state="success")
+        _seed("hyprlang", "spec", reason="hash-mismatch", state="success")
+        result = cache_miss_reason(
+            "spec", "pkg", TARGET, {}, {"spec"},
+            {"hyprutils", "hyprlang"}, {"hyprutils", "hyprlang"},
+            rebuilt_at={"hyprutils": "srpm", "hyprlang": "spec"},
+        )
+        assert result == "forced (dep rebuilt: hyprlang, hyprutils [srpm])"
+
+
+class TestExpectedVersion:
+    """#COPR-0002, #BUG-0116: a changed declared NVR is a cache miss despite equal hashes."""
+
+    HASHES = {"a": "h1"}
+
+    def _seed_spec(self, version: str) -> None:
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg", "spec", TARGET, run_id, "success", version=version)
+        build_db.finalize_stage("pkg", "spec", TARGET, 1, self.HASHES)
+
+    def test_release_only_change_is_not_cached(self):
+        self._seed_spec("1.0-0.fc44")
+        assert is_cached("spec", "pkg", TARGET, self.HASHES, set(), expected_version="1.0-2.fc44") is False
+        assert (
+            cache_miss_reason("spec", "pkg", TARGET, self.HASHES, set(), expected_version="1.0-2.fc44")
+            == "nvr-changed"
+        )
+
+    def test_same_nvr_stays_cached(self):
+        self._seed_spec("1.0-2.fc44")
+        assert is_cached("spec", "pkg", TARGET, self.HASHES, set(), expected_version="1.0-2.fc44") is True
+
+    def test_omitted_expected_version_keeps_old_behaviour(self):
+        self._seed_spec("1.0-0.fc44")
+        assert is_cached("spec", "pkg", TARGET, self.HASHES, set()) is True
+
+    def test_hash_mismatch_still_reported_when_nvr_same(self):
+        self._seed_spec("1.0-2.fc44")
+        assert (
+            cache_miss_reason("spec", "pkg", TARGET, {"a": "other"}, set(), expected_version="1.0-2.fc44")
+            == "hash-mismatch"
+        )
+
+
 class TestParseBuildId:
     """Test build ID extraction from copr-cli output."""
 

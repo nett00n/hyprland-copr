@@ -127,3 +127,19 @@ class TestStore:
             store("pkg", meta, {}, built)
 
         mock_run.assert_not_called()
+
+
+class TestToolchainInKey:
+    """#BUG-0111: a cargo/go upgrade must not reuse a tree the old one built."""
+
+    def test_different_tool_version_is_a_miss(self, tmp_path):
+        meta = _meta()
+        built = tmp_path / "built-vendor.tar.gz"
+        built.write_bytes(b"vendor contents")
+
+        with patch("lib.vendor_store._tool_version", return_value="go version go1.24"):
+            stored = store("pkg", meta, {}, built)
+            assert find("pkg", meta, {}) == stored
+
+        with patch("lib.vendor_store._tool_version", return_value="go version go1.25"):
+            assert find("pkg", meta, {}) is None

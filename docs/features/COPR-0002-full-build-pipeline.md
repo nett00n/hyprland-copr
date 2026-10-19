@@ -33,6 +33,24 @@ artifact prune, a partial `clean-localrepo`, volume corruption) invalidates ever
 package that (transitively) depends on it, with reason `dep-artifact-missing: <dep>`,
 rather than silently staying "cached" (#BUG-0064).
 
+A stage is also not cached when the NVR declared now differs from the NVR its row
+recorded (reason `nvr-changed`), even if every input hash matches: `release` is not
+part of the hashes, so a release-only change (a resolved `release: 0`, `make
+set-release`) would otherwise keep serving artifacts built under the old release
+(#BUG-0116).
+
+The mock stage's local-repo prune keeps the RPMs the current build just produced.
+A stale RPM of the same name and arch with a *higher* EVR is removed with an `NVR
+regression` warning, never the fresh build -- previously the fresh `-0` build was
+deleted in favor of a stale `-1`, so the next run saw `artifact-missing` and rebuilt
+forever (#BUG-0115).
+
+A package that reruns because a dependency was rebuilt this run gets reason
+`forced (dep rebuilt: <dep>[, <dep>...])`; a bare `forced` means only operator force
+(`force_run` / `FORCE_REBUILD`). Every rebuilt dependency is named. One whose row for
+the stage in question is still `cached*` (it reran at a later stage) is tagged with the
+stage that actually reran, e.g. `forced (dep rebuilt: hyprutils [srpm])` (#BUG-0113).
+
 | Stage | What it does |
 | --- | --- |
 | validate | packages.yaml entry + upstream url sanity |

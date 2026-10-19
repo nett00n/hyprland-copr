@@ -12,13 +12,17 @@ manually track cascades through dependents.
 
 | Situation | `release` action |
 | --- | --- |
+| `release: 0` (the sentinel `update-versions` writes on a bump) | always resolved on the canonical pre-build, even if nothing else changed: `max(1, highest release already built for this same version + 1)`, read from `build-report.db` (#BUG-0114) |
 | Version changed | reset to `1` |
 | Content differs, same version | increment by 1 |
 | Content unchanged, no force, no dependency cascade | no change |
 | Force-run, or a `depends_on` dependency was rebuilt | increment by 1, cascades to every dependent |
 
 Content hash excludes `release` itself, so a release-only edit never re-triggers
-itself. Manual override: `make set-release PACKAGE=<name> RELEASE=<n> LOCK=1` (`LOCK=1`
+itself; the stage cache therefore also compares the declared NVR with the NVR each
+stage row recorded (reason `nvr-changed`, see
+[COPR-0002](COPR-0002-full-build-pipeline.md)), so a release-only change still rebuilds
+(#BUG-0116). A resolved sentinel counts as a rebuild for the dependency cascade. Manual override: `make set-release PACKAGE=<name> RELEASE=<n> LOCK=1` (`LOCK=1`
 skips further auto-management until removed); `release_lock: true` in `packages.yaml`
 does the same declaratively.
 

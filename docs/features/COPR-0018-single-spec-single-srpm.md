@@ -19,6 +19,13 @@ read from, for any chroot. A per-Fedora-version spec difference is written direc
 block. That block now only supports `skip`; any other key is rejected by
 `lib.validation` (shared by `validate-packages.py` and `stage-validate.py`).
 
+`stage-srpm.py` takes the SRPM path from the `Wrote: …/SRPMS/<file>.src.rpm` line
+`rpmbuild -bs` prints, never from a glob of `SRPMS/`: the shared directory holds every
+package's SRPMs, and `hyprland-*` also matches `hyprland-git`, `hyprland-protocols`,
+etc. (#BUG-0109). No `Wrote:` line means the stage fails. After a successful source
+verify it also records every remote upstream source file present in `SOURCES/` as an
+`artifacts` row of kind `source` (see [COPR-0015](COPR-0015-build-state-db.md)).
+
 ## Implementation
 
 - `scripts/stage-srpm.py`, `scripts/lib/paths.py` (shared `rpmbuild` volume).

@@ -24,8 +24,21 @@ from lib.config import env_flag
 from lib.deps import effective_deps, ordered_packages
 from lib.paths import resolve_target
 from lib.pipeline import STAGE_ORDER, compute_forced_stages, is_cached
-from lib.version import VERSION_STAGE_PRECEDENCE, recorded_version
+from lib.version import VERSION_STAGE_PRECEDENCE, nvr, recorded_version
 from lib.yaml_utils import STAGES, get_packages
+
+
+def _declared_nvr(meta: dict, target: str) -> str | None:
+    """#COPR-0002, #BUG-0116: the NVR full-cycle.py would build for `meta` now, or
+    None if the package declares no version (mirrors full-cycle's pkg_ver)."""
+    if not meta.get("version"):
+        return None
+    fedora_version = (
+        target.split("-")[1]
+        if target.startswith("fedora-")
+        else os.environ.get("FEDORA_VERSION", "44")
+    )
+    return nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
 
 
 def show_plan(
@@ -128,6 +141,7 @@ def show_plan(
                 new_hashes,
                 forced_stages,
                 all_packages=all_packages_full,
+                expected_version=_declared_nvr(meta, target),
             ):
                 label = "cache"
                 if stage == "spec" and entry and stale_advisories(entry, new_hashes):

@@ -150,7 +150,8 @@ extra config needed.
 Before running `go mod vendor`/`cargo vendor`, the stage checks a content-addressed store at
 `.cache/vendor/<pkg>/<input-hash>/` (`lib/vendor_store.py`). The hash covers the same inputs
 every other stage's cache does (source URL, `go_subdir`/`rust_subdir`, patches, dependency
-config) via `lib.cache.compute_input_hashes`, so a hit is reused verbatim and a miss rebuilds and
+config) via `lib.cache.compute_input_hashes`, plus the `cargo`/`go` version of the
+container toolchain that generates the tree (#BUG-0111), so a hit is reused verbatim and a miss rebuilds and
 re-populates the store. Unlike `~/rpmbuild/SOURCES` (one podman volume per `FEDORA_VERSION`),
 this store is shared across every target, so `make full-cycle-matrix` builds a given vendor tree
 once instead of once per Fedora version. Entries are recorded in the `artifacts` table under

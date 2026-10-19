@@ -35,7 +35,7 @@ from lib.yaml_utils import dump_yaml_pretty
 # Artifacts that accumulate one-per-build and are safe to prune down to the
 # latest. Logs are deliberately excluded -- `make clean-logs` / --reset is
 # the tool for those, not NVR/recency-based pruning (see docs/TODO.md).
-_PRUNABLE_KINDS = {"srpm", "rpm", "vendor"}
+_PRUNABLE_KINDS = {"srpm", "rpm", "vendor", "source"}
 
 
 def _human_size(num_bytes: int) -> str:
@@ -84,11 +84,15 @@ def usage_report(verify: bool = False) -> None:
     corrupted: list[str] = []
     unverifiable = 0
     grand_total = 0
+    counted: set[tuple[str, str]] = set()
     for row in rows:
         size = row.get("size_bytes") or 0
         key = (row["package"], row["target"])
         totals[key] = totals.get(key, 0) + size
-        grand_total += size
+        # #BUG-0112: a file shared by several targets is one file on disk.
+        if (row["realm"], row["path"]) not in counted:
+            counted.add((row["realm"], row["path"]))
+            grand_total += size
         resolved = _resolve_path(row)
         if resolved is None:
             if row["realm"] == "rpmbuild-volume":
@@ -139,45 +143,90 @@ def _prune_key(row: dict) -> tuple[Any, int]:
     return (_EvrKey(row.get("version")), row.get("mtime") or 0)
 
 
-def prune(confirm: bool) -> None:
-    """Keep only the highest-version recorded artifact per (package, target,
-    kind) among prunable kinds (srpm, rpm, vendor); delete the rest.
+# Kinds where one build legitimately records several files at the same version:
+# an RPM build writes main/-devel/-debuginfo/-debugsource, a package can have
+# several upstream source files (tarball + patches). For srpm and vendor, one
+# version is one file (vendor-store entries differ only by input hash), so only
+# the newest survives.
+_MULTI_ROW_KINDS = {"rpm", "source"}
 
-    "Highest version" compares the recorded artifacts.version column (the
-    version-release-dist label lib.version.nvr() wrote) via
-    lib.version.compare_evr() -- a real RPM version comparison, not
-    wall-clock order, so a rebuild that lands on disk later but is an older
-    version (a pin rollback, a corrected pinned-version) doesn't get kept
-    over a genuinely newer one (docs/CHANGELOG.md 2026-09-08, closes the
-    former docs/BUGS.md BUG-0017). Recorded mtime is only the tiebreaker,
-    for equal or unversioned rows -- find_srpm() (`stage-srpm.py`) still
-    picks its build input by mtime alone, a separate, smaller-blast-radius
-    gap.
+
+def _stale_rows(entries: list[dict], kind: str) -> list[dict]:
+    """#COPR-0015, #BUG-0110: the rows of one (package, target, kind) group to
+    delete.
+
+    For a multi-row kind, only rows whose version compares strictly lower than
+    the group's highest are stale; every row at the top version survives. A
+    group with no versions at all, and every srpm/vendor group, keep just the
+    best row by (version, mtime). Unversioned rows in a multi-row group that
+    does have a versioned top are left alone -- nothing says they are
+    superseded.
+    """
+    if kind not in _MULTI_ROW_KINDS:
+        return sorted(entries, key=_prune_key)[:-1]
+    versioned = [row for row in entries if row.get("version")]
+    if not versioned:
+        return sorted(entries, key=_prune_key)[:-1]
+    top = max(versioned, key=_prune_key)["version"]
+    return [row for row in versioned if compare_evr(row["version"], top) < 0]
+
+
+def prune(confirm: bool) -> None:
+    """#COPR-0015: delete superseded artifacts among the prunable kinds (srpm,
+    rpm, vendor, source), per (package, target, kind).
+
+    "Superseded" is a strictly lower recorded artifacts.version than the
+    group's highest, compared via lib.version.compare_evr() -- a real RPM
+    version comparison, not wall-clock order, so a rebuild that lands on disk
+    later but is an older version (a pin rollback, a corrected
+    pinned-version) doesn't get kept over a genuinely newer one
+    (docs/CHANGELOG.md 2026-09-08, closes the former docs/BUGS.md BUG-0017).
+    For rpm and source, every row at the top version survives (see
+    _stale_rows); srpm and vendor keep one row, recorded mtime breaking ties.
 
     Dry-run by default (confirm=False): prints what would be removed.
     """
-    rows = [r for r in build_db.artifacts() if r["kind"] in _PRUNABLE_KINDS]
+    all_rows = build_db.artifacts()
+    rows = [r for r in all_rows if r["kind"] in _PRUNABLE_KINDS]
     by_key: dict[tuple[str, str, str], list[dict]] = {}
     for row in rows:
         key = (row["package"], row["target"], row["kind"])
         by_key.setdefault(key, []).append(row)
 
-    reclaimed = 0
-    removed = 0
-    for entries in by_key.values():
+    stale_rows: list[dict] = []
+    for (_pkg, _target, kind), entries in by_key.items():
         if len(entries) < 2:
             continue
-        entries.sort(key=_prune_key)
-        for stale in entries[:-1]:  # highest version (then mtime) is last, kept
-            size = stale.get("size_bytes") or 0
-            action = "removing" if confirm else "would remove"
-            print(f"  {action}: {stale['path']} ({_human_size(size)})")
-            if confirm:
+        stale_rows.extend(_stale_rows(entries, kind))
+
+    # #BUG-0112: targets share one physical file (SRPM, vendor tarball), one
+    # ledger row each. A file is only freed once every row naming it is stale.
+    holders: dict[tuple[str, str], set[str]] = {}
+    for row in all_rows:
+        holders.setdefault((row["realm"], row["path"]), set()).add(row["target"])
+    stale_targets: dict[tuple[str, str], set[str]] = {}
+    for stale in stale_rows:
+        stale_targets.setdefault((stale["realm"], stale["path"]), set()).add(
+            stale["target"]
+        )
+
+    reclaimed = 0
+    removed = 0
+    for stale in stale_rows:
+        ident = (stale["realm"], stale["path"])
+        freed = holders[ident] <= stale_targets[ident]
+        size = stale.get("size_bytes") or 0
+        action = "removing" if confirm else "would remove"
+        note = "" if freed else " [row only: file shared with another target]"
+        print(f"  {action}: {stale['path']} ({_human_size(size)}){note}")
+        if confirm:
+            build_db.delete_artifact(stale["realm"], stale["path"], stale["target"])
+            if not build_db.artifact_path_referenced(stale["realm"], stale["path"]):
                 # #BUG-0062: on the host, the recorded (container-absolute)
                 # path won't exist -- fall back to its host-resolved location.
                 # Neither existing (already gone, or rpmbuild-volume viewed
                 # from the host) just means there's nothing to unlink; the
-                # ledger row is still dropped below.
+                # ledger row is already dropped above.
                 path = _resolve_path(stale) or Path(stale["path"])
                 if stale["realm"] == "vendor-store":
                     # The whole <pkg>/<input-hash>/ entry (tarball + meta.json)
@@ -185,9 +234,9 @@ def prune(confirm: bool) -> None:
                     shutil.rmtree(path.parent, ignore_errors=True)
                 elif path.exists():
                     path.unlink()
-                build_db.delete_artifact(stale["realm"], stale["path"])
+        if freed:
             reclaimed += size
-            removed += 1
+        removed += 1
 
     if removed == 0:
         print("Nothing to prune.")

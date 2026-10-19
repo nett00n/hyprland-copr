@@ -430,7 +430,7 @@ hypridle:
   - '%{_datadir}/hypr/hypridle.conf'
   - '%{_userunitdir}/hypridle.service'
   license: BSD-3-Clause
-  release: 14
+  release: 15
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -538,7 +538,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 18
+  release: 19
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -666,7 +666,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 7
+  release: 8
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -681,6 +681,7 @@ hyprland-protocols:
     system: cmake
   build_requires:
   - cmake
+  - gcc
   - ninja-build
   description: |
     hyprland-protocols
@@ -705,7 +706,7 @@ hyprland-protocols:
   - '%doc README.md'
   - '%license LICENSE'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   rpm:
     no_debug_package: true
   source:
@@ -1150,7 +1151,7 @@ hyprsunset:
   - '%{_prefix}/bin/hyprsunset'
   - '%{_prefix}/lib/systemd/user/hyprsunset.service'
   license: BSD-3-Clause
-  release: 14
+  release: 15
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1738,7 +1739,7 @@ pyprland:
   - '%{python3_sitelib}/pyprland'
   - '%{python3_sitelib}/pyprland-%{version}.dist-info'
   license: MIT
-  release: 0
+  release: 2
   requires:
   - python3-aiofiles
   - python3-aiohttp
@@ -1798,7 +1799,7 @@ quickshell:
   - '%{_datadir}/applications/org.quickshell.desktop'
   - '%{_datadir}/icons/hicolor/scalable/apps/org.quickshell.svg'
   license: LGPL-3.0-or-later
-  release: 0
+  release: 2
   requires: []
   rpm:
     no_debug_package: false
@@ -2290,7 +2291,7 @@ xdg-desktop-portal-hyprland:
   - '%{_libexecdir}/%{name}'
   - '%{_userunitdir}/%{name}.service'
   license: BSD-3-Clause
-  release: 13
+  release: 14
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'

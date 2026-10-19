@@ -1792,3 +1792,33 @@ class TestPipelineLock:
         assert result.returncode == 0
         assert result.stdout.count("already in progress") == 1
         assert "test -x .venv/bin/python3" in result.stdout
+
+
+class TestCleanupTargets:
+    """#COPR-0022, #COPR-0015: dry-run coverage for the log cleanup and the
+    nightly artifact prune."""
+
+    def _dry_run(self, *args):
+        return subprocess.run(
+            ["make", "-n", *args],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+
+    def test_clean_logs_removes_legacy_logs_build(self):
+        result = self._dry_run("clean-logs")
+
+        assert result.returncode == 0
+        assert "rm -rf logs/runs logs/make logs/build" in result.stdout
+
+    def test_update_daily_prunes_artifacts_after_the_matrix_build(self):
+        result = self._dry_run("_update-daily", "COPR_REPO=nett00n/hyprland")
+
+        assert result.returncode == 0
+        lines = result.stdout.splitlines()
+        matrix = next(i for i, ln in enumerate(lines) if "full-cycle-matrix" in ln)
+        prune = next(i for i, ln in enumerate(lines) if "db-prune CONFIRM=1" in ln)
+        assert prune > matrix
+        # A prune failure must never block the night's docs and commit.
+        assert "db-prune CONFIRM=1 ||" in lines[prune] or "|| true" in lines[prune]

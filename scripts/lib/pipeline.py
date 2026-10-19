@@ -123,6 +123,13 @@ def compute_forced_stages(
     return forced
 
 
+def _nvr_changed(entry: dict, expected_version: str | None) -> bool:
+    """#COPR-0002, #BUG-0116: True if the row recorded an NVR and it differs from the
+    one declared now. A row with no recorded version can't say, so it is not a change."""
+    recorded = entry.get("version")
+    return bool(expected_version and recorded and recorded != expected_version)
+
+
 def is_cached(
     stage: str,
     pkg: str,
@@ -131,6 +138,7 @@ def is_cached(
     forced_stages: set[str],
     *,
     all_packages: dict | None = None,
+    expected_version: str | None = None,
 ) -> bool:
     """Check if a stage result is cached and can be skipped.
 
@@ -138,6 +146,9 @@ def is_cached(
     - Its state is "success"
     - Its stored hashes match current input hashes
     - It's not in the forced_stages set
+    - Its recorded NVR equals `expected_version` (when given): `release` is not
+      part of the input hashes, so a release-only change must still miss
+      (#COPR-0002, #BUG-0116)
     - Its own artifact (if any) is still present on disk
     - For the mock stage only, every dependency's own mock artifact is still
       present on disk too (#COPR-0002, #BUG-0064) -- skipped when
@@ -151,6 +162,8 @@ def is_cached(
         forced_stages: Set of stages that must run (cannot be skipped)
         all_packages: Full packages.yaml dict, needed to check the mock
             stage's dependency artifacts. `None` skips that check.
+        expected_version: NVR the package declares now. `None` skips the check, as
+            does a row with no recorded version.
 
     Returns:
         True if stage can be skipped (is cached), False if it must run
@@ -161,6 +174,8 @@ def is_cached(
     if entry is None:
         return False
     if not (entry.get("state") == "success" and hashes_match(entry, new_hashes)):
+        return False
+    if _nvr_changed(entry, expected_version):
         return False
     if not artifacts_present(stage, pkg, target, entry.get("version")):
         return False
@@ -214,6 +229,8 @@ def cache_miss_reason(
     rebuilt_packages: set[str] | None = None,
     *,
     all_packages: dict | None = None,
+    rebuilt_at: dict[str, str] | None = None,
+    expected_version: str | None = None,
 ) -> str:
     """Determine why a stage cache was missed (not cached).
 
@@ -231,6 +248,12 @@ def cache_miss_reason(
         rebuilt_packages: Set of packages rebuilt this run (to show in reason)
         all_packages: Full packages.yaml dict, needed to name which mock-stage
             dependency artifact went missing (#BUG-0064). `None` skips that check.
+        expected_version: NVR the package declares now (#BUG-0116). A success row
+            with matching hashes but a different recorded NVR is "nvr-changed".
+        rebuilt_at: {package: first stage that reran this run} (#BUG-0113). A
+            rebuilt dependency whose row for `stage` is still `cached*` (it only
+            reran at a later stage) is then named with that stage, instead of
+            being dropped from the reason. `None` keeps the old drop-cached rule.
 
     Returns:
         Canonical reason string. Full vocabulary (some set here, some set
@@ -239,8 +262,12 @@ def cache_miss_reason(
         - "cached" — cache hit, hashes match (full-cycle.py, via update_reason)
         - "forced" — force_run flag set by operator
         - "forced (dep rebuilt: hyprutils)" — dependency was rebuilt
+        - "forced (dep rebuilt: hyprutils [srpm])" — dependency was cached at this
+          stage but reran at a later one (#BUG-0113)
         - "forced (dep rebuilt: hyprutils, hyprlang)" — multiple deps rebuilt
         - "hash-mismatch" — stored hashes differ from computed
+        - "nvr-changed" — hashes match but the declared NVR differs from the recorded
+          one (release-only change, #BUG-0116)
         - "artifact-missing" — hashes match, but the artifact recorded for this
           NVR is no longer on disk (see artifacts_present())
         - "prior-failed" — prior state was "failed"
@@ -272,23 +299,28 @@ def cache_miss_reason(
           dependency's own mock artifact is gone from local-repo/<target>/
           (#BUG-0064, see missing_dep_artifacts())
 
-    Note: When listing rebuilt dependencies, only includes deps that actually changed
-    (reason not "cached" or "cached (stale-...)" -- #BUG-0057/-0058, still a cache
-    hit). Cached dependencies are filtered out even if in rebuilt_packages.
+    Note: When listing rebuilt dependencies, a dep whose reason is "cached" or
+    "cached (stale-...)" for this stage (#BUG-0057/-0058, still a cache hit) is only
+    listed if `rebuilt_at` says it reran at a later stage (#BUG-0113).
     """
     if stage in forced_stages:
         # Check if forced due to dependency rebuild
         if deps and rebuilt_packages:
-            # Filter to only include deps that actually changed (not cached).
-            # Sorted for deterministic output (deps is a set).
-            rebuilt_deps = [
-                dep
-                for dep in sorted(deps)
-                if dep in rebuilt_packages
-                and not (build_db.get_stage(dep, stage, target) or {})
-                .get("reason", "")
-                .startswith("cached")
-            ]
+            # Sorted for deterministic output (deps is a set). A dep whose row for
+            # this stage is cached ended up in rebuilt_packages only because it
+            # reran at a later stage: name it with that stage when known (#BUG-0113),
+            # else drop it (#BUG-0057/-0058).
+            rebuilt_deps = []
+            for dep in sorted(deps):
+                if dep not in rebuilt_packages:
+                    continue
+                dep_reason = (build_db.get_stage(dep, stage, target) or {}).get(
+                    "reason", ""
+                )
+                if not dep_reason.startswith("cached"):
+                    rebuilt_deps.append(dep)
+                elif rebuilt_at and dep in rebuilt_at:
+                    rebuilt_deps.append(f"{dep} [{rebuilt_at[dep]}]")
             if rebuilt_deps:
                 deps_str = ", ".join(rebuilt_deps)
                 return f"forced (dep rebuilt: {deps_str})"
@@ -303,6 +335,8 @@ def cache_miss_reason(
         return f"prior-{state}"
 
     if hashes_match(entry, new_hashes):
+        if _nvr_changed(entry, expected_version):
+            return "nvr-changed"
         if not artifacts_present(stage, pkg, target, entry.get("version")):
             return "artifact-missing"
         if stage == "mock" and all_packages is not None:

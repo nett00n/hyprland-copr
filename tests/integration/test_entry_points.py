@@ -1024,7 +1024,9 @@ class TestStageShowPlanPredictsCascade:
         hashes matching _FIXED_HASHES, and (for vendor/srpm/mock) a real artifact
         file recorded at the matching version -- see lib.pipeline.artifacts_present."""
         run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
-        build_db.set_stage(pkg, stage, TARGET, run_id, "success", version="1.0")
+        build_db.set_stage(
+            pkg, stage, TARGET, run_id, "success", version="1.0-1.fc44"
+        )
         build_db.finalize_stage(
             pkg, stage, TARGET, started_at=1, hashes=self._FIXED_HASHES
         )
@@ -1033,7 +1035,7 @@ class TestStageShowPlanPredictsCascade:
             artifact = tmp_path / f"{pkg}-{stage}-artifact"
             artifact.write_text("fake artifact")
             build_db.record_artifact(
-                str(artifact), "repo", kind, pkg, TARGET, "1.0"
+                str(artifact), "repo", kind, pkg, TARGET, "1.0-1.fc44"
             )
 
     # Stages the plan table displays (STAGES minus copr, since show_plan() is

@@ -124,8 +124,12 @@ def _vercmp(evr_a: str, evr_b: str) -> int:
     return 0
 
 
-def prune_local_repo(repo_dir: Path) -> bool:
-    """Delete all but the newest NVR per (name, arch) within repo_dir.
+def prune_local_repo(repo_dir: Path, keep: frozenset[str] | set[str] = frozenset()) -> bool:
+    """#COPR-0002, #BUG-0115: delete all but the newest NVR per (name, arch) within
+    repo_dir -- except that RPMs whose path is in `keep` (what this build just
+    produced) always survive, and every other entry of their group goes, even if
+    its EVR is higher (logged as an NVR regression). Without that, a stale
+    higher release evicted the fresh build and the next run saw artifact-missing.
 
     Nothing else here ever removes an old build: every rebuild only adds a
     new NVR, so a stale hyprutils-0.13.1 can sit next to 0.14.0 forever (see
@@ -159,7 +163,20 @@ def prune_local_repo(repo_dir: Path) -> bool:
         if len(entries) < 2:
             continue
         entries.sort(key=cmp_to_key(_by_evr))
-        for _stale_evr, stale_path in entries[:-1]:
+        fresh = [e for e in entries if str(e[1]) in keep]
+        if fresh:
+            stale_entries = [e for e in entries if str(e[1]) not in keep]
+            for stale_evr, stale_path in stale_entries:
+                if _vercmp(stale_evr, fresh[0][0]) > 0:
+                    print(
+                        f"warning: NVR regression: removing {stale_path.name} "
+                        f"({stale_evr}), newer than freshly built {fresh[0][1].name} "
+                        f"({fresh[0][0]})",
+                        file=sys.stderr,
+                    )
+        else:
+            stale_entries = entries[:-1]
+        for _stale_evr, stale_path in stale_entries:
             stale_path.unlink()
             build_db.delete_artifact("repo", str(stale_path))
             removed = True
@@ -179,7 +196,7 @@ def update_local_repo(mock_chroot: str, repo_dir: Path) -> list[str]:
             dest = repo_dir / rpm.name
             shutil.copy2(rpm, dest)
             copied.append(str(dest))
-    pruned = prune_local_repo(repo_dir)
+    pruned = prune_local_repo(repo_dir, keep=set(copied))
     if copied or pruned:
         regenerate_repo_metadata(repo_dir)
     return copied

@@ -6,9 +6,10 @@ entry serves every target and `make full-cycle-matrix` builds a given vendor
 tree once instead of once per Fedora version (docs/TODO.md TODO-0006).
 
 Keyed by lib.cache.compute_input_hashes -- the same mechanism every other
-stage's cache uses -- so editing go_subdir/rust_subdir, the source URL, or a
-patch invalidates the store exactly like it invalidates a normal stage cache,
-instead of "does a file happen to exist" (docs/BUGS.md BUG-0023).
+stage's cache uses -- plus the cargo/go version (#BUG-0111), so editing
+go_subdir/rust_subdir, the source URL, or a patch invalidates the store exactly
+like it invalidates a normal stage cache, instead of "does a file happen to
+exist" (docs/BUGS.md BUG-0023). A toolchain upgrade likewise misses once.
 
 Ownership/GC piggybacks on the existing `artifacts` table: stage-vendor.py
 records store hits/writes under realm="vendor-store" with a sentinel target,
@@ -44,10 +45,11 @@ _TOOL_VERSION_CMD = {"rust": ["cargo", "--version"], "go": ["go", "version"]}
 
 
 def _tool_version(language: str) -> str:
-    """Best-effort tool version string recorded in meta.json.
+    """Best-effort `cargo`/`go` version string of the container toolchain.
 
-    Informational only -- not part of the cache key. Reserved for the
-    toolchain-skew check deferred to Phase 3 (docs/TODO.md TODO-0007).
+    Part of the cache key (see _key_hashes) and recorded in meta.json. This is
+    the toolchain that *generates* the vendor tree; the unrelated skew check
+    against the target chroot's toolchain lives in lib.toolchain.
     """
     cmd = _TOOL_VERSION_CMD.get(language)
     if cmd is None:
@@ -69,6 +71,18 @@ def _language(meta: dict) -> str:
     return "unknown"
 
 
+def _key_hashes(pkg: str, meta: dict, all_packages: dict) -> dict:
+    """#COPR-0005, #BUG-0111: the store's cache key -- every input hash the other stages'
+    caches use, plus the generating toolchain's version, so a `cargo`/`go`
+    upgrade misses instead of reusing a tree the old toolchain vendored.
+
+    Kept out of lib.cache.compute_input_hashes on purpose: that function also
+    keys every other stage's cache, which a toolchain bump must not invalidate.
+    """
+    hashes = compute_input_hashes(pkg, meta, all_packages)
+    return {**hashes, "toolchain": _tool_version(_language(meta))}
+
+
 def find(pkg: str, meta: dict, all_packages: dict) -> Path | None:
     """Return the store's vendor tarball if a live entry matches pkg's current
     inputs, else None.
@@ -77,7 +91,7 @@ def find(pkg: str, meta: dict, all_packages: dict) -> Path | None:
     `db-artifacts.py --prune`) is an ordinary cache miss, not an error --
     callers fall back to generating the tarball and calling `store()`.
     """
-    hashes = compute_input_hashes(pkg, meta, all_packages)
+    hashes = _key_hashes(pkg, meta, all_packages)
     entry_dir = _entry_dir(pkg, hashes)
     tarball = entry_dir / TARBALL_NAME
     meta_path = entry_dir / META_NAME
@@ -99,7 +113,7 @@ def store(pkg: str, meta: dict, all_packages: dict, built_tarball: Path) -> Path
     Returns the store's own tarball path (the caller keeps its own copy in
     the per-target SOURCES_DIR).
     """
-    hashes = compute_input_hashes(pkg, meta, all_packages)
+    hashes = _key_hashes(pkg, meta, all_packages)
     entry_dir = _entry_dir(pkg, hashes)
     entry_dir.mkdir(parents=True, exist_ok=True)
     tarball = entry_dir / TARBALL_NAME
@@ -112,7 +126,7 @@ def store(pkg: str, meta: dict, all_packages: dict, built_tarball: Path) -> Path
                 "version": str(meta.get("version", "")),
                 "language": language,
                 "hashes": hashes,
-                "tool_version": _tool_version(language),
+                "tool_version": hashes["toolchain"],
             },
             indent=2,
             sort_keys=True,

@@ -23,8 +23,10 @@ flowchart LR
 `make update-daily COPR_REPO=<project> PUSH=1` runs: bump versions from upstream tags
 → `validate-packages` + `fmt` (packages.yaml sanity only, not the full `pre-commit`
 gate) → `full-cycle-matrix` (COPR-0017: every supported chroot locally, one Copr
-submission) → `validate-packages` again (no `fmt`, since the release-bump rewrite in
-`full-cycle-matrix` already went through the same formatter) → regenerate docs → push
+submission) → `db-prune CONFIRM=1` ([COPR-0015](COPR-0015-build-state-db.md): drops
+superseded SRPMs, RPMs, vendor and source tarballs; a failure is reported but never
+blocks the commit) → `validate-packages` again (no `fmt`, since the release-bump rewrite
+in `full-cycle-matrix` already went through the same formatter) → regenerate docs → push
 Copr description → `stage-log-analyze` → commit → push if `PUSH=1`.
 
 A one-off package build failure doesn't abort the run — it's recorded and reported at

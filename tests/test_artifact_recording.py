@@ -58,8 +58,7 @@ class TestSrpmArtifactRecording:
 
         with patch.object(stage_srpm, "get_package_log_dir", return_value=log_dir), \
              patch.object(stage_srpm, "ROOT", tmp_path), \
-             patch.object(stage_srpm, "run_cmd", return_value=(True, "", "")), \
-             patch.object(stage_srpm, "find_srpm", return_value=str(srpm_path)), \
+             patch.object(stage_srpm, "run_cmd", return_value=(True, f"Wrote: {srpm_path}\n", "")), \
              patch.object(stage_srpm, "copy_local_patches"):
             result = stage_srpm.run_for_package(pkg, meta, "44", proceed=False, target=TARGET, run_id=run_id)
 

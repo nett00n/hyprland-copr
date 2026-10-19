@@ -399,6 +399,95 @@ class TestArtifacts:
         assert build_db.artifacts(package="a") == []
 
 
+class TestArtifactPerTargetRows:
+    """#COPR-0015, #BUG-0112: one shared file keeps one ledger row per target."""
+
+    def test_same_path_two_targets_keeps_two_rows(self, build_db_path, tmp_path):
+        f = tmp_path / "pkg-1.0-1.fc43.src.rpm"
+        f.write_bytes(b"x" * 10)
+        build_db.record_artifact(str(f), "rpmbuild-volume", "srpm", "pkg", "fedora-43-x86_64", "1.0-1.fc43")
+        build_db.record_artifact(str(f), "rpmbuild-volume", "srpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+
+        rows = build_db.artifacts(package="pkg", kind="srpm")
+        assert {(r["target"], r["version"]) for r in rows} == {
+            ("fedora-43-x86_64", "1.0-1.fc43"),
+            ("fedora-44-x86_64", "1.0-1.fc44"),
+        }
+
+    def test_rerecord_same_target_still_upserts(self, build_db_path, tmp_path):
+        f = tmp_path / "pkg.src.rpm"
+        f.write_bytes(b"x" * 10)
+        build_db.record_artifact(str(f), "rpmbuild-volume", "srpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+        build_db.record_artifact(str(f), "rpmbuild-volume", "srpm", "pkg", "fedora-44-x86_64", "1.0-2.fc44")
+
+        rows = build_db.artifacts(package="pkg")
+        assert len(rows) == 1
+        assert rows[0]["version"] == "1.0-2.fc44"
+
+    def test_delete_artifact_with_target_leaves_other_targets(self, build_db_path, tmp_path):
+        f = tmp_path / "pkg.src.rpm"
+        f.write_bytes(b"x")
+        build_db.record_artifact(str(f), "repo", "srpm", "pkg", "fedora-43-x86_64", "1.0-1.fc43")
+        build_db.record_artifact(str(f), "repo", "srpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+
+        build_db.delete_artifact("repo", str(f), "fedora-43-x86_64")
+
+        assert [r["target"] for r in build_db.artifacts(package="pkg")] == ["fedora-44-x86_64"]
+
+    def test_delete_artifact_without_target_removes_every_row(self, build_db_path, tmp_path):
+        f = tmp_path / "pkg.rpm"
+        f.write_bytes(b"x")
+        build_db.record_artifact(str(f), "repo", "rpm", "pkg", "fedora-43-x86_64", "1.0-1.fc43")
+        build_db.record_artifact(str(f), "repo", "rpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+
+        build_db.delete_artifact("repo", str(f))
+
+        assert build_db.artifacts(package="pkg") == []
+
+    def test_artifact_path_referenced(self, build_db_path, tmp_path):
+        f = tmp_path / "pkg.src.rpm"
+        f.write_bytes(b"x")
+        assert build_db.artifact_path_referenced("repo", str(f)) is False
+        build_db.record_artifact(str(f), "repo", "srpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+        assert build_db.artifact_path_referenced("repo", str(f)) is True
+
+    def test_shared_file_not_rehashed_for_second_target(self, build_db_path, tmp_path, monkeypatch):
+        f = tmp_path / "pkg.src.rpm"
+        f.write_bytes(b"x" * 10)
+        build_db.record_artifact(str(f), "repo", "srpm", "pkg", "fedora-43-x86_64", "1.0-1.fc43")
+        calls = []
+        monkeypatch.setattr(build_db, "_sha256_file", lambda p: calls.append(p) or "deadbeef")
+        build_db.record_artifact(str(f), "repo", "srpm", "pkg", "fedora-44-x86_64", "1.0-1.fc44")
+        assert calls == []
+
+
+class TestArtifactsMigrationV4:
+    def test_v3_db_migrates_rows_to_per_target_key(self, tmp_path, monkeypatch):
+        import sqlite3
+
+        db_path = tmp_path / "old.db"
+        monkeypatch.setattr(paths, "BUILD_DB", db_path)
+        build_db.close()
+        conn = sqlite3.connect(db_path)
+        for step in build_db._MIGRATIONS[:3]:
+            conn.executescript(step)
+        conn.execute("PRAGMA user_version = 3")
+        conn.execute(
+            "INSERT INTO artifacts (path, realm, kind, package, target, version, recorded_at)"
+            " VALUES ('/p/a.src.rpm', 'repo', 'srpm', 'a', 'fedora-44-x86_64', '1-1.fc44', 1)"
+        )
+        conn.commit()
+        conn.close()
+
+        rows = build_db.artifacts(package="a")
+        assert [(r["path"], r["target"], r["version"]) for r in rows] == [
+            ("/p/a.src.rpm", "fedora-44-x86_64", "1-1.fc44")
+        ]
+        build_db.record_artifact("/p/a.src.rpm", "repo", "srpm", "a", "fedora-43-x86_64", "1-1.fc43")
+        assert len(build_db.artifacts(package="a")) == 2
+        build_db.close()
+
+
 class TestArtifactSha256AndArch:
     """#COPR-0015, #BUG-0061, #BUG-0065."""
 

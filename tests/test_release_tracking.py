@@ -686,3 +686,58 @@ class TestUpdatePackageReleasesWritesFile:
 
         _run(packages)
         assert packages_yaml.read_text().startswith("---\n")
+
+
+class TestReleaseSentinelResolves:
+    """#COPR-0008, #BUG-0114: `release: 0` resolves even when nothing else changed."""
+
+    @staticmethod
+    def _pkg(release: int) -> dict:
+        return {
+            "version": "0.3.2",
+            "release": release,
+            "license": "GPLv3",
+            "summary": "Test",
+            "description": "Test pkg",
+            "url": "https://example.com",
+        }
+
+    def _seed_matching(self, packages: dict, name: str = "qs") -> None:
+        from lib.cache import compute_input_hashes
+
+        _seed(name, "spec", hashes=compute_input_hashes(name, packages[name], packages))
+
+    def test_zero_resolves_to_one_when_unchanged_and_unbuilt(self, _run):
+        packages = {"qs": self._pkg(0)}
+        self._seed_matching(packages)
+        assert _run(packages) == {"qs": 1}
+
+    def test_zero_resolves_above_already_built_release_of_same_version(self, _run):
+        packages = {"qs": self._pkg(0)}
+        self._seed_matching(packages)
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("qs", "mock", TARGET, run_id, "success", version="0.3.2-1.fc44")
+        assert _run(packages) == {"qs": 2}
+
+    def test_built_history_of_other_version_is_ignored(self, _run):
+        packages = {"qs": self._pkg(0)}
+        self._seed_matching(packages)
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("qs", "mock", TARGET, run_id, "success", version="0.3.1-4.fc44")
+        assert _run(packages) == {"qs": 1}
+
+    def test_resolved_sentinel_cascades_to_dependents(self, _run):
+        from lib.cache import compute_input_hashes
+
+        packages = {
+            "qs": self._pkg(0),
+            "dep": {**self._pkg(3), "depends_on": ["qs"]},
+        }
+        for name in packages:
+            _seed(name, "spec", hashes=compute_input_hashes(name, packages[name], packages))
+        assert _run(packages) == {"qs": 1, "dep": 4}
+
+    def test_nonzero_release_unchanged_stays_untouched(self, _run):
+        packages = {"qs": self._pkg(2)}
+        self._seed_matching(packages)
+        assert _run(packages) == {}

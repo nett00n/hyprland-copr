@@ -17,6 +17,7 @@ Environment variables:
 
 import logging
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -32,6 +33,7 @@ from lib.paths import (
     resolve_target,
 )
 from lib.reporting import event, status, verbose_proceed_check
+from lib.source_lock import remote_sources
 from lib.source_lock import verify as verify_sources
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
@@ -50,14 +52,29 @@ def copy_local_patches(pkg: str, meta: dict) -> None:
             shutil.copy2(src, SOURCES_DIR / patch)
 
 
-def find_srpm(pkg: str) -> str | None:
-    srpm_dir = Path.home() / "rpmbuild" / "SRPMS"
-    matches = sorted(
-        srpm_dir.glob(f"{pkg.lower()}-*.src.rpm"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    )
-    return str(matches[0]) if matches else None
+_WROTE_SRPM = re.compile(r"^Wrote: (.+\.src\.rpm)\s*$", re.MULTILINE)
+
+
+def srpm_from_output(rpmbuild_stdout: str) -> str | None:
+    """#COPR-0018, #BUG-0109: the SRPM `rpmbuild -bs` reported writing.
+
+    Never a glob of the shared SRPMS directory: `hyprland-*.src.rpm` also
+    matches hyprland-git, hyprland-protocols, etc. Returns the last
+    `Wrote: ...src.rpm` path, or None if rpmbuild reported none.
+    """
+    matches = _WROTE_SRPM.findall(rpmbuild_stdout)
+    return matches[-1] if matches else None
+
+
+def record_source_artifacts(pkg: str, meta: dict, target: str, ver: str) -> None:
+    """#COPR-0015, #COPR-0018: ledger every remote upstream source file spectool
+    fetched into SOURCES, so `db-prune` can reclaim superseded tarballs."""
+    for filename, _url in remote_sources(pkg, meta):
+        path = SOURCES_DIR / filename
+        if path.exists():
+            build_db.record_artifact(
+                str(path), "rpmbuild-volume", "source", pkg, target, ver
+            )
 
 
 def run_for_package(
@@ -157,8 +174,12 @@ def run_for_package(
 
     copy_local_patches(pkg, meta)
     event("srpm", target, pkg, "run", ver=ver)
-    ok, _, _ = run_cmd(["rpmbuild", "-bs", str(spec)], log)
-    if not ok:
+    ok, rpmbuild_out, _ = run_cmd(["rpmbuild", "-bs", str(spec)], log)
+    path = srpm_from_output(rpmbuild_out) if ok else None
+    if not path:
+        if ok:
+            with open(log, "a") as fh:
+                fh.write("rpmbuild -bs reported no 'Wrote: ...src.rpm' line\n")
         status("srpm", pkg, "fail", target, version=ver)
         build_db.set_stage(
             pkg,
@@ -172,7 +193,6 @@ def run_for_package(
         )
         return False
 
-    path = find_srpm(pkg)
     status("srpm", pkg, "ok", target, version=ver)
     build_db.set_stage(
         pkg,
@@ -185,12 +205,12 @@ def run_for_package(
         log=str(log.relative_to(ROOT)),
         has_devel=has_devel,
     )
-    if path:
-        # Absolute container path: /root/rpmbuild/SRPMS is a podman volume,
-        # not under ROOT, so there's no repo-relative form to use.
-        build_db.record_artifact(
-            path, "rpmbuild-volume", "srpm", pkg, target, ver, arch="src"
-        )
+    # Absolute container path: /root/rpmbuild/SRPMS is a podman volume,
+    # not under ROOT, so there's no repo-relative form to use.
+    build_db.record_artifact(
+        path, "rpmbuild-volume", "srpm", pkg, target, ver, arch="src"
+    )
+    record_source_artifacts(pkg, meta, target, ver)
     return True
 
 

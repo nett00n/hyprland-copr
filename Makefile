@@ -177,7 +177,7 @@ save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is
 	@echo $(HIGHLIGHT_PREFIX) "✓ Saved build-report.db snapshot to logs/build-report.db.last"
 
 clean-logs: check-image check-venv setup-volumes ## Remove build logs; clears stage/run state but keeps the artifact ledger (use db-nuke to also drop that)
-	@rm -rf logs/runs logs/make
+	@rm -rf logs/runs logs/make logs/build
 	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --reset || true
 	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned build logs and stage state (artifact ledger preserved)"
 
@@ -411,7 +411,7 @@ readme-shell: check-image check-venv ## Regenerate only the branding shell of RE
 db-usage: check-image check-venv setup-volumes ## Report disk usage of tracked build artifacts by package/target. VERIFY=1 also re-hashes every artifact to flag corruption
 	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --usage $(if $(filter 1,$(VERIFY)),--verify,)
 
-db-prune: check-image check-venv setup-volumes ## Remove all but the newest artifact per (package,target,kind). Dry-run by default; CONFIRM=1 to actually delete
+db-prune: check-image check-venv setup-volumes ## Remove superseded artifacts (versions below the highest) per (package,target,kind); srpm/rpm/vendor/source kinds. Dry-run by default; CONFIRM=1 to actually delete
 	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --prune $(if $(filter 1,$(CONFIRM)),--confirm,)
 
 db-export: check-image check-venv setup-volumes ## Snapshot runs/stage_results/stage_history/artifacts for offline diffing. FORMAT=yaml|json (default yaml), OUTPUT=path (default stdout)
@@ -680,6 +680,8 @@ _update-daily:
 	$(MAKE) validate-packages fmt || exit 1
 	$(MAKE) refresh-checksums || exit 1
 	$(MAKE) full-cycle-matrix || touch logs/.update-daily-failed
+	@# #COPR-0015: reclaim superseded SRPMs/RPMs/vendor/source tarballs; never blocks the commit.
+	$(MAKE) db-prune CONFIRM=1 || true
 	@# full-cycle.py's update_package_releases() rewrites packages.yaml after the
 	@# pre-build gate ran, so re-validate the file that actually gets committed and
 	@# rendered into the docs below (docs/BUGS.md BUG-0044). No re-fmt: the rewrite

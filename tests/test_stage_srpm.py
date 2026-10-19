@@ -115,8 +115,11 @@ class TestSourceVerifyGate:
         with (
             patch.object(stage_srpm, "get_package_log_dir", return_value=log_dir),
             patch.object(stage_srpm, "ROOT", tmp_path),
-            patch.object(stage_srpm, "run_cmd", return_value=(True, "", "")),
-            patch.object(stage_srpm, "find_srpm", return_value=str(srpm_path)),
+            patch.object(
+                stage_srpm,
+                "run_cmd",
+                return_value=(True, f"Wrote: {srpm_path}\n", ""),
+            ),
             patch.object(stage_srpm, "copy_local_patches"),
         ):
             result = stage_srpm.run_for_package(
@@ -139,8 +142,11 @@ class TestSourceVerifyGate:
         with (
             patch.object(stage_srpm, "get_package_log_dir", return_value=log_dir),
             patch.object(stage_srpm, "ROOT", tmp_path),
-            patch.object(stage_srpm, "run_cmd", return_value=(True, "", "")),
-            patch.object(stage_srpm, "find_srpm", return_value=str(srpm_path)),
+            patch.object(
+                stage_srpm,
+                "run_cmd",
+                return_value=(True, f"Wrote: {srpm_path}\n", ""),
+            ),
             patch.object(stage_srpm, "copy_local_patches"),
         ):
             result = stage_srpm.run_for_package(
@@ -148,3 +154,119 @@ class TestSourceVerifyGate:
             )
 
         assert result is True
+
+
+class TestSrpmFromOutput:
+    """#COPR-0018, #BUG-0109: the SRPM is whatever `rpmbuild -bs` says it
+    wrote, never a `<pkg>-*.src.rpm` glob of the shared SRPMS directory."""
+
+    def test_returns_path_from_wrote_line(self):
+        out = (
+            "Processing files: ...\n"
+            "Wrote: /root/rpmbuild/SRPMS/hyprland-0.56.1-2.fc43.src.rpm\n"
+        )
+        assert (
+            stage_srpm.srpm_from_output(out)
+            == "/root/rpmbuild/SRPMS/hyprland-0.56.1-2.fc43.src.rpm"
+        )
+
+    def test_last_wrote_line_wins(self):
+        out = "Wrote: /a/one.src.rpm\nWrote: /a/two.src.rpm\n"
+        assert stage_srpm.srpm_from_output(out) == "/a/two.src.rpm"
+
+    def test_none_without_wrote_line(self):
+        assert stage_srpm.srpm_from_output("error: nothing built\n") is None
+
+    def test_ignores_non_srpm_wrote_lines(self):
+        assert stage_srpm.srpm_from_output("Wrote: /a/x86_64/x.rpm\n") is None
+
+    def test_sibling_srpm_with_prefix_is_not_picked(self, tmp_path, run_id):
+        """hyprland's run must record its own SRPM even when a newer
+        hyprland-protocols SRPM sits in the same directory."""
+        pkg = "test-pkg"
+        own = tmp_path / "test-pkg-1.0.0-1.fc44.src.rpm"
+        own.write_bytes(b"own")
+        sibling = tmp_path / "test-pkg-extra-9.9.9-1.fc44.src.rpm"
+        sibling.write_bytes(b"sibling")
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+
+        with (
+            patch.object(stage_srpm, "get_package_log_dir", return_value=log_dir),
+            patch.object(stage_srpm, "ROOT", tmp_path),
+            patch.object(
+                stage_srpm,
+                "run_cmd",
+                return_value=(True, f"Wrote: {own}\n", ""),
+            ),
+            patch.object(stage_srpm, "copy_local_patches"),
+        ):
+            ok = stage_srpm.run_for_package(
+                pkg,
+                {"version": "1.0.0", "release": 1},
+                "44",
+                proceed=False,
+                target=TARGET,
+                run_id=run_id,
+            )
+
+        assert ok is True
+        assert build_db.get_stage(pkg, "srpm", TARGET)["path"] == str(own)
+
+    def test_fails_stage_when_rpmbuild_reports_no_srpm(self, tmp_path, run_id):
+        pkg = "test-pkg"
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+
+        with (
+            patch.object(stage_srpm, "get_package_log_dir", return_value=log_dir),
+            patch.object(stage_srpm, "ROOT", tmp_path),
+            patch.object(stage_srpm, "run_cmd", return_value=(True, "", "")),
+            patch.object(stage_srpm, "copy_local_patches"),
+        ):
+            ok = stage_srpm.run_for_package(
+                pkg,
+                {"version": "1.0.0", "release": 1},
+                "44",
+                proceed=False,
+                target=TARGET,
+                run_id=run_id,
+            )
+
+        assert ok is False
+        assert build_db.get_stage(pkg, "srpm", TARGET)["state"] == "failed"
+
+
+class TestSourceArtifactRecording:
+    def test_records_present_remote_sources(self, tmp_path, run_id, monkeypatch):
+        pkg = "test-pkg"
+        sources_dir = tmp_path / "SOURCES"
+        sources_dir.mkdir()
+        monkeypatch.setattr(stage_srpm, "SOURCES_DIR", sources_dir)
+        tarball = sources_dir / "pkg-1.0.0.tar.gz"
+        tarball.write_bytes(b"real contents")
+        save_lock(
+            {pkg: {"pkg-1.0.0.tar.gz": {"sha256": sha256_file(tarball), "url": "x"}}}
+        )
+        srpm_path = tmp_path / "test-pkg-1.0.0-1.fc44.src.rpm"
+        srpm_path.write_bytes(b"srpm")
+        log_dir = tmp_path / "logs/build" / pkg
+        log_dir.mkdir(parents=True)
+
+        with (
+            patch.object(stage_srpm, "get_package_log_dir", return_value=log_dir),
+            patch.object(stage_srpm, "ROOT", tmp_path),
+            patch.object(
+                stage_srpm,
+                "run_cmd",
+                return_value=(True, f"Wrote: {srpm_path}\n", ""),
+            ),
+            patch.object(stage_srpm, "copy_local_patches"),
+        ):
+            assert stage_srpm.run_for_package(
+                pkg, _meta(), "44", proceed=False, target=TARGET, run_id=run_id
+            )
+
+        rows = build_db.artifacts(package=pkg, kind="source")
+        assert [r["path"] for r in rows] == [str(tarball)]
+        assert rows[0]["realm"] == "rpmbuild-volume"

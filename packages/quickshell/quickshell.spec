@@ -1,7 +1,7 @@
 
 Name:           quickshell
 Version:        0.3.2
-Release:        0%{?dist}
+Release:        2%{?dist}
 Summary:        Flexible QtQuick based desktop shell toolkit
 License:        LGPL-3.0-or-later
 URL:            https://git.outfoxxed.me/quickshell/quickshell.git
@@ -71,7 +71,7 @@ Development files for quickshell.
 %files devel
 
 %changelog
-* Thu Oct 08 2026 nett00n <copr@nett00n.org> - 0.3.2-0
+* Thu Oct 08 2026 nett00n <copr@nett00n.org> - 0.3.2-2
 
 - -----BEGIN PGP SIGNATURE-----
 - iHUEABYKAB0WIQQBgf+JTzR/zOsGVxBMiKGF+4kwHgUCasdjrQAKCRBMiKGF+4kw

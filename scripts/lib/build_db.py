@@ -9,6 +9,7 @@ See docs/ROADMAP.md Epic 3 for remaining follow-ups (artifact sha256/arch, etc).
 
 import hashlib
 import json
+import re
 import sqlite3
 import time
 from pathlib import Path
@@ -18,7 +19,7 @@ from . import paths
 
 STAGES = ["validate", "spec", "vendor", "srpm", "mock", "copr"]
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 _SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS runs (
@@ -108,10 +109,42 @@ ALTER TABLE artifacts ADD COLUMN sha256 TEXT;
 ALTER TABLE artifacts ADD COLUMN arch   TEXT;
 """
 
+# #COPR-0015, #BUG-0112: key the ledger (realm, path, target). The fc43/44/45 targets
+# share one physical SRPM / vendor tarball, so a (realm, path) key let each target's
+# upsert steal the row. SQLite can't alter a primary key: rebuild the table (one
+# transaction, so a crash leaves the v3 table intact) and keep every existing row.
+_SCHEMA_V4 = """
+BEGIN;
+CREATE TABLE artifacts_v4 (
+  path           TEXT NOT NULL,
+  realm          TEXT NOT NULL,
+  kind           TEXT NOT NULL,
+  package        TEXT NOT NULL,
+  target         TEXT NOT NULL,
+  version        TEXT,
+  size_bytes     INTEGER,
+  mtime          INTEGER,
+  recorded_at    INTEGER NOT NULL,
+  sha256         TEXT,
+  arch           TEXT,
+  PRIMARY KEY (realm, path, target)
+) WITHOUT ROWID;
+INSERT INTO artifacts_v4
+  (path, realm, kind, package, target, version, size_bytes, mtime, recorded_at,
+   sha256, arch)
+  SELECT path, realm, kind, package, target, version, size_bytes, mtime,
+         recorded_at, sha256, arch FROM artifacts;
+DROP TABLE artifacts;
+ALTER TABLE artifacts_v4 RENAME TO artifacts;
+CREATE INDEX IF NOT EXISTS artifacts_pkg  ON artifacts(package, target);
+CREATE INDEX IF NOT EXISTS artifacts_kind ON artifacts(kind);
+COMMIT;
+"""
+
 # Ordered, additive migrations: index i takes a db from user_version i to i+1.
 # Each step commits and stamps its own version before the next runs, so a
 # migration that dies partway through resumes cleanly on the next connect().
-_MIGRATIONS: list[str] = [_SCHEMA_V1, _SCHEMA_V2, _SCHEMA_V3]
+_MIGRATIONS: list[str] = [_SCHEMA_V1, _SCHEMA_V2, _SCHEMA_V3, _SCHEMA_V4]
 
 _STAGE_ENTRY_COLUMNS = [
     "state",
@@ -174,8 +207,9 @@ def _migrate(conn: sqlite3.Connection) -> None:
     """Apply each pending migration step in order, stamping user_version as it goes.
 
     `_MIGRATIONS[i]` takes the db from user_version `i` to `i+1` -- all steps are
-    additive (CREATE TABLE IF NOT EXISTS / ALTER TABLE ADD COLUMN), so a fresh db
-    and an old db converge on the same schema.
+    additive (CREATE TABLE IF NOT EXISTS / ALTER TABLE ADD COLUMN, or a row-preserving
+    table rebuild such as `_SCHEMA_V4`), so a fresh db and an old db converge on the
+    same schema.
     """
     version = conn.execute("PRAGMA user_version").fetchone()[0]
     while version < SCHEMA_VERSION:
@@ -735,7 +769,11 @@ def record_artifact(
     version: str | None,
     arch: str | None = None,
 ) -> None:
-    """Record an artifact's path/size/mtime/sha256/arch. Upserts on (realm, path).
+    """Record an artifact's path/size/mtime/sha256/arch. Upserts on
+    (realm, path, target).
+
+    #COPR-0015, #BUG-0112: targets that share one physical file (the SRPM, the
+    vendor tarball) each keep their own row for it.
 
     Stats the file if it exists; size_bytes/mtime are NULL if it doesn't
     (recorded anyway so `db-usage --usage` can flag it as missing).
@@ -756,9 +794,12 @@ def record_artifact(
         size_bytes = None
         mtime = None
 
+    # Any target's row for this path will do: it is the same physical file, so an
+    # unchanged size/mtime means its sha256 carries over (no re-hash per target).
     prior = conn.execute(
-        "SELECT size_bytes, mtime, sha256 FROM artifacts WHERE realm = ? AND path = ?",
-        (realm, path),
+        "SELECT size_bytes, mtime, sha256 FROM artifacts WHERE realm = ? AND path = ?"
+        " ORDER BY (target = ?) DESC, recorded_at DESC LIMIT 1",
+        (realm, path, target),
     ).fetchone()
     if (
         prior is not None
@@ -778,8 +819,8 @@ def record_artifact(
             (path, realm, kind, package, target, version, size_bytes, mtime,
              sha256, arch, recorded_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(realm, path) DO UPDATE SET
-            kind=excluded.kind, package=excluded.package, target=excluded.target,
+        ON CONFLICT(realm, path, target) DO UPDATE SET
+            kind=excluded.kind, package=excluded.package,
             version=excluded.version, size_bytes=excluded.size_bytes,
             mtime=excluded.mtime, sha256=excluded.sha256, arch=excluded.arch,
             recorded_at=excluded.recorded_at
@@ -853,11 +894,65 @@ def artifacts(
     return [_row_dict(row) for row in conn.execute(query, params).fetchall()]
 
 
-def delete_artifact(realm: str, path: str) -> None:
-    """Delete an artifact row (does not unlink the file -- callers do that)."""
+def highest_built_release(package: str, version: str) -> int:
+    """#COPR-0008, #BUG-0114: the highest release number ever recorded for
+    `package` at upstream `version`, across every target, stage and attempt
+    (current rows, last-success versions and history). 0 if none.
+
+    Reads the `<version>-<release>.fc<N>` NVRs the stage rows carry, so a sentinel
+    `release: 0` can resolve above anything already built or published.
+    """
     conn = connect()
-    conn.execute("DELETE FROM artifacts WHERE realm = ? AND path = ?", (realm, path))
+    pattern = re.compile(rf"^{re.escape(version)}-(\d+)\.")
+    candidates: list[str | None] = []
+    for row in conn.execute(
+        "SELECT version, last_success_version FROM stage_results WHERE package = ?",
+        (package,),
+    ):
+        candidates.extend((row["version"], row["last_success_version"]))
+    for row in conn.execute(
+        "SELECT version FROM stage_history WHERE package = ?", (package,)
+    ):
+        candidates.append(row["version"])
+    best = 0
+    for nvr_str in candidates:
+        m = pattern.match(nvr_str or "")
+        if m:
+            best = max(best, int(m.group(1)))
+    return best
+
+
+def delete_artifact(realm: str, path: str, target: str | None = None) -> None:
+    """#COPR-0015, #BUG-0112: delete artifact row(s) (does not unlink the file --
+    callers do that).
+
+    With `target`, only that target's row for the path goes; without it, every
+    target's row does (right for per-target paths like local-repo RPMs).
+    """
+    conn = connect()
+    if target is None:
+        conn.execute(
+            "DELETE FROM artifacts WHERE realm = ? AND path = ?", (realm, path)
+        )
+    else:
+        conn.execute(
+            "DELETE FROM artifacts WHERE realm = ? AND path = ? AND target = ?",
+            (realm, path, target),
+        )
     conn.commit()
+
+
+def artifact_path_referenced(realm: str, path: str) -> bool:
+    """#COPR-0015, #BUG-0112: True if any target still has a ledger row for the path."""
+    row = (
+        connect()
+        .execute(
+            "SELECT 1 FROM artifacts WHERE realm = ? AND path = ? LIMIT 1",
+            (realm, path),
+        )
+        .fetchone()
+    )
+    return row is not None
 
 
 def delete_artifacts_for_target(target: str, realm: str, kind: str) -> None:

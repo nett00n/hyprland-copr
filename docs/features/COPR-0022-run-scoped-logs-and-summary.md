@@ -122,7 +122,8 @@ still on disk.
   most wants after a nightly, since it's the one that talks to Copr (#COPR-0007).
   It does not call `prune_run_logs()` itself; `full-cycle.py`'s own prune (run
   first, earlier in the same nightly) already enforces retention.
-- `Makefile`: `clean-logs` removes `logs/runs` (was `logs/build`); `stage-log-analyze`
+- `Makefile`: `clean-logs` removes `logs/runs`, `logs/make` and the orphaned legacy
+  `logs/build`; `stage-log-analyze`
   gained `LOG_SUMMARY_OUTPUT`; `_update-daily` passes it and stages
   `docs/nightly-summary.md`; new `prune-logs` target.
 - Live-tailing mock's resultdir via a bind-mount (`stage-mock.py`'s
@@ -139,7 +140,7 @@ still on disk.
 - `logs/runs/latest` is a convenience symlink for a human on the host; nothing in the
   pipeline reads it back.
 - The pre-existing `logs/build/` tree is not migrated; it is simply orphaned (removed
-  by a future `make clean-logs`). No `stage_results.log` value in `build-report.db`
+  by `make clean-logs`). No `stage_results.log` value in `build-report.db`
   needs it: `host_path()` resolves any repo-relative string, and `db-artifacts.py`
   never prunes log artifacts regardless of layout.
 

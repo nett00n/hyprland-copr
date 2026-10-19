@@ -20,6 +20,16 @@ reclaim disk usage by package × target; `make db-shell` opens an interactive
 sqlite3 shell; `make db-export [FORMAT=yaml|json] [OUTPUT=path]` snapshots every
 table to a deterministic, sorted yaml/json file for offline diffing.
 
+`db-prune` considers the kinds `srpm`, `rpm`, `vendor` and `source` (upstream tarballs
+in `SOURCES/`, realm `rpmbuild-volume`), grouped by `(package, target, kind)`. For
+`srpm` and `vendor` (one file per version) only the highest version survives, recorded
+mtime breaking ties. For `rpm` and `source`, one build legitimately records several
+rows at the same version (main, `-devel`, `-debuginfo`, `-debugsource` RPMs; tarball +
+patches), so every row at the top version is kept and only rows strictly lower by
+`lib.version.compare_evr` are removed (#BUG-0110). `update-daily` runs
+`make db-prune CONFIRM=1` after the build matrix
+([COPR-0003](COPR-0003-daily-update.md)).
+
 `db-usage`/`db-prune`/`db-shell` all read `artifacts.path`, recorded as an
 absolute *container* path (`/work/...` under the repo/vendor-store realms, or a
 podman-named-volume path with no host equivalent at all under `rpmbuild-volume`).
@@ -27,6 +37,12 @@ podman-named-volume path with no host equivalent at all under `rpmbuild-volume`)
 path on the host running outside the container; `db-usage`/`db-prune` use it to
 work from the host too (`rpmbuild-volume` rows are reported, but their size/path
 can't be resolved that way and say so).
+
+The ledger is keyed `(realm, path, target)`: the fc43/44/45 targets share one physical
+SRPM and vendor tarball ([COPR-0018](COPR-0018-single-spec-single-srpm.md)), so each
+target keeps its own row for the same file and none steals another's (#BUG-0112).
+`db-prune` deletes stale rows per target but unlinks a file only when no surviving row
+references that path, and `db-usage` counts a shared path's size once.
 
 `artifacts.sha256` detects on-disk corruption within a target (the wrong-chroot case
 is already caught by the per-chroot `local-repo/<target>/` layout): it is computed
