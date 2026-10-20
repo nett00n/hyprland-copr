@@ -513,3 +513,8 @@ OpenLogi:
     sha256: ce7d7a600609030feb07061184febf228e32d8c963e5dde3db93207e1f107c2d
     size: 5466914
     recorded: '2026-10-20'
+  openlogi-0.8.15.tar.gz:
+    url: https://github.com/AprilNEA/OpenLogi/archive/refs/tags/v0.8.15.tar.gz#/openlogi-0.8.15.tar.gz
+    sha256: b426e9c8e4edae343409e81e818775138fc8a5baac0bca1c86f6e56e188a966d
+    size: 5697769
+    recorded: '2026-10-20'
