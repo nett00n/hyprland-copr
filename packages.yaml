@@ -815,13 +815,13 @@ hyprlauncher:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprlauncher'
   license: BSD-3-Clause
-  release: 22
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A multipurpose and versatile launcher / picker for Hyprland
   url: https://github.com/hyprwm/hyprlauncher
-  version: 0.1.6
+  version: 0.1.7
 hyprlock:
   build:
     system: cmake

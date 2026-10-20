@@ -172,7 +172,7 @@ Updated packages:
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-10-19
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-10-20
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->

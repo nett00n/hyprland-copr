@@ -1,11 +1,11 @@
 
 Name:           hyprlauncher
-Version:        0.1.6
-Release:        22%{?dist}
+Version:        0.1.7
+Release:        1%{?dist}
 Summary:        A multipurpose and versatile launcher / picker for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprlauncher
-Source0:        https://github.com/hyprwm/hyprlauncher/archive/refs/tags/v0.1.6.tar.gz#/hyprlauncher-0.1.6.tar.gz
+Source0:        https://github.com/hyprwm/hyprlauncher/archive/refs/tags/v0.1.7.tar.gz#/hyprlauncher-0.1.7.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -41,8 +41,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.1.6
-Commit:            c682906a0836447c27c8d974f35493d3baa79d64
+Tag:               v0.1.7
+Commit:            d08efd580c782fbf52ec299f77cd6c0fef7ee3d5
 
 %prep
 %autosetup -p1
@@ -60,6 +60,6 @@ Commit:            c682906a0836447c27c8d974f35493d3baa79d64
 %{_prefix}/bin/hyprlauncher
 
 %changelog
-* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.1.6-22
+* Tue Oct 20 2026 nett00n <copr@nett00n.org> - 0.1.7-1
 
-- version: bump to 0.1.6
+- VERSION: bump to 0.1.7
