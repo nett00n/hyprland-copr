@@ -4,6 +4,10 @@
 FEDORA_VERSION  := $(subst ",,$(FEDORA_VERSION))
 COPR_REPO       := $(subst ",,$(COPR_REPO))
 PACKAGE         := $(subst ",,$(PACKAGE))
+# #COPR-0026: exported (not passed on the command line) so the token never shows in recipe echo.
+GOTIFY_URL      := $(subst ",,$(GOTIFY_URL))
+GOTIFY_TOKEN    := $(subst ",,$(GOTIFY_TOKEN))
+export GOTIFY_URL GOTIFY_TOKEN
 SKIP_PACKAGES   := $(subst ",,$(SKIP_PACKAGES))
 LOG_LEVEL       := $(subst ",,$(LOG_LEVEL))
 CMD_TIMEOUT     := $(subst ",,$(CMD_TIMEOUT))
@@ -169,7 +173,7 @@ LOCK_DISABLE ?= # bypass for hosts without flock, or a deliberate parallel run
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr copr-wait stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export db-export-docs check-docs-drift db-nuke upstream-sync upstream-clean sync-hard-reset
+.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily notify notify-summary build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr copr-wait stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export db-export-docs check-docs-drift db-nuke upstream-sync upstream-clean sync-hard-reset
 
 save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
 	@mkdir -p logs
@@ -542,10 +546,23 @@ REQUIRE_CHROOT_COVERAGE ?=
 COPR_POLL_TIMEOUT ?= 1800
 COPR_POLL_INTERVAL ?= 30
 
+# #COPR-0026: tell Gotify how a full-cycle wrapper ended. $(1)=target name,
+# $(2)=scope text (no commas). Expects $$status set by the caller; never fails
+# the pipeline (notify only warns), and NOTIFY=0 skips it for nested runs.
+NOTIFY ?= 1
+define notify_result
+if [ "$(NOTIFY)" != "0" ]; then \
+	if [ $$status -eq 0 ]; then r="succeeded"; p=5; else r="FAILED exit $$status"; p=8; fi; \
+	$(MAKE) notify TITLE="hyprland-copr $(1)" MESSAGE="$(1) $$r ($(2))" PRIORITY=$$p || true; \
+fi
+endef
+
 full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr (PACKAGE, COPR_REPO, FORCE_REBUILD, env vars)
 	@mkdir -p logs
 	@if [ "$(PIPELINE_LOCK_HELD)" = "1" ] || [ "$(LOCK_DISABLE)" = "1" ]; then \
-		$(MAKE) _full-cycle; \
+		$(MAKE) _full-cycle; status=$$?; \
+		$(call notify_result,full-cycle,fedora $(FEDORA_VERSION) package: $(or $(PACKAGE),all)); \
+		exit $$status; \
 	elif ! command -v flock >/dev/null 2>&1; then \
 		echo $(HIGHLIGHT_PREFIX) "Error: flock not found (util-linux); install it, or bypass with LOCK_DISABLE=1"; \
 		exit 1; \
@@ -558,6 +575,7 @@ full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr 
 		echo "PID $$$$, started $$(date --rfc-3339=seconds), target _full-cycle" > $(PIPELINE_LOCK_FILE).owner; \
 		PIPELINE_LOCK_HELD=1 $(MAKE) _full-cycle; status=$$?; \
 		rm -f $(PIPELINE_LOCK_FILE).owner; \
+		$(call notify_result,full-cycle,fedora $(FEDORA_VERSION) package: $(or $(PACKAGE),all)); \
 		exit $$status; \
 	fi
 
@@ -603,14 +621,16 @@ MATRIX_ORDERED_VERSIONS := $(filter $(CANONICAL_FEDORA_VERSION),$(MATRIX_VERSION
 matrix-chroot-%: ## Build one Fedora chroot via full-cycle. Normally driven by full-cycle-matrix's loop; safe to invoke by hand (e.g. `make matrix-chroot-45`) to backfill one chroot's coverage. Standalone, it does NOT run the canonical chroot first, so it never bumps releases unless % is the canonical version.
 	@echo $(HIGHLIGHT_PREFIX) "Fedora $*"
 	@if [ "$*" = "$(CANONICAL_FEDORA_VERSION)" ]; then bump=; else bump=true; fi; \
-	$(MAKE) full-cycle FEDORA_VERSION=$* PACKAGE=$(PACKAGE) SKIP_COPR=true \
+	$(MAKE) full-cycle FEDORA_VERSION=$* PACKAGE=$(PACKAGE) SKIP_COPR=true NOTIFY=0 \
 		SKIP_PACKAGES=$(SKIP_PACKAGES) FORCE_REBUILD=$(FORCE_REBUILD) \
 		SKIP_RELEASE_BUMP=$$bump
 
 full-cycle-matrix: ## Build every MATRIX_VERSIONS chroot locally (default: all SUPPORTED, x86_64 only; a failing chroot doesn't stop the rest), then submit to Copr once for packages that built cleanly everywhere (PACKAGE, COPR_REPO, requires 'make container-build' first)
 	@mkdir -p logs
 	@if [ "$(PIPELINE_LOCK_HELD)" = "1" ] || [ "$(LOCK_DISABLE)" = "1" ]; then \
-		$(MAKE) _full-cycle-matrix; \
+		$(MAKE) _full-cycle-matrix; status=$$?; \
+		$(call notify_result,full-cycle-matrix,chroots: $(MATRIX_ORDERED_VERSIONS) package: $(or $(PACKAGE),all)); \
+		exit $$status; \
 	elif ! command -v flock >/dev/null 2>&1; then \
 		echo $(HIGHLIGHT_PREFIX) "Error: flock not found (util-linux); install it, or bypass with LOCK_DISABLE=1"; \
 		exit 1; \
@@ -623,6 +643,7 @@ full-cycle-matrix: ## Build every MATRIX_VERSIONS chroot locally (default: all S
 		echo "PID $$$$, started $$(date --rfc-3339=seconds), target _full-cycle-matrix" > $(PIPELINE_LOCK_FILE).owner; \
 		PIPELINE_LOCK_HELD=1 $(MAKE) _full-cycle-matrix; status=$$?; \
 		rm -f $(PIPELINE_LOCK_FILE).owner; \
+		$(call notify_result,full-cycle-matrix,chroots: $(MATRIX_ORDERED_VERSIONS) package: $(or $(PACKAGE),all)); \
 		exit $$status; \
 	fi
 
@@ -671,11 +692,11 @@ update-daily: ## Update versions, validate+format packages.yaml, build (package 
 
 _update-daily:
 	@test -n "$(COPR_REPO)" || (echo "$(HIGHLIGHT_PREFIX) Error: COPR_REPO is not set (e.g. export COPR_REPO=nett00n/hyprland)"; exit 1)
-	@mkdir -p logs && rm -f logs/.update-daily-failed
+	@mkdir -p logs && rm -f logs/.update-daily-failed && date +%s > logs/.update-daily-started
 	$(MAKE) update-versions || exit 1
 	$(MAKE) validate-packages fmt || exit 1
 	$(MAKE) refresh-checksums || exit 1
-	$(MAKE) full-cycle-matrix || touch logs/.update-daily-failed
+	$(MAKE) full-cycle-matrix NOTIFY=0 || touch logs/.update-daily-failed
 	@# #COPR-0015: reclaim superseded SRPMs/RPMs/vendor/source tarballs; never blocks the commit.
 	$(MAKE) db-prune CONFIRM=1 || true
 	@# full-cycle.py's update_package_releases() rewrites packages.yaml after the
@@ -712,11 +733,20 @@ _update-daily:
 	@if [ -f logs/.update-versions-failures.md ]; then \
 		echo "$(HIGHLIGHT_PREFIX) ✗ $$(grep -c '^- \`' logs/.update-versions-failures.md 2>/dev/null || echo '?') upstream refresh failure(s) tonight (see docs/nightly-summary.md's Upstream version refresh section, or logs/.update-versions-failures.md) #BUG-0100"; \
 	fi
+	@# #COPR-0026: before the failure exit below, so a failed night is reported too; never fails the run.
+	$(MAKE) notify-summary || true
 	@if [ -f logs/.update-daily-failed ]; then \
 		rm -f logs/.update-daily-failed; \
 		echo "$(HIGHLIGHT_PREFIX) ✗ Some packages failed to build tonight (docs and commit were still produced; see stage-log-analyze output above, docs/nightly-summary.md, or logs/runs/latest/<target>/<pkg>)"; \
 		exit 1; \
 	fi
+
+notify: check-venv ## Send a Gotify message (#COPR-0026): TITLE=<t> MESSAGE=<m> [PRIORITY=5]; needs GOTIFY_URL + GOTIFY_TOKEN in .env; failures only warn
+	@test -n "$(MESSAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: MESSAGE is required (e.g. make notify MESSAGE=hello)"; exit 1)
+	@$(PYTHON) scripts/gotify-notify.py --title "$(or $(TITLE),hyprland-copr)" --message "$(MESSAGE)" --priority "$(or $(PRIORITY),5)"
+
+notify-summary: check-venv ## Send tonight's update-daily summary to Gotify (#COPR-0026): `updated N: pkg old>new... planned: N, succeeded: N, errors: ...`
+	@$(PYTHON) scripts/gotify-notify.py --summary
 
 build-pop: check-image check-venv setup-volumes ## Remove mock/copr build status for PKG=a,b (PKG="" removes all, requires confirmation)
 	@if [ -z "$(PACKAGE)" ]; then \

@@ -4,6 +4,10 @@ Maintainer's microblog, informal. Newest first, dated `## YYYY-MM-DD` entries, o
 paragraph each. README shows the most recent entries - see
 `scripts/gen-report.py:get_recent_news()`.
 
+## 2026-10-21
+Added Packages:
+- neowall
+
 ## 2026-10-12
 Added Packages:
 - wl-clip-persist

@@ -1657,6 +1657,57 @@ mpvpaper:
   summary: A video wallpaper program for wlroots based wayland compositors.
   url: https://github.com/GhostNaN/mpvpaper
   version: '1.9'
+neowall:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands:
+    - '%meson -Dwerror=false'
+    - '%meson_build'
+    install: []
+    no_lto: false
+    prep: []
+    system: meson
+  build_requires:
+  - gcc
+  - meson
+  - ninja-build
+  - pkgconfig(egl)
+  - pkgconfig(fontconfig)
+  - pkgconfig(gl)
+  - pkgconfig(libjpeg)
+  - pkgconfig(libpng16)
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-cursor)
+  - pkgconfig(wayland-egl)
+  - pkgconfig(x11)
+  - pkgconfig(xkbcommon)
+  - pkgconfig(xrandr)
+  depends_on: []
+  description: NeoWall is a GPU-accelerated live wallpaper engine for Linux. It renders GLSL (Shadertoy-compatible) shaders, images and a terminal as your desktop background, with transitions, multi-monitor support and audio-reactive shaders. Runs on Wayland (wlr-layer-shell, KDE Plasma, GNOME) and X11.
+  devel:
+    files: []
+  files:
+  - '%license LICENSE'
+  - '%{_bindir}/neowall'
+  - '%{_datadir}/applications/neowall.desktop'
+  - '%{_datadir}/icons/hicolor/scalable/apps/neowall.svg'
+  - '%{_datadir}/neowall/'
+  - '%{_docdir}/neowall/'
+  - '%{_prefix}/lib/systemd/user/neowall.service'
+  license: MIT
+  recommends:
+  - pulseaudio-utils
+  release: 4
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: GPU-accelerated live wallpaper engine using GLSL shaders
+  url: https://github.com/1ay1/neowall
+  version: 0.7.2
 OpenLogi:
   build:
     commands:

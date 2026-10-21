@@ -1,6 +1,7 @@
 """Tests for update-versions script."""
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -294,6 +295,30 @@ class TestMain:
             uv.main()
 
         mock_pull.assert_not_called()
+
+    def test_changes_sentinel_written_and_emptied(self, tmp_path, monkeypatch):
+        """#COPR-0026: logs/.update-versions-changes.json carries tonight's
+        old->new pairs for the Gotify summary, and is reset on a no-op run."""
+        monkeypatch.setattr(uv, "PACKAGES_YAML", tmp_path / "packages.yaml")
+        monkeypatch.setattr(uv, "LOG_DIR", tmp_path / "logs")
+        (tmp_path / "packages.yaml").write_text("")
+        sentinel = tmp_path / "logs" / ".update-versions-changes.json"
+
+        with (
+            patch.object(uv, "pull_upstream"),
+            patch.object(
+                uv, "update_package_versions", return_value={"foo": ("1.0", "1.1")}
+            ),
+        ):
+            uv.main()
+        assert json.loads(sentinel.read_text()) == {"foo": ["1.0", "1.1"]}
+
+        with (
+            patch.object(uv, "pull_upstream"),
+            patch.object(uv, "update_package_versions", return_value={}),
+        ):
+            uv.main()
+        assert json.loads(sentinel.read_text()) == {}
 
     def test_pinned_version_skipped(self, tmp_path, monkeypatch, capsys):
         """Test that pinned-version release type is skipped."""

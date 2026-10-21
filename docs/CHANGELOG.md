@@ -23,6 +23,8 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0026: `make full-cycle` / `make full-cycle-matrix` send a Gotify result message (`NOTIFY=0` silences).
+- COPR-0026: `make notify` / `make notify-summary` send Gotify messages; `update-daily` ends with a nightly summary push.
 - COPR-0013: `make delete-package` also removes the package's RPMs from
   `local-repo/<target>/` (regenerating that repo's metadata) and its files from the
   rpmbuild volume, matched by source package rather than name prefix so

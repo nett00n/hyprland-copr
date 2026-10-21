@@ -1517,14 +1517,24 @@ class TestUpdateDailyResilience:
 
     def test_full_cycle_failure_does_not_abort_chain(self):
         stdout = self._dry_run()
-        assert "make full-cycle-matrix || touch logs/.update-daily-failed" in stdout
+        assert "make full-cycle-matrix NOTIFY=0 || touch logs/.update-daily-failed" in stdout
         # readme/copr-description and the git commit block must appear AFTER the
         # full-cycle-matrix line, i.e. not gated behind its success.
-        full_cycle_pos = stdout.index("make full-cycle-matrix || touch")
+        full_cycle_pos = stdout.index("make full-cycle-matrix NOTIFY=0 || touch")
         readme_pos = stdout.index("make readme copr-description")
         commit_pos = stdout.index('git commit -m "Daily update:')
         marker_check_pos = stdout.index("if [ -f logs/.update-daily-failed ]")
         assert full_cycle_pos < readme_pos < commit_pos < marker_check_pos
+
+    def test_gotify_summary_sent_before_failure_exit(self):
+        """#COPR-0026: the nightly summary goes out even on a failed night, so
+        notify-summary must precede the .update-daily-failed exit check."""
+        stdout = self._dry_run()
+        assert "logs/.update-daily-started" in stdout
+        notify_pos = stdout.index("make notify-summary")
+        marker_check_pos = stdout.index("if [ -f logs/.update-daily-failed ]")
+        commit_pos = stdout.index('git commit -m "Daily update:')
+        assert commit_pos < notify_pos < marker_check_pos
 
     def test_stale_marker_cleared_at_start(self):
         stdout = self._dry_run()
@@ -1543,7 +1553,7 @@ class TestUpdateDailyResilience:
         # Exactly one "...fmt" gate: the pre-build one. The post-build gate is
         # validate-packages alone.
         assert stdout.count("make validate-packages fmt") == 1
-        full_cycle_pos = stdout.index("make full-cycle-matrix || touch")
+        full_cycle_pos = stdout.index("make full-cycle-matrix NOTIFY=0 || touch")
         readme_pos = stdout.index("make readme copr-description")
         second_validate_pos = stdout.index("make validate-packages", full_cycle_pos)
         assert full_cycle_pos < second_validate_pos < readme_pos
@@ -1822,3 +1832,46 @@ class TestCleanupTargets:
         assert prune > matrix
         # A prune failure must never block the night's docs and commit.
         assert "db-prune CONFIRM=1 ||" in lines[prune] or "|| true" in lines[prune]
+
+
+class TestFullCycleGotifyNotify:
+    """#COPR-0026: full-cycle and full-cycle-matrix send one Gotify result message
+    after the pipeline exits (status preserved); nested runs pass NOTIFY=0."""
+
+    def _dry_run(self, target: str, *extra_args: str) -> str:
+        result = subprocess.run(
+            ["make", "-n", target, "LOCK_DISABLE=1", "COPR_REPO=", *extra_args],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        return result.stdout
+
+    def test_full_cycle_notifies_after_pipeline_and_keeps_status(self):
+        stdout = self._dry_run("full-cycle")
+        assert 'TITLE="hyprland-copr full-cycle"' in stdout
+        assert stdout.index("make _full-cycle") < stdout.index("make notify")
+        assert "exit $status" in stdout
+
+    def test_full_cycle_matrix_notifies(self):
+        stdout = self._dry_run("full-cycle-matrix", "MATRIX_VERSIONS=43 44")
+        assert 'TITLE="hyprland-copr full-cycle-matrix"' in stdout
+
+    def test_notify_zero_skips_notification(self):
+        stdout = self._dry_run("full-cycle", "NOTIFY=0")
+        assert 'if [ "0" != "0" ]' in stdout
+
+    def test_matrix_chroot_runs_are_silent(self):
+        stdout = self._dry_run("full-cycle-matrix", "MATRIX_VERSIONS=43 44")
+        assert "make full-cycle FEDORA_VERSION=43" in stdout
+        assert "NOTIFY=0" in stdout.split("make full-cycle FEDORA_VERSION=43")[1][:200]
+
+    def test_update_daily_nested_matrix_is_silent(self):
+        result = subprocess.run(
+            ["make", "-n", "update-daily", "COPR_REPO=nett00n/hyprland"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert "make full-cycle-matrix NOTIFY=0" in result.stdout

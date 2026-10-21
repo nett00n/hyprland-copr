@@ -377,7 +377,7 @@ independently-diverged validators, see docs/BUGS.md formerly BUG-0012) →
 `full-cycle-matrix` (builds every `MATRIX_VERSIONS` chroot locally -- default all of
 `SUPPORTED`, i.e. 43/44/45 -- before a single Copr submission; see docs/BUGS.md
 BUG-0018) → `validate-packages` again (no `fmt`) → regenerate docs → push COPR description →
-`git commit`. Building the whole matrix nightly instead of just the default
+`git commit` → Gotify summary (`make notify-summary`, #COPR-0026; needs `GOTIFY_URL` + `GOTIFY_TOKEN`, skipped with a warning otherwise, never fails the run). Building the whole matrix nightly instead of just the default
 `FEDORA_VERSION` roughly triples build time in exchange for catching a chroot-specific
 failure (e.g. a newer libstdc++ requirement) before it ever reaches Copr, rather than only
 after (docs/BUGS.md BUG-0018; this tradeoff was TODO-0065). A failing chroot doesn't stop

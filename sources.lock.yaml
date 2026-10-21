@@ -518,3 +518,9 @@ OpenLogi:
     sha256: b426e9c8e4edae343409e81e818775138fc8a5baac0bca1c86f6e56e188a966d
     size: 5697769
     recorded: '2026-10-21'
+neowall:
+  neowall-0.7.2.tar.gz:
+    url: https://github.com/1ay1/neowall/archive/refs/tags/v0.7.2.tar.gz#/neowall-0.7.2.tar.gz
+    sha256: 951223bc3d35c35034f6633408178e592d812d887e216440309e7f1d5da16ee5
+    size: 912332
+    recorded: '2026-10-21'

@@ -10,6 +10,7 @@ Usage:
 
 import contextlib
 import datetime
+import json
 import sys
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -612,6 +613,7 @@ def main() -> None:
     if not PACKAGES_YAML.exists():
         print(f"warning: {PACKAGES_YAML} not found, skipping update", file=sys.stderr)
         (LOG_DIR / ".update-versions-count").write_text("0\n")
+        (LOG_DIR / ".update-versions-changes.json").write_text("{}\n")
         return
 
     changed = update_package_versions(PACKAGES_YAML, pkg_to_latest, pkg_to_commit_info)
@@ -623,6 +625,10 @@ def main() -> None:
         print("packages.yaml: all versions already up to date", file=sys.stderr)
 
     (LOG_DIR / ".update-versions-count").write_text(f"{len(changed)}\n")
+    # #COPR-0026: old->new pairs for `make notify-summary`'s Gotify message.
+    (LOG_DIR / ".update-versions-changes.json").write_text(
+        json.dumps({pkg: list(pair) for pkg, pair in sorted(changed.items())}) + "\n"
+    )
 
 
 if __name__ == "__main__":
