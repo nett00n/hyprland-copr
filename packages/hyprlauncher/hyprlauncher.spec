@@ -1,7 +1,7 @@
 
 Name:           hyprlauncher
 Version:        0.1.7
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A multipurpose and versatile launcher / picker for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprlauncher
@@ -22,6 +22,7 @@ BuildRequires:  pkgconfig(libdrm)
 BuildRequires:  pkgconfig(libqalculate)
 BuildRequires:  pkgconfig(pixman-1)
 BuildRequires:  pkgconfig(xkbcommon)
+
 
 
 
@@ -60,6 +61,6 @@ Commit:            d08efd580c782fbf52ec299f77cd6c0fef7ee3d5
 %{_prefix}/bin/hyprlauncher
 
 %changelog
-* Tue Oct 20 2026 nett00n <copr@nett00n.org> - 0.1.7-1
+* Tue Oct 20 2026 nett00n <copr@nett00n.org> - 0.1.7-2
 
 - VERSION: bump to 0.1.7

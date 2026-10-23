@@ -1,7 +1,7 @@
 
 Name:           hyprpwcenter
 Version:        0.1.2
-Release:        22%{?dist}
+Release:        23%{?dist}
 Summary:        Volume management center for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpwcenter
@@ -18,6 +18,7 @@ BuildRequires:  pkgconfig(cairo)
 BuildRequires:  pkgconfig(libdrm)
 BuildRequires:  pkgconfig(libpipewire-0.3)
 BuildRequires:  pkgconfig(pixman-1)
+
 
 
 
@@ -51,6 +52,6 @@ Commit:            2ce8f3d174f2ae1c50c7dcc182d809a5ab33cad2
 %{_prefix}/share/applications/hyprpwcenter.desktop
 
 %changelog
-* Tue Feb 10 2026 nett00n <copr@nett00n.org> - 0.1.2-22
+* Tue Feb 10 2026 nett00n <copr@nett00n.org> - 0.1.2-23
 
 - version: bump to 0.1.2

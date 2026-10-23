@@ -1,7 +1,7 @@
 
 Name:           hyprtoolkit
 Version:        0.6.0
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        A modern C++ Wayland-native GUI toolkit
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprtoolkit
@@ -27,6 +27,7 @@ BuildRequires:  pkgconfig(pixman-1)
 BuildRequires:  pkgconfig(wayland-client)
 BuildRequires:  pkgconfig(wayland-protocols)
 BuildRequires:  pkgconfig(xkbcommon)
+
 
 
 
@@ -69,6 +70,6 @@ Development files for hyprtoolkit.
 %{_libdir}/pkgconfig/hyprtoolkit.pc
 
 %changelog
-* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.6.0-6
+* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.6.0-7
 
 - version: bump to 0.6.0

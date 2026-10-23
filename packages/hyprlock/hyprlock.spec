@@ -1,7 +1,7 @@
 
 Name:           hyprlock
 Version:        0.9.6
-Release:        11%{?dist}
+Release:        12%{?dist}
 Summary:        A gpu-accelerated screen lock for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprlock
@@ -25,6 +25,7 @@ BuildRequires:  pkgconfig(wayland-client)
 BuildRequires:  pkgconfig(wayland-egl)
 BuildRequires:  pkgconfig(wayland-protocols)
 BuildRequires:  pkgconfig(xkbcommon)
+
 
 
 
@@ -59,6 +60,6 @@ Commit:            b222d9b1f87e980cac379371df57913a53b99d7f
 %{_sysconfdir}/pam.d/hyprlock
 
 %changelog
-* Sat Jul 18 2026 nett00n <copr@nett00n.org> - 0.9.6-11
+* Sat Jul 18 2026 nett00n <copr@nett00n.org> - 0.9.6-12
 
 - version: bump to 0.9.6

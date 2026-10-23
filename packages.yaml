@@ -38,7 +38,7 @@ aquamarine:
   - '%license LICENSE'
   - '%{_libdir}/libaquamarine.so*'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -358,7 +358,7 @@ hyprcursor:
   - '%{_bindir}/hyprcursor-util'
   - '%{_libdir}/libhyprcursor.so*'
   license: BSD-3-Clause
-  release: 16
+  release: 17
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -396,7 +396,7 @@ hyprgraphics:
   - '%license LICENSE'
   - '%{_libdir}/libhyprgraphics.so*'
   license: BSD-3-Clause
-  release: 16
+  release: 17
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -430,7 +430,7 @@ hypridle:
   - '%{_datadir}/hypr/hypridle.conf'
   - '%{_userunitdir}/hypridle.service'
   license: BSD-3-Clause
-  release: 15
+  release: 16
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -538,7 +538,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 19
+  release: 20
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -574,7 +574,7 @@ hyprland-guiutils:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprland-*'
   license: BSD-3-Clause
-  release: 16
+  release: 17
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -666,7 +666,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 8
+  release: 9
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -741,7 +741,7 @@ hyprland-qt-support:
   - '%{_prefix}/lib/libhyprland-quick-style-impl.so'
   - '%{_prefix}/lib/libhyprland-quick-style.so'
   license: BSD-3-Clause
-  release: 15
+  release: 16
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -769,7 +769,7 @@ hyprlang:
   - '%license LICENSE'
   - '%{_libdir}/libhyprlang.so*'
   license: BSD-3-Clause
-  release: 16
+  release: 17
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -815,7 +815,7 @@ hyprlauncher:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprlauncher'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -857,7 +857,7 @@ hyprlock:
   - '%{_datadir}/hypr/hyprlock.conf'
   - '%{_sysconfdir}/pam.d/hyprlock'
   license: BSD-3-Clause
-  release: 11
+  release: 12
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -905,7 +905,7 @@ hyprpaper:
   - '%{_bindir}/hyprpaper'
   - '%{_userunitdir}/hyprpaper.service'
   license: BSD-3-Clause
-  release: 22
+  release: 23
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -938,7 +938,7 @@ hyprpicker:
   - '%{_prefix}/bin/hyprpicker'
   - '%{_prefix}/share/man/man1/hyprpicker.1.gz'
   license: BSD-3-Clause
-  release: 15
+  release: 16
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -974,7 +974,7 @@ hyprpolkitagent:
   - '%{_prefix}/libexec/hyprpolkitagent'
   - '%{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service'
   license: BSD-3-Clause
-  release: 6
+  release: 7
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1008,7 +1008,7 @@ hyprpwcenter:
   - '%{_prefix}/bin/hyprpwcenter'
   - '%{_prefix}/share/applications/hyprpwcenter.desktop'
   license: BSD-3-Clause
-  release: 22
+  release: 23
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1049,7 +1049,7 @@ hyprqt6engine:
   - '%{_libdir}/qt6/plugins/platformthemes/libhyprqt6engine.so'
   - '%{_libdir}/qt6/plugins/styles/libhypr-style.so'
   license: BSD-3-Clause
-  release: 15
+  release: 16
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1119,7 +1119,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 28
+  release: 29
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1151,7 +1151,7 @@ hyprsunset:
   - '%{_prefix}/bin/hyprsunset'
   - '%{_prefix}/lib/systemd/user/hyprsunset.service'
   license: BSD-3-Clause
-  release: 15
+  release: 16
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1197,7 +1197,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 28
+  release: 29
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1243,7 +1243,7 @@ hyprtoolkit:
   - '%license LICENSE'
   - '%{_libdir}/libhyprtoolkit.so*'
   license: BSD-3-Clause
-  release: 6
+  release: 7
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1269,13 +1269,13 @@ hyprutils:
   - '%license LICENSE'
   - '%{_libdir}/libhyprutils.so*'
   license: BSD-3-Clause
-  release: 4
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Small C++ library for utilities used across the Hypr ecosystem
   url: https://github.com/hyprwm/hyprutils
-  version: 0.14.2
+  version: 0.14.3
 hyprwayland-scanner:
   build:
     system: cmake
@@ -1326,7 +1326,7 @@ hyprwire:
   - '%{_bindir}/hyprwire-scanner'
   - '%{_libdir}/libhyprwire.so*'
   license: BSD-3-Clause
-  release: 16
+  release: 17
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1452,7 +1452,7 @@ lambdock:
   - '%{_datadir}/guile/site/3.0/lambdock/'
   - '%{_datadir}/locale/*/LC_MESSAGES/lambdock.mo'
   license: GPL-3.0-or-later
-  release: 6
+  release: 1
   requires: []
   rpm:
     no_debug_package: true
@@ -1462,7 +1462,7 @@ lambdock:
   source_dir: lambdock
   summary: Wayland desktop dock customizable with GNU Guile Scheme
   url: https://codeberg.org/jjba23/lambdock.git
-  version: 0.7.4
+  version: 0.7.5
 libcava:
   build:
     commands:
@@ -1760,7 +1760,7 @@ OpenLogi:
     name: OpenLogi
   summary: Local-first alternative to Logitech Options+ for HID++ devices
   url: https://github.com/AprilNEA/OpenLogi
-  version: 0.8.15
+  version: 0.8.17
 pyprland:
   build:
     commands:
@@ -2486,7 +2486,7 @@ xdg-desktop-portal-hyprland:
   - '%{_libexecdir}/%{name}'
   - '%{_userunitdir}/%{name}.service'
   license: BSD-3-Clause
-  release: 14
+  release: 15
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'

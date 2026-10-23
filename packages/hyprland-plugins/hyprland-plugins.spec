@@ -4,7 +4,7 @@
 
 Name:           hyprland-plugins
 Version:        0.56.0^20260805git00862ca
-Release:        8%{?dist}
+Release:        9%{?dist}
 Summary:        Official plugins for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprland-plugins
@@ -23,6 +23,7 @@ BuildRequires:  pkgconfig(pangocairo)
 BuildRequires:  pkgconfig(pixman-1)
 BuildRequires:  pkgconfig(wayland-server)
 BuildRequires:  pkgconfig(xkbcommon)
+
 
 
 
@@ -79,6 +80,6 @@ sed -i \
 %{_prefix}/lib/libhyprfocus.so
 
 %changelog
-* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.56.0^20260805git00862ca-8
+* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.56.0^20260805git00862ca-9
 
 - hyprpm: add pin for 0.56.2

@@ -1,12 +1,12 @@
 %global debug_package %{nil}
 
 Name:           lambdock
-Version:        0.7.4
-Release:        6%{?dist}
+Version:        0.7.5
+Release:        1%{?dist}
 Summary:        Wayland desktop dock customizable with GNU Guile Scheme
 License:        GPL-3.0-or-later
 URL:            https://codeberg.org/jjba23/lambdock.git
-Source0:        https://codeberg.org/jjba23/lambdock/archive/refs/tags/v0.7.4.tar.gz#/lambdock-0.7.4.tar.gz
+Source0:        https://codeberg.org/jjba23/lambdock/archive/refs/tags/v0.7.5.tar.gz#/lambdock-0.7.5.tar.gz
 
 BuildRequires:  gcc
 BuildRequires:  gettext
@@ -20,6 +20,7 @@ BuildRequires:  pkgconfig(guile-3.0)
 BuildRequires:  pkgconfig(wayland-client)
 BuildRequires:  pkgconfig(wayland-protocols)
 BuildRequires:  wayland-devel
+
 
 
 
@@ -40,8 +41,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.7.4
-Commit:            f868e05ebd7c22187e3fa22f65c405c54cc1042c
+Tag:               v0.7.5
+Commit:            8a9a0ccaf285e8cae5fcdf5600ebb7128abc393c
 
 %prep
 %autosetup -p1 -n lambdock
@@ -62,6 +63,7 @@ Commit:            f868e05ebd7c22187e3fa22f65c405c54cc1042c
 %{_datadir}/locale/*/LC_MESSAGES/lambdock.mo
 
 %changelog
-* Mon Sep 07 2026 nett00n <copr@nett00n.org> - 0.7.4-6
+* Thu Oct 22 2026 nett00n <copr@nett00n.org> - 0.7.5-1
 
-- feat: ✨ Improve dynamic items
+- lambdock v0.7.5
+- New Scheme and C test suites, and a fix for an out-of-bounds read in CSS selector scoping.

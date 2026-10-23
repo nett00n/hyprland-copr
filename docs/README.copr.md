@@ -26,6 +26,20 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-10-22
+
+Zig-based packages are now supported: the build system and the vendoring of `build.zig.zon` dependencies are automated like Go and Rust.
+
+Added Packages:
+- swaylock-effects
+- swaylock-plugin
+- waylock
+
+### 2026-10-21
+
+Added Packages:
+- neowall
+
 ### 2026-10-12
 
 Added Packages:
@@ -42,32 +56,6 @@ Added Packages:
 
 Added Packages:
 - Ironbar
-
-### 2026-08-09
-
-Fixed packages:
-- screeninfo - was not built successfully on fedora 43 - automation fix
-- quickshell - was not built successfully on fedora 43 - additional flag in build process
-- Hyprland - was not built sucessfully on fedora 43 - applied LionHeartP's patch. It builds locally but copr still fails
-
-### 2026-08-02
-
-I understood that i've added `*-git` packages just to match solopasha's repo and i did not understand how hard it would really be. `*-git` packages are removed from repo for now. Maybe i would get back to it in future, bit that's not a promise.
-
-The vendoring process is reworked.
-
-Removed packages:
-- cava - already present in fedora 43, 44, 45
-- hyprland-git
-- hyprland-plugins-git
-- waybar-git
-
-Added packages:
-- libcava - same cava, but built as shared library only
-- satty
-
-Updated packages:
-- Waybar - now built with cava support
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 
@@ -139,6 +127,7 @@ Updated packages:
 - `ironbar` — Customisable Wayland GTK4 bar written in Rust
 - `lambdock` — Wayland desktop dock customizable with GNU Guile Scheme
 - `mpvpaper` — A video wallpaper program for wlroots based wayland compositors.
+- `neowall` — GPU-accelerated live wallpaper engine using GLSL shaders
 - `network-manager-applet` — Tray applet and an advanced network connection editor
 - `nnn` — n³ The unorthodox terminal file manager
 - `openlogi` — Local-first alternative to Logitech Options+ for HID++ devices
@@ -148,10 +137,13 @@ Updated packages:
 - `satty` — Satty - Modern Screenshot Annotation
 - `snappy-switcher` — alt-tab switch window for wayland compositor
 - `swaybg` — Great utility if all you want is one simple static wallpaper
+- `swaylock-effects` — Swaylock fork with fancy effects (blur, clock, fade-in)
+- `swaylock-plugin` — Swaylock fork that can use a Wayland client as lock screen background
 - `swayosd` — A GTK based on screen display for keyboard shortcuts like caps-lock and volume
 - `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
 - `uwsm` — Universal Wayland Session Manager
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
+- `waylock` — Small screenlocker for Wayland compositors
 - `waypaper` — GUI wallpaper manager for Wayland and Xorg Linux systems
 - `wl-clip-persist` — Keep Wayland clipboard even after programs close
 
@@ -172,7 +164,7 @@ Updated packages:
 
 ## Build Status 📊
 
-- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-10-21
+- **[View detailed build report](./docs/full-report.md)** — Fedora 44 · 2026-10-23
 - **[Monitor builds on COPR](https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/monitor/)**
 
 <!-- BEGIN: Footer -->
