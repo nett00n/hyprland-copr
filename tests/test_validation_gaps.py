@@ -144,6 +144,9 @@ class TestValidatePackage:
             # Errors may exist for other reasons, but not for invalid build system
             assert not any("invalid" in e.lower() and "build" in e.lower() for e in errors)
 
+    def test_zig_is_a_valid_build_system(self):
+        assert "zig" in VALID_BUILD_SYSTEMS
+
     def test_allows_fixme_build_system(self):
         """Should allow FIXME as build system."""
         meta = self.get_minimal_package()
@@ -725,6 +728,22 @@ class TestValidateVendoring:
         errors, _ = validate_vendoring("x", meta)
         assert any("never runs" in e for e in errors)
 
+    def test_zig_package_is_clean(self):
+        """#COPR-0027: zig in build_requires + a vendor archive is consistent."""
+        errors, warnings = validate_vendoring(
+            "x", self._vendored_meta(build_requires=["zig", "zig-rpm-macros"])
+        )
+        assert errors == []
+        assert warnings == []
+
+    def test_zig_trigger_without_archive_is_error_naming_zig(self):
+        meta = {
+            "build_requires": ["zig"],
+            "source": {"archives": ["https://example.com/x.tar.gz"]},
+        }
+        errors, _ = validate_vendoring("x", meta)
+        assert any("no '*-vendor.tar.gz'" in e and "zig" in e for e in errors)
+
     def test_prep_source_index_within_range_is_clean(self):
         meta = self._vendored_meta(
             build={"prep": ["pushd cli", "tar xf %{SOURCE1}", "popd"]}
@@ -1041,3 +1060,14 @@ class TestValidateBuildSystemDrift:
         errors, warnings = validate_build_system_drift(self._pkg())
         assert errors == []
         assert warnings == []
+
+
+class TestZigBuildSystemDefaults:
+    """#COPR-0027: build.system zig renders Fedora's zig-rpm-macros defaults."""
+
+    def test_zig_defaults_use_zig_rpm_macros(self):
+        from lib.build_systems import BUILD_SYSTEMS
+
+        build_cmd, install_cmd = BUILD_SYSTEMS["zig"]
+        assert build_cmd == "%zig_build -Dpie"
+        assert install_cmd == "%zig_install -Dpie"

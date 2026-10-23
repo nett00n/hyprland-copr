@@ -26,13 +26,16 @@ from lib.copr import (
     download_chroot_log,
     fetch_failed_chroot_logs,
     get_build_chroots,
+    IN_FLIGHT_STATUSES,
     get_project_chroots,
+    in_flight_builds,
     ineligible_packages,
     parse_build_id,
     poll_copr_status,
     preflight,
     print_chroot_coverage,
     resolve_batch_chain,
+    srpm_key,
     validate_copr_repo,
 )
 
@@ -1027,3 +1030,190 @@ class TestResolveBatchChain:
         )
         assert after is None
         assert depth == 0
+
+
+def _build(build_id, filename, state="pending"):
+    return {
+        "id": build_id,
+        "state": state,
+        "source_package": {
+            "name": None,
+            "version": None,
+            "url": f"https://copr.fedorainfracloud.org/tmp/tmpabc/{filename}",
+        },
+    }
+
+
+def _pages(*pages):
+    """urlopen stand-in serving `pages` in order (newest-builds-first)."""
+    served = iter(pages)
+
+    def fake(url, timeout=None):
+        resp = MagicMock()
+        resp.read.return_value = json.dumps({"items": next(served)}).encode()
+        cm = MagicMock()
+        cm.__enter__.return_value = resp
+        return cm
+
+    return fake
+
+
+class TestSrpmKey:
+    """#COPR-0007: Copr stores an uploaded SRPM under a sanitized filename."""
+
+    def test_plain_name_is_unchanged(self):
+        assert srpm_key("hyprland-0.56.2-19.fc43.src.rpm") == "hyprland-0.56.2-19.fc43.src.rpm"
+
+    def test_caret_snapshot_version_matches_copr_spelling(self):
+        """The live case: local hyprland-plugins-0.56.0^20260805git00862ca-8 is
+        stored by Copr as hyprland-plugins-0.56.020260805git00862ca-8."""
+        local = "hyprland-plugins-0.56.0^20260805git00862ca-8.fc43.src.rpm"
+        copr = "hyprland-plugins-0.56.020260805git00862ca-8.fc43.src.rpm"
+        assert srpm_key(local) == srpm_key(copr) == copr
+
+    @pytest.mark.parametrize("raw,expected", [("a~b+c-1.src.rpm", "abc-1.src.rpm"), ("x_y.z-1", "x_y.z-1")])
+    def test_other_symbols_dropped_safe_chars_kept(self, raw, expected):
+        assert srpm_key(raw) == expected
+
+
+class TestInFlightBuilds:
+    """#COPR-0007: which SRPMs does Copr already have queued/building?
+
+    One unfiltered newest-first listing, filtered client-side: Copr's `status=`
+    filter costs ~12 s per call (five of them blew past any sane timeout), while
+    the plain listing answers in ~2 s.
+    """
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_maps_srpm_filename_to_build_id(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [_build(11, "hyprland-0.56.2-19.fc43.src.rpm")]
+        )
+        assert in_flight_builds("nett00n/hyprland") == {
+            "hyprland-0.56.2-19.fc43.src.rpm": 11
+        }
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_keys_are_sanitized_like_srpm_key(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [_build(8, "hyprland-plugins-0.56.0^20260805git00862ca-8.fc43.src.rpm")]
+        )
+        found = in_flight_builds("nett00n/hyprland")
+        local = "hyprland-plugins-0.56.0^20260805git00862ca-8.fc43.src.rpm"
+        assert found[srpm_key(local)] == 8
+
+    @patch("lib.copr.urllib.request.urlopen")
+    @pytest.mark.parametrize("state", IN_FLIGHT_STATUSES)
+    def test_every_in_flight_state_counts(self, mock_urlopen, state):
+        mock_urlopen.side_effect = _pages([_build(3, "x-1-1.fc43.src.rpm", state)])
+        assert in_flight_builds("nett00n/hyprland") == {"x-1-1.fc43.src.rpm": 3}
+
+    @patch("lib.copr.urllib.request.urlopen")
+    @pytest.mark.parametrize("state", ["succeeded", "failed", "canceled", "skipped"])
+    def test_finished_builds_are_ignored(self, mock_urlopen, state):
+        mock_urlopen.side_effect = _pages([_build(3, "x-1-1.fc43.src.rpm", state)])
+        assert in_flight_builds("nett00n/hyprland") == {}
+
+    def test_in_flight_states_are_the_expected_set(self):
+        assert set(IN_FLIGHT_STATUSES) == {
+            "pending",
+            "importing",
+            "waiting",
+            "starting",
+            "running",
+        }
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_requests_owner_project_newest_first_with_generous_timeout(
+        self, mock_urlopen
+    ):
+        mock_urlopen.side_effect = _pages([])
+        in_flight_builds("nett00n/hyprland")
+        url = mock_urlopen.call_args.args[0]
+        assert "ownername=nett00n" in url and "projectname=hyprland" in url
+        assert "order=id" in url and "order_type=DESC" in url
+        assert "status=" not in url
+        assert mock_urlopen.call_args.kwargs["timeout"] >= 30
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_highest_build_id_wins_for_duplicates(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [
+                _build(9, "x-1.0-1.fc43.src.rpm"),
+                _build(7, "x-1.0-1.fc43.src.rpm", "running"),
+                _build(5, "x-1.0-1.fc43.src.rpm"),
+            ]
+        )
+        assert in_flight_builds("nett00n/hyprland") == {"x-1.0-1.fc43.src.rpm": 9}
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_different_release_is_a_different_key(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages([_build(5, "x-1.0-1.fc43.src.rpm")])
+        assert "x-1.0-2.fc43.src.rpm" not in in_flight_builds("nett00n/hyprland")
+
+    @patch("lib.copr.IN_FLIGHT_PAGE_SIZE", 2)
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_keeps_paging_while_pages_hold_in_flight_builds(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [_build(5, "a-1-1.fc43.src.rpm"), _build(4, "b-1-1.fc43.src.rpm")],
+            [_build(3, "c-1-1.fc43.src.rpm"), _build(2, "d-1-1.fc43.src.rpm", "succeeded")],
+            [_build(1, "e-1-1.fc43.src.rpm", "succeeded"), _build(0, "f", "failed")],
+        )
+        assert set(in_flight_builds("nett00n/hyprland")) == {
+            "a-1-1.fc43.src.rpm",
+            "b-1-1.fc43.src.rpm",
+            "c-1-1.fc43.src.rpm",
+        }
+        offsets = [c.args[0].split("offset=")[1].split("&")[0] for c in mock_urlopen.call_args_list]
+        assert offsets == ["0", "2", "4"]  # stopped at the first page with none in flight
+
+    @patch("lib.copr.IN_FLIGHT_PAGE_SIZE", 2)
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_stops_on_a_short_page(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages([_build(5, "a-1-1.fc43.src.rpm")])
+        in_flight_builds("nett00n/hyprland")
+        assert mock_urlopen.call_count == 1
+
+    @patch("lib.copr.IN_FLIGHT_MAX_PAGES", 2)
+    @patch("lib.copr.IN_FLIGHT_PAGE_SIZE", 1)
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_page_cap_bounds_the_scan(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [_build(3, "a-1-1.fc43.src.rpm")],
+            [_build(2, "b-1-1.fc43.src.rpm")],
+            [_build(1, "c-1-1.fc43.src.rpm")],
+        )
+        assert set(in_flight_builds("nett00n/hyprland")) == {
+            "a-1-1.fc43.src.rpm",
+            "b-1-1.fc43.src.rpm",
+        }
+        assert mock_urlopen.call_count == 2
+
+    def test_invalid_repo_slug_returns_empty_without_network(self):
+        with patch("lib.copr.urllib.request.urlopen") as mock_urlopen:
+            assert in_flight_builds("not a slug") == {}
+        mock_urlopen.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "boom",
+        [urllib.error.URLError("down"), TimeoutError(), OSError("net")],
+    )
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_network_failure_fails_open_with_warning(self, mock_urlopen, boom, capsys):
+        mock_urlopen.side_effect = boom
+        assert in_flight_builds("nett00n/hyprland") == {}
+        assert "warning" in capsys.readouterr().err
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_malformed_json_fails_open_with_warning(self, mock_urlopen, capsys):
+        resp = MagicMock()
+        resp.read.return_value = b"<html>"
+        mock_urlopen.return_value.__enter__.return_value = resp
+        assert in_flight_builds("nett00n/hyprland") == {}
+        assert "warning" in capsys.readouterr().err
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_build_without_source_url_is_ignored(self, mock_urlopen):
+        odd = {"id": 3, "state": "pending", "source_package": {"url": None}}
+        mock_urlopen.side_effect = _pages([odd, {"id": 4, "state": "pending"}])
+        assert in_flight_builds("nett00n/hyprland") == {}

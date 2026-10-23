@@ -24,6 +24,7 @@ VALID_BUILD_SYSTEMS = {
     "make",
     "meson",
     "python",
+    "zig",
 }
 DEVEL_INDICATORS = ["%{_includedir}", "pkgconfig/", "/cmake/"]
 VALID_FEDORA_OVERRIDE_KEYS = {"skip"}
@@ -58,6 +59,8 @@ FIELD_TYPES: dict[str, type] = {
     "depends_on": list,
     "requires": list,
     "recommends": list,
+    "conflicts": list,
+    "provides": list,
     "files": list,
     "devel.files": list,
     "devel.requires": list,
@@ -127,7 +130,7 @@ def validate_vendoring(name: str, meta: dict) -> tuple[list[str], list[str]]:
     """#BUG-0089: cross-validate the vendoring trigger against its declared source.
 
     Three sources of truth exist for a package's Go/Rust vendor tarball and none
-    were compared: `build_requires` containing golang/cargo (lib.vendor.needs_vendoring,
+    were compared: `build_requires` containing golang/cargo/zig (lib.vendor.needs_vendoring,
     which drives whether stage-vendor actually runs), a `*-vendor.tar.gz` entry in
     `source.archives` (what the generated spec's Source1+ line points at), and a
     hand-written `build.prep`'s `%{SOURCEn}` reference (auto-injected by
@@ -152,14 +155,14 @@ def validate_vendoring(name: str, meta: dict) -> tuple[list[str], list[str]]:
 
     if triggers_vendor and not has_vendor_archive:
         errors.append(
-            "build_requires triggers vendoring (golang/cargo) but source.archives "
+            "build_requires triggers vendoring (golang/cargo/zig) but source.archives "
             "has no '*-vendor.tar.gz' entry -- the vendor stage's tarball is "
             "referenced by nothing"
         )
     if has_vendor_archive and not triggers_vendor:
         errors.append(
             "source.archives declares a vendor tarball but build_requires has no "
-            "golang/cargo -- the vendor stage never runs, so it's never produced"
+            "golang/cargo/zig -- the vendor stage never runs, so it's never produced"
         )
 
     prep = (meta.get("build") or {}).get("prep") or []

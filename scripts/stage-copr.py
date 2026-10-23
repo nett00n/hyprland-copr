@@ -37,11 +37,13 @@ from lib.copr import (
     blackout_chroots,
     block_transitive_dependents,
     fetch_failed_chroot_logs,
+    in_flight_builds,
     ineligible_packages,
     parse_build_id,
     preflight,
     print_chroot_coverage,
     resolve_batch_chain,
+    srpm_key,
 )
 from lib.log_retention import refresh_latest_link
 from lib.paths import (
@@ -70,6 +72,7 @@ def run_for_package(
     run_id: int,
     synchronous: bool = False,
     after_build_id: int | None = None,
+    in_flight: dict[str, int] | None = None,
 ) -> bool:
     """#COPR-0007, #BUG-0107. Submit SRPM to Copr for a single package.
 
@@ -85,6 +88,11 @@ def run_for_package(
     `--after-build-id` so Copr holds this submission in the next build batch
     behind the named build -- see `lib.copr.resolve_batch_chain()`, which
     callers use to resolve it from this run's own dependency graph.
+
+    `in_flight` (`lib.copr.in_flight_builds()`: SRPM filename -> build id) lists
+    what Copr is already queueing or building. If the SRPM about to be uploaded is
+    in it, nothing is submitted: the row is recorded "unknown" with that build's
+    id so `copr-wait` keeps tracking it and dependents still chain behind it.
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
@@ -156,6 +164,23 @@ def run_for_package(
             "skipped",
             version=ver,
             reason=blocker,
+            has_devel=has_devel,
+        )
+        return True
+
+    existing_build = (in_flight or {}).get(srpm_key(Path(str(srpm_path)).name))
+    if existing_build is not None:
+        dup_reason = f"in-progress: build {existing_build} already on Copr"
+        status("copr", pkg, "skip", target, dup_reason, version=ver)
+        build_db.set_stage(
+            pkg,
+            "copr",
+            target,
+            run_id,
+            "unknown",
+            version=ver,
+            build_id=existing_build,
+            reason=dup_reason,
             has_devel=has_devel,
         )
         return True
@@ -318,6 +343,12 @@ def main() -> None:
     submitted_build_ids: dict[str, int] = {}
     submitted_depths: dict[str, int] = {}
 
+    # #COPR-0007: what Copr is already queueing/building. prepare_stage() above
+    # cleared our own rows, so Copr is the only place that still knows -- without
+    # this every run re-queued every package behind the last (163 pending builds
+    # for 55 SRPMs after three runs).
+    in_flight = in_flight_builds(copr_repo)
+
     failed = False
     submitted = 0
     for pkg, meta in packages.items():
@@ -360,6 +391,7 @@ def main() -> None:
             run_id,
             synchronous,
             after_build_id,
+            in_flight,
         ):
             failed = True
 

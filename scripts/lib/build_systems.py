@@ -11,4 +11,6 @@ BUILD_SYSTEMS = {
         "cargo build --offline --release",
         "install -Dm755 target/release/%{name} %{buildroot}%{_bindir}/%{name}",
     ),
+    # #COPR-0027: Fedora zig-rpm-macros; --system zig-pkg makes the build offline
+    "zig": ("%zig_build -Dpie", "%zig_install -Dpie"),
 }

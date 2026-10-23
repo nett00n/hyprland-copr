@@ -21,6 +21,7 @@ RUN dnf install -y -q \
     rpm-build \
     rpmdevtools \
     rpmlint \
+    zig \
     && dnf clean all
 
 # Create non-root user with specified UID/GID

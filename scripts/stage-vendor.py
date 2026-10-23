@@ -95,7 +95,7 @@ def run_for_package(
     # missing parent dir (FileNotFoundError).
     SOURCES_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Skip if not a Go or Rust package
+    # Skip if not a Go, Rust or Zig package
     if not needs_vendoring(meta):
         build_db.set_stage(
             pkg, "vendor", target, run_id, "skipped", version=ver, reason="not-vendored"

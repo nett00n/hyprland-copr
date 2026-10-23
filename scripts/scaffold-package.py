@@ -122,6 +122,8 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
         build_requires += ["meson", "ninja-build", "gcc-c++"]
     elif build_system == "cargo":
         build_requires += ["cargo", "rustc"]
+    elif build_system == "zig":
+        build_requires += ["zig", "zig-rpm-macros"]  # #COPR-0027
     elif build_system == "python":
         build_requires += python_build_requires(python_info.get("build_backend"))
     for dep in pkg_deps:
@@ -157,10 +159,10 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
     else:
         source_name = ""
 
-    # Prepare source archives with vendor tarball for cargo/golang
+    # Prepare source archives with vendor tarball for cargo/golang/zig
     archives = [source_url]
     prep_commands = []
-    if build_system in ("cargo", "golang"):
+    if build_system in ("cargo", "golang", "zig"):
         archives.append("%{name}-%{version}-vendor.tar.gz")
         prep_commands.append("tar xf %{SOURCE1}")
 
@@ -177,7 +179,7 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
         "files": [
             "%license LICENSE",
             "%doc README.md",
-            *([f"%{{_bindir}}/{key}"] if build_system == "golang" else []),
+            *([f"%{{_bindir}}/{key}"] if build_system in ("golang", "zig") else []),
         ],
         "devel": {"files": []},
         "source": {

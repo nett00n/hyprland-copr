@@ -46,7 +46,8 @@ Configuration, from `.env` or the environment: `GOTIFY_URL` (server base URL) an
 `GOTIFY_TOKEN` (application token). If either is unset the send is skipped with a
 warning.
 
-A notification failure (server down, bad token, timeout) is a warning only: both
+A notification failure (server down, bad token, timeout, or a malformed `GOTIFY_URL` such as
+one missing its `https://` scheme) is a warning only: both
 targets exit 0, and the send has a 10 s timeout, so Gotify can never fail or stall
 `update-daily`.
 

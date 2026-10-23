@@ -70,6 +70,14 @@ Requires:       {{ dep }}
 Recommends:     {{ dep }}
 {% endfor %}
 
+{# Provides / Conflicts (drop-in replacements, #COPR-0005) #}
+{% for dep in provides | default([]) %}
+Provides:       {{ dep }}
+{% endfor %}
+{% for dep in conflicts | default([]) %}
+Conflicts:      {{ dep }}
+{% endfor %}
+
 {# Package Description and Changelog Info #}
 %description
 {{ description }}

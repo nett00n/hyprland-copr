@@ -606,6 +606,102 @@ class TestStageCoprBlocking:
         mock_fetch_logs.assert_not_called()
 
 
+class TestStageCoprInFlight:
+    """#COPR-0007: a build of the current SRPM already pending/running on Copr
+    must not be queued a second time."""
+
+    def _seed(self, pkg, run_id, tmp_path, name="test-pkg-1.0.0-1.fc43.src.rpm"):
+        srpm_path = tmp_path / name
+        srpm_path.write_bytes(b"srpm")
+        build_db.set_stage(
+            pkg, "srpm", CANONICAL_TARGET, run_id, "success", path=str(srpm_path)
+        )
+        build_db.set_stage(pkg, "mock", CANONICAL_TARGET, run_id, "success")
+        return srpm_path
+
+    def _submit(self, run_id, tmp_path, in_flight, stdout="Created builds: 777\n"):
+        meta = {"version": "1.0.0", "release": 1}
+        with (
+            patch.object(stage_copr, "run_cmd", return_value=(True, stdout, "")) as run,
+            patch.object(stage_copr, "get_package_log_dir", return_value=tmp_path),
+            patch.object(stage_copr, "ROOT", tmp_path),
+        ):
+            result = stage_copr.run_for_package(
+                "test-pkg",
+                meta,
+                "43",
+                "nett00n/hyprland",
+                proceed=False,
+                target=TARGET,
+                run_id=run_id,
+                synchronous=False,
+                in_flight=in_flight,
+            )
+        return result, run
+
+    def test_matching_srpm_is_not_resubmitted(self, run_id, tmp_path):
+        self._seed("test-pkg", run_id, tmp_path)
+
+        result, run = self._submit(
+            run_id, tmp_path, {"test-pkg-1.0.0-1.fc43.src.rpm": 4242}
+        )
+
+        assert result is True
+        run.assert_not_called()
+        entry = build_db.get_stage("test-pkg", "copr", TARGET)
+        assert entry["state"] == "unknown"
+        assert entry["build_id"] == 4242
+        assert "in-progress" in entry["reason"]
+        assert "4242" in entry["reason"]
+
+    def test_caret_snapshot_version_matches_copr_sanitized_name(self, run_id, tmp_path):
+        """Local SRPM names keep '^' (RPM snapshot versions); Copr's upload drops it."""
+        self._seed(
+            "test-pkg", run_id, tmp_path,
+            name="test-pkg-1.0.0^20260805gitabc-8.fc43.src.rpm",
+        )
+
+        result, run = self._submit(
+            run_id, tmp_path, {"test-pkg-1.0.020260805gitabc-8.fc43.src.rpm": 4242}
+        )
+
+        assert result is True
+        run.assert_not_called()
+        assert build_db.get_stage("test-pkg", "copr", TARGET)["build_id"] == 4242
+
+    def test_other_release_in_flight_still_submits(self, run_id, tmp_path):
+        self._seed("test-pkg", run_id, tmp_path)
+
+        result, run = self._submit(
+            run_id, tmp_path, {"test-pkg-1.0.0-2.fc43.src.rpm": 4242}
+        )
+
+        assert result is True
+        run.assert_called_once()
+        assert build_db.get_stage("test-pkg", "copr", TARGET)["build_id"] == 777
+
+    @pytest.mark.parametrize("in_flight", [None, {}])
+    def test_nothing_in_flight_submits(self, run_id, tmp_path, in_flight):
+        self._seed("test-pkg", run_id, tmp_path)
+
+        _, run = self._submit(run_id, tmp_path, in_flight)
+
+        run.assert_called_once()
+
+    def test_blocked_package_never_reports_in_flight(self, run_id, tmp_path):
+        """The mock/srpm gate runs first: an in-flight match must not mask a
+        genuine local failure with a misleading 'already building'."""
+        srpm_path = self._seed("test-pkg", run_id, tmp_path)
+        build_db.set_stage("test-pkg", "mock", CANONICAL_TARGET, run_id, "failed")
+
+        _, run = self._submit(run_id, tmp_path, {srpm_path.name: 4242})
+
+        run.assert_not_called()
+        entry = build_db.get_stage("test-pkg", "copr", TARGET)
+        assert entry["state"] == "skipped"
+        assert entry["reason"] == "mock failed"
+
+
 class TestStageCoprMainGating:
     """stage-copr.py's main() (the entry point `full-cycle-matrix` submits
     through) previously had no per-package gating at all beyond each
@@ -617,12 +713,16 @@ class TestStageCoprMainGating:
     directly in tests/test_copr.py's TestIneligiblePackages).
     """
 
+    in_flight_result: dict = {}
+
     def _run_main(self, packages, monkeypatch):
         monkeypatch.setenv("COPR_REPO", "nett00n/hyprland")
         monkeypatch.delenv("PACKAGE", raising=False)
         monkeypatch.delenv("SKIP_PACKAGES", raising=False)
         monkeypatch.delenv("REQUIRE_CHROOT_COVERAGE", raising=False)
         submitted = []
+        passed_in_flight = []
+        self.passed_in_flight = passed_in_flight
 
         def fake_run_for_package(
             pkg,
@@ -634,8 +734,10 @@ class TestStageCoprMainGating:
             run_id,
             synchronous=False,
             after_build_id=None,
+            in_flight=None,
         ):
             submitted.append(pkg)
+            passed_in_flight.append(in_flight)
             build_db.set_stage(pkg, "copr", target, run_id, "success")
             return True
 
@@ -654,8 +756,16 @@ class TestStageCoprMainGating:
             # fallback the real API-unreachable path uses, keeping every test
             # here deterministic and offline.
             patch("lib.copr.get_project_chroots", return_value=[]),
+            # #COPR-0007: main() asks Copr what is already queued -- pinned
+            # so these tests stay offline.
+            patch.object(
+                stage_copr,
+                "in_flight_builds",
+                return_value=self.in_flight_result,
+            ) as in_flight_mock,
         ):
             stage_copr.main()
+        self.in_flight_mock = in_flight_mock
 
         return submitted
 
@@ -729,6 +839,64 @@ class TestStageCoprMainGating:
 
         assert submitted == ["hyprutils"]
 
+    def test_main_asks_copr_once_and_passes_the_result_to_every_package(
+        self, monkeypatch
+    ):
+        """#COPR-0007: one in_flight_builds() call per run, shared by all packages."""
+        packages = {
+            "hyprutils": {"version": "1.0", "release": 1, "depends_on": []},
+            "hyprlang": {"version": "1.0", "release": 1, "depends_on": []},
+        }
+        run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
+        for pkg in packages:
+            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+                build_db.set_stage(pkg, "mock", chroot, run_id, "success")
+        self.in_flight_result = {"hyprutils-1.0-1.fc43.src.rpm": 99}
+
+        self._run_main(packages, monkeypatch)
+
+        self.in_flight_mock.assert_called_once_with("nett00n/hyprland")
+        assert self.passed_in_flight == [self.in_flight_result] * 2
+
+    def test_dependent_chains_behind_an_in_flight_dependency(self, monkeypatch):
+        """#COPR-0007: a dependency skipped because it is already building still
+        has a build_id on its row, so its dependent is chained behind it
+        (--after-build-id) exactly as if it had just been submitted."""
+        packages = {
+            "hyprutils": {"version": "1.0", "release": 1, "depends_on": []},
+            "hyprlang": {"version": "1.0", "release": 1, "depends_on": ["hyprutils"]},
+        }
+        run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
+        for pkg in packages:
+            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+                build_db.set_stage(pkg, "mock", chroot, run_id, "success")
+        monkeypatch.setenv("COPR_REPO", "nett00n/hyprland")
+        monkeypatch.delenv("PACKAGE", raising=False)
+        monkeypatch.delenv("SKIP_PACKAGES", raising=False)
+        monkeypatch.delenv("REQUIRE_CHROOT_COVERAGE", raising=False)
+        chained = {}
+
+        def fake_run(pkg, meta, fv, repo, proceed, target, rid, synchronous=False,
+                     after_build_id=None, in_flight=None):
+            chained[pkg] = after_build_id
+            # hyprutils: "already building" row (existing build 4242), no submission
+            build_db.set_stage(pkg, "copr", target, rid, "unknown", build_id=4242 if pkg == "hyprutils" else 5000)
+            return True
+
+        with (
+            patch.object(stage_copr, "prepare_stage", return_value=(packages, packages)),
+            patch.object(stage_copr, "preflight", return_value=True),
+            patch.object(stage_copr, "print_chroot_coverage", return_value=True),
+            patch.object(stage_copr, "run_for_package", side_effect=fake_run),
+            patch.object(stage_copr, "get_run_log_dir"),
+            patch.object(stage_copr, "refresh_latest_link"),
+            patch("lib.copr.get_project_chroots", return_value=[]),
+            patch.object(stage_copr, "in_flight_builds", return_value={}),
+        ):
+            stage_copr.main()
+
+        assert chained == {"hyprutils": None, "hyprlang": 4242}
+
 
 class TestStageCoprBlackoutGate:
     """docs/BUGS.md BUG-0051: a chroot with zero verified/skipped packages
@@ -737,6 +905,7 @@ class TestStageCoprBlackoutGate:
     helper (blackout_chroots()) is already covered in tests/test_copr.py."""
 
     _run_main = TestStageCoprMainGating._run_main
+    in_flight_result: dict = {}
 
     def test_zero_coverage_run_exits_nonzero(self, monkeypatch):
         """Empty build_db -> every chroot UNBUILT for every package -> a

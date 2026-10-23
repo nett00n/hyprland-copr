@@ -31,6 +31,7 @@ file and `docs/features/` work together.
 - [ ] [COPR-0024. Agent memory via HyperMnesia (Tier 0/1 constraints + doc search)](features/COPR-0024-hypermnesia-memory.md) - `#tooling` `#docs` `#agents`
 - [X] [COPR-0025. Pre-vendor source preparation](features/COPR-0025-pre-vendor-source-prep.md) - `#packaging` `#tooling`
 - [X] [COPR-0026. Gotify notifications](features/COPR-0026-gotify-notifications.md) - `#daily` `#notifications` `#tooling`
+- [X] [COPR-0027. Zig build system and dependency vendoring](features/COPR-0027-zig-build-system.md) - `#packaging` `#tooling`
 
 ## Tags
 
@@ -54,7 +55,7 @@ file and `docs/features/` work together.
 - `#notifications`: COPR-0026
 - `#onboarding`: COPR-0001
 - `#packages`: COPR-0001, COPR-0013, COPR-0014
-- `#packaging`: COPR-0005, COPR-0008, COPR-0025
+- `#packaging`: COPR-0005, COPR-0008, COPR-0025, COPR-0027
 - `#persistence`: COPR-0015
 - `#pipeline`: COPR-0002
 - `#provenance`: COPR-0023
@@ -68,6 +69,6 @@ file and `docs/features/` work together.
 - `#srpm`: COPR-0018
 - `#state`: COPR-0015
 - `#testing`: COPR-0006, COPR-0010
-- `#tooling`: COPR-0024, COPR-0025, COPR-0026
+- `#tooling`: COPR-0024, COPR-0025, COPR-0026, COPR-0027
 - `#upstream`: COPR-0004
 - `#versioning`: COPR-0004

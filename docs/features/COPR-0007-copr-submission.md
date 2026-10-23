@@ -40,9 +40,21 @@ After the matrix submits, `make copr-wait` bounds a retry poll
 seconds (default 30), so the docs generated right after (`make readme`) render each
 resubmitted package's real state instead of the stale `unknown` it starts async
 submission with (#BUG-0039). A package still non-terminal at the deadline keeps
-`unknown` in this run's docs and resolves on the *next* run's existing pre-submit
-poll (`full-cycle.py`'s `poll_copr_status()` call before resubmitting). `copr-wait`
-always exits 0 — a build still running at the deadline is not a nightly failure.
+`unknown` in this run's docs. `copr-wait` always exits 0 — a build still running at
+the deadline is not a nightly failure. A plain `make full-cycle` resolves such a row
+on its next pre-submit `poll_copr_status()` call; the matrix path's `SKIP_COPR`
+passes do not poll, which is why submission itself must not depend on that (below).
+
+**Never queue a build twice.** Before submitting, `stage-copr` and `full-cycle` ask
+Copr which builds of the project are still in flight (`pending`, `importing`,
+`waiting`, `starting`, `running`; `lib.copr.in_flight_builds()`). If the SRPM about
+to be uploaded — `<name>-<version>-<release>.fc43.src.rpm`, i.e. the current version
+of the application — is already one of them, no `copr-cli build` runs. The row is
+recorded `unknown` with that build's existing `build_id` and the reason
+`in-progress: build N already on Copr`, so `copr-wait` keeps tracking it and a
+dependent package still chains `--after-build-id` behind it. A new version or
+release is a different filename and is submitted normally. Under `full-cycle`, a
+forced copr stage skips this check (a deliberate resubmission).
 
 In `SYNCHRONOUS_COPR_BUILD=true` mode, `run_for_package()` watches `copr-cli build`
 to a terminal state itself, bounded by `run_cmd()`'s `CMD_TIMEOUT` (default 3600s).
@@ -63,6 +75,8 @@ outcome, not just the skip-gate reasons above (#BUG-0107).
   (`ineligible_packages()`/`block_transitive_dependents()`/`blackout_chroots()`/
   `poll_copr_status()`/`resolve_batch_chain()`), `scripts/lib/deps.py`
   (`topological_sort()`, via `yaml_utils.prepare_stage()`).
+  `in_flight_builds()` feeds the guard in `stage-copr.py`'s `run_for_package()`
+  (called from `main()` and from `full-cycle.py`).
 - Requires `copr-cli` configured with `~/.config/copr`.
 
 ## Quirks & Decisions
@@ -122,12 +136,36 @@ outcome, not just the skip-gate reasons above (#BUG-0107).
   host at the time — confirm with `copr-cli build --help` after
   `make container-build` if upstream ever drops the flag.)
 
+- Decision: the in-flight check asks Copr, not the local DB. `prepare_stage()` clears
+  the copr rows (pending `build_id`s included) at the start of every `stage-copr`
+  run, and the matrix path's `SKIP_COPR` passes never poll, so the local DB cannot
+  say what is queued. Run 311 (after runs 298 and 303) left 163 pending builds on
+  Copr that were only 55 distinct SRPMs, 54 of them duplicated up to 4x. A pending
+  build has no package name or version server-side until it is imported, but its
+  `source_package.url` ends in the uploaded SRPM filename, so that filename is the
+  key (the highest build id wins if there are several).
+- Decision: `in_flight_builds()` reads the project's builds newest-first and filters
+  by state itself, instead of using the API's `status=` filter. Measured against
+  `nett00n/hyprland`, each `status=` call takes ~12 s whatever the page size (even
+  with no results), so five of them could not fit any reasonable timeout, while the
+  plain listing answers in ~2 s. It stops at the first page with nothing in flight
+  (200 builds per page, at most 5 pages, 30 s timeout), so a build stuck far behind
+  a long run of finished ones is not seen.
+- Quirk: Copr stores an uploaded SRPM under a sanitized filename (characters outside
+  `[A-Za-z0-9._-]` are dropped), so a snapshot version such as
+  `hyprland-plugins-0.56.0^20260805git00862ca-8` is `...0.56.020260805git...` on Copr.
+  Both sides are compared through `lib.copr.srpm_key()`; without it every
+  caret-versioned package would be resubmitted on every run.
+- Decision: the check fails open. If the Copr API cannot be reached or parsed,
+  `in_flight_builds()` warns and returns nothing, and submission proceeds as before
+  (the same stance as `get_project_chroots()`).
+
 ## Testing
 
 ### Unit
 
 - `tests/test_copr.py` (incl. `poll_copr_status`'s bounded-retry `deadline_s`/
-  `interval_s` behavior), `tests/test_pipeline_copr_stage_utils.py`.
+  `interval_s` behavior and `in_flight_builds()`), `tests/test_pipeline_copr_stage_utils.py`.
 - `tests/test_subprocess_utils.py` (`run_cmd()` preserving a killed command's
   partial stdout/stderr and log on `TimeoutExpired`, #BUG-0106).
 - `tests/test_pkg_log_analysis.py::TestCoprIssuesInSummary` (#BUG-0108: a
@@ -137,7 +175,8 @@ outcome, not just the skip-gate reasons above (#BUG-0107).
 ### Integration
 
 - `tests/integration/test_entry_points.py` (incl.
-  `test_copr_sync_watch_timeout_is_unknown_not_failed`), `tests/integration/test_make_targets.py`.
+  `test_copr_sync_watch_timeout_is_unknown_not_failed` and the already-in-flight
+  skip), `tests/integration/test_make_targets.py`.
 
 ## Status
 

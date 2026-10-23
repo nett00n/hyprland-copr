@@ -22,6 +22,8 @@ def _minimal_context(**overrides):
         "build_requires": [],
         "requires": [],
         "recommends": [],
+        "conflicts": [],
+        "provides": [],
         "sources": [],
         "patches": [],
         "bundled_deps": [],

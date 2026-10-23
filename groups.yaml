@@ -74,7 +74,10 @@ other-apps:
   - quickshell
   - satty
   - snappy-switcher
+  - swaylock-effects
+  - swaylock-plugin
   - uwsm
+  - waylock
   - waypaper
   - wl-clip-persist
   packages_from_global_repo:

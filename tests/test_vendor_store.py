@@ -106,6 +106,23 @@ class TestStore:
         assert recorded["package"] == "pkg"
         assert "hashes" in recorded
 
+    def test_meta_records_zig_language(self, tmp_path):
+        import json
+
+        meta = _meta(build_requires=["zig"])
+        built = tmp_path / "built-vendor.tar.gz"
+        built.write_bytes(b"x")
+
+        stored_path = store("pkg", meta, {}, built)
+        recorded = json.loads((stored_path.parent / "meta.json").read_text())
+
+        assert recorded["language"] == "zig"
+
+    def test_zig_tool_version_uses_zig_version(self):
+        from lib.vendor_store import _TOOL_VERSION_CMD
+
+        assert _TOOL_VERSION_CMD["zig"] == ["zig", "version"]
+
     def test_leaves_built_tarball_in_place(self, tmp_path):
         """store() copies, it doesn't move -- the caller still owns its own
         per-target SOURCES_DIR copy.

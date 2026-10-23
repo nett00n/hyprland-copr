@@ -14,7 +14,7 @@
 #   rpm:         — buildarch, no_debug_package
 #   auto_update: — enable automatic updates (latest-commit, etc.)
 #
-# build.system: cmake | meson | autotools | configure | make | python | cargo | golang
+# build.system: cmake | meson | autotools | configure | make | python | cargo | golang | zig
 # build.vendor_prep: shell commands run in the extracted source tree before cargo
 #   vendor/go mod vendor (not in %prep) -- trims/patches a workspace into a vendorable
 #   shape; mirror the same edit in build.prep so the chroot build sees it too
@@ -25,6 +25,8 @@
 # source_dir: override extracted source directory (at package level, for mismatched tarball structure)
 # files: RPM macros like %{_bindir} are passed through verbatim
 # build_requires / requires: use pkgconfig() form where possible
+# conflicts / provides: plain RPM dependency lists rendered as Conflicts: / Provides:
+#   (for drop-in replacements of a Fedora package that owns the same paths)
 # auto_update: enable auto-updates; release_type is one of latest-version, latest-tag,
 #   latest-commit, pinned-version, pinned-commit, pinned-tag (see docs/packaging.md)
 #
@@ -94,6 +96,10 @@ myapp:
     - pkgconfig(mylib)
   requires:
     - mylib
+  conflicts:
+    - myapp-upstream
+  provides:
+    - myapp-upstream
   files:
     - "%license LICENSE"
     - "%doc README.md"
@@ -395,6 +401,39 @@ myrustutil:
     source_dir: "%{name}-%{version}"
   build:
     system: cargo
+
+# --- zig package -------------------------------------------------------------
+# Zig builds using build system: zig (Fedora zig-rpm-macros); `zig` in build_requires
+# turns on the vendor stage, which packs build.zig.zon dependencies as zig-pkg/
+myziputil:
+  version: "1.0.0"
+  release: "%autorelease"
+  license: ISC
+  summary: A Zig command-line utility
+  description: |
+    myziputil is a Zig CLI tool built offline from vendored build.zig.zon dependencies.
+  url: https://github.com/myorg/myziputil
+  build_requires:
+    - zig
+    - zig-rpm-macros
+  requires: []
+  files:
+    - "%license LICENSE"
+    - "%doc README.md"
+    - "%{_bindir}/myziputil"
+  devel:
+    files: []
+  source:
+    archives:
+      - "%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+      - "%{name}-%{version}-vendor.tar.gz"
+  build:
+    system: zig
+    # override the %zig_build/%zig_install defaults for package-specific -D options
+    commands:
+      - "%zig_build -Dpie -Dllvm=true"
+    install:
+      - "%zig_install -Dpie -Dllvm=true"
 
 # --- cargo workspace trim (drop a member with an unvendorable git dep) ----
 # When only some workspace members pull a git-source crate dependency (not

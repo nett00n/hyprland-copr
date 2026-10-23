@@ -17,6 +17,7 @@ from lib.vendor import (
     _download,
     _extract,
     is_go_package,
+    is_zig_package,
     needs_vendoring,
     resolve_source_url,
     vendor_tarball_name,
@@ -45,6 +46,20 @@ class TestIsGoPackage:
         assert is_go_package({"build_requires": None}) is False
 
 
+class TestIsZigPackage:
+    """#COPR-0027: is_zig_package keys off `zig` in build_requires."""
+
+    def test_returns_true_for_zig_packages(self):
+        assert is_zig_package({"build_requires": ["zig", "pam-devel"]}) is True
+
+    def test_returns_false_for_non_zig_packages(self):
+        assert is_zig_package({"build_requires": ["zig-rpm-macros"]}) is False
+
+    def test_handles_missing_build_requires(self):
+        assert is_zig_package({}) is False
+        assert is_zig_package({"build_requires": None}) is False
+
+
 class TestNeedsVendoring:
     """Test needs_vendoring function: truth table over is_go_package/is_rust_package."""
 
@@ -53,6 +68,9 @@ class TestNeedsVendoring:
 
     def test_rust_package_needs_vendoring(self):
         assert needs_vendoring({"build_requires": ["cargo"]}) is True
+
+    def test_zig_package_needs_vendoring(self):
+        assert needs_vendoring({"build_requires": ["zig"]}) is True
 
     def test_both_go_and_rust_needs_vendoring(self):
         assert needs_vendoring({"build_requires": ["golang", "cargo"]}) is True
@@ -379,6 +397,33 @@ class TestGenerateDispatch:
         )
         assert not created_tmpdir.exists()
 
+    def test_dispatches_zig_package(self, tmp_path):
+        output = tmp_path / "out-vendor.tar.gz"
+        created_tmpdir = tmp_path / "vendor-tmp"
+        created_tmpdir.mkdir()
+        src_dir = created_tmpdir / "src"
+        meta = self._meta(["zig"])
+
+        with patch("lib.vendor.tempfile.mkdtemp", return_value=str(created_tmpdir)), \
+             patch("lib.vendor._download") as mock_download, \
+             patch("lib.vendor.verify_download") as mock_verify, \
+             patch("lib.vendor._extract", return_value=src_dir) as mock_extract, \
+             patch("lib.vendor_zig.generate") as mock_zig_generate:
+            generate("test-pkg", meta, output)
+
+        mock_download.assert_called_once()
+        mock_verify.assert_called_once()
+        mock_extract.assert_called_once()
+        mock_zig_generate.assert_called_once_with(
+            "test-pkg", meta, created_tmpdir, src_dir, output, None, fedora_version=None
+        )
+        assert not created_tmpdir.exists()
+
+    @pytest.mark.parametrize("langs", [["zig", "cargo"], ["zig", "golang"]])
+    def test_zig_with_another_language_raises(self, tmp_path, langs):
+        with pytest.raises(VendorError, match="ambiguous"):
+            generate("test-pkg", self._meta(langs), tmp_path / "out.tar.gz")
+
     def test_runs_vendor_prep_before_language_backend(self, tmp_path):
         """#COPR-0025: vendor_prep commands run in src_dir, after extraction
         and before the language backend is dispatched."""
@@ -451,7 +496,7 @@ class TestGenerateDispatch:
 
     def test_neither_language_raises(self, tmp_path):
         meta = self._meta(["cmake"])
-        with pytest.raises(VendorError, match="not a Go or Rust package"):
+        with pytest.raises(VendorError, match="not a Go, Rust or Zig package"):
             generate("test-pkg", meta, tmp_path / "out.tar.gz")
 
 

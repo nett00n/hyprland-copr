@@ -5,7 +5,7 @@ New-feature ideas go in `docs/TODO.md` instead (promoted to a `docs/features/` d
 once substantial). GitHub issues are for reporter-facing items (someone else's
 bug/request); this file is the maintainer's own log and may cite issue numbers.
 Entries are deleted when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are
-never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0117**.
+never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0118**.
 
 This file absorbed `docs/TODO.md`'s former defect/debt/chore entries on 2026-09-15
 when `docs/` adopted `docs/DOCS-DRIVEN-DEVELOPMENT.md` — see `docs/ID-MIGRATION.md`
@@ -54,6 +54,12 @@ Shipped behavior doing the wrong thing.
   only way this bug can still bite. `lib.copr.fetch_failed_chroot_logs` still
   downloads failed chroots' builder logs after the fact for `make stage-log-analyze`,
   which remains the only diagnostic for an aarch64-only failure [P2/D4]
+- #BUG-0117 a copr row that `poll_copr_status()` flips to `success` never gets
+  `hashes_json` (only `finalize_stage()` writes it, and an async submission is
+  finalized as `unknown`), and `update_state()` leaves `last_success_*` NULL ->
+  `is_cached()` never treats a poll-resolved copr row as cached, so the package is
+  resubmitted on the next run even though nothing changed [P3/D2]
+
 ### Docs / templates
 
 - #BUG-0030 `templates/_contributors.j2`'s `{% if c.github_user %}...{% endif %}` is a

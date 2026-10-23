@@ -122,6 +122,21 @@ class TestDetectBuildSystem:
         (repo / "Cargo.toml").write_text("")
         assert detect_build_system(repo) == "cargo"
 
+    def test_detect_zig(self, tmp_path):
+        """Detect Zig (build.zig)."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "build.zig").write_text("")
+        assert detect_build_system(repo) == "zig"
+
+    def test_zig_wins_over_generic_makefile(self, tmp_path):
+        """A Zig project shipping a convenience Makefile is still Zig."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "build.zig").write_text("")
+        (repo / "Makefile").write_text("")
+        assert detect_build_system(repo) == "zig"
+
     def test_detect_autotools(self, tmp_path):
         """Detect autotools (configure.ac)."""
         repo = tmp_path / "repo"

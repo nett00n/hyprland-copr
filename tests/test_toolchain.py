@@ -12,7 +12,9 @@ from lib.toolchain import (
     go_toolchain_skew,
     parse_go_toolchain_directive,
     parse_rust_version_directive,
+    parse_zig_minimum_version,
     rust_toolchain_skew,
+    zig_toolchain_skew,
 )
 
 
@@ -133,3 +135,49 @@ class TestRustToolchainSkew:
         )
         with patch("lib.toolchain.chroot_package_version", return_value="1.80.0"):
             assert rust_toolchain_skew(tmp_path, "43") is None
+
+
+ZON = """.{
+    .name = .foo,
+    .version = "1.0.0",
+    .minimum_zig_version = "0.16.0",
+    .paths = .{""},
+}
+"""
+
+
+class TestParseZigMinimumVersion:
+    def test_reads_minimum_zig_version(self, tmp_path):
+        zon = tmp_path / "build.zig.zon"
+        zon.write_text(ZON)
+        assert parse_zig_minimum_version(zon) == "0.16.0"
+
+    def test_missing_field(self, tmp_path):
+        zon = tmp_path / "build.zig.zon"
+        zon.write_text('.{ .name = .foo, .version = "1.0.0" }\n')
+        assert parse_zig_minimum_version(zon) is None
+
+    def test_missing_file(self, tmp_path):
+        assert parse_zig_minimum_version(tmp_path / "build.zig.zon") is None
+
+
+class TestZigToolchainSkew:
+    def test_no_zon_is_none(self, tmp_path):
+        assert zig_toolchain_skew(tmp_path, "43") is None
+
+    def test_chroot_too_old_reports_skew(self, tmp_path):
+        (tmp_path / "build.zig.zon").write_text(ZON)
+        with patch("lib.toolchain.chroot_package_version", return_value="0.15.2"):
+            skew = zig_toolchain_skew(tmp_path, "44")
+        assert skew is not None
+        assert "0.16.0" in skew and "0.15.2" in skew
+
+    def test_chroot_new_enough_is_none(self, tmp_path):
+        (tmp_path / "build.zig.zon").write_text(ZON)
+        with patch("lib.toolchain.chroot_package_version", return_value="0.16.0"):
+            assert zig_toolchain_skew(tmp_path, "45") is None
+
+    def test_unknown_chroot_version_is_none(self, tmp_path):
+        (tmp_path / "build.zig.zon").write_text(ZON)
+        with patch("lib.toolchain.chroot_package_version", return_value=None):
+            assert zig_toolchain_skew(tmp_path, "45") is None

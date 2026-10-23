@@ -55,7 +55,7 @@ stage that actually reran, e.g. `forced (dep rebuilt: hyprutils [srpm])` (#BUG-0
 | --- | --- |
 | validate | packages.yaml entry + upstream url sanity |
 | spec | render `packages/<name>/<name>.spec` from `templates/spec.j2` |
-| vendor | Go/Rust dependency tarball (no-op for other build systems) |
+| vendor | Go/Rust/Zig dependency tarball (no-op for other build systems) |
 | srpm | download sources, verify checksums, build the SRPM |
 | mock | local test build in the target chroot |
 | copr | submit to Copr, gated per package (see COPR-0007) |

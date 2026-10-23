@@ -4,6 +4,14 @@ Maintainer's microblog, informal. Newest first, dated `## YYYY-MM-DD` entries, o
 paragraph each. README shows the most recent entries - see
 `scripts/gen-report.py:get_recent_news()`.
 
+## 2026-10-22
+Zig-based packages are now supported: the build system and the vendoring of `build.zig.zon` dependencies are automated like Go and Rust.
+
+Added Packages:
+- swaylock-effects
+- swaylock-plugin
+- waylock
+
 ## 2026-10-21
 Added Packages:
 - neowall

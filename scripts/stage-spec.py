@@ -203,6 +203,8 @@ def generate_spec(
             "build_requires": pkg_meta.get("build_requires", []),
             "requires": pkg_meta.get("requires", []),
             "recommends": pkg_meta.get("recommends", []),
+            "conflicts": pkg_meta.get("conflicts", []),
+            "provides": pkg_meta.get("provides", []),
             "description": pkg_meta.get("description", "").strip(),
             "prep_commands": prep_commands,
             "build_cmd": build_cmd,

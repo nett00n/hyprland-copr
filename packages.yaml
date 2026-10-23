@@ -2030,6 +2030,105 @@ sndio:
   summary: Portable version of OpenBSD's lightweight audio & MIDI sub-system
   url: https://sndio.org/git/sndio
   version: 1.10.0
+swaylock-effects:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    system: meson
+  build_requires:
+  - gcc
+  - meson
+  - ninja-build
+  - pam-devel
+  - pkgconfig(cairo)
+  - pkgconfig(gdk-pixbuf-2.0)
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-protocols)
+  - pkgconfig(wayland-scanner)
+  - pkgconfig(xkbcommon)
+  - scdoc
+  conflicts:
+  - swaylock
+  depends_on: []
+  description: |
+    swaylock-effects is a fork of swaylock, the screen locker for Wayland, with additional visual effects: screenshot-based lock screens with blur, scale, vignette, pixelate and greyscale effects, a clock indicator, and fade-in. It is a drop-in replacement for swaylock.
+  devel:
+    files: []
+  files:
+  - '%config(noreplace) %{_sysconfdir}/pam.d/swaylock'
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/swaylock'
+  - '%{_datadir}/bash-completion/completions/swaylock'
+  - '%{_datadir}/fish/vendor_completions.d/swaylock.fish'
+  - '%{_datadir}/zsh/site-functions/_swaylock'
+  - '%{_mandir}/man1/swaylock.1*'
+  license: MIT
+  provides:
+  - swaylock
+  release: 2
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: Swaylock fork with fancy effects (blur, clock, fade-in)
+  url: https://github.com/jirutka/swaylock-effects
+  version: 1.7.0.0
+swaylock-plugin:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    system: meson
+  build_requires:
+  - gcc
+  - meson
+  - ninja-build
+  - pam-devel
+  - pkgconfig(cairo)
+  - pkgconfig(gdk-pixbuf-2.0)
+  - pkgconfig(libsystemd)
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-protocols)
+  - pkgconfig(wayland-scanner)
+  - pkgconfig(wayland-server)
+  - pkgconfig(xkbcommon)
+  - scdoc
+  depends_on: []
+  description: |
+    swaylock-plugin is a fork of swaylock, the screen locker for Wayland, that can use the output of a wayland client (such as a wallpaper program or an animated shader) as the lock screen background. It installs alongside swaylock under its own names.
+  devel:
+    files: []
+  files:
+  - '%config(noreplace) %{_sysconfdir}/pam.d/swaylock-plugin'
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/swaylock-plugin'
+  - '%{_bindir}/swaylock-sleep-watcher'
+  - '%{_datadir}/bash-completion/completions/swaylock-plugin'
+  - '%{_datadir}/fish/vendor_completions.d/swaylock-plugin.fish'
+  - '%{_datadir}/zsh/site-functions/_swaylock-plugin'
+  - '%{_mandir}/man1/swaylock-plugin.1*'
+  license: MIT
+  release: 2
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: Swaylock fork that can use a Wayland client as lock screen background
+  url: https://github.com/mstoeckl/swaylock-plugin
+  version: 1.8.7
 SwayOSD:
   build:
     commands:
@@ -2222,6 +2321,51 @@ Waybar:
   summary: Highly customizable Wayland bar for Sway and Wlroots based compositors
   url: https://github.com/Alexays/Waybar
   version: 0.15.0
+waylock:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands:
+    - '%zig_build -Dpie -Dllvm=true'
+    install:
+    - '%zig_install -Dpie -Dllvm=true'
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    - sed -i 's/^const version = ".*";/const version = "%{version}";/' build.zig
+    - sed -i 's/^\( *\)stdout.writeAll(\(.*\)) catch process.exit(1);$/&\n\1stdout.flush() catch process.exit(1);/' src/main.zig
+    system: zig
+  build_requires:
+  - pam-devel
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-protocols)
+  - pkgconfig(xkbcommon)
+  - scdoc
+  - zig
+  - zig-rpm-macros
+  depends_on: []
+  description: |
+    Waylock is a small screenlocker for Wayland compositors implementing the ext-session-lock-v1 protocol, which is significantly more robust than earlier client-side locking approaches: a crash of the screenlocker does not unlock the session. Type your password and press Enter to unlock.
+  devel:
+    files: []
+  files:
+  - '%config(noreplace) %{_sysconfdir}/pam.d/waylock'
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/waylock'
+  - '%{_mandir}/man1/waylock.1*'
+  license: ISC
+  release: 3
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+  summary: Small screenlocker for Wayland compositors
+  url: https://github.com/ifreund/waylock
+  version: 1.6.0
 waypaper:
   auto_update:
     release_type: latest-tag

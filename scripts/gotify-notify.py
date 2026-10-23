@@ -32,18 +32,20 @@ def send(url: str, token: str, title: str, message: str, priority: int) -> bool:
     The token travels in the X-Gotify-Key header, not the URL, so it never lands
     in a proxy/access log.
     """
-    req = urllib.request.Request(
-        url.rstrip("/") + "/message",
-        data=json.dumps(
-            {"title": title, "message": message, "priority": priority}
-        ).encode(),
-        headers={"Content-Type": "application/json", "X-Gotify-Key": token},
-        method="POST",
-    )
     try:
+        # Built inside the try: urllib raises ValueError here for a URL with no
+        # scheme (e.g. GOTIFY_URL=gotify.example.org), which must stay a warning.
+        req = urllib.request.Request(
+            url.rstrip("/") + "/message",
+            data=json.dumps(
+                {"title": title, "message": message, "priority": priority}
+            ).encode(),
+            headers={"Content-Type": "application/json", "X-Gotify-Key": token},
+            method="POST",
+        )
         with urllib.request.urlopen(req, timeout=SEND_TIMEOUT):
             return True
-    except (urllib.error.URLError, OSError) as exc:
+    except (urllib.error.URLError, OSError, ValueError) as exc:
         print(f"warning: gotify send failed: {exc}", file=sys.stderr)
         return False
 

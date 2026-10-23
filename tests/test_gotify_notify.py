@@ -84,6 +84,18 @@ class TestSend:
             assert gn.send("https://g.example", "TOK", "t", "m", 5) is False
         assert "warning" in capsys.readouterr().err
 
+    @pytest.mark.parametrize("url", ["gotify.example.org", "", "ftp//x", "://x"])
+    def test_malformed_url_warns_and_returns_false(self, url, capsys):
+        """A URL urllib rejects (no scheme) is a warning, not a traceback."""
+        assert gn.send(url, "TOK", "t", "m", 5) is False
+        assert "warning" in capsys.readouterr().err
+
+    def test_main_with_schemeless_url_exits_zero(self, monkeypatch, capsys):
+        monkeypatch.setenv("GOTIFY_URL", "gotify.example.org")
+        monkeypatch.setenv("GOTIFY_TOKEN", "TOK")
+        assert gn.main(["--title", "t", "--message", "m"]) == 0
+        assert "warning" in capsys.readouterr().err
+
     def test_missing_config_skips_without_request(self, monkeypatch, capsys):
         monkeypatch.delenv("GOTIFY_URL", raising=False)
         monkeypatch.delenv("GOTIFY_TOKEN", raising=False)

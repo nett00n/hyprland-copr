@@ -239,6 +239,37 @@ class TestScaffoldPackageCmdAdd:
     @patch("lib.detection.detect_build_system")
     @patch("lib.detection.detect_license")
     @patch("lib.detection.extract_version")
+    def test_cmd_add_zig_vendors_and_adds_bindir(
+        self, mock_version, mock_license, mock_build_system, tmp_path, monkeypatch
+    ):
+        """#COPR-0027: a zig scaffold gets zig build_requires, the vendor archive,
+        its tar-extraction prep and the %{_bindir} file."""
+        scaffold = _import_scaffold_module()
+
+        monkeypatch.setattr(scaffold, "ROOT", tmp_path)
+        monkeypatch.setattr(scaffold, "PACKAGES_YAML", tmp_path / "packages.yaml")
+        mock_version.return_value = "1.0.0"
+        mock_license.return_value = "ISC"
+        mock_build_system.return_value = "zig"
+
+        pkg_path = tmp_path / ".cache" / "upstream" / "org" / "zigcli"
+        pkg_path.mkdir(parents=True)
+
+        modules = [{"path": str(pkg_path), "url": "https://github.com/org/zigcli"}]
+
+        scaffold.cmd_add(modules, "zigcli")
+
+        data = yaml.safe_load((tmp_path / "packages.yaml").read_text())
+        entry = data["zigcli"]
+        assert "zig" in entry["build_requires"]
+        assert "zig-rpm-macros" in entry["build_requires"]
+        assert "%{name}-%{version}-vendor.tar.gz" in entry["source"]["archives"]
+        assert "%{_bindir}/zigcli" in entry["files"]
+        assert entry["build"]["system"] == "zig"
+
+    @patch("lib.detection.detect_build_system")
+    @patch("lib.detection.detect_license")
+    @patch("lib.detection.extract_version")
     def test_cmd_add_golang_adds_bindir_to_files(
         self, mock_version, mock_license, mock_build_system, tmp_path, monkeypatch
     ):

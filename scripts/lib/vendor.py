@@ -1,4 +1,4 @@
-"""Vendor tarball helpers for multiple languages (Go, Rust)."""
+"""Vendor tarball helpers for multiple languages (Go, Rust, Zig)."""
 
 import shutil
 import tarfile
@@ -36,9 +36,14 @@ def is_rust_package(meta: dict) -> bool:
     return "cargo" in (meta.get("build_requires") or [])
 
 
+def is_zig_package(meta: dict) -> bool:
+    """#COPR-0027: return True if the package requires Zig vendoring (has zig in build_requires)."""
+    return "zig" in (meta.get("build_requires") or [])
+
+
 def needs_vendoring(meta: dict) -> bool:
-    """Return True if this package has a vendor stage at all (Go or Rust)."""
-    return is_go_package(meta) or is_rust_package(meta)
+    """Return True if this package has a vendor stage at all (Go, Rust or Zig)."""
+    return is_go_package(meta) or is_rust_package(meta) or is_zig_package(meta)
 
 
 def resolve_source_url(pkg_meta: dict, pkg_name: str) -> str:
@@ -170,19 +175,27 @@ def generate(
     Dispatches to language-specific vendor implementation.
     Raises VendorError on failure.
     """
-    rust, go = is_rust_package(pkg_meta), is_go_package(pkg_meta)
-    if rust and go:
+    langs = {
+        "cargo": is_rust_package(pkg_meta),
+        "golang": is_go_package(pkg_meta),
+        "zig": is_zig_package(pkg_meta),
+    }
+    listed = [name for name, present in langs.items() if present]
+    if len(listed) > 1:
         raise VendorError(
-            f"'{pkg_name}' lists both 'cargo' and 'golang' in build_requires; "
-            "the vendor language is ambiguous"
+            f"'{pkg_name}' lists {' and '.join(repr(n) for n in listed)} in "
+            "build_requires; the vendor language is ambiguous"
         )
-    if rust:
+    if langs["cargo"]:
         from lib.vendor_rust import generate as lang_generate
-    elif go:
+    elif langs["golang"]:
         from lib.vendor_golang import generate as lang_generate
+    elif langs["zig"]:
+        from lib.vendor_zig import generate as lang_generate
     else:
         raise VendorError(
-            f"'{pkg_name}' is not a Go or Rust package (no 'golang' or 'cargo' in build_requires)"
+            f"'{pkg_name}' is not a Go, Rust or Zig package "
+            "(no 'golang', 'cargo' or 'zig' in build_requires)"
         )
 
     source_url = resolve_source_url(pkg_meta, pkg_name)

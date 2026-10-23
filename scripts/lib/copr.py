@@ -5,6 +5,7 @@ Provides functions for:
 - Build ID parsing from copr-cli output
 - Repository slug validation
 - Build status polling
+- Finding SRPMs already queued/building on Copr (no duplicate submissions)
 - Fetching per-chroot builder logs after a failed build
 """
 
@@ -30,7 +31,22 @@ COPR_API_CHROOTS = (
 COPR_API_PROJECT = (
     "https://copr.fedorainfracloud.org/api_3/project?ownername={}&projectname={}"
 )
+COPR_API_BUILDS = (
+    "https://copr.fedorainfracloud.org/api_3/build/list/"
+    "?ownername={}&projectname={}&limit={}&offset={}&order=id&order_type=DESC"
+)
 TERMINAL_STATES = {"success", "failed"}
+# #COPR-0007: Copr states in which a build will still produce (or is producing)
+# a result -- a submission of the same SRPM would only queue a duplicate.
+IN_FLIGHT_STATUSES = ("pending", "importing", "waiting", "starting", "running")
+# The listing is read newest-first and filtered here, not with the API's own
+# `status=` filter: measured against nett00n/hyprland, every `status=` call costs
+# ~12 s whatever the page size (even for an empty result), while the plain
+# listing answers in ~2 s. The scan stops at the first page holding nothing in
+# flight, bounded by IN_FLIGHT_MAX_PAGES.
+IN_FLIGHT_PAGE_SIZE = 200
+IN_FLIGHT_MAX_PAGES = 5
+IN_FLIGHT_TIMEOUT = 30
 CHROOT_LOG_CANDIDATES = ("builder-live.log.gz", "build.log.gz")
 
 # Every state copr-cli's `status` command can print (see copr_cli.helpers.
@@ -186,6 +202,74 @@ def get_project_chroots(copr_repo: str) -> list[str]:
     if isinstance(chroots, list):
         return sorted(chroots)
     return []
+
+
+# #COPR-0007
+def srpm_key(filename: str) -> str:
+    """Normalize an SRPM filename for comparing a local SRPM with a Copr build.
+
+    Copr stores an uploaded SRPM under a sanitized filename: characters outside
+    [A-Za-z0-9._-] are dropped, so the local
+    `hyprland-plugins-0.56.0^20260805git00862ca-8.fc43.src.rpm` (RPM caret
+    snapshot version) is `hyprland-plugins-0.56.020260805git00862ca-8...` on Copr.
+    Both sides go through this before they are compared.
+    """
+    return re.sub(r"[^A-Za-z0-9._-]", "", filename)
+
+
+# #COPR-0007
+def in_flight_builds(copr_repo: str) -> dict[str, int]:
+    """Map SRPM filename -> build id for every build of `copr_repo` that is still
+    pending, importing, waiting, starting or running on Copr.
+
+    A pending build has no package name or version server-side until it has been
+    imported, but its `source_package.url` ends in the uploaded SRPM filename
+    (`<name>-<version>-<release>.fc43.src.rpm`), so that filename -- which is
+    exactly "this version of this package" -- is the key, normalized with
+    srpm_key() (look entries up with `srpm_key(local_filename)`). When Copr holds several
+    builds of the same SRPM the highest id wins (the newest, so a dependent chains
+    behind the last one).
+
+    Reads the project's builds newest-first and stops at the first page with
+    nothing in flight (at most IN_FLIGHT_MAX_PAGES pages), so a build stuck far
+    behind a long run of finished ones is not seen.
+
+    Fails open: an invalid slug returns {} silently; a network/parse failure warns
+    on stderr and returns {}, so a Copr API hiccup can never block a submission
+    (the same stance as get_project_chroots()).
+    """
+    if not validate_copr_repo(copr_repo):
+        return {}
+    ownername, projectname = copr_repo.split("/", 1)
+    found: dict[str, int] = {}
+    try:
+        for page in range(IN_FLIGHT_MAX_PAGES):
+            url = COPR_API_BUILDS.format(
+                ownername, projectname, IN_FLIGHT_PAGE_SIZE, page * IN_FLIGHT_PAGE_SIZE
+            )
+            with urllib.request.urlopen(url, timeout=IN_FLIGHT_TIMEOUT) as resp:
+                items = json.loads(resp.read()).get("items", [])
+            page_has_in_flight = False
+            for build in items:
+                if build.get("state") not in IN_FLIGHT_STATUSES:
+                    continue
+                page_has_in_flight = True
+                src_url = (build.get("source_package") or {}).get("url")
+                build_id = build.get("id")
+                if not src_url or not isinstance(build_id, int):
+                    continue
+                name = srpm_key(src_url.rsplit("/", 1)[-1])
+                found[name] = max(build_id, found.get(name, 0))
+            if len(items) < IN_FLIGHT_PAGE_SIZE or not page_has_in_flight:
+                break
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError, OSError) as exc:
+        print(
+            f"warning: could not list in-flight Copr builds ({exc}); "
+            "submitting without the duplicate check",
+            file=sys.stderr,
+        )
+        return {}
+    return found
 
 
 def chroot_coverage(pkg: str, chroots: list[str]) -> dict[str, str]:

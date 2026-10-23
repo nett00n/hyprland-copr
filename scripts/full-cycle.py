@@ -41,6 +41,7 @@ from lib.cache import compute_input_hashes, stale_advisories
 from lib.config import env_flag
 from lib.copr import (
     copr_blocked_packages,
+    in_flight_builds,
     mock_failed_packages,
     poll_copr_status,
     preflight,
@@ -666,8 +667,12 @@ def run_build_pipeline(
     # from a prior run before deciding what to (re)submit below -- otherwise
     # a build that has since finished on Copr's side would still read as
     # "unknown" here and get treated as a cache miss (docs/BUGS.md BUG-0002).
+    in_flight: dict[str, int] = {}
     if not skip_copr and copr_repo:
         poll_copr_status(target, list(packages), run_id=run_id)
+        # #COPR-0007: what Copr is already queueing/building, so a package whose
+        # current SRPM is in there is not submitted a second time.
+        in_flight = in_flight_builds(copr_repo)
 
     for pkg, meta in packages.items():
         pkg_ver = (
@@ -787,6 +792,14 @@ def run_build_pipeline(
                 target,
                 run_id,
                 synchronous_copr,
+                # A forced copr stage is a deliberate resubmission.
+                in_flight=None if "copr" in forced_stages else in_flight,
+            )
+            # #COPR-0007: keep the "in-progress: build N already on Copr" reason
+            # run_for_package recorded rather than the generic cache-miss one.
+            copr_row = build_db.get_stage(pkg, "copr", target)
+            declined_duplicate = str((copr_row or {}).get("reason") or "").startswith(
+                "in-progress"
             )
             build_db.finalize_stage(
                 pkg,
@@ -794,7 +807,7 @@ def run_build_pipeline(
                 target,
                 started_at,
                 new_hashes,
-                reason=reason,
+                reason=None if declined_duplicate else reason,
                 update_hashes=not is_proceed_skip and success,
             )
 

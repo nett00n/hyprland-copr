@@ -3,7 +3,7 @@
 Vendoring runs in the container against the container's own `go`/`cargo`;
 the actual build runs in the mock chroot against whatever `golang`/`rust`
 RPM the target Fedora release provides. A `go.mod` `toolchain` directive or
-`Cargo.toml` `rust-version` pinned above the chroot's version vendors fine
+`Cargo.toml` `rust-version` (or a `build.zig.zon` `minimum_zig_version`) pinned above the chroot's version vendors fine
 but fails offline in the chroot, two stages later.
 
 This checks the *chroot* side: what version the target Fedora release's repos
@@ -49,6 +49,18 @@ def parse_rust_version_directive(cargo_toml: Path) -> str | None:
     except tomllib.TOMLDecodeError:
         return None
     return data.get("package", {}).get("rust-version")
+
+
+def parse_zig_minimum_version(build_zig_zon: Path) -> str | None:
+    """#COPR-0027: return build.zig.zon's `.minimum_zig_version`, or None if
+    unset/missing."""
+    if not build_zig_zon.exists():
+        return None
+    m = re.search(
+        r'\.minimum_zig_version\s*=\s*"([^"]+)"',
+        build_zig_zon.read_text(errors="replace"),
+    )
+    return m.group(1) if m else None
 
 
 def _version_tuple(v: str) -> tuple[int, ...]:
@@ -131,5 +143,24 @@ def rust_toolchain_skew(src_dir: Path, fedora_version: str) -> str | None:
         return (
             f"Cargo.toml requires rust-version {directive}, but fedora-{fedora_version}'s "
             f"rust package is {chroot_version} -- the mock chroot build will fail offline"
+        )
+    return None
+
+
+def zig_toolchain_skew(src_dir: Path, fedora_version: str) -> str | None:
+    """#COPR-0027: return an error message if build.zig.zon's
+    minimum_zig_version exceeds what the target Fedora release provides, else
+    None (including when it can't be determined).
+    """
+    directive = parse_zig_minimum_version(src_dir / "build.zig.zon")
+    if directive is None:
+        return None
+    chroot_version = chroot_package_version("zig", fedora_version)
+    if chroot_version is None:
+        return None
+    if compare_versions(chroot_version, directive) < 0:
+        return (
+            f"build.zig.zon requires zig {directive}, but fedora-{fedora_version}'s "
+            f"zig package is {chroot_version} -- the mock chroot build will fail offline"
         )
     return None

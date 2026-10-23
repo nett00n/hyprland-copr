@@ -223,6 +223,35 @@ publishes further fixes; a first-generation vendor tarball is then cached in the
 content-addressed vendor store like any other, so this doesn't compromise reproducibility
 between cache hits.
 
+## Zig vendoring (#COPR-0027)
+
+Set `build.system: zig` and add `zig` and `zig-rpm-macros` to `build_requires`. `stage-vendor`
+runs `zig build --fetch` against the downloaded, hash-pinned tarball, which unpacks every
+`build.zig.zon` dependency into `zig-pkg/<hash>/`, and packs that directory as
+`<name>-<version>-vendor.tar.gz` (Source1). The generated `%prep` extracts it at the source
+root and `%zig_build` passes `--system "zig-pkg"`, so the chroot build is offline and fails
+loudly on a missing package. The vendor store, `build.vendor_prep` and the toolchain-skew
+check (`minimum_zig_version` in `build.zig.zon` vs the chroot's `zig`) work as for Go/Rust.
+
+Defaults are `%zig_build -Dpie` / `%zig_install -Dpie`; override with `build.commands` /
+`build.install` for package-specific `-D` options. Zig's self-hosted backend emits no
+build-id, which makes `find-debuginfo` fail; use the project's LLVM switch if it has one
+(waylock: `-Dllvm=true`) or set `rpm.no_debug_package: true`.
+
+## Drop-in replacements of Fedora packages (#COPR-0005)
+
+A package that installs the same paths as a Fedora one (e.g. `swaylock-effects` ships
+`/usr/bin/swaylock` and `/etc/pam.d/swaylock`) declares it with `conflicts:` and
+`provides:`, both plain RPM dependency lists rendered as `Conflicts:` / `Provides:`:
+
+```yaml
+swaylock-effects:
+  conflicts:
+  - swaylock
+  provides:
+  - swaylock
+```
+
 ## Release auto-increment
 
 Each package's RPM `release` is managed automatically by `full-cycle`'s pre-build step

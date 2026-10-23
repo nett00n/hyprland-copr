@@ -12,9 +12,15 @@ packages without hand-editing each spec.
 
 `make stage-spec PACKAGE=<name>` renders `packages/<name>/<name>.spec` from
 `templates/spec.j2` and the package's `packages.yaml` entry — sources, `build_requires`,
-`depends_on`, `files:`, release, and (for Go/Rust) the vendor tarball extraction. The
+`depends_on`, `files:`, release, and (for Go/Rust/Zig) the vendor tarball extraction. The
 generated spec is committed and human-editable, but the source of truth for the next
 regeneration is always `packages.yaml`.
+
+Dependency lists render as `Requires:` (`requires`), `Recommends:` (`recommends`),
+`Provides:` (`provides`) and `Conflicts:` (`conflicts`). `provides`/`conflicts` let a
+package be a drop-in replacement for a Fedora one that owns the same paths (e.g.
+`swaylock-effects` sets both to `[swaylock]`); each is a list of plain RPM dependency
+strings and is omitted from the spec when absent or empty.
 
 Per [COPR-0018](COPR-0018-single-spec-single-srpm.md), one spec is generated once and
 reused across every chroot in a matrix build — no per-`FEDORA_VERSION` content. A
@@ -46,7 +52,7 @@ template or generator version are reported (`stage-show-plan`/`gen-report`) as
 
 ### Unit
 
-- `tests/test_gen_spec.py`, `tests/test_spec_utils.py`.
+- `tests/test_gen_spec.py`, `tests/test_spec_utils.py`, `tests/test_conflicts_provides.py`.
 
 ## Status
 

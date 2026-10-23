@@ -23,6 +23,9 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0005: `packages.yaml` accepts `conflicts:` / `provides:` lists, rendered as `Conflicts:` / `Provides:` in the spec (drop-in replacements of Fedora packages, e.g. `swaylock-effects`).
+- COPR-0007: `stage-copr` / `full-cycle` skip a package whose current SRPM is already pending or building on Copr instead of queueing a duplicate build.
+- COPR-0027: `build.system: zig` and a Zig vendor backend (`zig build --fetch` -> `zig-pkg/` tarball, offline `--system zig-pkg`); first consumer `waylock`.
 - COPR-0026: `make full-cycle` / `make full-cycle-matrix` send a Gotify result message (`NOTIFY=0` silences).
 - COPR-0026: `make notify` / `make notify-summary` send Gotify messages; `update-daily` ends with a nightly summary push.
 - COPR-0013: `make delete-package` also removes the package's RPMs from

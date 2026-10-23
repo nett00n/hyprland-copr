@@ -282,6 +282,8 @@ def _patched_pipeline(
     coverage_ok=True,
     require_coverage=False,
     spy_forced_stages=False,
+    in_flight=None,
+    copr_side_effect=None,
 ):
     """Patch every stage full_cycle.run_build_pipeline touches except the Copr/mock
     gating logic itself, which is what these tests actually exercise.
@@ -336,10 +338,21 @@ def _patched_pipeline(
         )
         copr_mock = enter(
             patch.object(
-                full_cycle._stage["stage-copr"], "run_for_package", return_value=True
+                full_cycle._stage["stage-copr"],
+                "run_for_package",
+                return_value=True,
+                side_effect=copr_side_effect,
             )
         )
         enter(patch.object(full_cycle, "poll_copr_status", return_value=False))
+        # #COPR-0007: the pre-submit Copr query would otherwise hit the network.
+        enter(
+            patch.object(
+                full_cycle,
+                "in_flight_builds",
+                return_value={} if in_flight is None else in_flight,
+            )
+        )
         enter(
             patch.object(full_cycle, "print_chroot_coverage", return_value=coverage_ok)
         )
@@ -563,7 +576,14 @@ class TestCoprInProgressNotResubmitted:
     next run just because is_cached() can't treat "unknown" as a cache hit.
     """
 
-    def _run(self, packages, mock_outcomes, is_cached_side_effect=None):
+    def _run(
+        self,
+        packages,
+        mock_outcomes,
+        is_cached_side_effect=None,
+        in_flight=None,
+        copr_side_effect=None,
+    ):
         run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
 
         def fake_mock_run_for_package(
@@ -587,7 +607,10 @@ class TestCoprInProgressNotResubmitted:
         with (
             patch.object(full_cycle, "get_packages", return_value=packages),
             _patched_pipeline(
-                fake_mock_run_for_package, is_cached_side_effect=is_cached_side_effect
+                fake_mock_run_for_package,
+                is_cached_side_effect=is_cached_side_effect,
+                in_flight=in_flight,
+                copr_side_effect=copr_side_effect,
             ) as (copr_mock, _),
         ):
             full_cycle.run_build_pipeline(
@@ -647,6 +670,59 @@ class TestCoprInProgressNotResubmitted:
             run_id, copr_mock = self._run(packages, {"hyprutils": True})
 
         copr_mock.assert_called_once()
+
+
+class TestCoprInFlightOnCopr:
+    """#COPR-0007: full-cycle hands the set of builds already queued on Copr to
+    stage-copr's run_for_package, which declines to submit a duplicate."""
+
+    _run = TestCoprInProgressNotResubmitted._run
+
+    def test_in_flight_set_is_passed_to_run_for_package(self):
+        in_flight = {"hyprutils-1.0-1.fc43.src.rpm": 4242}
+
+        _, copr_mock = self._run({"hyprutils": {}}, {"hyprutils": True}, in_flight=in_flight)
+
+        copr_mock.assert_called_once()
+        assert copr_mock.call_args.kwargs["in_flight"] == in_flight
+
+    def test_in_progress_reason_survives_finalize(self):
+        """run_for_package records 'in-progress: build N ...' for a package it
+        declined to resubmit; full-cycle's finalize_stage must not replace that
+        with the generic cache-miss reason."""
+        in_flight = {"hyprutils-1.0-1.fc43.src.rpm": 4242}
+
+        def fake_copr(pkg, meta, fedora_version, copr_repo, proceed, target, run_id,
+                      synchronous=False, **_kwargs):
+            build_db.set_stage(
+                pkg, "copr", target, run_id, "unknown", build_id=4242,
+                reason="in-progress: build 4242 already on Copr",
+            )
+            return True
+
+        self._run(
+            {"hyprutils": {}},
+            {"hyprutils": True},
+            in_flight=in_flight,
+            copr_side_effect=fake_copr,
+        )
+
+        entry = build_db.get_stage("hyprutils", "copr", TARGET)
+        assert entry["state"] == "unknown"
+        assert entry["build_id"] == 4242
+        assert entry["reason"] == "in-progress: build 4242 already on Copr"
+
+    def test_forced_copr_stage_ignores_in_flight(self):
+        """A forced copr stage is a deliberate resubmission."""
+        in_flight = {"hyprutils-1.0-1.fc43.src.rpm": 4242}
+
+        with patch.object(full_cycle, "compute_forced_stages", return_value={"copr"}):
+            _, copr_mock = self._run(
+                {"hyprutils": {}}, {"hyprutils": True}, in_flight=in_flight
+            )
+
+        copr_mock.assert_called_once()
+        assert copr_mock.call_args.kwargs["in_flight"] is None
 
 
 class TestResolveForcePackages:

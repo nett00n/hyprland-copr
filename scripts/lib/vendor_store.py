@@ -6,7 +6,7 @@ entry serves every target and `make full-cycle-matrix` builds a given vendor
 tree once instead of once per Fedora version (docs/TODO.md TODO-0006).
 
 Keyed by lib.cache.compute_input_hashes -- the same mechanism every other
-stage's cache uses -- plus the cargo/go version (#BUG-0111), so editing
+stage's cache uses -- plus the cargo/go/zig version (#BUG-0111, #COPR-0027), so editing
 go_subdir/rust_subdir, the source URL, or a patch invalidates the store exactly
 like it invalidates a normal stage cache, instead of "does a file happen to
 exist" (docs/BUGS.md BUG-0023). A toolchain upgrade likewise misses once.
@@ -25,7 +25,7 @@ from pathlib import Path
 
 from lib import paths
 from lib.cache import compute_input_hashes, hashes_match
-from lib.vendor import is_go_package, is_rust_package
+from lib.vendor import is_go_package, is_rust_package, is_zig_package
 
 TARBALL_NAME = "vendor.tar.gz"
 META_NAME = "meta.json"
@@ -41,7 +41,11 @@ def _entry_dir(pkg: str, hashes: dict) -> Path:
     return paths.VENDOR_STORE_DIR / pkg / _digest(hashes)
 
 
-_TOOL_VERSION_CMD = {"rust": ["cargo", "--version"], "go": ["go", "version"]}
+_TOOL_VERSION_CMD = {
+    "rust": ["cargo", "--version"],
+    "go": ["go", "version"],
+    "zig": ["zig", "version"],  # #COPR-0027
+}
 
 
 def _tool_version(language: str) -> str:
@@ -68,6 +72,8 @@ def _language(meta: dict) -> str:
         return "rust"
     if is_go_package(meta):
         return "go"
+    if is_zig_package(meta):
+        return "zig"
     return "unknown"
 
 

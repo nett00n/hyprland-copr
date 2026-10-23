@@ -357,6 +357,8 @@ def build_context(
         "build_requires": pkg.get("build_requires") or [],
         "requires": pkg.get("requires") or [],
         "recommends": pkg.get("recommends") or [],
+        "conflicts": pkg.get("conflicts") or [],
+        "provides": pkg.get("provides") or [],
         "description": pkg["description"].strip(),
         "prep_commands": prep_commands,
         "build_cmd": build_cmd,
