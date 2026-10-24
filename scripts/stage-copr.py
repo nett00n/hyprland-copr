@@ -42,6 +42,7 @@ from lib.copr import (
     parse_build_id,
     preflight,
     print_chroot_coverage,
+    published_builds,
     resolve_batch_chain,
     srpm_key,
 )
@@ -62,6 +63,11 @@ from lib.version import nvr
 from lib.yaml_utils import apply_os_overrides, prepare_stage
 
 
+# Reason prefix run_for_package() records for an SRPM Copr already built; also how
+# main()'s chain bookkeeping and full-cycle.py recognize such a row.
+PUBLISHED_REASON_PREFIX = "published:"
+
+
 def run_for_package(
     pkg: str,
     meta: dict,
@@ -73,6 +79,7 @@ def run_for_package(
     synchronous: bool = False,
     after_build_id: int | None = None,
     in_flight: dict[str, int] | None = None,
+    published: dict[str, int] | None = None,
 ) -> bool:
     """#COPR-0007, #BUG-0107. Submit SRPM to Copr for a single package.
 
@@ -93,6 +100,13 @@ def run_for_package(
     what Copr is already queueing or building. If the SRPM about to be uploaded is
     in it, nothing is submitted: the row is recorded "unknown" with that build's
     id so `copr-wait` keeps tracking it and dependents still chain behind it.
+
+    `published` (`lib.copr.published_builds()`: SRPM filename -> build id) lists
+    the SRPMs Copr already built successfully. If the SRPM about to be uploaded is
+    in it, nothing has changed since that build: nothing is submitted and the row
+    is recorded "success" with that build's id and a `published:` reason. The
+    in-flight check runs first, since a newer queued build is what dependents must
+    wait on.
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
@@ -181,6 +195,25 @@ def run_for_package(
             version=ver,
             build_id=existing_build,
             reason=dup_reason,
+            has_devel=has_devel,
+        )
+        return True
+
+    published_build = (published or {}).get(srpm_key(Path(str(srpm_path)).name))
+    if published_build is not None:
+        published_reason = (
+            f"{PUBLISHED_REASON_PREFIX} build {published_build} already on Copr"
+        )
+        status("copr", pkg, "skip", target, published_reason, version=ver)
+        build_db.set_stage(
+            pkg,
+            "copr",
+            target,
+            run_id,
+            "success",
+            version=ver,
+            build_id=published_build,
+            reason=published_reason,
             has_devel=has_devel,
         )
         return True
@@ -349,6 +382,10 @@ def main() -> None:
     # for 55 SRPMs after three runs).
     in_flight = in_flight_builds(copr_repo)
 
+    # #COPR-0007: ... and what it already built successfully, so a package whose
+    # current SRPM is unchanged is not re-uploaded. COPR_RESUBMIT=true opts out.
+    published = {} if env_flag("COPR_RESUBMIT") else published_builds(copr_repo)
+
     failed = False
     submitted = 0
     for pkg, meta in packages.items():
@@ -392,16 +429,22 @@ def main() -> None:
             synchronous,
             after_build_id,
             in_flight,
+            published,
         ):
             failed = True
 
         # Only a row this call actually (re)submitted carries a fresh
         # build_id -- a "_skip"/missing-srpm/missing-mock skip writes no
         # build_id at all, so it naturally never becomes a chain target
-        # (there is no new build for a dependent to wait on).
+        # (there is no new build for a dependent to wait on) -- nor does a row
+        # run_for_package() left `published:`, whose build_id is an old finished
+        # build, not a new submission.
         copr_row = build_db.get_stage(pkg, "copr", target)
         row_build_id = copr_row.get("build_id") if copr_row else None
-        if row_build_id:
+        was_published = str((copr_row or {}).get("reason") or "").startswith(
+            PUBLISHED_REASON_PREFIX
+        )
+        if row_build_id and not was_published:
             submitted_build_ids[pkg] = row_build_id
             submitted_depths[pkg] = depth
 

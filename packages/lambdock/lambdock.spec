@@ -2,7 +2,7 @@
 
 Name:           lambdock
 Version:        0.7.5
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Wayland desktop dock customizable with GNU Guile Scheme
 License:        GPL-3.0-or-later
 URL:            https://codeberg.org/jjba23/lambdock.git
@@ -59,11 +59,14 @@ Commit:            8a9a0ccaf285e8cae5fcdf5600ebb7128abc393c
 %doc README.org
 %license COPYING
 %{_bindir}/lambdock
+%{_datadir}/applications/org.jointhefreeworld.lambdock.desktop
 %{_datadir}/guile/site/3.0/lambdock/
+%{_datadir}/icons/hicolor/scalable/apps/org.jointhefreeworld.lambdock.svg
 %{_datadir}/locale/*/LC_MESSAGES/lambdock.mo
+%{_datadir}/metainfo/org.jointhefreeworld.lambdock.metainfo.xml
 
 %changelog
-* Thu Oct 22 2026 nett00n <copr@nett00n.org> - 0.7.5-1
+* Thu Oct 22 2026 nett00n <copr@nett00n.org> - 0.7.5-2
 
 - lambdock v0.7.5
 - New Scheme and C test suites, and a fix for an out-of-bounds read in CSS selector scoping.

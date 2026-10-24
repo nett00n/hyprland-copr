@@ -5,7 +5,7 @@ New-feature ideas go in `docs/TODO.md` instead (promoted to a `docs/features/` d
 once substantial). GitHub issues are for reporter-facing items (someone else's
 bug/request); this file is the maintainer's own log and may cite issue numbers.
 Entries are deleted when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are
-never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0118**.
+never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0119**.
 
 This file absorbed `docs/TODO.md`'s former defect/debt/chore entries on 2026-09-15
 when `docs/` adopted `docs/DOCS-DRIVEN-DEVELOPMENT.md` — see `docs/ID-MIGRATION.md`
@@ -117,6 +117,10 @@ Shipped behavior doing the wrong thing.
   shipping both marker files mid-migration) can't block `make update-daily`;
   promoting it to an error is worth revisiting once it's run quiet for a while
   [P3/D1]
+- #BUG-0118 `OpenLogi` is pinned to 0.8.15 (`auto_update.release_type:
+  pinned-version`): 0.8.17 needs rustc 1.99 but fedora-45 ships 1.98.1, so the f45
+  mock build fails (f43/f44 built 0.8.17 fine). Unpin (drop `auto_update`, let
+  `make update-versions` bump it) once f45 ships rustc >= 1.99 [P3/D1]
 
 ## Tech debt
 

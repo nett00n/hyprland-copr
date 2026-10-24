@@ -54,6 +54,12 @@ async (watching dozens of builds serially can take 15h+ and hit `CMD_TIMEOUT` mi
 A watch that does hit `CMD_TIMEOUT` is recorded `unknown` (not a failure) with its `build_id`, and
 resolves via `make copr-wait` or the next run's pre-submit poll, same as an async submission.
 
+`stage-copr` and `full-cycle` also skip a package whose current SRPM (name-version-release)
+already has a successful build on Copr, recording it `success` with reason `published: build N
+already on Copr` (#COPR-0007) — so a run only uploads what actually changed, itself or via a
+rebuilt dependency. `COPR_RESUBMIT=true` (e.g. `make stage-copr COPR_RESUBMIT=true`) or
+`FORCE_REBUILD=1` resubmits anyway.
+
 After `full-cycle-matrix` submits, run `make copr-wait COPR_REPO=nett00n/hyprland` to bound-retry
 polling until every submitted build reaches a terminal state (or `COPR_POLL_TIMEOUT` seconds
 elapse, default 1800, re-checking every `COPR_POLL_INTERVAL` seconds, default 30) — `_update-daily`

@@ -58,6 +58,15 @@ chroot. The vendor store key includes `zig version` of the container toolchain, 
   fails the build (`No build ID note found`). A package whose build exposes an LLVM switch
   (waylock: `-Dllvm=true`) sets it through `build.commands`/`build.install`; otherwise
   set `rpm.no_debug_package: true`.
+- Quirk: on Copr's aarch64 builders `zig build` with the default `-Dtarget=native` fails to
+  link `waylock` (`ld.lld: undefined reference: stat64@GLIBC_2.33` from `libxkbcommon.so`,
+  build 11198729; zig detects its target as `gnu.2.31` there). x86_64 is fine and the
+  failure does not reproduce under qemu-user mock. Pinning an explicit `-Dtarget=...-gnu.X`
+  does NOT work (zig then stops searching system libraries). `waylock` therefore passes
+  `--libc zig-libc.txt` (a libc paths file written in `build.commands`) so zig links the
+  chroot's real glibc instead of its own stubs (so `glibc-devel` is a `build_requires`:
+  the minimal mock buildroot has no libc headers). Experimental: if the aarch64 chroots still
+  fail, restrict the package to x86_64 instead.
 - Decision: no `zig_subdir` field until a package needs one; `vendor_prep` can already
   reshape the tree.
 - Decision: the vendor tarball holds `zig-pkg/` only, not a global cache, because
@@ -69,6 +78,8 @@ chroot. The vendor store key includes `zig version` of the container toolchain, 
 
 - `tests/test_vendor_zig.py` — missing/failing `zig`, no `build.zig.zon`, fetch failure,
   fetch arguments, tarball holds `zig-pkg/`, empty tree for no deps, skew blocks fetch.
+- `tests/test_waylock_zig_libc.py` — the generated `waylock` spec writes `zig-libc.txt`
+  in `%build` and passes `--libc zig-libc.txt` to both `%zig_build` and `%zig_install`.
 - `tests/test_vendor.py` — `is_zig_package`, `needs_vendoring`, dispatch, ambiguity.
 - `tests/test_toolchain.py`, `tests/test_vendor_store.py`, `tests/test_detection.py`,
   `tests/test_validation_gaps.py`, `tests/test_scaffold_package.py`,

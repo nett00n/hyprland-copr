@@ -539,6 +539,8 @@ SKIP_MOCK ?=
 SKIP_COPR ?=
 SKIP_RELEASE_BUMP ?=
 SYNCHRONOUS_COPR_BUILD ?=
+# #COPR-0007: true = resubmit SRPMs Copr already built successfully (default: skip them).
+COPR_RESUBMIT ?=
 REQUIRE_CHROOT_COVERAGE ?=
 # #BUG-0039: how long/often `make copr-wait` retries polling Copr for a build
 # submitted async (--nowait) to reach a terminal state, before `make readme`
@@ -592,6 +594,7 @@ _full-cycle: check-image check-venv setup-volumes
 		SKIP_COPR=$(SKIP_COPR) \
 		SKIP_RELEASE_BUMP=$(SKIP_RELEASE_BUMP) \
 		SYNCHRONOUS_COPR_BUILD=$(SYNCHRONOUS_COPR_BUILD) \
+		COPR_RESUBMIT=$(COPR_RESUBMIT) \
 		REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) \
 		$(if $(SKIP_REPO_PREFLIGHT),SKIP_REPO_PREFLIGHT=$(SKIP_REPO_PREFLIGHT),) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
@@ -829,7 +832,7 @@ stage-mock: check-image check-venv setup-volumes ## Run mock build stage (PACKAG
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-mock.py,Mock build stage passed,Mock build stage failed)
 
-stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, MOCK_CHROOT, REQUIRE_CHROOT_COVERAGE, PROCEED_BUILD, SYNCHRONOUS_COPR_BUILD, CMD_TIMEOUT, runs in container)
+stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (PACKAGE=<name>, COPR_REPO required, MOCK_CHROOT, REQUIRE_CHROOT_COVERAGE, PROCEED_BUILD, SYNCHRONOUS_COPR_BUILD, COPR_RESUBMIT, CMD_TIMEOUT, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		MOCK_CHROOT=$(MOCK_CHROOT) \
@@ -838,6 +841,7 @@ stage-copr: check-image check-venv setup-volumes ## Run Copr submission stage (P
 		REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) \
 		PROCEED_BUILD=$(PROCEED_BUILD) \
 		SYNCHRONOUS_COPR_BUILD=$(SYNCHRONOUS_COPR_BUILD) \
+		COPR_RESUBMIT=$(COPR_RESUBMIT) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-copr.py,Copr submission stage passed,Copr submission stage failed)
 

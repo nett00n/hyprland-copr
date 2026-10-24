@@ -34,6 +34,7 @@ from lib.copr import (
     poll_copr_status,
     preflight,
     print_chroot_coverage,
+    published_builds,
     resolve_batch_chain,
     srpm_key,
     validate_copr_repo,
@@ -1217,3 +1218,145 @@ class TestInFlightBuilds:
         odd = {"id": 3, "state": "pending", "source_package": {"url": None}}
         mock_urlopen.side_effect = _pages([odd, {"id": 4, "state": "pending"}])
         assert in_flight_builds("nett00n/hyprland") == {}
+
+
+def _package(name, build_id, filename, state="succeeded"):
+    """One `package/list?with_latest_succeeded_build=True` item."""
+    latest = (
+        None
+        if build_id is None
+        else {
+            "id": build_id,
+            "state": state,
+            "source_package": {
+                "name": name,
+                "version": "1.0-1",
+                "url": f"https://download.copr.fedorainfracloud.org/results/"
+                f"nett00n/hyprland/srpm-builds/{build_id:08d}/{filename}",
+            },
+        }
+    )
+    return {"id": 1, "name": name, "builds": {"latest_succeeded": latest}}
+
+
+class TestPublishedBuilds:
+    """#COPR-0007: which SRPMs has Copr already built successfully?
+
+    One project-wide package listing carrying each package's latest succeeded
+    build -- a package whose current SRPM is in here has nothing new to build.
+    """
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_maps_srpm_filename_to_build_id(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [_package("hyprutils", 11202583, "hyprutils-0.14.3-1.fc43.src.rpm")]
+        )
+        assert published_builds("nett00n/hyprland") == {
+            "hyprutils-0.14.3-1.fc43.src.rpm": 11202583
+        }
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_keys_are_sanitized_like_srpm_key(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [_package("x", 8, "hyprland-plugins-0.56.020260805git00862ca-8.fc43.src.rpm")]
+        )
+        local = "hyprland-plugins-0.56.0^20260805git00862ca-8.fc43.src.rpm"
+        assert published_builds("nett00n/hyprland")[srpm_key(local)] == 8
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_package_without_a_succeeded_build_is_ignored(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [_package("never-built", None, "x"), {"name": "no-builds-key"}]
+        )
+        assert published_builds("nett00n/hyprland") == {}
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_build_without_source_url_is_ignored(self, mock_urlopen):
+        odd = _package("x", 3, "x-1-1.fc43.src.rpm")
+        odd["builds"]["latest_succeeded"]["source_package"] = {"url": None}
+        mock_urlopen.side_effect = _pages([odd])
+        assert published_builds("nett00n/hyprland") == {}
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_only_succeeded_state_counts(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [_package("x", 3, "x-1-1.fc43.src.rpm", state="failed")]
+        )
+        assert published_builds("nett00n/hyprland") == {}
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_different_release_is_a_different_key(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages([_package("x", 5, "x-1.0-1.fc43.src.rpm")])
+        assert "x-1.0-2.fc43.src.rpm" not in published_builds("nett00n/hyprland")
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_requests_owner_project_and_latest_succeeded_build(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages([])
+        published_builds("nett00n/hyprland")
+        url = mock_urlopen.call_args.args[0]
+        assert "/api_3/package/list" in url
+        assert "ownername=nett00n" in url and "projectname=hyprland" in url
+        assert "with_latest_succeeded_build=True" in url
+        assert mock_urlopen.call_args.kwargs["timeout"] >= 30
+
+    @patch("lib.copr.PUBLISHED_PAGE_SIZE", 2)
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_keeps_paging_while_pages_are_full(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [_package("a", 1, "a-1-1.fc43.src.rpm"), _package("b", 2, "b-1-1.fc43.src.rpm")],
+            [_package("c", 3, "c-1-1.fc43.src.rpm"), _package("d", 4, "d-1-1.fc43.src.rpm")],
+            [_package("e", 5, "e-1-1.fc43.src.rpm")],
+        )
+        assert set(published_builds("nett00n/hyprland")) == {
+            f"{c}-1-1.fc43.src.rpm" for c in "abcde"
+        }
+        offsets = [
+            c.args[0].split("offset=")[1].split("&")[0]
+            for c in mock_urlopen.call_args_list
+        ]
+        assert offsets == ["0", "2", "4"]
+
+    @patch("lib.copr.PUBLISHED_PAGE_SIZE", 2)
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_stops_on_a_short_page(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages([_package("a", 1, "a-1-1.fc43.src.rpm")])
+        published_builds("nett00n/hyprland")
+        assert mock_urlopen.call_count == 1
+
+    @patch("lib.copr.PUBLISHED_MAX_PAGES", 2)
+    @patch("lib.copr.PUBLISHED_PAGE_SIZE", 1)
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_page_cap_bounds_the_scan(self, mock_urlopen):
+        mock_urlopen.side_effect = _pages(
+            [_package("a", 3, "a-1-1.fc43.src.rpm")],
+            [_package("b", 2, "b-1-1.fc43.src.rpm")],
+            [_package("c", 1, "c-1-1.fc43.src.rpm")],
+        )
+        assert set(published_builds("nett00n/hyprland")) == {
+            "a-1-1.fc43.src.rpm",
+            "b-1-1.fc43.src.rpm",
+        }
+        assert mock_urlopen.call_count == 2
+
+    def test_invalid_repo_slug_returns_empty_without_network(self):
+        with patch("lib.copr.urllib.request.urlopen") as mock_urlopen:
+            assert published_builds("not a slug") == {}
+        mock_urlopen.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "boom",
+        [urllib.error.URLError("down"), TimeoutError(), OSError("net")],
+    )
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_network_failure_fails_open_with_warning(self, mock_urlopen, boom, capsys):
+        mock_urlopen.side_effect = boom
+        assert published_builds("nett00n/hyprland") == {}
+        assert "warning" in capsys.readouterr().err
+
+    @patch("lib.copr.urllib.request.urlopen")
+    def test_malformed_json_fails_open_with_warning(self, mock_urlopen, capsys):
+        resp = MagicMock()
+        resp.read.return_value = b"<html>"
+        mock_urlopen.return_value.__enter__.return_value = resp
+        assert published_builds("nett00n/hyprland") == {}
+        assert "warning" in capsys.readouterr().err

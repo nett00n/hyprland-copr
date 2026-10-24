@@ -1,7 +1,7 @@
 
 Name:           sndio
 Version:        1.11.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Portable version of OpenBSD's lightweight audio & MIDI sub-system
 License:        ISC
 URL:            https://sndio.org/git/sndio
@@ -9,6 +9,7 @@ Source0:        https://sndio.org/sndio-1.11.0.tar.gz
 
 BuildRequires:  alsa-lib-devel
 BuildRequires:  gcc
+BuildRequires:  libbsd-devel
 BuildRequires:  make
 
 
@@ -58,6 +59,6 @@ Development files for sndio.
 %{_prefix}/lib64/pkgconfig/sndio.pc
 
 %changelog
-* Thu Oct 15 2026 nett00n <copr@nett00n.org> - 1.11.0-1
+* Thu Oct 15 2026 nett00n <copr@nett00n.org> - 1.11.0-2
 
 - sndiod: Don't discard the POLLERR bit.

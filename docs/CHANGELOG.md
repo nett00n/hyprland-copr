@@ -23,6 +23,8 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0007: `stage-copr` / `full-cycle` skip a package whose current SRPM already succeeded on Copr instead of re-uploading it every run (`COPR_RESUBMIT=true` or a forced copr stage overrides).
+- COPR-0027: `waylock` builds with `--libc zig-libc.txt` (experiment for the aarch64 `GLIBC_2.33` link failure).
 - COPR-0005: `packages.yaml` accepts `conflicts:` / `provides:` lists, rendered as `Conflicts:` / `Provides:` in the spec (drop-in replacements of Fedora packages, e.g. `swaylock-effects`).
 - COPR-0007: `stage-copr` / `full-cycle` skip a package whose current SRPM is already pending or building on Copr instead of queueing a duplicate build.
 - COPR-0027: `build.system: zig` and a Zig vendor backend (`zig build --fetch` -> `zig-pkg/` tarball, offline `--system zig-pkg`); first consumer `waylock`.

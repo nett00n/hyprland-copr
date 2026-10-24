@@ -35,6 +35,13 @@ COPR_API_BUILDS = (
     "https://copr.fedorainfracloud.org/api_3/build/list/"
     "?ownername={}&projectname={}&limit={}&offset={}&order=id&order_type=DESC"
 )
+# #COPR-0007: one entry per package with its latest *succeeded* build embedded,
+# so "what has Copr already built?" is a single call for the whole project
+# (~2.5 s for ~60 packages) instead of one per package.
+COPR_API_PACKAGES = (
+    "https://copr.fedorainfracloud.org/api_3/package/list"
+    "?ownername={}&projectname={}&with_latest_succeeded_build=True&limit={}&offset={}"
+)
 TERMINAL_STATES = {"success", "failed"}
 # #COPR-0007: Copr states in which a build will still produce (or is producing)
 # a result -- a submission of the same SRPM would only queue a duplicate.
@@ -47,6 +54,9 @@ IN_FLIGHT_STATUSES = ("pending", "importing", "waiting", "starting", "running")
 IN_FLIGHT_PAGE_SIZE = 200
 IN_FLIGHT_MAX_PAGES = 5
 IN_FLIGHT_TIMEOUT = 30
+PUBLISHED_PAGE_SIZE = 200
+PUBLISHED_MAX_PAGES = 5
+PUBLISHED_TIMEOUT = 30
 CHROOT_LOG_CANDIDATES = ("builder-live.log.gz", "build.log.gz")
 
 # Every state copr-cli's `status` command can print (see copr_cli.helpers.
@@ -266,6 +276,60 @@ def in_flight_builds(copr_repo: str) -> dict[str, int]:
         print(
             f"warning: could not list in-flight Copr builds ({exc}); "
             "submitting without the duplicate check",
+            file=sys.stderr,
+        )
+        return {}
+    return found
+
+
+# #COPR-0007
+def published_builds(copr_repo: str) -> dict[str, int]:
+    """Map SRPM filename -> build id for every package of `copr_repo` whose latest
+    succeeded build is already on Copr.
+
+    A package whose current SRPM filename (`<name>-<version>-<release>.fc43.src.rpm`)
+    is in here has nothing new to build: `update_package_releases()` bumps `release`
+    whenever the package's content changes or a dependency was rebuilt, so any own or
+    dependency change produces a different filename. Look entries up with
+    `srpm_key(local_filename)`, the same normalization `in_flight_builds()` uses.
+
+    Reads `package/list?with_latest_succeeded_build=True`, PUBLISHED_PAGE_SIZE
+    packages per page, at most PUBLISHED_MAX_PAGES pages; stops on the first short
+    page.
+
+    Fails open: an invalid slug returns {} silently; a network/parse failure warns
+    on stderr and returns {}, so a Copr API hiccup can never block a submission
+    (the same stance as in_flight_builds()).
+    """
+    if not validate_copr_repo(copr_repo):
+        return {}
+    ownername, projectname = copr_repo.split("/", 1)
+    found: dict[str, int] = {}
+    try:
+        for page in range(PUBLISHED_MAX_PAGES):
+            url = COPR_API_PACKAGES.format(
+                ownername, projectname, PUBLISHED_PAGE_SIZE, page * PUBLISHED_PAGE_SIZE
+            )
+            with urllib.request.urlopen(url, timeout=PUBLISHED_TIMEOUT) as resp:
+                items = json.loads(resp.read()).get("items", [])
+            for item in items:
+                build = (item.get("builds") or {}).get("latest_succeeded") or {}
+                src_url = (build.get("source_package") or {}).get("url")
+                build_id = build.get("id")
+                if (
+                    build.get("state") != "succeeded"
+                    or not src_url
+                    or not isinstance(build_id, int)
+                ):
+                    continue
+                name = srpm_key(src_url.rsplit("/", 1)[-1])
+                found[name] = max(build_id, found.get(name, 0))
+            if len(items) < PUBLISHED_PAGE_SIZE:
+                break
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError, OSError) as exc:
+        print(
+            f"warning: could not list published Copr builds ({exc}); "
+            "submitting without the already-built check",
             file=sys.stderr,
         )
         return {}

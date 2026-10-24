@@ -284,6 +284,7 @@ def _patched_pipeline(
     spy_forced_stages=False,
     in_flight=None,
     copr_side_effect=None,
+    published=None,
 ):
     """Patch every stage full_cycle.run_build_pipeline touches except the Copr/mock
     gating logic itself, which is what these tests actually exercise.
@@ -351,6 +352,13 @@ def _patched_pipeline(
                 full_cycle,
                 "in_flight_builds",
                 return_value={} if in_flight is None else in_flight,
+            )
+        )
+        enter(
+            patch.object(
+                full_cycle,
+                "published_builds",
+                return_value={} if published is None else published,
             )
         )
         enter(
@@ -583,6 +591,7 @@ class TestCoprInProgressNotResubmitted:
         is_cached_side_effect=None,
         in_flight=None,
         copr_side_effect=None,
+        published=None,
     ):
         run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
 
@@ -611,6 +620,7 @@ class TestCoprInProgressNotResubmitted:
                 is_cached_side_effect=is_cached_side_effect,
                 in_flight=in_flight,
                 copr_side_effect=copr_side_effect,
+                published=published,
             ) as (copr_mock, _),
         ):
             full_cycle.run_build_pipeline(
@@ -723,6 +733,94 @@ class TestCoprInFlightOnCopr:
 
         copr_mock.assert_called_once()
         assert copr_mock.call_args.kwargs["in_flight"] is None
+
+
+class TestCoprPublishedOnCopr:
+    """#COPR-0007: full-cycle hands the set of SRPMs Copr already built
+    successfully to stage-copr's run_for_package, which declines to resubmit."""
+
+    _run = TestCoprInProgressNotResubmitted._run
+
+    def test_published_set_is_passed_to_run_for_package(self):
+        published = {"hyprutils-1.0-1.fc43.src.rpm": 4242}
+
+        _, copr_mock = self._run(
+            {"hyprutils": {}}, {"hyprutils": True}, published=published
+        )
+
+        copr_mock.assert_called_once()
+        assert copr_mock.call_args.kwargs["published"] == published
+
+    def test_published_reason_survives_finalize(self):
+        """run_for_package records 'published: build N ...' for a package it
+        declined to resubmit; full-cycle's finalize_stage must keep that reason
+        and the success state rather than the generic cache-miss reason."""
+        published = {"hyprutils-1.0-1.fc43.src.rpm": 4242}
+
+        def fake_copr(pkg, meta, fedora_version, copr_repo, proceed, target, run_id,
+                      synchronous=False, **_kwargs):
+            build_db.set_stage(
+                pkg, "copr", target, run_id, "success", build_id=4242,
+                reason="published: build 4242 already on Copr",
+            )
+            return True
+
+        self._run(
+            {"hyprutils": {}},
+            {"hyprutils": True},
+            published=published,
+            copr_side_effect=fake_copr,
+        )
+
+        entry = build_db.get_stage("hyprutils", "copr", TARGET)
+        assert entry["state"] == "success"
+        assert entry["build_id"] == 4242
+        assert entry["reason"] == "published: build 4242 already on Copr"
+
+    def test_published_package_does_not_force_its_dependents(self):
+        """A package left `published:` was not rebuilt: its dependent must get
+        the published set too, not a forced (published=None) resubmission."""
+        published = {
+            "hyprutils-1.0-1.fc43.src.rpm": 4242,
+            "hyprland-1.0-1.fc43.src.rpm": 4243,
+        }
+
+        def fake_copr(pkg, meta, fedora_version, copr_repo, proceed, target, run_id,
+                      synchronous=False, **_kwargs):
+            build_db.set_stage(
+                pkg, "copr", target, run_id, "success", build_id=4242,
+                reason="published: build 4242 already on Copr",
+            )
+            return True
+
+        packages = {"hyprutils": {}, "Hyprland": {"depends_on": ["hyprutils"]}}
+        with patch.object(
+            full_cycle,
+            "effective_deps",
+            side_effect=lambda pkg, meta, allp: set(meta.get("depends_on", [])),
+        ):
+            _, copr_mock = self._run(
+                packages,
+                {"hyprutils": True, "Hyprland": True},
+                published=published,
+                copr_side_effect=fake_copr,
+            )
+
+        assert copr_mock.call_count == 2
+        for call in copr_mock.call_args_list:
+            assert call.kwargs["published"] == published
+
+    def test_forced_copr_stage_ignores_published(self):
+        """A forced copr stage (FORCE_REBUILD, force_run) is a deliberate resubmission."""
+        published = {"hyprutils-1.0-1.fc43.src.rpm": 4242}
+
+        with patch.object(full_cycle, "compute_forced_stages", return_value={"copr"}):
+            _, copr_mock = self._run(
+                {"hyprutils": {}}, {"hyprutils": True}, published=published
+            )
+
+        copr_mock.assert_called_once()
+        assert copr_mock.call_args.kwargs["published"] is None
 
 
 class TestResolveForcePackages:

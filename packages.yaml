@@ -1449,10 +1449,13 @@ lambdock:
   - '%doc README.org'
   - '%license COPYING'
   - '%{_bindir}/lambdock'
+  - '%{_datadir}/applications/org.jointhefreeworld.lambdock.desktop'
   - '%{_datadir}/guile/site/3.0/lambdock/'
+  - '%{_datadir}/icons/hicolor/scalable/apps/org.jointhefreeworld.lambdock.svg'
   - '%{_datadir}/locale/*/LC_MESSAGES/lambdock.mo'
+  - '%{_datadir}/metainfo/org.jointhefreeworld.lambdock.metainfo.xml'
   license: GPL-3.0-or-later
-  release: 1
+  release: 2
   requires: []
   rpm:
     no_debug_package: true
@@ -1502,7 +1505,7 @@ libcava:
   - '%license LICENSE'
   - '%{_libdir}/libcava.so.*'
   license: MIT
-  release: 10
+  release: 11
   rpm:
     no_debug_package: true
   source:
@@ -1553,7 +1556,7 @@ libcava-v0:
   - '%license LICENSE'
   - '%{_libdir}/libcava.so.*'
   license: MIT
-  release: 12
+  release: 13
   rpm:
     no_debug_package: true
   source:
@@ -1709,6 +1712,8 @@ neowall:
   url: https://github.com/1ay1/neowall
   version: 0.7.2
 OpenLogi:
+  auto_update:
+    release_type: pinned-version
   build:
     commands:
     - cargo build --offline --release -p openlogi -p openlogi-agent
@@ -1719,7 +1724,12 @@ OpenLogi:
     - install -Dpm0644 packaging/linux/systemd/openlogi-agent.service -t %{buildroot}%{_userunitdir}
     no_lto: false
     prep:
-    - sed -i -e '/crates\/openlogi-desktop/d' -e '/crates\/openlogi-overlay/d' -e '/"xtask"/d' Cargo.toml
+    - |
+      # Pinned to 0.8.15 (auto_update.release_type: pinned-version), the last
+      # version that built on fedora-45: 0.8.17 requires rustc 1.99 while f45
+      # ships 1.98.1. Drop auto_update to unpin once f45 has rustc >= 1.99
+      # (#BUG-0118).
+      sed -i -e '/crates\/openlogi-desktop/d' -e '/crates\/openlogi-overlay/d' -e '/"xtask"/d' Cargo.toml
     - sed -i '/^\[patch\./,/^$/d' Cargo.toml
     - rm -f Cargo.lock
     - tar xf %{SOURCE1}
@@ -1760,7 +1770,7 @@ OpenLogi:
     name: OpenLogi
   summary: Local-first alternative to Logitech Options+ for HID++ devices
   url: https://github.com/AprilNEA/OpenLogi
-  version: 0.8.17
+  version: 0.8.15
 pyprland:
   build:
     commands:
@@ -2006,6 +2016,7 @@ sndio:
   build_requires:
   - alsa-lib-devel
   - gcc
+  - libbsd-devel
   - make
   description: Portable version of OpenBSD's lightweight audio & MIDI sub-system
   devel:
@@ -2021,7 +2032,7 @@ sndio:
   - '%{_prefix}/lib64/libsndio.so*'
   - '%{_prefix}/share/man/*/*.gz'
   license: ISC
-  release: 1
+  release: 2
   rpm:
     no_debug_package: false
   source:
@@ -2310,7 +2321,7 @@ Waybar:
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 20
+  release: 21
   rpm:
     buildarch: ''
     no_debug_package: false

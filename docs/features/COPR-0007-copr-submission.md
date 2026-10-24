@@ -56,6 +56,19 @@ dependent package still chains `--after-build-id` behind it. A new version or
 release is a different filename and is submitted normally. Under `full-cycle`, a
 forced copr stage skips this check (a deliberate resubmission).
 
+**Never rebuild what Copr already has.** After the in-flight check, `stage-copr` and
+`full-cycle` also ask Copr for each package's latest *succeeded* build
+(`lib.copr.published_builds()`). If that build's SRPM filename equals the one about
+to be uploaded, no `copr-cli build` runs: the row is recorded `success` with that
+build's `build_id` and the reason `published: build N already on Copr`. This is
+exactly "nothing changed" — `update_package_releases()` bumps `release` whenever a
+package's own content changes *or a dependency was rebuilt*, so any own or
+dependency change yields a new SRPM filename and is submitted normally. A
+`published:` row is not a chain target (there is no new build for a dependent to
+wait on). `COPR_RESUBMIT=true` (for `stage-copr`) or a forced copr stage in
+`full-cycle` (`FORCE_REBUILD`, `force_run`) resubmits anyway. Like the in-flight
+check, it fails open: a Copr API failure warns and submits as before.
+
 In `SYNCHRONOUS_COPR_BUILD=true` mode, `run_for_package()` watches `copr-cli build`
 to a terminal state itself, bounded by `run_cmd()`'s `CMD_TIMEOUT` (default 3600s).
 A watch that is still running when that timeout hits is **not** recorded as a build
@@ -75,8 +88,9 @@ outcome, not just the skip-gate reasons above (#BUG-0107).
   (`ineligible_packages()`/`block_transitive_dependents()`/`blackout_chroots()`/
   `poll_copr_status()`/`resolve_batch_chain()`), `scripts/lib/deps.py`
   (`topological_sort()`, via `yaml_utils.prepare_stage()`).
-  `in_flight_builds()` feeds the guard in `stage-copr.py`'s `run_for_package()`
-  (called from `main()` and from `full-cycle.py`).
+  `in_flight_builds()` and `published_builds()` feed the guards in
+  `stage-copr.py`'s `run_for_package()` (called from `main()` and from
+  `full-cycle.py`).
 - Requires `copr-cli` configured with `~/.config/copr`.
 
 ## Quirks & Decisions
@@ -159,13 +173,25 @@ outcome, not just the skip-gate reasons above (#BUG-0107).
 - Decision: the check fails open. If the Copr API cannot be reached or parsed,
   `in_flight_builds()` warns and returns nothing, and submission proceeds as before
   (the same stance as `get_project_chroots()`).
+- Quirk: run 368 (2026-10-24) submitted 57 SRPMs of which about 50 had the same
+  name-version-release as builds that had already succeeded (e.g. `hyprutils-0.14.3-1`,
+  `waylock-1.6.0-4`, both uploaded by run 361 hours earlier) — the in-flight guard
+  only sees unfinished builds, so every finished one was re-queued on the next run.
+  Fixed by the "never rebuild what Copr already has" guard above.
+- Decision: `published_builds()` uses one project-wide
+  `package/list?with_latest_succeeded_build=True` call (200 packages per page, ~2.5 s
+  for the whole project) instead of a per-package query, keyed by the same
+  `srpm_key()`-normalized SRPM filename as `in_flight_builds()`. Unchanged-ness is
+  decided by the filename alone because the release auto-increment already cascades
+  dependency rebuilds into it.
 
 ## Testing
 
 ### Unit
 
 - `tests/test_copr.py` (incl. `poll_copr_status`'s bounded-retry `deadline_s`/
-  `interval_s` behavior and `in_flight_builds()`), `tests/test_pipeline_copr_stage_utils.py`.
+  `interval_s` behavior, `in_flight_builds()` and `published_builds()`),
+  `tests/test_pipeline_copr_stage_utils.py`.
 - `tests/test_subprocess_utils.py` (`run_cmd()` preserving a killed command's
   partial stdout/stderr and log on `TimeoutExpired`, #BUG-0106).
 - `tests/test_pkg_log_analysis.py::TestCoprIssuesInSummary` (#BUG-0108: a
