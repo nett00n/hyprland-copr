@@ -1,13 +1,14 @@
 
 Name:           waylock
 Version:        1.6.0
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Small screenlocker for Wayland compositors
 License:        ISC
 URL:            https://github.com/ifreund/waylock
 Source0:        https://github.com/ifreund/waylock/archive/refs/tags/v1.6.0.tar.gz#/waylock-1.6.0.tar.gz
 Source1:        waylock-1.6.0-vendor.tar.gz
 
+BuildRequires:  glibc-devel
 BuildRequires:  pam-devel
 BuildRequires:  pkgconfig(wayland-client)
 BuildRequires:  pkgconfig(wayland-protocols)
@@ -15,6 +16,7 @@ BuildRequires:  pkgconfig(xkbcommon)
 BuildRequires:  scdoc
 BuildRequires:  zig
 BuildRequires:  zig-rpm-macros
+
 
 
 
@@ -38,10 +40,11 @@ sed -i 's/^const version = ".*";/const version = "%{version}";/' build.zig
 sed -i 's/^\( *\)stdout.writeAll(\(.*\)) catch process.exit(1);$/&\n\1stdout.flush() catch process.exit(1);/' src/main.zig
 
 %build
-%zig_build -Dpie -Dllvm=true
+printf 'include_dir=%{_includedir}\nsys_include_dir=%{_includedir}\ncrt_dir=%{_libdir}\nmsvc_lib_dir=\nkernel32_lib_dir=\ngcc_dir=\n' > zig-libc.txt
+%zig_build -Dpie -Dllvm=true --libc zig-libc.txt
 
 %install
-%zig_install -Dpie -Dllvm=true
+%zig_install -Dpie -Dllvm=true --libc zig-libc.txt
 
 %files
 %config(noreplace) %{_sysconfdir}/pam.d/waylock
@@ -60,7 +63,7 @@ Development files for waylock.
 %files devel
 
 %changelog
-* Mon Apr 27 2026 nett00n <copr@nett00n.org> - 1.6.0-3
+* Mon Apr 27 2026 nett00n <copr@nett00n.org> - 1.6.0-4
 
 - waylock 1.6.0
 - This release updates the required Zig version to 0.16.

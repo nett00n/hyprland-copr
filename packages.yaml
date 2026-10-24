@@ -1502,7 +1502,7 @@ libcava:
   - '%license LICENSE'
   - '%{_libdir}/libcava.so.*'
   license: MIT
-  release: 9
+  release: 10
   rpm:
     no_debug_package: true
   source:
@@ -1553,7 +1553,7 @@ libcava-v0:
   - '%license LICENSE'
   - '%{_libdir}/libcava.so.*'
   license: MIT
-  release: 11
+  release: 12
   rpm:
     no_debug_package: true
   source:
@@ -2021,7 +2021,7 @@ sndio:
   - '%{_prefix}/lib64/libsndio.so*'
   - '%{_prefix}/share/man/*/*.gz'
   license: ISC
-  release: 12
+  release: 1
   rpm:
     no_debug_package: false
   source:
@@ -2029,7 +2029,7 @@ sndio:
     - https://sndio.org/sndio-%{version}.tar.gz
   summary: Portable version of OpenBSD's lightweight audio & MIDI sub-system
   url: https://sndio.org/git/sndio
-  version: 1.10.0
+  version: 1.11.0
 swaylock-effects:
   auto_update:
     release_type: latest-tag
@@ -2310,7 +2310,7 @@ Waybar:
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 19
+  release: 20
   rpm:
     buildarch: ''
     no_debug_package: false
@@ -2326,9 +2326,10 @@ waylock:
     release_type: latest-tag
   build:
     commands:
-    - '%zig_build -Dpie -Dllvm=true'
+    - printf 'include_dir=%{_includedir}\nsys_include_dir=%{_includedir}\ncrt_dir=%{_libdir}\nmsvc_lib_dir=\nkernel32_lib_dir=\ngcc_dir=\n' > zig-libc.txt
+    - '%zig_build -Dpie -Dllvm=true --libc zig-libc.txt'
     install:
-    - '%zig_install -Dpie -Dllvm=true'
+    - '%zig_install -Dpie -Dllvm=true --libc zig-libc.txt'
     no_lto: false
     prep:
     - tar xf %{SOURCE1}
@@ -2336,6 +2337,7 @@ waylock:
     - sed -i 's/^\( *\)stdout.writeAll(\(.*\)) catch process.exit(1);$/&\n\1stdout.flush() catch process.exit(1);/' src/main.zig
     system: zig
   build_requires:
+  - glibc-devel
   - pam-devel
   - pkgconfig(wayland-client)
   - pkgconfig(wayland-protocols)
@@ -2355,7 +2357,7 @@ waylock:
   - '%{_bindir}/waylock'
   - '%{_mandir}/man1/waylock.1*'
   license: ISC
-  release: 3
+  release: 4
   requires: []
   rpm:
     no_debug_package: false

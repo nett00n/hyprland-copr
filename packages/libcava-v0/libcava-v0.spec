@@ -3,7 +3,7 @@
 
 Name:           libcava-v0
 Version:        0.10.7
-Release:        11%{?dist}
+Release:        12%{?dist}
 Summary:        cava built as a shared library
 License:        MIT
 URL:            https://github.com/LukashonakV/cava
@@ -25,6 +25,7 @@ BuildRequires:  portaudio-devel
 BuildRequires:  pulseaudio-libs-devel
 BuildRequires:  sdl2-compat-devel
 BuildRequires:  sndio-devel
+
 
 
 
@@ -68,6 +69,6 @@ Development files for libcava-v0.
 %{_libdir}/pkgconfig/libcava.pc
 
 %changelog
-* Sat Oct 17 2026 nett00n <copr@nett00n.org> - 0.10.7-11
+* Sat Oct 24 2026 nett00n <copr@nett00n.org> - 0.10.7-12
 
 - Update to 0.10.7

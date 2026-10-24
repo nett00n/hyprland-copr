@@ -1,15 +1,16 @@
 
 Name:           sndio
-Version:        1.10.0
-Release:        12%{?dist}
+Version:        1.11.0
+Release:        1%{?dist}
 Summary:        Portable version of OpenBSD's lightweight audio & MIDI sub-system
 License:        ISC
 URL:            https://sndio.org/git/sndio
-Source0:        https://sndio.org/sndio-1.10.0.tar.gz
+Source0:        https://sndio.org/sndio-1.11.0.tar.gz
 
 BuildRequires:  alsa-lib-devel
 BuildRequires:  gcc
 BuildRequires:  make
+
 
 
 
@@ -23,8 +24,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v1.10.0
-Commit:            366b5c84d57c9ce73387c51ca48755d36e3fe3a7
+Tag:               v1.11.0
+Commit:            3e700211b1ca4f3284dbc7493f73ef72793f349f
 
 %prep
 %autosetup -p1
@@ -57,6 +58,6 @@ Development files for sndio.
 %{_prefix}/lib64/pkgconfig/sndio.pc
 
 %changelog
-* Thu Aug 01 2024 nett00n <copr@nett00n.org> - 1.10.0-12
+* Thu Oct 15 2026 nett00n <copr@nett00n.org> - 1.11.0-1
 
-- Bump version to 1.10.0
+- sndiod: Don't discard the POLLERR bit.
