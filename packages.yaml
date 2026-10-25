@@ -1455,7 +1455,7 @@ lambdock:
   - '%{_datadir}/locale/*/LC_MESSAGES/lambdock.mo'
   - '%{_datadir}/metainfo/org.jointhefreeworld.lambdock.metainfo.xml'
   license: GPL-3.0-or-later
-  release: 2
+  release: 1
   requires: []
   rpm:
     no_debug_package: true
@@ -1465,7 +1465,7 @@ lambdock:
   source_dir: lambdock
   summary: Wayland desktop dock customizable with GNU Guile Scheme
   url: https://codeberg.org/jjba23/lambdock.git
-  version: 0.7.5
+  version: 0.7.7
 libcava:
   build:
     commands:
