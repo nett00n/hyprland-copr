@@ -14,7 +14,7 @@ class VendorError(Exception):
     pass
 
 
-def _log_fn(log_path: Path | None) -> Callable[[str], None]:
+def log_fn(log_path: Path | None) -> Callable[[str], None]:
     """Return a logging function that writes to stdout and optionally to a file."""
 
     def _log(msg: str) -> None:
@@ -201,7 +201,7 @@ def generate(
     source_url = resolve_source_url(pkg_meta, pkg_name)
     tmpdir = Path(tempfile.mkdtemp(prefix=f"vendor-{pkg_name}-"))
     try:
-        _log = _log_fn(log_path)
+        _log = log_fn(log_path)
         _log(f"downloading {source_url}")
         archive = tmpdir / "source.tar.gz"
         _download(source_url, archive)
@@ -219,6 +219,6 @@ def generate(
         )
     finally:
         if keep_tmpdir:
-            _log_fn(log_path)(f"tmpdir kept: {tmpdir}")
+            log_fn(log_path)(f"tmpdir kept: {tmpdir}")
         else:
             shutil.rmtree(tmpdir, ignore_errors=True)

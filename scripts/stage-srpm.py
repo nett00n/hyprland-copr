@@ -32,6 +32,7 @@ from lib.paths import (
     get_package_log_dir,
     resolve_target,
 )
+from lib.stage_common import record_config_skip
 from lib.reporting import event, status, verbose_proceed_check
 from lib.source_lock import remote_sources
 from lib.source_lock import verify as verify_sources
@@ -91,10 +92,7 @@ def run_for_package(
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
-        event("srpm", target, pkg, "skip", reason=f"fedora:{fedora_version} skip")
-        build_db.set_stage(
-            pkg, "srpm", target, run_id, "skipped", reason="config: skip"
-        )
+        record_config_skip("srpm", pkg, target, run_id, fedora_version)
         return True
 
     ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)

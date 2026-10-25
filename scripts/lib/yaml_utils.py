@@ -1,5 +1,8 @@
 """YAML loading/saving utilities for packages.yaml, plus build-stage boilerplate.
 
+PyYAML (`safe_load`) *reads* packages/repo/groups YAML here; writes go through
+ruamel via lib.yaml_config so formatting survives the round trip.
+
 Build state itself lives in build-report.db (see lib.build_db); the stage
 bootstrap helper here (prepare_stage) still belongs next to the packages.yaml
 loaders it composes with, same as the old init_stage() did.

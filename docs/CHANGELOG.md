@@ -23,6 +23,10 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0002: `make sources` runs through a new `scripts/download-sources.py` and `make stage-log-analyze` through `pkg-log-analysis.py`'s own `PACKAGE`/`SKIP_PACKAGES` handling, so every multi-package target selects packages in Python (#BUG-0066); the Makefile's `_PKGS`/`ALL_PACKAGES` shell expansion is gone (#BUG-0069).
+- COPR-0002: the six `stage-*.py` scripts share `lib.stage_common.record_config_skip` for the "config: skip" row (#BUG-0077); `stage-validate`'s skip event line now also carries `reason=fedora:NN skip`.
+- `HIGHLIGHT_PREFIX` in the Makefile no longer embeds literal quote characters; every echo site quotes it uniformly (#BUG-0068).
+- `lib.vendor.log_fn` is public (was `_log_fn`) (#BUG-0090); the three YAML modules' docstrings say which library reads/writes (#BUG-0085); the duplicate `tests/integration/conftest.py` is removed (#BUG-0075).
 - COPR-0007: `stage-copr` / `full-cycle` skip a package whose current SRPM already succeeded on Copr instead of re-uploading it every run (`COPR_RESUBMIT=true` or a forced copr stage overrides).
 - COPR-0027: `waylock` builds with `--libc zig-libc.txt` (experiment for the aarch64 `GLIBC_2.33` link failure).
 - COPR-0005: `packages.yaml` accepts `conflicts:` / `provides:` lists, rendered as `Conflicts:` / `Provides:` in the spec (drop-in replacements of Fedora packages, e.g. `swaylock-effects`).

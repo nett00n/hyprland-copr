@@ -41,6 +41,7 @@ from lib.paths import (
     resolve_target,
 )
 from lib.repo_preflight import check_buildroot_repo, rpm_arch
+from lib.stage_common import record_config_skip
 from lib.reporting import event, status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
@@ -209,10 +210,7 @@ def run_for_package(
     """
     meta = apply_os_overrides(meta, fedora_version)
     if meta.get("_skip"):
-        event("mock", target, pkg, "skip", reason=f"fedora:{fedora_version} skip")
-        build_db.set_stage(
-            pkg, "mock", target, run_id, "skipped", reason="config: skip"
-        )
+        record_config_skip("mock", pkg, target, run_id, fedora_version)
         return True
 
     ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)

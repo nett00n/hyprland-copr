@@ -20,6 +20,7 @@ import sys
 from lib import build_db
 from lib.config import env_flag, setup_logging
 from lib.paths import ARCH, DISTRO, resolve_target
+from lib.stage_common import record_config_skip
 from lib.reporting import event, status
 from lib.validation import (
     validate_group_membership,
@@ -44,10 +45,7 @@ def run_for_package(
     """
     resolved = apply_os_overrides(meta, fedora_version)
     if resolved.get("_skip"):
-        status("validate", pkg, "skip", target)
-        build_db.set_stage(
-            pkg, "validate", target, run_id, "skipped", reason="config: skip"
-        )
+        record_config_skip("validate", pkg, target, run_id, fedora_version)
         return True
 
     event("validate", target, pkg, "run")

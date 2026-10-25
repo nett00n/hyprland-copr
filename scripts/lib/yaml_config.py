@@ -1,4 +1,8 @@
-"""Centralized ruamel.yaml configuration."""
+"""Centralized ruamel.yaml configuration.
+
+ruamel-only: use this module to *write* YAML that must keep its style (literal
+blocks, key order). Reading goes through PyYAML -- see lib.yaml_utils.
+"""
 
 import io
 from typing import Any

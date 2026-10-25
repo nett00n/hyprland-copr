@@ -135,9 +135,6 @@ distro/arch-agnostic build-target work itself is tracked as a feature, not here 
 
 ### Makefile
 
-- #BUG-0066 two different multi-package loop strategies coexist: Makefile-side
-  `_PKGS` loop (`Makefile:123`, used by `sources` and `stage-log-analyze`) vs
-  pass-PACKAGE-to-python (every `stage-*` target) -> pick one [P3/D1]
 - #BUG-0067 `full-cycle-matrix`'s `matrix-chroot-%` targets (`Makefile`) build every
   chroot in `MATRIX_VERSIONS` serially via a plain shell `for` loop in
   `_full-cycle-matrix` (was `$(MAKE) -k` plus an order-only prerequisite until
@@ -147,24 +144,14 @@ distro/arch-agnostic build-target work itself is tracked as a feature, not here 
   `packages.yaml` while every other chroot's `full-cycle` call reads it, and the
   pipeline `flock` (BUG-0043) refuses a second concurrent `make` invocation by
   design anyway -- both would need solving first [P3/D3]
-- #BUG-0069 `ALL_PACKAGES` (`Makefile:118`) parses packages.yaml with a grep regex
-  instead of the yaml lib used everywhere else -> fragile, switch to yaml. Caveat:
-  it's a `$(shell)` evaluated at parse time on *every* make invocation, so a naive
-  swap to python adds interpreter startup to every target -- needs a cache, not a
-  straight swap [P2/D1]
-
 ### Scripts
 
 - #BUG-0076 `scripts/full-cycle.py:run_build_pipeline` is 425 lines
   (`full-cycle.py:267-691`, grown from ~320) of repeated per-stage orchestration
   (spec/vendor/srpm/mock/copr all same shape: cache check -> run_for_package ->
-  build_db.finalize_stage) -> candidate for a small stage-runner abstraction. Do
-  together with BUG-0077 -- same file family, same shape [P3/D4]
-- #BUG-0077 each `stage-*.py` (validate/spec/vendor/srpm/mock/copr) copy-pastes its
-  own "config: skip" `set_stage()` call (~6 lines x6, e.g. `stage-srpm.py:76-81`,
-  `stage-vendor.py:70-75`) -> extract to a small helper (the old `lib/stage_utils.py`
-  was removed in the sqlite migration; a new home is needed, e.g.
-  `lib/stage_common.py`) [P3/D1]
+  build_db.finalize_stage) -> candidate for a small stage-runner abstraction. The
+  per-stage "config: skip" copy-paste is already extracted into
+  `lib/stage_common.py:record_config_skip` [P3/D4]
 - #BUG-0083 `lib/log_analysis.py` is 1257 lines (re-verified 2026-08-18, grown from
   944) of ~41 copy-pasted `if m: issues.append(...); continue` blocks from
   hand-written regexes -> a data table of (regex, formatter) pairs would cut it by
@@ -228,12 +215,6 @@ Mechanical maintenance: pinning, renames, dead-code removal, small tooling addit
 
 ### Makefile
 
-- #BUG-0068 `HIGHLIGHT_PREFIX` default (`Makefile:13`) bakes literal quote chars into
-  the value as a hack so unquoted `echo $(HIGHLIGHT_PREFIX) "text"` works;
-  check-image/check-venv/setup-volumes instead embed it inside a quoted string ->
-  fragile, one edit away from breaking output. Touches ~80+ echo sites across the
-  Makefile -- simplify to plain value + consistent quoting everywhere [P3/D1]
-
 ### Scripts
 
 - #BUG-0074 `scripts/gen-spec.py` (446 lines) duplicates `lib/github.py`
@@ -243,25 +224,11 @@ Mechanical maintenance: pinning, renames, dead-code removal, small tooling addit
   remove or replace with lib calls. Check first whether `build_context()`
   (`gen-spec.py:210-380`) has spec-rendering logic `stage-spec.py` lacks before
   deleting [P3/D4]
-- #BUG-0075 `tests/conftest.py` and `tests/integration/conftest.py` are ~93%
-  identical (36-line diff across 96/102-line files) -- real differences are just a
-  docstring, a path-depth difference, and one extra `monkeypatch_cwd` fixture -> dedupe
-  down to that one fixture [P3/D1]
-- #BUG-0085 3 YAML modules mix PyYAML-load and ruamel-dump inconsistently with no doc
-  on which to use when: `lib/yaml_config.py` is ruamel-only, `lib/yaml_utils.py` is
-  PyYAML-only, `lib/yaml_format.py` mixes both (docstring advertises ruamel but
-  `:44`/`:150` call `yaml.safe_load`) -> confusing for newcomers. A docstring in each
-  module solves the stated pain more cheaply than consolidating [P3/D1]
 - #BUG-0088 `Containerfile:9-21` installs cargo/golang/mock/rpmlint with no version
   pins, and the base image tag (`Containerfile:3`) floats too -> minor reproducibility
   risk over time. Pinning individual packages against a floating Fedora base just
   creates dnf resolution failures the moment the base updates; the honest fix is
   digest-pinning the base image itself [P3/D2]
-- #BUG-0090 `_log_fn` in `lib/vendor.py` is underscore-private but imported directly
-  by `vendor_golang.py:9`/`vendor_rust.py:14` (`_download`/`_extract` no longer have
-  external importers as of 2026-08-18, so this is now `_log_fn` only). Naturally
-  resolved by BUG-0084 -- moving those modules to `run_cmd` removes the need for it
-  [P3/D1]
 ### Docs
 
 - #BUG-0103 `docs/DOCS-DRIVEN-DEVELOPMENT.md`'s Rules require every top-level

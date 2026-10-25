@@ -39,7 +39,45 @@ def build_db_path(tmp_path, monkeypatch):
 
 class TestMain:
     def test_no_packages_is_usage_error(self):
-        assert pkg_log_analysis.main([]) == 1
+        with patch.object(pkg_log_analysis, "get_packages", return_value={}):
+            assert pkg_log_analysis.main([]) == 1
+
+    def test_no_args_analyzes_env_selected_packages(self, monkeypatch):
+        """#BUG-0066: PACKAGE/SKIP_PACKAGES select the set when no names are given."""
+        monkeypatch.setenv("PACKAGE", "pkg-a,pkg-b,pkg-c")
+        monkeypatch.setenv("SKIP_PACKAGES", "pkg-b")
+        packages = {"pkg-a": {}, "pkg-b": {}, "pkg-c": {}}
+        with patch.object(
+            pkg_log_analysis, "get_packages", return_value=packages
+        ), patch.object(
+            pkg_log_analysis,
+            "resolve_log_dirs",
+            side_effect=lambda pkg, run_id, target: [Path(f"/fake/{pkg}")],
+        ), patch.object(
+            pkg_log_analysis, "analyze_package", return_value=(0, [])
+        ) as mock_analyze:
+            assert pkg_log_analysis.main([]) == 0
+        assert [c.args[0] for c in mock_analyze.call_args_list] == ["pkg-a", "pkg-c"]
+
+    def test_no_env_means_all_packages(self, monkeypatch):
+        monkeypatch.delenv("PACKAGE", raising=False)
+        monkeypatch.delenv("SKIP_PACKAGES", raising=False)
+        with patch.object(
+            pkg_log_analysis, "get_packages", return_value={"x": {}, "y": {}}
+        ):
+            assert pkg_log_analysis._env_packages() == ["x", "y"]
+
+    def test_positional_names_override_env(self, monkeypatch):
+        monkeypatch.setenv("PACKAGE", "pkg-a")
+        with patch.object(
+            pkg_log_analysis,
+            "resolve_log_dirs",
+            side_effect=lambda pkg, run_id, target: [Path(f"/fake/{pkg}")],
+        ), patch.object(
+            pkg_log_analysis, "analyze_package", return_value=(0, [])
+        ) as mock_analyze:
+            assert pkg_log_analysis.main(["pkg-z"]) == 0
+        assert [c.args[0] for c in mock_analyze.call_args_list] == ["pkg-z"]
 
     def test_all_clean_returns_zero(self):
         with patch.object(

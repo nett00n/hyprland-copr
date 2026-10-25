@@ -12,7 +12,7 @@ from pathlib import Path
 
 from lib.subprocess_utils import run_cmd
 from lib.toolchain import rust_toolchain_skew
-from lib.vendor import VendorError, _log_fn
+from lib.vendor import VendorError, log_fn
 
 
 def _find_git_source_crates(vendor_dir: Path) -> list[str]:
@@ -56,7 +56,7 @@ def generate(
     if shutil.which("cargo") is None:
         raise VendorError("'cargo' not found in PATH")
 
-    _log = _log_fn(log_path)
+    _log = log_fn(log_path)
 
     # Check cargo version
     try:

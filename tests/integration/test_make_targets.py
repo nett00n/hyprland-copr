@@ -1204,7 +1204,7 @@ class TestMatrixNoEarlyAbort:
         )
 
         assert result.returncode == 0
-        order = re.findall(r'"Fedora (\d+)"', result.stdout)
+        order = re.findall(r'Fedora (\d+)"', result.stdout)
         assert order == ["43", "45", "44"]
 
     def test_stage_copr_call_is_not_conditioned_on_matrix_success(self):
@@ -1434,26 +1434,12 @@ class TestPackageVarSemantics:
         assert result.returncode != 0
         assert "RPM is required" in result.stdout
 
-    def test_pkgs_expands_comma_list_to_space_separated(self):
-        """sources/stage-log-analyze's shell `for pkg in $(_PKGS)` loop needs space-separated
-        words; PACKAGE=a,b must not become one literal 'a,b' token (the pre-fix behavior)."""
-        result = subprocess.run(
-            ["make", "-p", "-n", "PACKAGE=a,b"],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-        )
-        assert result.returncode == 0
-        assert "_PKGS := a b" in result.stdout
-        assert "_PKGS := a,b" not in result.stdout
-
 
 class TestSingleContainerTargets:
     """`sources`/`stage-log-analyze`/`readme` used to spawn one podman container per
     package (or per template, for readme) via a shell/Makefile loop. They now spawn
     one container for the whole package list. Asserted via `make -n` dry-run text
-    (following TestPackageVarSemantics.test_pkgs_expands_comma_list_to_space_separated
-    above) rather than actually invoking podman, which these unit tests don't have.
+    rather than actually invoking podman, which these unit tests don't have.
     """
 
     def _dry_run(self, *args: str) -> str:
@@ -1466,34 +1452,25 @@ class TestSingleContainerTargets:
         assert result.returncode == 0
         return result.stdout
 
-    def test_sources_uses_one_container_for_the_whole_package_list(self):
-        stdout = self._dry_run("sources", "PACKAGE=a,b")
-        # One podman invocation for spectool (a second, separate one is expected for
-        # the check-checksums sub-make sources already chains to).
-        assert stdout.count("spectool -g -R") == 1
-        # Both packages' downloads happen inside that one container's shell for-loop
-        # ("sh -c '... for pkg in a b ... spectool ...'"), not as two separate
-        # `podman run` invocations -- the recipe line wraps with a trailing `\`, so
-        # match across the joined block rather than a single physical line.
-        assert "sh -c 'set -e; for pkg in a b; do" in stdout
-        block_start = stdout.index("sh -c 'set -e; for pkg in a b; do")
-        block_end = stdout.index("done'", block_start)
-        assert "spectool -g -R" in stdout[block_start:block_end]
+    def test_sources_passes_package_list_to_one_python_script(self):
+        """#BUG-0066: the package loop lives in scripts/download-sources.py, which reads
+        PACKAGE/SKIP_PACKAGES like every stage-* script; the Makefile no longer loops."""
+        stdout = self._dry_run("sources", "PACKAGE=a,b", "SKIP_PACKAGES=c")
+        assert stdout.count("download-sources.py") == 1
+        line = next(l for l in stdout.splitlines() if "download-sources.py" in l)
+        assert "PACKAGE=a,b" in stdout
+        assert "SKIP_PACKAGES=c" in stdout
+        assert "for pkg in" not in stdout
+        assert "spectool" not in line
 
-    def test_stage_log_analyze_uses_one_container_for_the_whole_package_list(self):
-        stdout = self._dry_run("stage-log-analyze", "PACKAGE=a,b")
+    def test_stage_log_analyze_passes_package_env_to_one_container(self):
+        stdout = self._dry_run("stage-log-analyze", "PACKAGE=a,b", "SKIP_PACKAGES=b")
         assert stdout.count("pkg-log-analysis.py") == 1
         analyze_line = next(
             line for line in stdout.splitlines() if "pkg-log-analysis.py" in line
         )
-        assert analyze_line.rstrip().endswith("pkg-log-analysis.py a b")
-
-    def test_stage_log_analyze_respects_skip_packages(self):
-        stdout = self._dry_run("stage-log-analyze", "PACKAGE=a,b,c", "SKIP_PACKAGES=b")
-        analyze_line = next(
-            line for line in stdout.splitlines() if "pkg-log-analysis.py" in line
-        )
-        assert analyze_line.rstrip().endswith("pkg-log-analysis.py a c")
+        assert "PACKAGE=a,b" in analyze_line
+        assert "SKIP_PACKAGES=b" in analyze_line
 
     def test_readme_renders_all_three_formats_from_one_container(self):
         stdout = self._dry_run("readme")

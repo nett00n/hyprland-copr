@@ -11,15 +11,15 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from lib.vendor_golang import VendorError, generate, _log_fn
+from lib.vendor_golang import VendorError, generate, log_fn
 
 
 class TestLogFn:
-    """Tests for _log_fn helper."""
+    """Tests for log_fn helper."""
 
     def test_log_fn_without_file(self, capsys):
         """Test logging to stdout only."""
-        log = _log_fn(None)
+        log = log_fn(None)
         log("test message")
 
         captured = capsys.readouterr()
@@ -28,7 +28,7 @@ class TestLogFn:
     def test_log_fn_with_file(self, tmp_path):
         """Test logging to both stdout and file."""
         log_file = tmp_path / "test.log"
-        log = _log_fn(log_file)
+        log = log_fn(log_file)
         log("test message")
 
         assert log_file.exists()
@@ -37,7 +37,7 @@ class TestLogFn:
     def test_log_fn_multiple_messages(self, tmp_path):
         """Test multiple log messages."""
         log_file = tmp_path / "test.log"
-        log = _log_fn(log_file)
+        log = log_fn(log_file)
         log("message 1")
         log("message 2")
         log("message 3")

@@ -21,7 +21,7 @@ SUPPORTED        := 43 44 45
 # SUPPORTED/SUPPORTED_FEDORA_VERSIONS already don't.
 CANONICAL_FEDORA_VERSION := 43
 IMAGE_NAME       := rpm-toolbox
-HIGHLIGHT_PREFIX ?= "█▓▒░"
+HIGHLIGHT_PREFIX ?= █▓▒░
 
 # Accept either PACKAGE or PKG; PACKAGE takes precedence
 PACKAGE      ?=
@@ -136,14 +136,6 @@ RPMLINT          := rpmlint
 WORK             := /work
 endif
 
-ALL_PACKAGES := $(shell grep -oP '^[a-zA-Z][a-zA-Z0-9_-]+(?=:)' packages.yaml)
-# PACKAGE is comma-separated everywhere else (stage-*, full-cycle, build-pop, set-release);
-# normalize commas to spaces here too so sources/stage-log-analyze's shell `for` loop accepts
-# the same shape instead of treating "a,b" as one bogus package name (see docs/TODO.md TODO-0029).
-comma        := ,
-empty        :=
-space        := $(empty) $(empty)
-_PKGS        := $(if $(PACKAGE),$(subst $(comma),$(space),$(PACKAGE)),$(ALL_PACKAGES))
 
 PYTHON           := .venv/bin/python3
 README_COPR      := docs/README.copr.md
@@ -152,7 +144,7 @@ COPR_INSTRUCTIONS := docs/INSTALL.copr.md
 # Helper: run command, echo success/failure
 # Usage: $(call run_with_result,command,success_msg,fail_msg)
 define run_with_result
-	@$1 && echo $(HIGHLIGHT_PREFIX) "✓ $2" || (echo $(HIGHLIGHT_PREFIX) "✗ $3"; exit 1)
+	@$1 && echo "$(HIGHLIGHT_PREFIX) ✓ $2" || (echo "$(HIGHLIGHT_PREFIX) ✗ $3"; exit 1)
 endef
 
 # Concurrency guard (docs/BUGS.md BUG-0043): update-daily/full-cycle/full-cycle-matrix
@@ -178,27 +170,27 @@ LOCK_DISABLE ?= # bypass for hosts without flock, or a deliberate parallel run
 save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
 	@mkdir -p logs
 	@[ -f build-report.db ] && cp build-report.db logs/build-report.db.last || true
-	@echo $(HIGHLIGHT_PREFIX) "✓ Saved build-report.db snapshot to logs/build-report.db.last"
+	@echo "$(HIGHLIGHT_PREFIX) ✓ Saved build-report.db snapshot to logs/build-report.db.last"
 
 clean-logs: check-image check-venv setup-volumes ## Remove build logs; clears stage/run state but keeps the artifact ledger (use db-nuke to also drop that)
 	@rm -rf logs/runs logs/make logs/build
 	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --reset || true
-	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned build logs and stage state (artifact ledger preserved)"
+	@echo "$(HIGHLIGHT_PREFIX) ✓ Cleaned build logs and stage state (artifact ledger preserved)"
 
 clean-localrepo: check-image clean-mock-cache ## Purge local repo for FEDORA_VERSION/MOCK_CHROOT to resolve dependency conflicts
 	@rm -rf local-repo/$(MOCK_CHROOT)
 	@[ -f build-report.db ] && $(CONTAINER_PYTHON) scripts/db-artifacts.py --forget-repo $(MOCK_CHROOT) || true
-	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned local repo: local-repo/$(MOCK_CHROOT)"
+	@echo "$(HIGHLIGHT_PREFIX) ✓ Cleaned local repo: local-repo/$(MOCK_CHROOT)"
 
 clean-mock-cache: ## Drop the persisted mock buildroot cache for FEDORA_VERSION (forces a full re-bootstrap next build; see docs/TODO.md TODO-0014)
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKCACHE_VOLUME) >/dev/null 2>&1 && \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKCACHE_VOLUME) || true
 	@$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKROOT_VOLUME) >/dev/null 2>&1 && \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKROOT_VOLUME) || true
-	@echo $(HIGHLIGHT_PREFIX) "✓ Cleaned mock cache: $(MOCKCACHE_VOLUME), $(MOCKROOT_VOLUME)"
+	@echo "$(HIGHLIGHT_PREFIX) ✓ Cleaned mock cache: $(MOCKCACHE_VOLUME), $(MOCKROOT_VOLUME)"
 
 clean-all: clean-logs clean-localrepo ## Clean logs, local repo, and mock cache; build-report.db's artifact ledger survives (see db-nuke)
-	@echo $(HIGHLIGHT_PREFIX) "✓ Full cleanup completed"
+	@echo "$(HIGHLIGHT_PREFIX) ✓ Full cleanup completed"
 
 clean: save-last-build clean-logs ## Remove build logs (saves last build first)
 
@@ -210,7 +202,7 @@ upstream-clean: ## Delete the upstream mirror cache (.cache/upstream); it holds 
 		read ans; \
 		[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "$(HIGHLIGHT_PREFIX) Aborted."; exit 1; }
 	@rm -rf .cache/upstream
-	@echo $(HIGHLIGHT_PREFIX) "✓ Removed .cache/upstream"
+	@echo "$(HIGHLIGHT_PREFIX) ✓ Removed .cache/upstream"
 
 sync-hard-reset: ## Hard-reset repo to origin/<current branch>, stashing/reapplying uncommitted main-repo changes; keeps .env* and build-report.db/.yaml (ignored, so `clean -x` would otherwise purge them) (confirmation required)
 	@printf "$(HIGHLIGHT_PREFIX) Hard-reset repo to origin/$$(git branch --show-current)? [y/N] "; \
@@ -228,7 +220,7 @@ sync-hard-reset: ## Hard-reset repo to origin/<current branch>, stashing/reapply
 		if [ "$$stashed" -eq 1 ]; then \
 			git stash pop || (echo "$(HIGHLIGHT_PREFIX) ✗ stash pop conflict -- resolve manually, changes remain in git stash list"; exit 1); \
 		fi; \
-		echo $(HIGHLIGHT_PREFIX) "✓ Repo reset to origin/$$branch"
+		echo "$(HIGHLIGHT_PREFIX) ✓ Repo reset to origin/$$branch"
 
 # Prerequisite checks - fail fast on missing dependencies
 check-image: ## Verify the (single, version-independent) container image exists (no-op under NO_CONTAINER=1)
@@ -460,7 +452,7 @@ db-nuke: ## DESTROY build-report.db entirely: artifact ledger + all run/stage hi
 	read ans; \
 	[ "$$ans" = "y" ] || [ "$$ans" = "Y" ] || { echo "$(HIGHLIGHT_PREFIX) Aborted."; exit 1; }
 	@rm -f build-report.db build-report.db-wal build-report.db-shm
-	@echo $(HIGHLIGHT_PREFIX) "✓ build-report.db destroyed"
+	@echo "$(HIGHLIGHT_PREFIX) ✓ build-report.db destroyed"
 
 # Update the COPR project description and instructions from markdown files.
 # Requires: copr-cli installed + ~/.config/copr token
@@ -471,7 +463,7 @@ copr-description: check-image setup-volumes ## Push description and install inst
 	$(CONTAINER_RUN) copr-cli modify "$(COPR_REPO)" \
 		--description "$$(cat $(README_COPR))" \
 		$(if $(shell test -f "$(COPR_INSTRUCTIONS)" && echo 1),--instructions "$$(cat $(COPR_INSTRUCTIONS))",)
-	@echo $(HIGHLIGHT_PREFIX) "✓ Description updated → $(COPR_REPO)"
+	@echo "$(HIGHLIGHT_PREFIX) ✓ Description updated → $(COPR_REPO)"
 
 normalize-paths: check-image check-venv setup-volumes ## Normalize paths in packages.yaml abs->macros (ARGS=--reverse or --dry-run)
 	$(CONTAINER_PYTHON) scripts/rpm-dir-prefixes-convert.py $(ARGS)
@@ -495,42 +487,37 @@ container-enter: check-image check-venv setup-volumes ## Enter interactive shell
 container-clean: ## Remove the container image
 	$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) image inspect $(IMAGE_NAME) >/dev/null 2>&1 && \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) rmi $(IMAGE_NAME) || true
-	@echo $(HIGHLIGHT_PREFIX) "Cleaned $(IMAGE_NAME)"
+	@echo "$(HIGHLIGHT_PREFIX) Cleaned $(IMAGE_NAME)"
 
 container-volume-clean: ## Remove volumes: rpmbuild (shared, once) and mock-cache/mock-root (per FEDORA_VERSION; all SUPPORTED if not specified); local-repo/ itself is a plain directory now, remove by hand if wanted
 	@if [ "$(FEDORA_VERSION)" = "44" ] && [ -z "$(RECURSIVE_CALL)" ]; then \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(RPMBUILD_VOLUME) >/dev/null 2>&1 && \
 			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(RPMBUILD_VOLUME) || true; \
 		for v in $(SUPPORTED); do \
-			echo $(HIGHLIGHT_PREFIX) "Removing mock volumes for Fedora $$v..."; \
+			echo "$(HIGHLIGHT_PREFIX) Removing mock volumes for Fedora $$v..."; \
 			$(MAKE) container-volume-clean FEDORA_VERSION=$$v RECURSIVE_CALL=1 || exit 1; \
 		done; \
-		echo $(HIGHLIGHT_PREFIX) "All volumes cleaned"; \
+		echo "$(HIGHLIGHT_PREFIX) All volumes cleaned"; \
 	else \
-		echo $(HIGHLIGHT_PREFIX) "Removing mock volumes for Fedora $(FEDORA_VERSION)..."; \
+		echo "$(HIGHLIGHT_PREFIX) Removing mock volumes for Fedora $(FEDORA_VERSION)..."; \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKCACHE_VOLUME) >/dev/null 2>&1 && \
 			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKCACHE_VOLUME) || true; \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(MOCKROOT_VOLUME) >/dev/null 2>&1 && \
 			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(MOCKROOT_VOLUME) || true; \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(LOCALREPO_VOLUME) >/dev/null 2>&1 && \
 			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(LOCALREPO_VOLUME) || true; \
-		echo $(HIGHLIGHT_PREFIX) "Cleaned volumes: $(MOCKCACHE_VOLUME), $(MOCKROOT_VOLUME)"; \
+		echo "$(HIGHLIGHT_PREFIX) Cleaned volumes: $(MOCKCACHE_VOLUME), $(MOCKROOT_VOLUME)"; \
 	fi
 
 container-all: ## Alias for container-build -- kept for scripts/docs that still call it; one image now covers every SUPPORTED chroot
 	@$(MAKE) container-build
 
 sources: check-image check-venv setup-volumes ## Download sources for PACKAGE (or all) using spectool, then verify against sources.lock.yaml (runs in container)
-	@for pkg in $(_PKGS); do \
-		_spec="packages/$$pkg/$$pkg.spec"; \
-		if [ ! -f "$$_spec" ]; then \
-			echo "$(HIGHLIGHT_PREFIX) ✗ sources: $$pkg - spec file not found: $$_spec"; exit 1; \
-		fi; \
-	done
-	@$(CONTAINER_RUN) sh -c 'set -e; for pkg in $(_PKGS); do \
-		echo "$(HIGHLIGHT_PREFIX) sources: $$pkg"; \
-		spectool -g -R "packages/$$pkg/$$pkg.spec"; \
-	done'
+	$(call run_with_result,$(CONTAINER_RUN) env \
+		PACKAGE=$(PACKAGE) \
+		SKIP_PACKAGES=$(SKIP_PACKAGES) \
+		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
+		/work/.venv/bin/python3 scripts/download-sources.py,Sources downloaded,Source download failed)
 	$(MAKE) check-checksums PACKAGE=$(PACKAGE)
 
 FORCE_REBUILD ?=
@@ -566,12 +553,12 @@ full-cycle: ## Run full cycle with YAML report: spec → srpm → mock → copr 
 		$(call notify_result,full-cycle,fedora $(FEDORA_VERSION) package: $(or $(PACKAGE),all)); \
 		exit $$status; \
 	elif ! command -v flock >/dev/null 2>&1; then \
-		echo $(HIGHLIGHT_PREFIX) "Error: flock not found (util-linux); install it, or bypass with LOCK_DISABLE=1"; \
+		echo "$(HIGHLIGHT_PREFIX) Error: flock not found (util-linux); install it, or bypass with LOCK_DISABLE=1"; \
 		exit 1; \
 	else \
 		exec 9>$(PIPELINE_LOCK_FILE); \
 		flock -n 9 || { \
-			echo $(HIGHLIGHT_PREFIX) "Error: another pipeline run is already in progress ($$(cat $(PIPELINE_LOCK_FILE).owner 2>/dev/null || echo 'holder unknown')) -- refusing to run concurrently"; \
+			echo "$(HIGHLIGHT_PREFIX) Error: another pipeline run is already in progress ($$(cat $(PIPELINE_LOCK_FILE).owner 2>/dev/null || echo 'holder unknown')) -- refusing to run concurrently"; \
 			exit 1; \
 		}; \
 		echo "PID $$$$, started $$(date --rfc-3339=seconds), target _full-cycle" > $(PIPELINE_LOCK_FILE).owner; \
@@ -622,7 +609,7 @@ MATRIX_ORDERED_VERSIONS := $(filter $(CANONICAL_FEDORA_VERSION),$(MATRIX_VERSION
 # These targets never correspond to a real file, so they already rebuild
 # unconditionally without .PHONY.
 matrix-chroot-%: ## Build one Fedora chroot via full-cycle. Normally driven by full-cycle-matrix's loop; safe to invoke by hand (e.g. `make matrix-chroot-45`) to backfill one chroot's coverage. Standalone, it does NOT run the canonical chroot first, so it never bumps releases unless % is the canonical version.
-	@echo $(HIGHLIGHT_PREFIX) "Fedora $*"
+	@echo "$(HIGHLIGHT_PREFIX) Fedora $*"
 	@if [ "$*" = "$(CANONICAL_FEDORA_VERSION)" ]; then bump=; else bump=true; fi; \
 	$(MAKE) full-cycle FEDORA_VERSION=$* PACKAGE=$(PACKAGE) SKIP_COPR=true NOTIFY=0 \
 		SKIP_PACKAGES=$(SKIP_PACKAGES) FORCE_REBUILD=$(FORCE_REBUILD) \
@@ -635,12 +622,12 @@ full-cycle-matrix: ## Build every MATRIX_VERSIONS chroot locally (default: all S
 		$(call notify_result,full-cycle-matrix,chroots: $(MATRIX_ORDERED_VERSIONS) package: $(or $(PACKAGE),all)); \
 		exit $$status; \
 	elif ! command -v flock >/dev/null 2>&1; then \
-		echo $(HIGHLIGHT_PREFIX) "Error: flock not found (util-linux); install it, or bypass with LOCK_DISABLE=1"; \
+		echo "$(HIGHLIGHT_PREFIX) Error: flock not found (util-linux); install it, or bypass with LOCK_DISABLE=1"; \
 		exit 1; \
 	else \
 		exec 9>$(PIPELINE_LOCK_FILE); \
 		flock -n 9 || { \
-			echo $(HIGHLIGHT_PREFIX) "Error: another pipeline run is already in progress ($$(cat $(PIPELINE_LOCK_FILE).owner 2>/dev/null || echo 'holder unknown')) -- refusing to run concurrently"; \
+			echo "$(HIGHLIGHT_PREFIX) Error: another pipeline run is already in progress ($$(cat $(PIPELINE_LOCK_FILE).owner 2>/dev/null || echo 'holder unknown')) -- refusing to run concurrently"; \
 			exit 1; \
 		}; \
 		echo "PID $$$$, started $$(date --rfc-3339=seconds), target _full-cycle-matrix" > $(PIPELINE_LOCK_FILE).owner; \
@@ -662,7 +649,7 @@ _full-cycle-matrix:
 		$(MAKE) matrix-chroot-$$v || { overall=1; failed_chroots="$$failed_chroots $$v"; }; \
 	done; \
 	if [ -n "$$failed_chroots" ]; then \
-		echo $(HIGHLIGHT_PREFIX) "✗ chroot(s) with build failures:$$failed_chroots (other chroots and Copr submission still ran)"; \
+		echo "$(HIGHLIGHT_PREFIX) ✗ chroot(s) with build failures:$$failed_chroots (other chroots and Copr submission still ran)"; \
 	fi; \
 	if [ -n "$(COPR_REPO)" ]; then \
 		$(MAKE) stage-copr FEDORA_VERSION=$(FEDORA_VERSION) PACKAGE=$(PACKAGE) COPR_REPO=$(COPR_REPO) \
@@ -670,7 +657,7 @@ _full-cycle-matrix:
 		$(MAKE) copr-wait FEDORA_VERSION=$(FEDORA_VERSION) PACKAGE=$(PACKAGE) \
 			COPR_POLL_TIMEOUT=$(COPR_POLL_TIMEOUT) COPR_POLL_INTERVAL=$(COPR_POLL_INTERVAL) || true; \
 	else \
-		echo $(HIGHLIGHT_PREFIX) "COPR_REPO not set -- skipping Copr submission (local matrix build only)"; \
+		echo "$(HIGHLIGHT_PREFIX) COPR_REPO not set -- skipping Copr submission (local matrix build only)"; \
 	fi; \
 	exit $$overall
 
@@ -679,12 +666,12 @@ update-daily: ## Update versions, validate+format packages.yaml, build (package 
 	@if [ "$(PIPELINE_LOCK_HELD)" = "1" ] || [ "$(LOCK_DISABLE)" = "1" ]; then \
 		$(MAKE) _update-daily; \
 	elif ! command -v flock >/dev/null 2>&1; then \
-		echo $(HIGHLIGHT_PREFIX) "Error: flock not found (util-linux); install it, or bypass with LOCK_DISABLE=1"; \
+		echo "$(HIGHLIGHT_PREFIX) Error: flock not found (util-linux); install it, or bypass with LOCK_DISABLE=1"; \
 		exit 1; \
 	else \
 		exec 9>$(PIPELINE_LOCK_FILE); \
 		flock -n 9 || { \
-			echo $(HIGHLIGHT_PREFIX) "Error: another pipeline run is already in progress ($$(cat $(PIPELINE_LOCK_FILE).owner 2>/dev/null || echo 'holder unknown')) -- refusing to run concurrently"; \
+			echo "$(HIGHLIGHT_PREFIX) Error: another pipeline run is already in progress ($$(cat $(PIPELINE_LOCK_FILE).owner 2>/dev/null || echo 'holder unknown')) -- refusing to run concurrently"; \
 			exit 1; \
 		}; \
 		echo "PID $$$$, started $$(date --rfc-3339=seconds), target _update-daily" > $(PIPELINE_LOCK_FILE).owner; \
@@ -732,7 +719,7 @@ _update-daily:
 			git push || exit 1; \
 		fi; \
 	fi
-	@echo $(HIGHLIGHT_PREFIX) "$$(cat logs/.update-versions-count 2>/dev/null || echo '?') package(s) updated tonight"
+	@echo "$(HIGHLIGHT_PREFIX) $$(cat logs/.update-versions-count 2>/dev/null || echo '?') package(s) updated tonight"
 	@if [ -f logs/.update-versions-failures.md ]; then \
 		echo "$(HIGHLIGHT_PREFIX) ✗ $$(grep -c '^- \`' logs/.update-versions-failures.md 2>/dev/null || echo '?') upstream refresh failure(s) tonight (see docs/nightly-summary.md's Upstream version refresh section, or logs/.update-versions-failures.md) #BUG-0100"; \
 	fi
@@ -854,10 +841,9 @@ copr-wait: check-image check-venv setup-volumes ## #BUG-0039: bound-retry-poll C
 		COPR_POLL_INTERVAL=$(COPR_POLL_INTERVAL) \
 		/work/.venv/bin/python3 scripts/copr-wait.py,Copr wait passed,Copr wait failed)
 
-_LOG_PKGS := $(filter-out $(subst $(comma),$(space),$(SKIP_PACKAGES)),$(_PKGS))
 
 stage-log-analyze: check-image check-venv setup-volumes ## Analyze build logs for packages and report actionable errors (PACKAGE=<name> for one, runs for all by default, respects SKIP_PACKAGES). LOG_SUMMARY_OUTPUT=<path> also writes a durable Markdown summary there (#COPR-0022)
-	@$(CONTAINER_PYTHON) scripts/pkg-log-analysis.py $(_LOG_PKGS) $(if $(LOG_SUMMARY_OUTPUT),--output $(LOG_SUMMARY_OUTPUT),)
+	@$(CONTAINER_RUN) env PACKAGE=$(PACKAGE) SKIP_PACKAGES=$(SKIP_PACKAGES) $(WORK)/.venv/bin/python3 scripts/pkg-log-analysis.py $(if $(LOG_SUMMARY_OUTPUT),--output $(LOG_SUMMARY_OUTPUT),)
 
 prune-logs: check-image check-venv ## Enforce log retention on logs/runs/ (#COPR-0022). Dry-run by default; CONFIRM=1 to delete. KEEP=<n> overrides LOG_RETENTION_RUNS (default 10)
 	@$(CONTAINER_PYTHON) scripts/prune-logs.py $(if $(KEEP),--keep $(KEEP),) $(if $(filter 1,$(CONFIRM)),--confirm,)

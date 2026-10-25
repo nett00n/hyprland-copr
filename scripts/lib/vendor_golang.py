@@ -7,7 +7,7 @@ from pathlib import Path
 
 from lib.subprocess_utils import run_cmd
 from lib.toolchain import go_toolchain_skew
-from lib.vendor import VendorError, _log_fn
+from lib.vendor import VendorError, log_fn
 
 
 def generate(
@@ -37,7 +37,7 @@ def generate(
     except FileNotFoundError as e:
         raise VendorError("'go' not found in PATH (or not executable)") from e
 
-    _log = _log_fn(log_path)
+    _log = log_fn(log_path)
 
     go_subdir = pkg_meta.get("build", {}).get("go_subdir", "")
     if go_subdir:

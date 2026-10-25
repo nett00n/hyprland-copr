@@ -7,7 +7,7 @@ from pathlib import Path
 
 from lib.subprocess_utils import run_cmd
 from lib.toolchain import zig_toolchain_skew
-from lib.vendor import VendorError, _log_fn
+from lib.vendor import VendorError, log_fn
 
 
 # #COPR-0027
@@ -42,7 +42,7 @@ def generate(
     except subprocess.TimeoutExpired as e:
         raise VendorError("'zig version' timed out") from e
 
-    _log = _log_fn(log_path)
+    _log = log_fn(log_path)
 
     if not (src_dir / "build.zig.zon").exists():
         raise VendorError(f"no build.zig.zon in extracted source at {src_dir}")

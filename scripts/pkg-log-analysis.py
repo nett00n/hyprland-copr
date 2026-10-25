@@ -13,6 +13,7 @@ docs/features/COPR-0022-run-scoped-logs-and-summary.md.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -29,6 +30,7 @@ from lib.log_analysis import (
     _suggest_providers,
 )
 from lib.paths import LOG_DIR, RUNS_LOG_DIR, get_package_log_dir
+from lib.yaml_utils import filter_packages, get_packages, skip_packages
 
 HIGHLIGHT_PREFIX = "█▓▒░"
 
@@ -298,6 +300,12 @@ def render_markdown_summary(
     )
 
 
+def _env_packages() -> list[str]:
+    """#COPR-0022: package names selected by PACKAGE / SKIP_PACKAGES (default: all)."""
+    selected = filter_packages(get_packages(), os.environ.get("PACKAGE", ""))
+    return list(skip_packages(selected, os.environ.get("SKIP_PACKAGES", "")))
+
+
 def main(argv: list[str]) -> int:
     """#COPR-0022: analyze every package in argv in one process (instead of one
     process per package) so `make stage-log-analyze` doesn't spawn a
@@ -317,14 +325,15 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--output", default=None, help="Write a Markdown summary here")
     args = parser.parse_args(argv)
 
-    if not args.packages:
+    packages = args.packages or _env_packages()
+    if not packages:
         print(f"Usage: {sys.argv[0]} <package> [<package> ...]")
         return 1
 
     had_issues = False
     summary_results: list[tuple[str, Path, int, list[str]]] = []
 
-    for pkg in args.packages:
+    for pkg in packages:
         log_dirs = resolve_log_dirs(pkg, args.run_id, args.target)
         if not log_dirs:
             print(f"{HIGHLIGHT_PREFIX} ⊘ No logs for {pkg}, skipping", file=sys.stderr)

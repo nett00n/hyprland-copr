@@ -1,6 +1,7 @@
 """YAML formatting utilities.
 
-Provides shared helpers for formatting YAML files, including:
+Provides shared helpers for formatting YAML files. PyYAML (`safe_load`) parses
+input and .yamllint; ruamel (via lib.yaml_config) dumps. Includes:
 - ruamel.yaml support for literal block style (|)
 - Yamllint configuration parsing
 - Indentation detection

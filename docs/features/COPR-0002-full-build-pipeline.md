@@ -86,8 +86,8 @@ stage that actually reran, e.g. `forced (dep rebuilt: hyprutils [srpm])` (#BUG-0
 - Quirk: `run_build_pipeline()` (`full-cycle.py:267-691`) is 425 lines of repeated
   per-stage orchestration — cache check → `run_for_package()` → `build_db.finalize_stage()`
   — the same shape six times.
-  Proposed: a small stage-runner abstraction; do together with the per-stage
-  "config: skip" copy-paste (six `set_stage()` call sites). (BUG-0076, BUG-0077)
+  Proposed: a small stage-runner abstraction. The per-stage "config: skip" skip is
+  already shared via `lib.stage_common.record_config_skip`. (BUG-0076)
 - Quirk: an edit to `spec.j2` invalidates all packages' caches at once via a strict
   full-dict hash comparison, forcing a full rebuild.
   Proposed: report "spec generated from an outdated template" instead of forcing a

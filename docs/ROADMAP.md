@@ -239,9 +239,9 @@ Large-file track:
    `pkg-log-analysis.py`'s eight private imports in the same pass (-0087's entry
    says the refactor moves those boundaries anyway). Unusually safe: two existing
    test files cover it well.
-5. **BUG-0076 + BUG-0077** — `run_build_pipeline` (425 lines) → a stage-runner
-   abstraction, with the per-stage "config: skip" copy-paste extracted into a new
-   `lib/stage_common.py`. -0076's entry says to do them together.
+5. **BUG-0076** — `run_build_pipeline` (425 lines) → a stage-runner abstraction
+   (the per-stage "config: skip" copy-paste, BUG-0077, is already extracted into
+   `lib/stage_common.py`).
 6. **BUG-0074** — `gen-spec.py` (446 lines, duplicates `lib/github.py` almost
    verbatim, no Makefile target, used only by its own test). Check
    `build_context()` for spec-rendering logic `stage-spec.py` lacks, then delete
@@ -249,9 +249,7 @@ Large-file track:
 
 Vendor + Makefile track:
 
-7. **BUG-0084 + BUG-0090** — move `vendor_golang.py`/`vendor_rust.py` onto
-   `run_cmd`; -0090 (`_log_fn` private-but-imported) resolves itself as a result.
-   Watch `vendor_rust.py:62`'s probe call.
+7. **BUG-0084** — move `vendor_golang.py`/`vendor_rust.py` onto `run_cmd`. Watch `vendor_rust.py:62`'s probe call.
 8. **BUG-0091** — stream `_download()` to disk instead of reading whole archives
    into memory. D1; `verify_download()` runs right after either way.
 9. **BUG-0092** — the vendor stage's missing `log` field on 5 skip paths. Decide
@@ -261,12 +259,6 @@ Vendor + Makefile track:
     the same pass make `delete-package` unlink `local-repo/*/<pkg>-*.rpm` plus
     regenerate repo metadata. -0071 notes these RPMs are now *worse off* than
     before — they survive with no db row pointing at them.
-11. **BUG-0069** — `ALL_PACKAGES` grep→yaml. D1 but needs a cache, not a straight
-    swap: it's a parse-time `$(shell)` on *every* make invocation.
-12. **BUG-0066** — pick one of the two coexisting multi-package loop strategies.
-13. **BUG-0068** — `HIGHLIGHT_PREFIX`'s baked-in quote chars (~80+ echo sites).
-14. **BUG-0075** (conftest dedupe) and **BUG-0085** (docstrings stating which
-    YAML lib to use when) — fill-in, any time.
 
 **Done when:** `disallow_any_generics` and `warn_return_any` on in `mypy.ini`; no
 first-party file over ~500 lines.
