@@ -28,18 +28,18 @@ class TestFormatSummary:
     def test_updates_and_errors(self):
         out = gn.format_summary(
             {"foo": ("1.1.1", "1.1.2"), "baz": ("2.0", "2.1")},
-            planned=3,
+            checked=3,
             succeeded=2,
             errors=["bar"],
         )
         assert out == (
-            "updated 2: baz 2.0>2.1, foo 1.1.1>1.1.2. planned: 3, succeeded: 2, "
+            "updated 2: baz 2.0>2.1, foo 1.1.1>1.1.2. checked: 3, succeeded: 2, "
             "errors: bar"
         )
 
     def test_nothing_updated_no_errors(self):
-        out = gn.format_summary({}, planned=0, succeeded=0, errors=[])
-        assert out == "updated 0. planned: 0, succeeded: 0, errors: none"
+        out = gn.format_summary({}, checked=0, succeeded=0, errors=[])
+        assert out == "updated 0. checked: 0, succeeded: 0, errors: none"
 
 
 class TestBuildSummary:
@@ -57,8 +57,8 @@ class TestBuildSummary:
         build_db.set_stage("ok", "mock", "fedora-43-x86_64", new, "success")
         build_db.set_stage("bad", "mock", "fedora-43-x86_64", new, "failed")
         build_db.set_stage("bad", "mock", "fedora-44-x86_64", new, "success")
-        planned, succeeded, errors = gn.build_run_counts(since)
-        assert (planned, succeeded, errors) == (2, 1, ["bad"])
+        checked, succeeded, errors = gn.build_run_counts(since)
+        assert (checked, succeeded, errors) == (2, 1, ["bad"])
 
     def test_missing_db_rows_gives_zeroes(self):
         assert gn.build_run_counts(0) == (0, 0, [])
@@ -122,7 +122,7 @@ class TestMain:
         _, _, title, message, priority = m.call_args.args
         assert title == "hyprland-copr update-daily"
         assert message == (
-            "updated 1: foo 1.1.1>1.1.2. planned: 1, succeeded: 0, errors: bar"
+            "updated 1: foo 1.1.1>1.1.2. checked: 1, succeeded: 0, errors: bar"
         )
         assert priority == 8
 

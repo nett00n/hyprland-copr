@@ -20,15 +20,16 @@ defaults to `5`.
 build-failure exit, so a failed night is reported too:
 
 ```text
-updated 3: foo 1.1.1>1.1.2, baz 2.0>2.1, qux 0.3>0.4. planned: 3, succeeded: 2, errors: bar
+updated 3: foo 1.1.1>1.1.2, baz 2.0>2.1, qux 0.3>0.4. checked: 3, succeeded: 2, errors: bar
 ```
 
 - `updated N: <pkg> <old>><new>, ...` — packages whose version `update-versions`
   changed tonight (`updated 0` with no list when none). Read from
   `logs/.update-versions-changes.json`, written by `scripts/update-versions.py`.
-- `planned` — distinct packages with any `stage_history` row in a run started since
-  `_update-daily` began (marker `logs/.update-daily-started`, epoch seconds).
-- `succeeded` — planned packages with no `failed` stage in those runs.
+- `checked` — distinct packages the pipeline looked at: any `stage_history` row in a run started since
+  `_update-daily` began (marker `logs/.update-daily-started`, epoch seconds). Cache hits
+  and skips count, so this is normally every package — not the number rebuilt.
+- `succeeded` — checked packages with no `failed` stage in those runs.
 - `errors` — comma-separated packages with a `failed` stage in those runs, or `none`.
 
 Priority is `8` when `errors` is non-empty, else `5`.

@@ -735,7 +735,7 @@ notify: check-venv ## Send a Gotify message (#COPR-0026): TITLE=<t> MESSAGE=<m> 
 	@test -n "$(MESSAGE)" || (echo "$(HIGHLIGHT_PREFIX) Error: MESSAGE is required (e.g. make notify MESSAGE=hello)"; exit 1)
 	@$(PYTHON) scripts/gotify-notify.py --title "$(or $(TITLE),hyprland-copr)" --message "$(MESSAGE)" --priority "$(or $(PRIORITY),5)"
 
-notify-summary: check-venv ## Send tonight's update-daily summary to Gotify (#COPR-0026): `updated N: pkg old>new... planned: N, succeeded: N, errors: ...`
+notify-summary: check-venv ## Send tonight's update-daily summary to Gotify (#COPR-0026): `updated N: pkg old>new... checked: N, succeeded: N, errors: ...`
 	@$(PYTHON) scripts/gotify-notify.py --summary
 
 build-pop: check-image check-venv setup-volumes ## Remove mock/copr build status for PKG=a,b (PKG="" removes all, requires confirmation)

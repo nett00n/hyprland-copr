@@ -51,7 +51,7 @@ def send(url: str, token: str, title: str, message: str, priority: int) -> bool:
 
 
 def build_run_counts(since: int) -> tuple[int, int, list[str]]:
-    """#COPR-0026: (planned, succeeded, failed package names) for runs started >= since."""
+    """#COPR-0026: (checked, succeeded, failed package names) for runs started >= since."""
     conn = build_db.connect()
     states: dict[str, set[str]] = {}
     for table in ("stage_history", "stage_results"):
@@ -68,18 +68,18 @@ def build_run_counts(since: int) -> tuple[int, int, list[str]]:
 
 def format_summary(
     changes: dict[str, tuple[str, str]],
-    planned: int,
+    checked: int,
     succeeded: int,
     errors: list[str],
 ) -> str:
-    """#COPR-0026: `updated 3: foo 1.1.1>1.1.2, ... planned: 3, succeeded: 2, errors: bar`."""
+    """#COPR-0026: `updated 3: foo 1.1.1>1.1.2, ... checked: 3, succeeded: 2, errors: bar`."""
     updated = f"updated {len(changes)}"
     if changes:
         updated += ": " + ", ".join(
             f"{pkg} {old}>{new}" for pkg, (old, new) in sorted(changes.items())
         )
     return (
-        f"{updated}. planned: {planned}, succeeded: {succeeded}, "
+        f"{updated}. checked: {checked}, succeeded: {succeeded}, "
         f"errors: {', '.join(errors) or 'none'}"
     )
 
@@ -93,9 +93,9 @@ def build_summary() -> tuple[str, int]:
         changes = {pkg: (old, new) for pkg, (old, new) in raw.items()}
     started_path = LOG_DIR / ".update-daily-started"
     since = int(started_path.read_text().strip()) if started_path.exists() else 0
-    planned, succeeded, errors = build_run_counts(since)
+    checked, succeeded, errors = build_run_counts(since)
     priority = PRIORITY_ERRORS if errors else PRIORITY_NORMAL
-    return format_summary(changes, planned, succeeded, errors), priority
+    return format_summary(changes, checked, succeeded, errors), priority
 
 
 def main(argv: list[str]) -> int:

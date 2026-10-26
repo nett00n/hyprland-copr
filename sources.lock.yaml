@@ -572,3 +572,9 @@ swaylock-plugin:
     sha256: 98ac74457adfeb812f91e2fc4b289db664637b0d3890a051347b8d1169cc3757
     size: 81667
     recorded: '2026-10-26'
+usbtree:
+  usbtree-0.1.1.tar.gz:
+    url: https://github.com/gnomeria/usbtree/archive/refs/tags/v0.1.1.tar.gz#/usbtree-0.1.1.tar.gz
+    sha256: a315eeeb559911fffb1c2a17b6ebd418143168c888db5d3b737b05d8c34b3486
+    size: 1396562
+    recorded: '2026-10-26'

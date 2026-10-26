@@ -176,6 +176,15 @@ exist tomorrow. **Met** — all 5 items above are done.
 
 ---
 
+## Loose end — nightly rebuild churn
+
+**BUG-0119** (`db-prune` deletes the current NVR of packages pinned below an older
+build, so OpenLogi/hyprland-plugins rebuild vendor+srpm on every chroot every night).
+Fits the "nightly reliability" north star and is independent of the epics below; do it
+before Epic 5.
+
+---
+
 ## Epic 5 — Matrix / multi-target
 
 *Currently everything outside the db key is fedora+x86_64-hardcoded.

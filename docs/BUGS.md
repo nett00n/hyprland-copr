@@ -5,7 +5,7 @@ New-feature ideas go in `docs/TODO.md` instead (promoted to a `docs/features/` d
 once substantial). GitHub issues are for reporter-facing items (someone else's
 bug/request); this file is the maintainer's own log and may cite issue numbers.
 Entries are deleted when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are
-never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0119**.
+never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0120**.
 
 This file absorbed `docs/TODO.md`'s former defect/debt/chore entries on 2026-09-15
 when `docs/` adopted `docs/DOCS-DRIVEN-DEVELOPMENT.md` — see `docs/ID-MIGRATION.md`
@@ -59,6 +59,18 @@ Shipped behavior doing the wrong thing.
   finalized as `unknown`), and `update_state()` leaves `last_success_*` NULL ->
   `is_cached()` never treats a poll-resolved copr row as cached, so the package is
   resubmitted on the next run even though nothing changed [P3/D2]
+- #BUG-0119 `_update-daily` runs `make db-prune CONFIRM=1`, and
+  `scripts/db-artifacts.py:_stale_rows` keeps only the *highest-version* srpm/vendor
+  row per (package, target, kind) -- so a package pinned *below* a version built
+  earlier (rollback / `pinned-version`, e.g. OpenLogi 0.8.15 vs the old 0.8.17, see
+  BUG-0118; hyprland-plugins `20260805git00862ca` vs `20260905git722f15a`) has its
+  *current* NVR's row and file pruned and the stale higher one kept. The next run's
+  `lib.pipeline.artifacts_present` finds no row at the current version ->
+  `artifact-missing` -> vendor+srpm rebuild, on every chroot, every night (verified
+  in build-report.db runs 359/366/374). The `_stale_rows` docstring's "pin rollback"
+  case is exactly what it gets wrong. Fix: never treat a row as stale when its
+  version equals the (package, target)'s current `stage_results` version, mirroring
+  `stage-mock.py:prune_local_repo`'s `keep` set (#BUG-0115) [P2/D2]
 
 ### Docs / templates
 

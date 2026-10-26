@@ -141,6 +141,7 @@ Added Packages:
 - `swaylock-plugin` — Swaylock fork that can use a Wayland client as lock screen background
 - `swayosd` — A GTK based on screen display for keyboard shortcuts like caps-lock and volume
 - `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
+- `usbtree` — Live USB device tree in your terminal
 - `uwsm` — Universal Wayland Session Manager
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
 - `waylock` — Small screenlocker for Wayland compositors

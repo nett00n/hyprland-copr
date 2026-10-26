@@ -2205,6 +2205,38 @@ SwayOSD:
   summary: A GTK based on screen display for keyboard shortcuts like caps-lock and volume
   url: https://github.com/ErikReider/SwayOSD
   version: 0.3.2
+usbtree:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
+  build_requires:
+  - cargo
+  - rustc
+  depends_on: []
+  description: |
+    Live USB device tree in your terminal. A Rust TUI built on nusb that lists
+    connected USB devices as a tree and updates as they come and go. It needs
+    neither root nor libusb.
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/usbtree'
+  license: MIT
+  release: 1
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+  summary: Live USB device tree in your terminal
+  url: https://github.com/gnomeria/usbtree
+  version: 0.1.1
 uwsm:
   build:
     commands: []

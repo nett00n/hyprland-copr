@@ -23,6 +23,7 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## Unreleased
 
+- COPR-0026: the nightly Gotify summary says `checked: N` instead of `planned: N` (count unchanged: every package the pipeline looked at, cache hits included).
 - COPR-0002: `make sources` runs through a new `scripts/download-sources.py` and `make stage-log-analyze` through `pkg-log-analysis.py`'s own `PACKAGE`/`SKIP_PACKAGES` handling, so every multi-package target selects packages in Python (#BUG-0066); the Makefile's `_PKGS`/`ALL_PACKAGES` shell expansion is gone (#BUG-0069).
 - COPR-0002: the six `stage-*.py` scripts share `lib.stage_common.record_config_skip` for the "config: skip" row (#BUG-0077); `stage-validate`'s skip event line now also carries `reason=fedora:NN skip`.
 - `HIGHLIGHT_PREFIX` in the Makefile no longer embeds literal quote characters; every echo site quotes it uniformly (#BUG-0068).
