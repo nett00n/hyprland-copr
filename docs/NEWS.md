@@ -8,44 +8,46 @@ paragraph each. README shows the most recent entries - see
 
 Added Packages:
 
-- greyline
-- matugen
-- usbtree
+- greyline - Live world-time desktop wallpaper with a day/night terminator
+- matugen - Material You and base16 color generation tool with templates
+- pywal - Generate and change color-schemes on the fly (original, archived upstream)
+- pywal16 - Maintained pywal fork; conflicts with pywal
+- usbtree - Live USB device tree in your terminal
 
 ## 2026-10-22
 Zig-based packages are now supported: the build system and the vendoring of `build.zig.zon` dependencies are automated like Go and Rust.
 
 Added Packages:
 
-- swaylock-effects
-- swaylock-plugin
-- waylock
+- swaylock-effects - Swaylock fork with fancy effects (blur, clock, fade-in)
+- swaylock-plugin - Swaylock fork that can use a Wayland client as lock screen background
+- waylock - Small screenlocker for Wayland compositors
 
 ## 2026-10-21
 
 Added Packages:
 
-- neowall
+- neowall - GPU-accelerated live wallpaper engine using GLSL shaders
 
 ## 2026-10-12
 
 Added Packages:
 
-- wl-clip-persist
-- OpenLogi
+- wl-clip-persist - Keep Wayland clipboard even after programs close
+- OpenLogi - Local-first alternative to Logitech Options+ for HID++ devices
 
 ## 2026-09-17
 
 Added Packages:
 
-- LambDock
-- SwayOSD
+- LambDock - Wayland desktop dock customizable with GNU Guile Scheme
+- SwayOSD - GTK based on screen display for keyboard shortcuts like caps-lock and volume
 
 ## 2026-08-10
 
 Added Packages:
 
-- Ironbar
+- Ironbar - Customisable Wayland GTK4 bar written in Rust
 
 ## 2026-08-09
 

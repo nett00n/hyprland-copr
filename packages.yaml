@@ -1891,6 +1891,86 @@ pyprland:
   summary: Scratchpads & many goodies for Hyprland
   url: https://github.com/hyprland-community/pyprland
   version: 3.4.6
+pywal:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: pywal
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-pip
+  - python3-setuptools
+  - python3-wheel
+  conflicts:
+  - pywal16
+  depends_on: []
+  description: |
+    Pywal generates a color palette from an image, applies it to running terminals
+    and writes it for other programs to use. This is the original upstream, which is
+    archived and no longer maintained; pywal16 is the maintained fork. Both install
+    the same `wal` command and cannot be installed together.
+  files:
+  - '%doc CHANGELOG.md'
+  - '%doc README.md'
+  - '%license LICENSE.md'
+  - '%{_bindir}/wal'
+  license: MIT
+  release: 2
+  requires:
+  - ImageMagick
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: Generate and change color-schemes on the fly
+  url: https://github.com/dylanaraps/pywal
+  version: 3.3.0
+pywal16:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: pywal
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-pip
+  - python3-setuptools
+  - python3-wheel
+  conflicts:
+  - pywal
+  depends_on: []
+  description: |
+    Pywal16 is the maintained fork of pywal. It generates a color palette from an
+    image, applies it to running terminals and writes it for other programs to use.
+    Both pywal and pywal16 install the same `wal` command and cannot be installed
+    together.
+  files:
+  - '%doc CHANGELOG.md'
+  - '%doc README.md'
+  - '%license LICENSE.md'
+  - '%{_bindir}/wal'
+  license: MIT
+  release: 4
+  requires:
+  - ImageMagick
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: Generate and change color-schemes on the fly (maintained pywal fork)
+  url: https://github.com/eylles/pywal16
+  version: 3.8.15
 quickshell:
   build:
     commands:

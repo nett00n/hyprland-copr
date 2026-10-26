@@ -73,6 +73,8 @@ other-apps:
   - neowall
   - OpenLogi
   - pyprland
+  - pywal
+  - pywal16
   - quickshell
   - satty
   - snappy-switcher
