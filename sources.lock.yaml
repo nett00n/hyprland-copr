@@ -614,3 +614,9 @@ wpgtk:
     sha256: d12bf655dc42acfa9c986a25d01baf366a97ed9cda3eab97d3a7327d84dfcb26
     size: 38243
     recorded: '2026-10-26'
+rumno:
+  rumno-0.1.4.tar.gz:
+    url: https://gitlab.com/ivanmalison/rumno/-/archive/v0.1.4/rumno-v0.1.4.tar.gz#/rumno-0.1.4.tar.gz
+    sha256: ed0dfcac7a563cf61d0be689e9cd1318e880692d71ae4f5fb08a70d9991fda5e
+    size: 548219
+    recorded: '2026-10-26'

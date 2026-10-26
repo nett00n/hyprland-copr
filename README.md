@@ -33,6 +33,7 @@ Added Packages:
 - matugen - Material You and base16 color generation tool with templates
 - pywal - Generate and change color-schemes on the fly (original, archived upstream)
 - pywal16 - Maintained pywal fork; conflicts with pywal
+- rumno - Media notification OSD for volume, brightness and music (GTK layer-shell, D-Bus controlled)
 - usbtree - Live USB device tree in your terminal
 - wpgtk - GTK+ theme/wallpaper manager which uses pywal as its core
 
@@ -147,6 +148,7 @@ Added Packages:
 - `pywal16` — Generate and change color-schemes on the fly (maintained pywal fork)
 - `quickshell` — Flexible QtQuick based desktop shell toolkit
 - `ranger` — A VIM-inspired filemanager for the console
+- `rumno` — Media notification OSD for volume, brightness and music
 - `satty` — Satty - Modern Screenshot Annotation
 - `snappy-switcher` — alt-tab switch window for wayland compositor
 - `swaybg` — Great utility if all you want is one simple static wallpaper

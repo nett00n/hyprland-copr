@@ -2070,6 +2070,49 @@ quickshell:
   summary: Flexible QtQuick based desktop shell toolkit
   url: https://git.outfoxxed.me/quickshell/quickshell.git
   version: 0.3.2
+rumno:
+  auto_update:
+    release_type: latest-version
+  build:
+    commands: []
+    install:
+    - install -Dm755 target/release/rumno -t %{buildroot}%{_bindir}
+    - install -Dm755 target/release/rumno-background -t %{buildroot}%{_bindir}
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
+  build_requires:
+  - cargo
+  - dbus-devel
+  - gtk-layer-shell-devel
+  - gtk3-devel
+  - rustc
+  depends_on: []
+  description: |
+    Rumno is a lightweight media notification manager that shows volume, brightness
+    and music information as an on-screen display. A background daemon,
+    rumno-background, draws the notifications with GTK and layer-shell; the rumno
+    command talks to it over D-Bus. Start rumno-background from your compositor
+    config, for example `exec-once = rumno-background` in Hyprland.
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/rumno'
+  - '%{_bindir}/rumno-background'
+  license: GPL-3.0-only
+  release: 2
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/-/archive/v%{version}/%{name}-v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+  source_dir: '%{name}-v%{version}'
+  summary: Media notification OSD for volume, brightness and music
+  url: https://gitlab.com/ivanmalison/rumno
+  version: 0.1.4
 satty:
   build:
     commands: []
