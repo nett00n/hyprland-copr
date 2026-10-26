@@ -29,6 +29,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 Added Packages:
 
 - greyline - Live world-time desktop wallpaper with a day/night terminator
+- hellwal - Fast, extensible color palette generator
 - matugen - Material You and base16 color generation tool with templates
 - pywal - Generate and change color-schemes on the fly (original, archived upstream)
 - pywal16 - Maintained pywal fork; conflicts with pywal
@@ -130,6 +131,7 @@ Added Packages:
 - `fuzzel` — App launcher and fuzzy finder for Wayland, inspired by rofi and dmenu
 - `gammastep` — Adjust the color temperature of your screen according to your surroundings. This may help your eyes hurt less if you are working in front of the screen at night.
 - `greyline` — Live world-time desktop wallpaper with a day/night terminator
+- `hellwal` — Fast, extensible color palette generator
 - `hyprland-per-window-layout` — Per-window keyboard layout daemon for Hyprland
 - `ironbar` — Customisable Wayland GTK4 bar written in Rust
 - `lambdock` — Wayland desktop dock customizable with GNU Guile Scheme

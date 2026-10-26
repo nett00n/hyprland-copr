@@ -10,6 +10,7 @@ README shows the most recent entries - see `scripts/lib/readme_content.py:get_re
 Added Packages:
 
 - greyline - Live world-time desktop wallpaper with a day/night terminator
+- hellwal - Fast, extensible color palette generator
 - matugen - Material You and base16 color generation tool with templates
 - pywal - Generate and change color-schemes on the fly (original, archived upstream)
 - pywal16 - Maintained pywal fork; conflicts with pywal

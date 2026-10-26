@@ -22,6 +22,7 @@ BuildRequires:  rustc
 
 
 
+
 %description
 Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
 

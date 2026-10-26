@@ -602,3 +602,9 @@ pywal16:
     sha256: cd3e4588c453b844dd222d861b52b7a7c88a3396b3e104300ef1db27b9492b1d
     size: 101285
     recorded: '2026-10-26'
+hellwal:
+  hellwal-1.0.9.tar.gz:
+    url: https://github.com/danihek/hellwal/archive/refs/tags/v1.0.9.tar.gz#/hellwal-1.0.9.tar.gz
+    sha256: f708cbe7326299ac14a9a39869f5a833d58668ec7bbc679fea8b24915b307864
+    size: 123291
+    recorded: '2026-10-26'
