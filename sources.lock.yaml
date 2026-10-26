@@ -620,3 +620,9 @@ rumno:
     sha256: ed0dfcac7a563cf61d0be689e9cd1318e880692d71ae4f5fb08a70d9991fda5e
     size: 548219
     recorded: '2026-10-26'
+rustlock:
+  76039750623825172fbee93adae8bb48d4ad36ad.tar.gz:
+    url: https://github.com/JorySeverijnse/rustlock/archive/76039750623825172fbee93adae8bb48d4ad36ad.tar.gz
+    sha256: 7858361f53c2270acfca661ffdbe890e84210b02410475b21c1cc56089bb5d53
+    size: 8405682
+    recorded: '2026-10-26'

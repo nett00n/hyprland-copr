@@ -78,6 +78,7 @@ other-apps:
   - pywal16
   - quickshell
   - rumno
+  - rustlock
   - satty
   - snappy-switcher
   - swaylock-effects

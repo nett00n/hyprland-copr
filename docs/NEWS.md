@@ -15,6 +15,7 @@ Added Packages:
 - pywal - Generate and change color-schemes on the fly (original, archived upstream)
 - pywal16 - Maintained pywal fork; conflicts with pywal
 - rumno - Media notification OSD for volume, brightness and music (GTK layer-shell, D-Bus controlled)
+- rustlock - Wayland screen locker with effects, a Rust port of swaylock-effects (tracks the latest commit; upstream has only a v1.0 tag)
 - usbtree - Live USB device tree in your terminal
 - wpgtk - GTK+ theme/wallpaper manager which uses pywal as its core
 

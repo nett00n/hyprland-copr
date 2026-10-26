@@ -2113,6 +2113,66 @@ rumno:
   summary: Media notification OSD for volume, brightness and music
   url: https://gitlab.com/ivanmalison/rumno
   version: 0.1.4
+rustlock:
+  auto_update:
+    release_type: latest-commit
+  build:
+    commands: []
+    install:
+    - install -Dm755 target/release/rustlock -t %{buildroot}%{_bindir}
+    - install -Dm644 pam.d/rustlock -t %{buildroot}%{_sysconfdir}/pam.d
+    - mkdir -p %{buildroot}%{bash_completions_dir} %{buildroot}%{fish_completions_dir} %{buildroot}%{zsh_completions_dir}
+    - target/release/rustlock --completions bash > %{buildroot}%{bash_completions_dir}/rustlock
+    - target/release/rustlock --completions fish > %{buildroot}%{fish_completions_dir}/rustlock.fish
+    - target/release/rustlock --completions zsh > %{buildroot}%{zsh_completions_dir}/_rustlock
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
+  build_requires:
+  - cargo
+  - clang-devel
+  - dbus-devel
+  - pam-devel
+  - pkgconfig(cairo)
+  - pkgconfig(cairo-gobject)
+  - pkgconfig(gdk-pixbuf-2.0)
+  - pkgconfig(gio-2.0)
+  - pkgconfig(glib-2.0)
+  - pkgconfig(gobject-2.0)
+  - pkgconfig(pangocairo)
+  - pkgconfig(wayland-client)
+  - pkgconfig(xkbcommon)
+  - rustc
+  depends_on: []
+  description: |
+    Rustlock is a Wayland screen locker written in Rust, a port of swaylock-effects. It
+    uses the ext-session-lock protocol and PAM authentication, and can blur, pixelate or
+    swirl the screenshot behind the lock, with several ring shapes, a grace period and
+    optional WiFi, Bluetooth, battery and media indicators.
+  files:
+  - '%config(noreplace) %{_sysconfdir}/pam.d/rustlock'
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/rustlock'
+  - '%{bash_completions_dir}/rustlock'
+  - '%{fish_completions_dir}/rustlock.fish'
+  - '%{zsh_completions_dir}/_rustlock'
+  license: GPL-3.0-or-later
+  release: 3
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/%{commit}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+    commit:
+      date: '20260628'
+      full: 76039750623825172fbee93adae8bb48d4ad36ad
+  summary: Wayland screen locker with effects, a Rust port of swaylock-effects
+  url: https://github.com/JorySeverijnse/rustlock
+  version: 0^20260628git7603975
 satty:
   build:
     commands: []
