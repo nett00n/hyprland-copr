@@ -1,5 +1,0 @@
-{% macro copr_package_badge(copr_url='', repo_url='', pkg_name='') -%}
-{%- if copr_url and repo_url and pkg_name -%}
-[![Copr build status]({{ repo_url }}package/{{ pkg_name }}/status_image/last_build.png)]({{ repo_url }}package/{{ pkg_name }}/)
-{%- endif -%}
-{%- endmacro %}

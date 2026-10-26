@@ -2,18 +2,16 @@
 
 Tracks changes to this repo's automation - Makefile targets, script behavior,
 `packages.yaml` schema, build pipeline stages, breaking contributor-facing
-changes. Routine package adds/version bumps/release increments are NOT logged
-here (see `packages.yaml` git history, `docs/full-report.md`, or `docs/NEWS.md`
-instead).
+changes. Package news (added/removed/updated/fixed packages, version bumps, release
+increments) is NOT logged here -- it goes to `docs/NEWS.md`.
 
-**Format (2026-09-15 on, per `docs/DOCS-DRIVEN-DEVELOPMENT.md`):** newest first;
-within `## Unreleased`, newest entries first. One bullet per feature as
-`- <PREFIX>-NNNN: <one-line summary>` — the linked feature doc under
-`docs/features/` carries the details, so this file stays scannable. On release,
-rename `## Unreleased` to the date/version and start a new `## Unreleased` above it.
+**Format:** one `## YYYY-MM-DD` section per day, newest day first, newest entries
+first within a day. There is no `Unreleased` section: an entry goes under the date it
+is made. From 2026-09-15 on (per `docs/DOCS-DRIVEN-DEVELOPMENT.md`) each bullet is
+`- <PREFIX>-NNNN: <one-line summary>` — the linked feature doc under `docs/features/`
+carries the details, so this file stays scannable.
 
-History before 2026-09-15 predates DDD adoption and uses the old format: one
-`## YYYY-MM-DD` section per day, one bullet per entry as
+History before 2026-09-15 predates DDD adoption and uses the old bullet form
 `- <Added|Changed|Fixed|Removed>: <what changed>` (full paragraph, no feature-doc
 link). It is left as originally written, not reformatted. Full ruleset for both eras
 in `docs/CONTRIBUTING.md` "Changelog".
@@ -21,25 +19,45 @@ in `docs/CONTRIBUTING.md` "Changelog".
 History before this file's introduction (2026-08-02) is not backfilled - see
 `git log`.
 
-## Unreleased
+## 2026-10-26
 
+- COPR-0012: the markdown build reports are gone — `docs/full-report.md` and the README "Build Status" section; `make readme` renders only `README.md` and `docs/README.copr.md`, from yaml/NEWS/git with no `build-report.db` and no Copr poll, and lists a `groups.yaml` package iff it is in `packages.yaml`. Removed `gen-report.py --format full-report`/`--skip-copr-poll`/`--db-snapshot`, `make gen-report`, `make db-export-docs` and `docs/db-snapshot.yaml`; `check-docs-drift` now just re-renders and diffs the two READMEs.
+- COPR-0016: CI publishes the READMEs with `make readme NO_CONTAINER=1`; `gen-readme-shell.py` and `make readme-shell` are removed (they spliced `<!-- BEGIN/END -->` comments, which COPR cannot render). No generated Markdown or template contains HTML comments any more.
+- COPR-0021: the planned package × target grid report is dropped from the item's scope.
 - COPR-0026: the nightly Gotify summary says `checked: N` instead of `planned: N` (count unchanged: every package the pipeline looked at, cache hits included).
+
+## 2026-10-25
+
 - COPR-0002: `make sources` runs through a new `scripts/download-sources.py` and `make stage-log-analyze` through `pkg-log-analysis.py`'s own `PACKAGE`/`SKIP_PACKAGES` handling, so every multi-package target selects packages in Python (#BUG-0066); the Makefile's `_PKGS`/`ALL_PACKAGES` shell expansion is gone (#BUG-0069).
 - COPR-0002: the six `stage-*.py` scripts share `lib.stage_common.record_config_skip` for the "config: skip" row (#BUG-0077); `stage-validate`'s skip event line now also carries `reason=fedora:NN skip`.
 - `HIGHLIGHT_PREFIX` in the Makefile no longer embeds literal quote characters; every echo site quotes it uniformly (#BUG-0068).
 - `lib.vendor.log_fn` is public (was `_log_fn`) (#BUG-0090); the three YAML modules' docstrings say which library reads/writes (#BUG-0085); the duplicate `tests/integration/conftest.py` is removed (#BUG-0075).
+
+## 2026-10-24
+
 - COPR-0007: `stage-copr` / `full-cycle` skip a package whose current SRPM already succeeded on Copr instead of re-uploading it every run (`COPR_RESUBMIT=true` or a forced copr stage overrides).
-- COPR-0027: `waylock` builds with `--libc zig-libc.txt` (experiment for the aarch64 `GLIBC_2.33` link failure).
+
+## 2026-10-23
+
 - COPR-0005: `packages.yaml` accepts `conflicts:` / `provides:` lists, rendered as `Conflicts:` / `Provides:` in the spec (drop-in replacements of Fedora packages, e.g. `swaylock-effects`).
 - COPR-0007: `stage-copr` / `full-cycle` skip a package whose current SRPM is already pending or building on Copr instead of queueing a duplicate build.
 - COPR-0027: `build.system: zig` and a Zig vendor backend (`zig build --fetch` -> `zig-pkg/` tarball, offline `--system zig-pkg`); first consumer `waylock`.
+
+## 2026-10-21
+
 - COPR-0026: `make full-cycle` / `make full-cycle-matrix` send a Gotify result message (`NOTIFY=0` silences).
 - COPR-0026: `make notify` / `make notify-summary` send Gotify messages; `update-daily` ends with a nightly summary push.
+
+## 2026-10-20
+
 - COPR-0013: `make delete-package` also removes the package's RPMs from
   `local-repo/<target>/` (regenerating that repo's metadata) and its files from the
   rpmbuild volume, matched by source package rather than name prefix so
   `hyprland` never sweeps `hyprland-protocols`; the volume sweep moved out of the
   Makefile recipe into `delete-package.py` (BUG-0071, BUG-0070).
+
+## 2026-10-19
+
 - COPR-0008: `release: 0` is resolved on every canonical pre-build (to the next
   release above any already built for that version), not only when content changed;
   `quickshell`/`pyprland` sat on `0` forever (BUG-0114).
@@ -54,8 +72,6 @@ History before this file's introduction (2026-08-02) is not backfilled - see
   targets sharing one SRPM/vendor tarball stop stealing each other's row and triggering
   a perpetual `artifact-missing` cascade rebuild; `db-prune` unlinks a file only when no
   row references it, `db-usage` counts shared paths once (BUG-0112).
-- Packaging: `hyprland-protocols` 0.8.0 declares `LANGUAGES C`; added `gcc` to its
-  `build_requires` (mock failed `CMAKE_C_COMPILER not set` on all targets).
 - COPR-0018: `stage-srpm.py` takes the SRPM path from `rpmbuild -bs`'s `Wrote:` line
   instead of a `<pkg>-*.src.rpm` glob that also matched `hyprland-git`,
   `hyprland-protocols`, etc. (BUG-0109), and records upstream source tarballs as
@@ -68,6 +84,8 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 - COPR-0005: the vendor-store key includes the `cargo`/`go` toolchain version, so a
   toolchain upgrade no longer reuses stale vendor trees (BUG-0111).
 
+## 2026-10-12
+
 - COPR-0004: replaced git submodules with a disposable, gitignored upstream mirror
   cache (`.cache/upstream/<org>/<name>.git` bare mirror + detached worktree, derived
   from `packages.yaml` urls, `lib/upstream.py` replaces `lib/gitmodules.py`).
@@ -76,6 +94,9 @@ History before this file's introduction (2026-08-02) is not backfilled - see
   submodules-update`/`submodules-purge` became `upstream-sync`/`upstream-clean`;
   `make add-submodule` was removed (`add-new` syncs the mirror itself). BUG-0070 loses
   its git-submodule-surgery half.
+
+## 2026-10-01
+
 - COPR-0007: `stage-copr` submission now visits packages in dependency order
   (topo-sorted via `lib.deps`, shared with `prepare_stage()`'s other five
   `stage-*.py` callers) and chains a package behind its own same-run dependencies
@@ -97,6 +118,9 @@ History before this file's introduction (2026-08-02) is not backfilled - see
   PID's name behind for the next person to misread as a stuck lock (the `flock`
   itself was never actually stuck — it releases with the holder, crash included).
   See [COPR-0003](features/COPR-0003-daily-update.md).
+
+## 2026-09-24
+
 - BUG-0107: a synchronous `stage-copr` watch (`SYNCHRONOUS_COPR_BUILD=true`) killed
   mid-watch by `run_cmd()`'s `CMD_TIMEOUT` is now recorded `unknown` (with its
   `build_id` and a `reason`) instead of a terminal `failed` with both `NULL` — the
@@ -120,6 +144,9 @@ History before this file's introduction (2026-08-02) is not backfilled - see
   renders a `## Copr submission` table for anything not `success`/`skipped`; only a
   genuinely `failed` row fails the run. See
   [COPR-0022](features/COPR-0022-run-scoped-logs-and-summary.md).
+
+## 2026-09-22
+
 - BUG-0101: `make update-versions`'s per-submodule pull loop and per-package
   version-resolution loop now run across a `UPDATE_VERSIONS_JOBS`-worker thread
   pool (default 8; `1` = the old strictly-serial behavior). No locking needed —
@@ -148,6 +175,9 @@ History before this file's introduction (2026-08-02) is not backfilled - see
   `stage-copr` Makefile target wasn't forwarding `SYNCHRONOUS_COPR_BUILD` into
   the container, so `.env`'s setting never reached the nightly path. See
   [COPR-0007](features/COPR-0007-copr-submission.md).
+
+## 2026-09-21
+
 - COPR-0024: adds an optional [HyperMnesia](https://github.com/Recluse/HyperMnesia)-backed
   memory layer for AI coding agents working in this repo — a hand-authored component map
   (`memory/seed.sql`) injects the `must` rules for a file before it's edited, plus hybrid
@@ -180,6 +210,9 @@ History before this file's introduction (2026-08-02) is not backfilled - see
   itself stays gitignored), so git history is the durable archive. See
   [COPR-0022](features/COPR-0022-run-scoped-logs-and-summary.md). The
   pre-existing `logs/build/` tree is not migrated; it is simply orphaned.
+
+## 2026-09-18
+
 - BUG-0060 BUG-0062 COPR-0015: `make db-export [FORMAT=yaml|json] [OUTPUT=path]`
   (`db-artifacts.py --export`) dumps `runs`/`stage_results`/`stage_history`/
   `artifacts` to a deterministic snapshot for offline diffing — two exports of
@@ -262,6 +295,9 @@ History before this file's introduction (2026-08-02) is not backfilled - see
   (`_MIGRATIONS`, applied from `PRAGMA user_version` upward) rather than a
   single `CREATE TABLE IF NOT EXISTS` script, so existing databases pick up
   the new table/columns without losing data. `SCHEMA_VERSION` 1 -> 2.
+
+## 2026-09-17
+
 - BUG-0105 COPR-0010: `hyprland-protocols` fixed (`build.system: meson -> cmake`,
   matching upstream 0.7.1's `meson -> cmake` switch) after mock failures on all
   three chroots. `make validate-packages` gained
@@ -270,6 +306,9 @@ History before this file's introduction (2026-08-02) is not backfilled - see
   ships the marker file (`CMakeLists.txt`, `meson.build`, ...) its declared
   `build.system` implies, naming the system it looks like instead.
   `lib.detection.BUILD_SYSTEM_MARKERS` backs both this and `detect_build_system`.
+
+## 2026-09-16
+
 - BUG-0104: `stage-copr.py`'s skip reason for a package whose SRPM was never
   built at `CANONICAL_FEDORA_VERSION` (the target it actually submits from,
   per [COPR-0018](features/COPR-0018-single-spec-single-srpm.md)) rendered as
@@ -950,19 +989,6 @@ History before this file's introduction (2026-08-02) is not backfilled - see
   previously surfaced only as a generic "Bad exit status" line. The new rule names the
   dependency, the version CMake wanted, and the `CMakeLists.txt` line that triggered it,
   and suggests providing packages via `dnf repoquery`.
-- Added: `glaze-v7` compat package -- glaze 7.9.1 installed to versioned paths
-  (`%{_includedir}/glaze-v7`, `%{_datadir}/glaze-v7`) so it coexists with `glaze` 8.x.
-  Hyprland v0.56.2 pins `find_package(glaze 7...<8)` and was silently falling back to
-  a network `FetchContent` that cannot work in mock; it now builds against `glaze-v7-devel`.
-- Fixed: `glaze-v7`'s `%cmake` override passed a relative path to `-Dglaze_INSTALL_CMAKEDIR`
-  (`share/glaze-v7`). CMake absolutizes an uninitialized `CACHE PATH` variable set via `-D`
-  against the command's working directory, not `CMAKE_INSTALL_PREFIX` -- unlike the
-  GNUInstallDirs vars (`CMAKE_INSTALL_INCLUDEDIR`), which stay prefix-relative. The `.cmake`
-  package config files (`FindAsio.cmake`, `glazeConfig.cmake`, ...) installed into the source
-  tree under `BUILD/` instead of `BUILDROOT`, so `%{_datadir}/glaze-v7/*.cmake` in `%files`
-  matched nothing and rpmbuild reported "Installed (but unpackaged) file(s) found". Now passes
-  an absolute path (`%{_datadir}/glaze-v7`), confirmed with a local cmake configure/build/install
-  against the upstream v7.9.1 and v8.0.0 tags. See `docs/packaging.md` "Compat packages".
 
 ## 2026-08-05
 

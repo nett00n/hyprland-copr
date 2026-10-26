@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  readme-shell:
-    name: Regenerate README shell
+  readme:
+    name: Regenerate READMEs
     runs-on: ubuntu-latest
     container:
       image: registry.fedoraproject.org/fedora:44
@@ -26,11 +26,10 @@ jobs:
       - name: Set up venv
         run: make setup-venv
 
-      # No build-report.db in CI -- this only touches the branding shell
-      # (logo/description/news/docs/support/license/people), never the
-      # packages/build-status body. See docs/operations.md "CI docs-shell publish".
-      - name: Regenerate README shell
-        run: make readme-shell NO_CONTAINER=1
+      # The READMEs render from committed inputs only (yaml, NEWS, git) -- no
+      # build-report.db needed. See docs/operations.md "CI README publish".
+      - name: Regenerate READMEs
+        run: make readme NO_CONTAINER=1
 
       - name: Commit and push if changed
         run: |
@@ -40,6 +39,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Nothing changed."
           else
-            git commit -m "Regenerate README shell [skip ci]"
+            git commit -m "Regenerate READMEs [skip ci]"
             git push
           fi

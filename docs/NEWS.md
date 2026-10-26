@@ -1,8 +1,9 @@
 # News
 
-Maintainer's microblog, informal. Newest first, dated `## YYYY-MM-DD` entries, one short
-paragraph each. README shows the most recent entries - see
-`scripts/gen-report.py:get_recent_news()`.
+Maintainer's microblog, informal, about the packages: added, removed, updated or fixed
+packages and which Fedora versions are built. Changes to the automation itself go to
+`docs/CHANGELOG.md`. Newest first, dated `## YYYY-MM-DD` entries, one short paragraph each.
+README shows the most recent entries - see `scripts/lib/readme_content.py:get_recent_news()`.
 
 ## 2026-10-26
 
@@ -34,7 +35,7 @@ Added Packages:
 Added Packages:
 
 - wl-clip-persist - Keep Wayland clipboard even after programs close
-- OpenLogi - Local-first alternative to Logitech Options+ for HID++ devices
+- OpenLogi - Local-first alternative to Logitech Options+ for HID++ devices. Partial build: only the CLI and the background agent (systemd user unit) are packaged. The GPUI desktop window and the on-screen overlay are not built, because they depend on crates published only as git sources (gpui-kit, appicon), which cannot be vendored for offline COPR builds
 
 ## 2026-09-17
 
@@ -57,6 +58,13 @@ Fixed packages:
 - quickshell - was not built successfully on fedora 43 - additional flag in build process
 - Hyprland - was not built sucessfully on fedora 43 - applied LionHeartP's patch. It builds locally but copr still fails
 
+## 2026-08-05
+
+Added Packages:
+
+- waypaper - GUI wallpaper manager for Wayland and Xorg
+- imageio-ffmpeg - FFMPEG wrapper for Python (waypaper dependency)
+
 ## 2026-08-02
 
 I understood that i've added `*-git` packages just to match solopasha's repo and i did not understand how hard it would really be. `*-git` packages are removed from repo for now. Maybe i would get back to it in future, bit that's not a promise.
@@ -70,21 +78,40 @@ Removed packages:
 - waybar-git
 
 Added packages:
-- libcava - same cava, but built as shared library only
-- satty
+- libcava - same cava, but built as shared library only (fork of cava providing it as a shared library)
+- satty - Modern screenshot annotation tool
 
 Updated packages:
 - Waybar - now built with cava support
 
 ## 2026-08-01
 
+Added Packages:
+
+- mpvpaper - Video wallpaper program for wlroots based Wayland compositors
+- snappy-switcher - Alt-tab window switcher for Wayland compositors
+
 Big automation update. SQLite is now used to store build-related info instead of plain yaml file.
 Not so simple, but yaml was really messed up and limits architechture.
-New packages: snappy switcher, mpvpaper.
-
 ## 2026-06-30
 
-New packages: snappy switcher, mpvpaper. Added a `recommends` field to package config.
+New packages:
+- snappy-switcher - Alt-tab window switcher for Wayland compositors
+- mpvpaper - Video wallpaper program for wlroots based Wayland compositors
+
+Added a `recommends` field to package config.
+
+## 2026-06-11
+
+Added Packages:
+
+- eww - Elkowars Wacky Widgets, a standalone widget system in Rust for custom widgets in any window manager
+
+## 2026-05-19
+
+Added Packages:
+
+- hyprland-per-window-layout - Per-window keyboard layout daemon for Hyprland (first successful Rust build)
 
 ## 2026-04-24
 
@@ -103,8 +130,13 @@ Cool, i guess
 PS. Spec file now contains versions of build requirements for better debugging
 ## 2026-04-05
 
-Added Waybar, cliphist, uwsm, quickshell. Refactored the main script, added log levels and
-tests, more automatic error detection. Cargo vendoring is still a mess - not tackling it yet.
+New packages:
+- Waybar - Highly customizable Wayland bar for Sway and wlroots based compositors
+- cliphist - Wayland clipboard manager with support for multimedia
+- uwsm - Universal Wayland Session Manager
+- quickshell - Flexible QtQuick based desktop shell toolkit
+
+.Refactored the main script, added log levels and tests, more automatic error detection. Cargo vendoring is still a mess - not tackling it yet.
 
 ## 2026-03-21
 
@@ -125,3 +157,49 @@ Compilation of Hyprland and some of it's componens needs to increase C++ compile
 Also Fedora would not provide security updates for this versions after May.
 I don't think it worth it to spend time on this support.
 I would recommend to update to Fedora 43 in this case.
+
+## 2026-03-01
+
+Initial set of packages for Fedora 43.
+
+Hyprland and its tools:
+
+- Hyprland - Dynamic tiling Wayland compositor
+- hyprland-plugins - Official plugins for Hyprland
+- hyprland-protocols - Wayland protocol extensions for Hyprland
+- hypridle - Idle management daemon
+- hyprlock - GPU-accelerated screen lock
+- hyprpaper - Blazing fast Wayland wallpaper utility
+- hyprpicker - wlroots-compatible Wayland color picker
+- hyprshot - Screenshot utility
+- hyprsunset - Blue-light filter
+- hyprsysteminfo - System info utility
+- hyprlauncher - Multipurpose launcher / picker
+- hyprpolkitagent - Polkit authentication agent written with hyprtoolkit
+- hyprpwcenter - Volume management center
+- hyprshutdown - Graceful shutdown utility
+- hyprland-guiutils - Hyprland GUI utilities
+- hyprqt6engine - Qt6 theme provider
+- hyprland-qt-support - QML style provider for hypr* Qt apps
+- xdg-desktop-portal-hyprland - XDG Desktop Portal backend for Hyprland (and wlroots)
+- pyprland - Scratchpads and many goodies for Hyprland
+- aylurs-gtk-shell - Scaffolding CLI for Astal+Gnim
+
+Libraries:
+
+- aquamarine - Very light Linux rendering backend library
+- hyprcursor - Library and toolkit for the Hyprland cursor format
+- hyprgraphics - Small C++ graphics utilities library
+- hyprlang - Hypr configuration language library
+- hyprtoolkit - Modern C++ Wayland-native GUI toolkit
+- hyprutils - Small C++ utilities library
+- hyprwayland-scanner - Wayland scanner replacement for Hypr projects
+- hyprwire - Fast and consistent wire protocol for IPC
+- gtk4-layer-shell - Library to create panels and other desktop components with GTK4 and the Layer Shell protocol
+- cpptrace - Simple, portable, self-contained stacktrace library for C++11 and newer
+- glaze - Extremely fast in-memory JSON and reflection library for modern C++
+- glaze-v7 - Compat build of glaze 7.x for consumers pinned below 8.0
+- libcava-v0 - cava 0.x built as a shared library
+- libdwarf-code - Library to access DWARF debugging information
+- sndio - Portable version of OpenBSD's lightweight audio and MIDI sub-system
+- cliphist-git - Git snapshot build of cliphist

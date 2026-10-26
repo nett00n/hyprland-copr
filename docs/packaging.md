@@ -313,5 +313,5 @@ COPR-0018). Write the conditional in the base fields instead, as above.
 ## Template snippets (`templates/*.j2`)
 
 Naming marks the include graph: `_*.j2` are leaf snippets with no includes (e.g. `_logo.j2`,
-`_badge.j2`); `__*.j2` are composites that include other snippets (e.g. `__header.j2`,
+`_support.j2`); `__*.j2` are composites that include other snippets (e.g. `__header.j2`,
 `__footer.j2`). Keeps the composition graph readable and avoids circular includes.

@@ -1,5 +1,6 @@
-"""Tests for gen-report.py script."""
+"""Tests for gen-report.py script (#COPR-0012)."""
 
+import importlib
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -8,615 +9,152 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import pytest
 
-from lib import build_db, paths
-
-# Import gen-report as a module
-import importlib
 gen_report = importlib.import_module("gen-report")
 
-TARGET = "fedora-44-x86_64"  # matches default FEDORA_VERSION="44" gen-report.py falls back to
 
+class TestCollectGroups:
+    """collect_groups builds the README package list from yaml alone."""
 
-class TestGenReportArgumentParsing:
-    """Test argument parsing for gen-report.py."""
-
-    def test_default_format_is_github(self):
-        """Default format should be github."""
-        parser = gen_report.argparse.ArgumentParser()
-        parser.add_argument(
-            "--format",
-            choices=["github", "copr", "full-report"],
-            default="github",
+    def test_package_listed_with_summary_from_packages_yaml(self):
+        groups = gen_report.collect_groups(
+            {"apps": {"label": "Apps", "packages": ["foo"]}},
+            {"foo": {"summary": "Foo thing"}},
         )
-        args = parser.parse_args([])
-        assert args.format == "github"
-
-    def test_format_argument_copr(self):
-        """Should accept copr format."""
-        parser = gen_report.argparse.ArgumentParser()
-        parser.add_argument(
-            "--format",
-            choices=["github", "copr", "full-report"],
-            default="github",
-        )
-        args = parser.parse_args(["--format", "copr"])
-        assert args.format == "copr"
-
-    def test_format_argument_full_report(self):
-        """Should accept full-report format."""
-        parser = gen_report.argparse.ArgumentParser()
-        parser.add_argument(
-            "--format",
-            choices=["github", "copr", "full-report"],
-            default="github",
-        )
-        args = parser.parse_args(["--format", "full-report"])
-        assert args.format == "full-report"
-
-    def test_output_argument_defaults_to_none(self):
-        """Output argument should default to None."""
-        parser = gen_report.argparse.ArgumentParser()
-        parser.add_argument(
-            "--output",
-            type=str,
-            default=None,
-        )
-        args = parser.parse_args([])
-        assert args.output is None
-
-    def test_output_argument_accepts_path(self):
-        """Should accept file path for output argument."""
-        parser = gen_report.argparse.ArgumentParser()
-        parser.add_argument(
-            "--output",
-            type=str,
-            default=None,
-        )
-        args = parser.parse_args(["--output", "./README.md"])
-        assert args.output == "./README.md"
-
-    def test_skip_copr_poll_defaults_to_false(self):
-        """Skip copr poll should default to False."""
-        parser = gen_report.argparse.ArgumentParser()
-        parser.add_argument("--skip-copr-poll", action="store_true")
-        args = parser.parse_args([])
-        assert args.skip_copr_poll is False
-
-    def test_skip_copr_poll_flag_sets_true(self):
-        """Should set skip_copr_poll to True when flag provided."""
-        parser = gen_report.argparse.ArgumentParser()
-        parser.add_argument("--skip-copr-poll", action="store_true")
-        args = parser.parse_args(["--skip-copr-poll"])
-        assert args.skip_copr_poll is True
-
-
-class TestGenReportFormatDuration:
-    """Test _format_duration function."""
-
-    def test_duration_under_60_seconds(self):
-        """Should format durations under 60 seconds as seconds."""
-        result = gen_report._format_duration(100, 145, fallback_at=None)
-        assert result == "45s"
-
-    def test_duration_under_60_minutes(self):
-        """Should format durations under 60 minutes as minutes and seconds."""
-        result = gen_report._format_duration(1000, 1125, fallback_at=None)  # 2m 5s
-        assert result == "2m 5s"
-
-    def test_duration_whole_minutes(self):
-        """Should format whole minutes without seconds suffix."""
-        result = gen_report._format_duration(1000, 1120, fallback_at=None)  # 2m
-        assert result == "2m"
-
-    def test_duration_hours(self):
-        """Should format durations in hours and minutes."""
-        result = gen_report._format_duration(1000, 4665, fallback_at=None)  # 1h 1m 5s
-        assert result == "1h 1m"
-
-    def test_duration_whole_hours(self):
-        """Should format whole hours without minutes suffix."""
-        result = gen_report._format_duration(1000, 8200, fallback_at=None)  # 2h
-        assert result == "2h"
-
-    def test_duration_missing_start_time(self):
-        """Should return empty string when start time is missing."""
-        result = gen_report._format_duration(None, 100, fallback_at=None)
-        assert result == ""
-
-    def test_duration_missing_end_time(self):
-        """Should return empty string when end time is missing."""
-        result = gen_report._format_duration(100, None, fallback_at=None)
-        assert result == ""
-
-    def test_duration_with_fallback(self):
-        """Should use fallback_at when completed_at is missing."""
-        result = gen_report._format_duration(100, None, fallback_at=145)
-        assert result == "45s"
-
-    def test_duration_invalid_negative(self):
-        """Should return empty string for negative durations."""
-        result = gen_report._format_duration(200, 100, fallback_at=None)
-        assert result == ""
-
-
-class TestGenReportFormatDate:
-    """Test _format_date function."""
-
-    def test_format_date_valid_timestamp(self):
-        """Should format timestamp as UTC date string."""
-        # Use a fixed timestamp for reproducibility
-        result = gen_report._format_date(1609459200)  # 2021-01-01 00:00:00 UTC
-        assert "2021-01-01" in result
-        assert "00:00:00 UTC" in result
-
-    def test_format_date_none(self):
-        """Should return empty string for None timestamp."""
-        result = gen_report._format_date(None)
-        assert result == ""
-
-    def test_format_date_zero(self):
-        """Should return empty string for zero timestamp."""
-        result = gen_report._format_date(0)
-        assert result == ""
-
-
-class TestGenReportCollectPackages:
-    """Test collect_packages function."""
-
-    def test_collect_packages_empty_stages(self):
-        """Should handle empty stages."""
-        stages = {}
-        pkg_meta = {}
-        pkg_badge = {}
-        packages = gen_report.collect_packages(stages, pkg_meta, pkg_badge)
-        assert packages == []
-
-    def test_collect_packages_single_package(self):
-        """Should collect single package from stages."""
-        stages = {
-            "validate": {"pkg1": {"state": "success"}},
-            "spec": {"pkg1": {"state": "success", "version": "1.0.0"}},
-        }
-        pkg_meta = {"pkg1": {"summary": "Test package"}}
-        pkg_badge = {}
-        packages = gen_report.collect_packages(stages, pkg_meta, pkg_badge)
-        assert len(packages) == 1
-        assert packages[0]["name"] == "pkg1"
-        assert packages[0]["summary"] == "Test package"
-
-    def test_collect_packages_multiple_packages(self):
-        """Should collect multiple packages in order."""
-        stages = {
-            "validate": {
-                "pkg1": {"state": "success"},
-                "pkg2": {"state": "success"},
+        assert groups == [
+            {
+                "label": "Apps",
+                "badge": None,
+                "packages": [{"name": "foo", "summary": "Foo thing"}],
             }
-        }
-        pkg_meta = {
-            "pkg1": {"summary": "Package 1"},
-            "pkg2": {"summary": "Package 2"},
-        }
-        pkg_badge = {}
-        packages = gen_report.collect_packages(stages, pkg_meta, pkg_badge)
-        assert len(packages) == 2
-        assert packages[0]["name"] == "pkg1"
-        assert packages[1]["name"] == "pkg2"
+        ]
 
-    def test_collect_packages_with_copr_url(self):
-        """Should generate COPR URL when build_id is present."""
-        stages = {
-            "copr": {"pkg1": {"state": "succeeded", "build_id": "12345"}}
-        }
-        pkg_meta = {}
-        pkg_badge = {}
-        packages = gen_report.collect_packages(stages, pkg_meta, pkg_badge)
-        assert len(packages) == 1
-        assert "12345" in packages[0]["copr_url"]
+    def test_package_missing_from_packages_yaml_is_skipped(self):
+        groups = gen_report.collect_groups(
+            {"apps": {"packages": ["foo", "ghost"]}},
+            {"foo": {"summary": "Foo thing"}},
+        )
+        assert [p["name"] for p in groups[0]["packages"]] == ["foo"]
 
-    def test_collect_packages_version_fallback(self):
-        """Should use version from first available stage."""
-        stages = {
-            "spec": {"pkg1": {"state": "success", "version": "1.0.0"}},
-            "mock": {"pkg1": {"state": "success"}},
-        }
-        pkg_meta = {}
-        pkg_badge = {}
-        packages = gen_report.collect_packages(stages, pkg_meta, pkg_badge)
-        assert packages[0]["version"] == "1.0.0"
+    def test_package_without_summary_gets_empty_summary(self):
+        groups = gen_report.collect_groups(
+            {"apps": {"packages": ["foo"]}}, {"foo": {}}
+        )
+        assert groups[0]["packages"][0]["summary"] == ""
 
-    def test_collect_packages_version_from_srpm(self):
-        """Should fall back to srpm version."""
-        stages = {
-            "srpm": {"pkg1": {"state": "success", "version": "2.0.0"}},
-        }
-        pkg_meta = {}
-        pkg_badge = {}
-        packages = gen_report.collect_packages(stages, pkg_meta, pkg_badge)
-        assert packages[0]["version"] == "2.0.0"
+    def test_global_repo_packages_are_kept_as_given(self):
+        groups = gen_report.collect_groups(
+            {
+                "apps": {
+                    "packages": [],
+                    "packages_from_global_repo": [
+                        {"name": "fuzzel", "summary": "Launcher"},
+                        "not-a-dict-is-ignored",
+                    ],
+                }
+            },
+            {},
+        )
+        assert groups[0]["packages"] == [{"name": "fuzzel", "summary": "Launcher"}]
+
+    def test_group_order_label_default_and_badge_passthrough(self):
+        badge = {"logo": "fedora", "color": "blue", "logo_color": "white"}
+        groups = gen_report.collect_groups(
+            {"b": {"packages": []}, "a": {"label": "A", "badge": badge}}, {}
+        )
+        assert [g["label"] for g in groups] == ["b", "A"]
+        assert groups[1]["badge"] == badge
+
+    def test_group_without_packages_key_is_empty(self):
+        groups = gen_report.collect_groups({"a": {"label": "A"}}, {})
+        assert groups[0]["packages"] == []
 
 
-class TestGenReportMain:
-    """Test main() function integration."""
+class TestMain:
+    """main() renders the requested templates with yaml-derived context only."""
 
-    @pytest.fixture(autouse=True)
-    def _build_db_path(self, tmp_path, monkeypatch):
-        """Point lib.paths.BUILD_DB at a fresh tmp file and close the cached connection after."""
-        monkeypatch.setattr(paths, "BUILD_DB", tmp_path / "build-report.db")
-        yield
-        build_db.close()
+    @pytest.fixture
+    def env(self, tmp_path):
+        """Patch every input main() reads and return the fake Jinja env."""
+        template = MagicMock()
+        template.render.return_value = "Generated output"
+        jinja_env = MagicMock()
+        jinja_env.get_template.return_value = template
+        with (
+            patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"),
+            patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"),
+            patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"),
+            patch.object(gen_report, "ROOT", tmp_path),
+            patch.object(gen_report, "create_jinja_env", return_value=jinja_env),
+        ):
+            yield jinja_env
 
-    def _seed_run(self, target: str = TARGET) -> None:
-        build_db.start_run(target, "fedora", "44", "x86_64")
-
-    def test_main_writes_to_stdout_by_default(self, tmp_path, capsys):
-        """Should print to stdout when --output not provided."""
-        self._seed_run()
-
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch("sys.argv", ["gen-report.py", "--format", "github"]):
-
-            mock_poll.return_value = False
-            mock_template = MagicMock()
-            mock_template.render.return_value = "Generated output"
-            mock_jinja_env = MagicMock()
-            mock_jinja_env.get_template.return_value = mock_template
-            mock_env.return_value = mock_jinja_env
-
+    def _run(self, *argv):
+        with patch("sys.argv", ["gen-report.py", *argv]):
             gen_report.main()
 
-        captured = capsys.readouterr()
-        assert "Generated output" in captured.out
+    def test_writes_to_stdout_by_default(self, env, capsys):
+        self._run()
+        assert "Generated output" in capsys.readouterr().out
+        env.get_template.assert_called_once_with("readme-github.md.j2")
 
-    def test_main_writes_to_file_with_output_arg(self, tmp_path):
-        """Should write to file when --output provided."""
-        self._seed_run()
-        output_file = tmp_path / "README.md"
+    def test_writes_to_file_with_output_arg(self, env, tmp_path):
+        out = tmp_path / "README.md"
+        self._run("--format", "github", "--output", str(out))
+        assert out.read_text() == "Generated output"
 
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch("sys.argv", ["gen-report.py", "--format", "github", "--output", str(output_file)]):
+    def test_selects_copr_template(self, env, capsys):
+        self._run("--format", "copr")
+        env.get_template.assert_called_once_with("readme-copr.md.j2")
 
-            mock_poll.return_value = False
-            mock_template = MagicMock()
-            mock_template.render.return_value = "Generated output"
-            mock_jinja_env = MagicMock()
-            mock_jinja_env.get_template.return_value = mock_template
-            mock_env.return_value = mock_jinja_env
-
-            gen_report.main()
-
-        assert output_file.exists()
-        assert output_file.read_text() == "Generated output"
-
-    def test_main_exits_when_build_status_missing(self, tmp_path):
-        """Should exit with error when no run has ever been recorded for this target."""
-        # No _seed_run() call -- empty DB, mirrors the old "file missing" case.
-        with patch("sys.argv", ["gen-report.py"]), \
-             pytest.raises(SystemExit) as exc_info:
-            gen_report.main()
-
-        assert exc_info.value.code == 1
-
-    def test_main_selects_correct_template(self, tmp_path):
-        """Should select correct template based on format."""
-        self._seed_run()
-
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch("sys.argv", ["gen-report.py", "--format", "full-report"]):
-
-            mock_poll.return_value = False
-            mock_template = MagicMock()
-            mock_template.render.return_value = ""
-            mock_jinja_env = MagicMock()
-            mock_jinja_env.get_template.return_value = mock_template
-            mock_env.return_value = mock_jinja_env
-
-            gen_report.main()
-
-            # Should request full-report.md.j2 template
-            mock_jinja_env.get_template.assert_called_with("full-report.md.j2")
-
-    def test_main_polls_copr_by_default(self, tmp_path):
-        """Should poll COPR status by default."""
-        self._seed_run()
-
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch("sys.argv", ["gen-report.py"]):
-
-            mock_poll.return_value = False
-            mock_template = MagicMock()
-            mock_template.render.return_value = ""
-            mock_jinja_env = MagicMock()
-            mock_jinja_env.get_template.return_value = mock_template
-            mock_env.return_value = mock_jinja_env
-
-            gen_report.main()
-
-            # Should have called poll_copr_status
-            assert mock_poll.called
-
-    def test_main_skips_copr_poll_when_flag_set(self, tmp_path):
-        """Should skip COPR polling when --skip-copr-poll is set."""
-        self._seed_run()
-
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch("sys.argv", ["gen-report.py", "--skip-copr-poll"]):
-
-            mock_template = MagicMock()
-            mock_template.render.return_value = ""
-            mock_jinja_env = MagicMock()
-            mock_jinja_env.get_template.return_value = mock_template
-            mock_env.return_value = mock_jinja_env
-
-            gen_report.main()
-
-            # Should NOT have called poll_copr_status
-            assert not mock_poll.called
-
-    def test_main_with_output_and_skip_copr_poll(self, tmp_path):
-        """Should write to file and skip COPR polling when both flags set."""
-        self._seed_run()
-        output_file = tmp_path / "report.md"
-
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch("sys.argv", ["gen-report.py", "--output", str(output_file), "--skip-copr-poll"]):
-
-            mock_template = MagicMock()
-            mock_template.render.return_value = "Report content"
-            mock_jinja_env = MagicMock()
-            mock_jinja_env.get_template.return_value = mock_template
-            mock_env.return_value = mock_jinja_env
-
-            gen_report.main()
-
-            # Should have written to file
-            assert output_file.exists()
-            assert output_file.read_text() == "Report content"
-            # Should NOT have polled COPR
-            assert not mock_poll.called
-
-    def test_main_reloads_stage_map_when_copr_status_updated(self, tmp_path):
-        """After poll_copr_status reports a change, main() re-reads from the DB."""
-        self._seed_run()
-        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
-        build_db.set_stage("pkg1", "copr", TARGET, run_id, "unknown", build_id=123)
-
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch("sys.argv", ["gen-report.py"]):
-
-            def fake_poll(target, packages_list):
-                build_db.update_state("pkg1", "copr", target, "success")
-                return True
-
-            with patch.object(gen_report, "poll_copr_status", side_effect=fake_poll):
-                mock_template = MagicMock()
-                mock_template.render.return_value = ""
-                mock_jinja_env = MagicMock()
-                mock_jinja_env.get_template.return_value = mock_template
-                mock_env.return_value = mock_jinja_env
-
-                gen_report.main()
-
-        # The updated state must have made it into the DB (and thus into the render).
-        assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "success"
-
-    def test_main_renders_multiple_formats_from_one_invocation(self, tmp_path):
-        """Repeated --format/--output pairs (TODO-0067) must render every
-        template from a single build-report.db read/Copr poll, writing each
-        to its own output file."""
-        self._seed_run()
+    def test_renders_multiple_formats_from_one_invocation(self, env, tmp_path):
+        """Repeated --format/--output pairs (TODO-0067) render every template
+        from a single read of the inputs, each to its own output file."""
+        env.get_template.return_value.render.side_effect = ["github-out", "copr-out"]
         out_github = tmp_path / "README.md"
         out_copr = tmp_path / "README.copr.md"
-        out_full = tmp_path / "full-report.md"
-
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch(
-                 "sys.argv",
-                 [
-                     "gen-report.py",
-                     "--format", "github", "--output", str(out_github),
-                     "--format", "copr", "--output", str(out_copr),
-                     "--format", "full-report", "--output", str(out_full),
-                 ],
-             ):
-
-            mock_poll.return_value = False
-            mock_template = MagicMock()
-            mock_template.render.side_effect = ["github-out", "copr-out", "full-out"]
-            mock_jinja_env = MagicMock()
-            mock_jinja_env.get_template.return_value = mock_template
-            mock_env.return_value = mock_jinja_env
-
-            gen_report.main()
-
+        self._run(
+            "--format", "github", "--output", str(out_github),
+            "--format", "copr", "--output", str(out_copr),
+        )
         assert out_github.read_text() == "github-out"
         assert out_copr.read_text() == "copr-out"
-        assert out_full.read_text() == "full-out"
-        assert mock_jinja_env.get_template.call_args_list == [
-            (("readme-github.md.j2",),),
-            (("readme-copr.md.j2",),),
-            (("full-report.md.j2",),),
+        assert [c.args for c in env.get_template.call_args_list] == [
+            ("readme-github.md.j2",),
+            ("readme-copr.md.j2",),
         ]
-        # One shared Copr poll for all three renders, not one per format.
-        assert mock_poll.call_count == 1
 
-    def test_main_rejects_mismatched_format_output_counts(self, tmp_path):
-        self._seed_run()
-
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch(
-                 "sys.argv",
-                 ["gen-report.py", "--format", "github", "--format", "copr", "--output", str(tmp_path / "x")],
-             ):
-            mock_poll.return_value = False
-            with pytest.raises(SystemExit) as exc_info:
-                gen_report.main()
-
+    def test_rejects_mismatched_format_output_counts(self, env, tmp_path):
+        with pytest.raises(SystemExit) as exc_info:
+            self._run(
+                "--format", "github", "--format", "copr",
+                "--output", str(tmp_path / "x"),
+            )
         assert exc_info.value.code == 2
 
+    @pytest.mark.parametrize("fmt", ["full-report", "nope"])
+    def test_rejects_unknown_and_removed_formats(self, env, fmt):
+        with pytest.raises(SystemExit) as exc_info:
+            self._run("--format", fmt)
+        assert exc_info.value.code == 2
 
-class TestGenReportDbSnapshot:
-    """#BUG-0031: `--db-snapshot` renders from a `make db-export-docs` snapshot
-    instead of build-report.db, for CI (which has no build history)."""
+    @pytest.mark.parametrize("flag", [["--skip-copr-poll"], ["--db-snapshot", "x"]])
+    def test_rejects_removed_flags(self, env, flag):
+        with pytest.raises(SystemExit) as exc_info:
+            self._run(*flag)
+        assert exc_info.value.code == 2
 
-    @pytest.fixture(autouse=True)
-    def _build_db_path(self, tmp_path, monkeypatch):
-        """Point lib.paths.BUILD_DB at a fresh tmp file and close the cached connection after."""
-        monkeypatch.setattr(paths, "BUILD_DB", tmp_path / "build-report.db")
-        yield
-        build_db.close()
+    def test_render_context_has_no_build_state(self, env):
+        self._run()
+        context = env.get_template.return_value.render.call_args.kwargs
+        assert set(context) == {
+            "repo",
+            "groups",
+            "contributors",
+            "badge_style",
+            "news_entries",
+            "sections",
+        }
 
-    def _write_snapshot(self, tmp_path, target=TARGET) -> Path:
-        from lib.yaml_utils import dump_yaml_pretty
-
-        run_id = build_db.start_run(target, "fedora", "44", "x86_64")
-        build_db.set_stage("a", "mock", target, run_id, "success")
-        build_db.set_stage("a", "copr", target, run_id, "success", build_id=1)
-        snapshot = build_db.export_docs_snapshot()
-        snapshot_path = tmp_path / "db-snapshot.yaml"
-        snapshot_path.write_text(dump_yaml_pretty(snapshot))
-        (tmp_path / "repo.yaml").write_text("name: test-repo\n")
-        return snapshot_path
-
-    def _render(self, tmp_path, snapshot_path, extra_argv=None):
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch.object(gen_report, "poll_copr_status") as mock_poll, \
-             patch.object(gen_report, "create_jinja_env") as mock_env, \
-             patch(
-                 "sys.argv",
-                 ["gen-report.py", "--format", "github", "--db-snapshot", str(snapshot_path)]
-                 + (extra_argv or []),
-             ):
-            mock_template = MagicMock()
-            mock_template.render.return_value = "Generated output"
-            mock_jinja_env = MagicMock()
-            mock_jinja_env.get_template.return_value = mock_template
-            mock_env.return_value = mock_jinja_env
-            gen_report.main()
-        return mock_poll
-
-    def test_renders_without_touching_build_report_db(self, tmp_path, capsys):
-        """A fresh (empty) BUILD_DB, no run ever started -- the live
-        build_db.latest_run() hard-exit path must not fire."""
-        # Note: _write_snapshot() itself seeds a run in the tmp db, since
-        # export_docs_snapshot() reads from it -- but a real CI checkout has
-        # no build-report.db at all. Point BUILD_DB somewhere fresh again
-        # right after writing the snapshot, so main() truly can't fall back
-        # to a live db.
-        snapshot_path = self._write_snapshot(tmp_path)
-        build_db.close()
-
-        mock_poll = self._render(tmp_path, snapshot_path)
-
-        assert "Generated output" in capsys.readouterr().out
-        mock_poll.assert_not_called()
-
-    def test_missing_run_for_target_in_snapshot_errors(self, tmp_path):
-        snapshot_path = self._write_snapshot(tmp_path, target="fedora-43-x86_64")
-        build_db.close()
-
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch(
-                 "sys.argv",
-                 # default FEDORA_VERSION=44 -> TARGET, but snapshot only has fedora-43-x86_64
-                 ["gen-report.py", "--format", "github", "--db-snapshot", str(snapshot_path)],
-             ), \
-             pytest.raises(SystemExit) as exc_info:
-            gen_report.main()
-
-        assert exc_info.value.code == 1
-
-    def test_missing_snapshot_file_errors(self, tmp_path):
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch(
-                 "sys.argv",
-                 ["gen-report.py", "--db-snapshot", str(tmp_path / "nope.yaml")],
-             ), \
-             pytest.raises(SystemExit) as exc_info:
-            gen_report.main()
-
-        assert exc_info.value.code == 1
-
-    def test_snapshot_render_matches_live_render_for_same_data(self, tmp_path):
-        """The property the whole drift gate rests on: rendering from the
-        snapshot must produce byte-identical output to rendering live from
-        the same underlying data."""
-        snapshot_path = self._write_snapshot(tmp_path)
-
-        # Live render (no --db-snapshot, but skip the poll -- no copr-cli here).
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path), \
-             patch("sys.argv", ["gen-report.py", "--format", "github", "--skip-copr-poll"]):
-            live_output = tmp_path / "live.md"
-            with patch("sys.argv", [
-                "gen-report.py", "--format", "github", "--skip-copr-poll",
-                "--output", str(live_output),
-            ]):
-                gen_report.main()
-
-        # Snapshot render.
-        with patch.object(gen_report, "PACKAGES_YAML", tmp_path / "packages.yaml"), \
-             patch.object(gen_report, "REPO_YAML", tmp_path / "repo.yaml"), \
-             patch.object(gen_report, "GROUPS_YAML", tmp_path / "groups.yaml"), \
-             patch.object(gen_report, "ROOT", tmp_path):
-            snapshot_output = tmp_path / "snapshot.md"
-            with patch("sys.argv", [
-                "gen-report.py", "--format", "github", "--db-snapshot", str(snapshot_path),
-                "--output", str(snapshot_output),
-            ]):
-                gen_report.main()
-
-        assert live_output.read_text() == snapshot_output.read_text()
+    def test_does_not_use_build_db_or_copr(self):
+        assert not hasattr(gen_report, "build_db")
+        assert not hasattr(gen_report, "poll_copr_status")

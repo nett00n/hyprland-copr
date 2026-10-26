@@ -21,7 +21,9 @@ BuildRequires:  pkgconfig(wayland-protocols)
 
 
 %description
-An application to enable a blue-light filter on Hyprland
+A blue-light filter for Hyprland. Hyprsunset adjusts the screen color temperature and
+gamma through the compositor's CTM protocol, either as a fixed value or on a
+time-of-day schedule configured in its config file.
 
 Maintainer info:
 

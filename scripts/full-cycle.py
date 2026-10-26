@@ -868,7 +868,7 @@ def finalize_report(
 
     # Analyze copr failures if present. Only meaningful in synchronous mode --
     # async submissions are still "unknown"/pending here and only reach a
-    # terminal "failed" state later, when gen-report.py polls (see
+    # terminal "failed" state later, when copr-wait or the next run polls (see
     # lib.copr.poll_copr_status, which fetches the failed chroots' logs at
     # that point; `make stage-log-analyze` picks them up once they land).
     if synchronous_copr:

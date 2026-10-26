@@ -136,10 +136,11 @@ remaining gap.
 `docs/CHANGELOG.md` tracks changes to the automation itself — Makefile targets, script
 behavior, `packages.yaml` schema, build pipeline stages, breaking contributor-facing changes.
 It does **not** track routine package adds/version bumps/release increments (that's
-`update-daily`'s job — see `packages.yaml` git history or `docs/full-report.md` instead).
+`update-daily`'s job — see `packages.yaml` git history or `docs/NEWS.md` instead).
 
-Format (per `docs/DOCS-DRIVEN-DEVELOPMENT.md`, adopted 2026-09-15): newest first,
-within `## Unreleased` newest entries first; one bullet per feature as
+Format (per `docs/DOCS-DRIVEN-DEVELOPMENT.md`, adopted 2026-09-15): one
+`## YYYY-MM-DD` section per day (the date the entry is made; no `Unreleased` section),
+newest day first and newest entries first within a day; one bullet per feature as
 `- <PREFIX>-NNNN: <one-line summary>` — link the summary to the feature doc for
 detail, don't restate it here. Add an entry whenever your PR changes automation
 behavior; skip it for docs-only fixes, package additions, and version bumps. History

@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
-"""Generate a Markdown README from build-report.db using a Jinja2 template."""
+"""Generate the Markdown READMEs from yaml, NEWS and git history using Jinja2 templates.
+
+Reads no build-report.db and polls nothing: there is no markdown build report (#COPR-0012).
+"""
 
 import argparse
-import os
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
-
-from lib import build_db
-from lib.copr import COPR_BUILD_URL, poll_copr_status
 from lib.jinja_utils import create_jinja_env
-from lib.paths import GROUPS_YAML, PACKAGES_YAML, REPO_YAML, ROOT, resolve_target
+from lib.paths import GROUPS_YAML, PACKAGES_YAML, REPO_YAML, ROOT
 from lib.readme_content import collect_contributors, get_recent_news, get_sections
-from lib.version import clean_version
 from lib.yaml_utils import (
     get_packages,
     load_groups_yaml,
@@ -22,167 +18,18 @@ from lib.yaml_utils import (
 )
 
 
-def _format_duration(
-    started_at: int | None, completed_at: int | None, fallback_at: int | None = None
-) -> str:
-    """Format duration between started_at and completed_at as human-readable string.
+def collect_groups(groups_cfg: dict, pkg_meta: dict) -> list[dict]:
+    """#COPR-0012: build the README package list from groups.yaml + packages.yaml.
 
-    If completed_at is missing but fallback_at is provided, uses fallback_at instead.
-    This allows tracking execution time for failed steps using an alternative timestamp.
+    A `packages:` entry is listed only if it exists in packages.yaml (its summary is
+    shown); `packages_from_global_repo` entries are listed as given.
     """
-    # Use completed_at if available, otherwise try fallback_at
-    end_time = completed_at or fallback_at
-    if not started_at or not end_time:
-        return ""
-
-    duration_secs = end_time - started_at
-    if duration_secs < 0:
-        return ""  # Invalid if end time is before start time
-    if duration_secs < 60:
-        return f"{duration_secs}s"
-    minutes = duration_secs // 60
-    seconds = duration_secs % 60
-    if minutes < 60:
-        return f"{minutes}m {seconds}s" if seconds else f"{minutes}m"
-    hours = minutes // 60
-    minutes = minutes % 60
-    return f"{hours}h {minutes}m" if minutes else f"{hours}h"
-
-
-def _format_date(started_at: int | None) -> str:
-    """Format started_at timestamp as human-readable date string."""
-    if not started_at:
-        return ""
-    dt = datetime.fromtimestamp(started_at, tz=timezone.utc)
-    return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
-
-
-def _iso(epoch: int | None) -> str:
-    """Format a unix epoch as an ISO-8601 UTC string (templates slice run.timestamp[:10])."""
-    if epoch is None:
-        return ""
-    return datetime.fromtimestamp(epoch, tz=timezone.utc).isoformat(timespec="seconds")
-
-
-def collect_packages(
-    stages: dict,
-    pkg_meta: dict,
-    pkg_badge: dict,
-    run_completed_at: int | None = None,
-) -> list[dict]:
-    """Collect packages from build status stages.
-
-    Extracts relevant fields for markdown report generation.
-    Note: hashes are cached metadata and not included in markdown output.
-    Duration calculated from started_at and completed_at timestamps.
-    For failed/incomplete steps, uses run_completed_at as fallback timestamp.
-    """
-    names: list[str] = []
-    seen: set[str] = set()
-    for stage_data in stages.values():
-        for name in stage_data or {}:
-            if name not in seen:
-                names.append(name)
-                seen.add(name)
-
-    packages = []
-    for name in names:
-        validate = (stages.get("validate") or {}).get(name, {})
-        spec = (stages.get("spec") or {}).get(name, {})
-        vendor = (stages.get("vendor") or {}).get(name, {})
-        srpm = (stages.get("srpm") or {}).get(name, {})
-        mock = (stages.get("mock") or {}).get(name, {})
-        copr = (stages.get("copr") or {}).get(name, {})
-
-        copr_build_id = copr.get("build_id")
-        copr_url = COPR_BUILD_URL.format(copr_build_id) if copr_build_id else None
-
-        raw_version = (
-            spec.get("version")
-            or srpm.get("version")
-            or mock.get("version")
-            or copr.get("version")
-            or ""
-        )
-
-        packages.append(
-            {
-                "name": name,
-                "version": clean_version(raw_version),
-                "summary": (pkg_meta.get(name) or {}).get("summary", ""),
-                "badge": pkg_badge.get(name),
-                "mock_state": mock.get("state"),
-                "copr_state": copr.get("state"),
-                "copr_url": copr_url,
-                "stages": {
-                    "validate": {
-                        "state": validate.get("state"),
-                        "errors": validate.get("errors", 0),
-                        "warnings": validate.get("warnings", 0),
-                    },
-                    "spec": {
-                        "state": spec.get("state"),
-                        "date": _format_date(spec.get("started_at")),
-                        "duration": _format_duration(
-                            spec.get("started_at"),
-                            spec.get("completed_at"),
-                            run_completed_at,
-                        ),
-                        "reason": spec.get("reason"),
-                    },
-                    "vendor": {
-                        "state": vendor.get("state"),
-                        "date": _format_date(vendor.get("started_at")),
-                        "duration": _format_duration(
-                            vendor.get("started_at"),
-                            vendor.get("completed_at"),
-                            run_completed_at,
-                        ),
-                        "reason": vendor.get("reason"),
-                    },
-                    "srpm": {
-                        "state": srpm.get("state"),
-                        "date": _format_date(srpm.get("started_at")),
-                        "duration": _format_duration(
-                            srpm.get("started_at"),
-                            srpm.get("completed_at"),
-                            run_completed_at,
-                        ),
-                        "reason": srpm.get("reason"),
-                    },
-                    "mock": {
-                        "state": mock.get("state"),
-                        "date": _format_date(mock.get("started_at")),
-                        "duration": _format_duration(
-                            mock.get("started_at"),
-                            mock.get("completed_at"),
-                            run_completed_at,
-                        ),
-                        "reason": mock.get("reason"),
-                    },
-                    "copr": {
-                        "state": copr.get("state"),
-                        "date": _format_date(copr.get("started_at")),
-                        "duration": _format_duration(
-                            copr.get("started_at"),
-                            copr.get("completed_at"),
-                            run_completed_at,
-                        ),
-                        "reason": copr.get("reason"),
-                    },
-                },
-            }
-        )
-    return packages
-
-
-def collect_groups(groups_cfg: dict, pkg_by_name: dict) -> list[dict]:
     groups = []
-    for _key, group_data in groups_cfg.items():
+    for key, group_data in groups_cfg.items():
         pkgs = [
-            pkg_by_name[name]
+            {"name": name, "summary": (pkg_meta[name] or {}).get("summary", "")}
             for name in (group_data.get("packages") or [])
-            if name in pkg_by_name
+            if name in pkg_meta
         ]
         # Add packages from global repo (external packages)
         for global_pkg in group_data.get("packages_from_global_repo") or []:
@@ -191,16 +38,11 @@ def collect_groups(groups_cfg: dict, pkg_by_name: dict) -> list[dict]:
                     {
                         "name": global_pkg.get("name", ""),
                         "summary": global_pkg.get("summary", ""),
-                        "version": None,
-                        "badge": None,
-                        "mock_state": None,
-                        "copr_state": None,
-                        "copr_url": None,
                     }
                 )
         groups.append(
             {
-                "label": group_data.get("label", _key),
+                "label": group_data.get("label", key),
                 "badge": group_data.get("badge"),
                 "packages": pkgs,
             }
@@ -209,15 +51,16 @@ def collect_groups(groups_cfg: dict, pkg_by_name: dict) -> list[dict]:
 
 
 def main() -> None:
+    """#COPR-0012: render the requested README templates from yaml/NEWS/git inputs."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--format",
-        choices=["github", "copr", "full-report"],
+        choices=["github", "copr"],
         action="append",
         dest="formats",
-        help="Output format: github (table), copr (list), or full-report (detailed). "
+        help="Output format: github (table) or copr (list). "
         "Repeatable -- pair each with an --output to render several templates from "
-        "one build-report.db read/Copr poll instead of one process per format "
+        "one read of the inputs instead of one process per format "
         "(see docs/TODO.md TODO-0067). Defaults to a single 'github' render.",
     )
     parser.add_argument(
@@ -228,92 +71,18 @@ def main() -> None:
         help="Output file path, one per --format in the same order. If omitted for "
         "a single-format call, writes to stdout.",
     )
-    parser.add_argument(
-        "--skip-copr-poll",
-        action="store_true",
-        help="Skip polling COPR status updates (use cached status from build-report.db).",
-    )
-    parser.add_argument(
-        "--db-snapshot",
-        metavar="PATH",
-        help="#BUG-0031: render from a `make db-export-docs` snapshot (docs/db-snapshot.yaml) "
-        "instead of build-report.db -- for CI, which has no build history. Implies "
-        "--skip-copr-poll (a snapshot has no live build_ids to poll against).",
-    )
     args = parser.parse_args()
     formats = args.formats or ["github"]
     outputs = args.outputs or [None] * len(formats)
     if len(outputs) != len(formats):
         parser.error("--output must be given once per --format (or not at all)")
 
-    target = resolve_target(
-        os.environ.get("FEDORA_VERSION", "44"), os.environ.get("MOCK_CHROOT", "")
-    )
-
-    if args.db_snapshot:
-        # #BUG-0031: CI has no build-report.db (gitignored) to render from --
-        # read the committed `make db-export-docs` snapshot instead. No Copr
-        # poll: a snapshot's rows have no live process to poll against, and
-        # the whole point is a byte-reproducible render.
-        snapshot_path = Path(args.db_snapshot)
-        if not snapshot_path.exists():
-            print(f"error: --db-snapshot {snapshot_path} not found", file=sys.stderr)
-            sys.exit(1)
-        try:
-            snapshot = yaml.safe_load(snapshot_path.read_text()) or {}
-        except yaml.YAMLError as e:
-            print(f"error: failed to parse {snapshot_path}: {e}", file=sys.stderr)
-            sys.exit(1)
-        run_rows = [r for r in snapshot.get("runs", []) if r.get("target") == target]
-        run_row = run_rows[0] if run_rows else None
-        if run_row is None:
-            print(
-                f"error: no run for {target} in {snapshot_path}",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-        stages = build_db.stage_map_from_export(
-            snapshot.get("stage_results", []), target
-        )
-    else:
-        run_row = build_db.latest_run(target)
-        if run_row is None:
-            print(
-                f"error: no build recorded for {target} in build-report.db",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-        stages = build_db.stage_map(target)
-
-        # Poll COPR status for packages with non-terminal states (unless skipped)
-        if not args.skip_copr_poll:
-            packages_list = list(stages.get("copr", {}).keys())
-            if poll_copr_status(target, packages_list):
-                # Status was updated in the DB; reload to pick it up.
-                stages = build_db.stage_map(target)
-
-    run = {
-        "fedora_version": run_row.get("distro_version", target),
-        "mock_chroot": run_row.get("target", target),
-        "timestamp": _iso(run_row.get("started_at")),
-        "completed_at": run_row.get("completed_at"),
-    }
-
     pkg_meta = get_packages() if PACKAGES_YAML.exists() else {}
     repo = load_repo_yaml() if REPO_YAML.exists() else {}
     groups_cfg = load_groups_yaml() if GROUPS_YAML.exists() else {}
     badge_style = repo.get("documents", {}).get("badge_style")
 
-    pkg_badge: dict[str, dict] = {}
-    for group_data in groups_cfg.values():
-        if group_cfg_badge := group_data.get("badge"):
-            for name in group_data.get("packages") or []:
-                if isinstance(name, str):
-                    pkg_badge[name] = group_cfg_badge
-
-    packages = collect_packages(stages, pkg_meta, pkg_badge, run.get("completed_at"))
-    pkg_by_name = {p["name"]: p for p in packages}
-    groups = collect_groups(groups_cfg, pkg_by_name)
+    groups = collect_groups(groups_cfg, pkg_meta)
     contributors = collect_contributors(ROOT)
     news_limit = repo.get("documents", {}).get("news_limit", 8)
     news_entries = get_recent_news(ROOT, limit=news_limit)
@@ -321,14 +90,9 @@ def main() -> None:
 
     env = create_jinja_env()
     for fmt, out in zip(formats, outputs, strict=True):
-        template_name = (
-            f"readme-{fmt}.md.j2" if fmt != "full-report" else "full-report.md.j2"
-        )
-        template = env.get_template(template_name)
+        template = env.get_template(f"readme-{fmt}.md.j2")
         output = template.render(
-            run=run,
             repo=repo,
-            packages=packages,
             groups=groups,
             contributors=contributors,
             badge_style=badge_style,

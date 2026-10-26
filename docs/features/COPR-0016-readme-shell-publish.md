@@ -1,30 +1,28 @@
-# COPR-0016. Auto-publish the README branding shell in CI
+# COPR-0016. Auto-publish the READMEs in CI
 
 **Tags:** #ci #docs #publish
 
 ## User Story
 
-As a maintainer, I want the README's branding shell (logo, description, News, Docs,
-Support, License, People) refreshed on every push to `main`, so that it never goes
-stale even though CI can't render the full build-status body.
+As a maintainer, I want the READMEs refreshed on every push to `main`, so that News,
+the packages list and the branding never go stale between nightly runs.
 
 ## Behavior
 
-`.github/workflows/publish-readme.yml` runs `make readme-shell` on every push to
-`main` or manual dispatch, committing (`[skip ci]`) and pushing if anything changed.
-`scripts/gen-readme-shell.py` splices `__header.j2`/`__footer.j2` into `README.md`/
-`docs/README.copr.md` between existing `<!-- BEGIN: X -->`/`<!-- END: X -->` markers —
-everything between the header and footer (the packages table, build status) is left
-exactly as committed. `docs/full-report.md` isn't touched at all.
+`.github/workflows/publish-readme.yml` runs `make readme NO_CONTAINER=1` on every push
+to `main` (currently commented out in the workflow, so manual dispatch only), committing (`[skip ci]`) and pushing `README.md` and
+`docs/README.copr.md` if anything changed.
 
-Safe by construction: CI has no `build-report.db` (gitignored, no build history), so
-it can't run the full `make readme`; the shell-only path never touches the
-packages/build-status region, so there's no path to an empty-package README landing
-on `main` even from a from-scratch checkout.
+Safe by construction: the READMEs are rendered only from committed inputs
+(`packages.yaml`, `groups.yaml`, `repo.yaml`, `docs/NEWS.md`, git history — see
+[COPR-0012](COPR-0012-docs-generation.md)), so CI needs no `build-report.db` and a
+from-scratch checkout renders the same files as a local run. The earlier
+marker-splicing shell refresh (`gen-readme-shell.py`) is gone: it depended on
+`<!-- BEGIN/END -->` comments, which COPR cannot render.
 
 ## Implementation
 
-- `scripts/gen-readme-shell.py`, `.github/workflows/publish-readme.yml`.
+- `.github/workflows/publish-readme.yml`, `make readme`.
 
 ## Quirks & Decisions
 
@@ -35,12 +33,12 @@ belongs to [COPR-0012](COPR-0012-docs-generation.md), BUG-0030).
 
 ### Unit
 
-- `tests/test_readme_content.py`.
+- `tests/test_readme_content.py`, `tests/test_gen_report.py`.
 
 ### Human
 
-- Push a branding-only change (`repo.yaml`, `docs/NEWS.md`) to `main`; confirm the CI
-  workflow commits the regenerated shell with no packages-table diff.
+- Push a News-only change (`docs/NEWS.md`) to `main`; confirm the CI workflow commits
+  the regenerated READMEs with no other diff.
 
 ## Status
 

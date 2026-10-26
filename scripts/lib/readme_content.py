@@ -1,6 +1,5 @@
-"""Non-build-status content for generated docs: contributors, the news feed, and
-per-section visibility. Shared by gen-report.py (full regen, needs build-report.db)
-and gen-readme-shell.py (header/footer-only regen, doesn't).
+"""Content for the generated READMEs besides the package list: contributors, the news
+feed, and per-section visibility. Used by gen-report.py.
 """
 
 import re

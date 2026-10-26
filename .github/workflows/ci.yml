@@ -34,5 +34,5 @@ jobs:
       - name: Lint + test (no container -- already running in one)
         run: make lint test NO_CONTAINER=1
 
-      - name: Check generated docs match packages.yaml + docs/db-snapshot.yaml (#BUG-0031)
+      - name: Check generated READMEs match their inputs (#BUG-0031)
         run: make check-docs-drift

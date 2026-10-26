@@ -145,7 +145,7 @@ class TestFullCycleFinalize:
 
     def test_async_copr_failed_state_does_not_report(self):
         """Async mode: a 'failed' copr state doesn't drive exit or log analysis here --
-        it only becomes terminal later, when gen-report.py polls (see
+        it only becomes terminal later, when copr-wait or the next run polls (see
         lib.copr.poll_copr_status), and that's where the failed chroots'
         logs get fetched.
         """
@@ -1472,7 +1472,7 @@ class TestSingleContainerTargets:
         assert "PACKAGE=a,b" in analyze_line
         assert "SKIP_PACKAGES=b" in analyze_line
 
-    def test_readme_renders_all_three_formats_from_one_container(self):
+    def test_readme_renders_both_readmes_from_one_container(self):
         stdout = self._dry_run("readme")
         assert stdout.count("gen-report.py") == 1
         assert stdout.count("podman run --rm --privileged") == 1
@@ -1481,12 +1481,10 @@ class TestSingleContainerTargets:
         render_block = stdout[block_start:block_end]
         assert "--format github" in render_block
         assert "--format copr" in render_block
-        assert "--format full-report" in render_block
+        assert "full-report" not in render_block
         assert "--output ./README.md" in render_block
         assert "--output ./docs/README.copr.md" in render_block
-        assert "--output ./docs/full-report.md" in render_block
-        # The old per-template --skip-copr-poll is gone -- one shared poll now covers
-        # all three renders.
+        # #COPR-0012: the READMEs render from yaml/NEWS/git only -- no Copr poll.
         assert "--skip-copr-poll" not in render_block
 
 
@@ -1713,8 +1711,8 @@ class TestUpdateDailyResilience:
         assert "fmt" not in stdout[second_validate_pos:line_end]
 
     def test_stage_log_analyze_runs_after_readme_before_commit(self):
-        """#COPR-0022: stage-log-analyze must run after readme (whose
-        gen-report.py poll fetches newly-failed Copr chroot logs) and must not
+        """#COPR-0022: stage-log-analyze must run after copr-wait (which
+        fetches newly-failed Copr chroot logs) and must not
         abort the chain -- pkg-log-analysis.py exits non-zero to mean "issues
         found", not "this recipe failed". It also writes docs/nightly-summary.md,
         which must land in the commit.
@@ -1732,6 +1730,38 @@ class TestUpdateDailyResilience:
         """#COPR-0022: docs/nightly-summary.md must be staged if it was written."""
         stdout = self._dry_run()
         assert "docs/nightly-summary.md" in stdout
+
+
+class TestMarkdownReportsRemoved:
+    """#COPR-0012: the markdown build reports (docs/full-report.md, the README Build
+    Status section) and everything that existed only to render them in CI are gone.
+    The READMEs render from yaml/NEWS/git alone."""
+
+    def _make_n(self, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["make", "-n", *args], cwd=ROOT, capture_output=True, text=True
+        )
+
+    def test_update_daily_generates_and_stages_only_the_two_readmes(self):
+        result = self._make_n("update-daily", "COPR_REPO=nett00n/hyprland")
+        assert result.returncode == 0
+        for gone in ("full-report", "db-snapshot", "db-export-docs", "readme-shell"):
+            assert gone not in result.stdout
+        assert "README.md docs/README.copr.md" in result.stdout
+
+    def test_check_docs_drift_diffs_both_readmes_without_a_snapshot(self):
+        result = self._make_n("check-docs-drift")
+        assert result.returncode == 0
+        assert "--format github" in result.stdout
+        assert "--format copr" in result.stdout
+        for gone in ("full-report", "db-snapshot", "DOCS_SNAPSHOT"):
+            assert gone not in result.stdout
+
+    @pytest.mark.parametrize("target", ["gen-report", "readme-shell", "db-export-docs"])
+    def test_removed_targets_have_no_rule(self, target):
+        result = self._make_n(target)
+        assert result.returncode != 0
+        assert "No rule to make target" in result.stderr
 
 
 class TestDevToolingPrerequisite:

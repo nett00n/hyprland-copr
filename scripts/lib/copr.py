@@ -684,8 +684,8 @@ def fetch_failed_chroot_logs(
     succeeded" without another network round-trip. Best-effort: never raises.
 
     `run_id`, when the caller has one (stage-copr.py's synchronous path
-    does), is written to. gen-report.py's standalone poll doesn't, so falls
-    back to `target`'s most recent run -- there is always at least one by
+    does), is written to. Callers without one (copr-wait.py) fall back to
+    `target`'s most recent run -- there is always at least one by
     the time a build can be in this function (its copr stage row exists).
     """
     if run_id is None:
@@ -792,7 +792,7 @@ def poll_copr_status(
     Queries the status of pending builds and updates their state in
     build-report.db (touching only the `state` column -- see
     build_db.update_state). `run_id`, when given (full-cycle.py has one;
-    gen-report.py's standalone poll does not), mirrors a state change into
+    copr-wait.py does not), mirrors a state change into
     that run's `stage_history` row (#COPR-0015, #BUG-0063). Skips packages
     that don't have a build_id or are already in terminal states
     (success/failed).
@@ -801,10 +801,9 @@ def poll_copr_status(
     seconds until every polled row reaches a terminal state or `deadline_s`
     seconds have elapsed since the first pass -- so a caller like
     `scripts/copr-wait.py` can wait out an async `--nowait` submission before
-    the docs are rendered, instead of the single early pass `gen-report.py`'s
-    render used to see. `deadline_s=0` (the default) makes exactly one pass,
+    the results are recorded, instead of a single early pass. `deadline_s=0` (the default) makes exactly one pass,
     identical to this function's behavior before #BUG-0039 -- the pre-submit
-    poll in full-cycle.py and gen-report.py's own poll both rely on that.
+    poll in full-cycle.py relies on that.
 
     Args:
         target: build_db target key (mock chroot) to read/write copr rows for

@@ -110,7 +110,7 @@ still on disk.
   `stage-mock.py`, `stage-copr.py`) and `lib/copr.py`'s `fetch_failed_chroot_logs()`
   now pass `run_id`/`target` into `get_package_log_dir()`.
   `fetch_failed_chroot_logs()` falls back to `build_db.latest_run(target)` when
-  called without a `run_id` (gen-report.py's standalone poll has none of its own).
+  called without a `run_id`.
 - `full-cycle.py`: the old rmtree loop is gone; `main()` now creates this run's log
   dir, refreshes `logs/runs/latest`, and prunes right after `setup_run()`.
 - `stage-copr.py`'s `main()` now also refreshes `logs/runs/latest` right after its

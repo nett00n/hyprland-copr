@@ -31,7 +31,7 @@ conditional directly in `build.prep`/`commands`/`install` (see docs/packaging.md
 An edit to `templates/spec.j2`, `scripts/stage-spec.py`, or `scripts/lib/spec_utils.py`
 (the generator itself) does not force a rebuild: every package's spec/vendor/srpm/mock
 cache stays a hit, and the packages whose spec was actually generated from an older
-template or generator version are reported (`stage-show-plan`/`gen-report`) as
+template or generator version are reported (`stage-show-plan`) as
 `stale-template`/`stale-generator` instead (#BUG-0057, #BUG-0058).
 
 ## Implementation

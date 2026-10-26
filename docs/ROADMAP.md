@@ -47,8 +47,7 @@ current" at the end.
 
 ## Epic 1 — Clear the desk
 
-**Complete.** All items closed; see `docs/CHANGELOG.md`'s `## Unreleased`
-section for the #BUG-0055 #BUG-0080 #BUG-0079 #BUG-0052 #BUG-0009 #BUG-0006
+**Complete.** All items closed; see `docs/CHANGELOG.md` for the #BUG-0055 #BUG-0080 #BUG-0079 #BUG-0052 #BUG-0009 #BUG-0006
 #BUG-0099 #BUG-0082 #BUG-0081 #BUG-0086 #BUG-0102 #TODO-0011 entries.
 
 **Done when:** `pytest tests/` green on a bare host; `.env` says what it means.
@@ -57,7 +56,7 @@ section for the #BUG-0055 #BUG-0080 #BUG-0079 #BUG-0052 #BUG-0009 #BUG-0006
 
 ## Epic 2 — Guardrails
 
-**Complete.** All items closed; see `docs/CHANGELOG.md`'s `## Unreleased` section
+**Complete.** All items closed; see `docs/CHANGELOG.md`
 for the #BUG-0073 #BUG-0097 #BUG-0089 #BUG-0056 #BUG-0078 #BUG-0096 #BUG-0072
 entries. `lib.validation` gained `validate_tracker_ids`, `FIELD_TYPES`/
 `validate_field_types`, `validate_vendoring`, and `validate_dependency_drift`; a
@@ -73,8 +72,7 @@ packages.yaml scalar, and a vendoring/Source1 mismatch.
 
 ## Epic 3 — Build-db memory
 
-**Complete.** All items closed; see `docs/CHANGELOG.md`'s `## Unreleased`
-section for the #BUG-0063 #BUG-0059 #BUG-0064 #BUG-0061 #BUG-0065 #BUG-0098
+**Complete.** All items closed; see `docs/CHANGELOG.md` for the #BUG-0063 #BUG-0059 #BUG-0064 #BUG-0061 #BUG-0065 #BUG-0098
 #BUG-0057 #BUG-0058 #BUG-0060 #BUG-0062 entries.
 
 *The "why did run N rebuild 19 packages" pain, plus the cache lying about
@@ -90,23 +88,21 @@ Order:
    every `set_stage()`/`finalize_stage()` call site, so it's an extra insert with
    no caller plumbing. *First: it's the cheapest, and it starts accumulating the
    history the rest of this epic wants to read.* **Done** — see
-   `docs/CHANGELOG.md`'s `## Unreleased` section.
+   `docs/CHANGELOG.md`.
 2. **BUG-0059** — `last_success` alongside `last_attempt`. Same root cause as
    -0063; do immediately after, on the same table design. **Done** — landed
    together with BUG-0063 (same migration).
 3. **BUG-0064** — verify a cached package's *dependencies'* RPMs still exist in
    `local-repo/<target>/`. Today `is_cached()` checks only the package's own
    artifact, and the one check that would notice (`check_buildroot_repo()`) runs
-   inside the path the cache skips. **Done** — see `docs/CHANGELOG.md`'s
-   `## Unreleased` section.
+   inside the path the cache skips. **Done** — see `docs/CHANGELOG.md`.
 4. **BUG-0061 + BUG-0065** — artifact `sha256` (with an mtime/size guard) and
    the `arch` column, as **one** migration. -0065's own entry says to fold it in.
-   **Done**, together with BUG-0098 (see below) — see `docs/CHANGELOG.md`'s
-   `## Unreleased` section. The next full build after this landed rebuilt
+   **Done**, together with BUG-0098 (see below) — see `docs/CHANGELOG.md`. The next full build after this landed rebuilt
    every package once, as expected.
 5. **BUG-0057** — stop `spec.j2` edits force-rebuilding all 49 packages; report
    "spec generated from an outdated template" instead. **Done** — see
-   `docs/CHANGELOG.md`'s `## Unreleased` section.
+   `docs/CHANGELOG.md`.
 6. **BUG-0058** — track the generator version as a cache input; report packages
    last built with an older generator. Same code path as -0057. **Done** —
    landed together with BUG-0057.
@@ -116,8 +112,7 @@ Order:
    with whichever of -0061/-0057 already costs a rebuild rather than paying twice.
    **Done** — landed in the same migration/commit as BUG-0061+BUG-0065 above.
 8. **BUG-0060** — `make db-export` (sqlite → yaml/json snapshot). D1, and useful
-   input to BUG-0031 in Epic 4. **Done** — see `docs/CHANGELOG.md`'s
-   `## Unreleased` section.
+   input to BUG-0031 in Epic 4. **Done** — see `docs/CHANGELOG.md`.
 9. **BUG-0062** — host-side path resolution for `db-shell`/`db-usage`/`db-prune`.
    Can only ever be partial (the rpmbuild volume has no host path at all) — take
    the repo + vendor-store realms and say so. **Done** — landed together with
@@ -130,7 +125,7 @@ run, and a missing dependency RPM invalidates the cache that depends on it.
 
 ## Epic 4 — Observability
 
-**Complete.** All items closed; see `docs/CHANGELOG.md`'s `## Unreleased` section
+**Complete.** All items closed; see `docs/CHANGELOG.md`
 for the #COPR-0022 #BUG-0100 #BUG-0039 #BUG-0031 #BUG-0101 entries.
 
 *Depended on Epic 3's `run_id` being a real, queryable dimension. This is what
@@ -148,7 +143,7 @@ Order:
    (`make stage-log-analyze LOG_SUMMARY_OUTPUT=docs/nightly-summary.md`, wired
    into `_update-daily`) linking back to those per-run logs. The live-tailing
    half (bind-mount mock's resultdir) stays a separate, cheap follow-up, per
-   the original plan — see `docs/CHANGELOG.md`'s `## Unreleased` section.
+   the original plan — see `docs/CHANGELOG.md`.
 2. **BUG-0100**. **Done** — every warn-and-continue site in `update-versions.py`
    (plus `lib.upstream.fetch_tags()`'s own fetch/timeout failure, previously
    indistinguishable from an upstream with no tags) now collects into one
@@ -157,19 +152,19 @@ Order:
    ([COPR-0022](features/COPR-0022-run-scoped-logs-and-summary.md)), and a
    count in `_update-daily`'s closing banner. Exit code stays 0 — see
    [COPR-0004](features/COPR-0004-version-auto-bump.md)'s Behavior section for
-   why — see `docs/CHANGELOG.md`'s `## Unreleased` section.
+   why — see `docs/CHANGELOG.md`.
 3. **BUG-0039** — resubmitted packages publish as `unknown` (async `--nowait`
    submit, `readme` runs seconds later, one poll too early). **Done** — see
-   `docs/CHANGELOG.md`'s `## Unreleased` section.
+   `docs/CHANGELOG.md`.
 4. **BUG-0031** — CI check that generated docs still match
    `packages.yaml`/`build-report.db`. Needs the design decision its entry names
    (snapshot vs. partial diff) — **BUG-0060's `db-export` from Epic 3 is the
    natural answer**, which is why it's sequenced after. **Done** — see
-   `docs/CHANGELOG.md`'s `## Unreleased` section.
+   `docs/CHANGELOG.md`.
 5. **BUG-0101** — concurrency in `update-versions.py`'s per-upstream loop.
    Split from BUG-0100 as materially riskier (shared `.git/modules`); its
    aggregate reporting has shipped (item 2 above), so this can now show what
-   broke. **Done** — see `docs/CHANGELOG.md`'s `## Unreleased` section.
+   broke. **Done** — see `docs/CHANGELOG.md`.
 
 **Done when:** a failed nightly leaves a committed summary pointing at logs that still
 exist tomorrow. **Met** — all 5 items above are done.
@@ -281,7 +276,7 @@ to do — resolve them explicitly so they stop sitting in `## Unsorted`.*
 
 1. **BUG-0030** — contributors render concatenated (`trim_blocks` eats the newline
    after `{% endif %}`) *and* `collect_contributors()` dedupes by name not email.
-   Needs both fixes. D1; visible today at `docs/full-report.md:1072`.
+   Needs both fixes. D1; it used to show in the (since removed) `docs/full-report.md`.
 2. **BUG-0047** — `normalize_file_entry` never canonicalizes the 39 already-
    `%{_prefix}/...` entries; no `/usr/lib` in `PREFIXES`. Cosmetic.
 3. **BUG-0088** — Containerfile reproducibility. The honest fix is digest-pinning

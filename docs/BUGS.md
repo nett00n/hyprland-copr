@@ -80,10 +80,10 @@ Shipped behavior doing the wrong thing.
   iteration, so contributor entries render concatenated on one line with no `-`
   before the second name. `collect_contributors()` (now in
   `lib/readme_content.py:12-27`, moved out of `gen-report.py` in the 2026-08-03
-  refactor -- shared by `gen-report.py` and `gen-readme-shell.py`) reads the commit
+  refactor -- used by `gen-report.py`) reads the commit
   email but dedupes by name only, so the same person committing under two
-  `user.name` values also renders as two separate entries. Both defects are visible
-  together today in the committed `docs/full-report.md:1072`. `README.md`/
+  `user.name` values also renders as two separate entries. Both defects used to be
+  visible together in the (since removed) `docs/full-report.md`. `README.md`/
   `docs/README.copr.md` look clean only because `publish-readme.yml`'s
   `actions/checkout@v4` uses the default shallow `fetch-depth: 1` (`:21`), so CI's
   `git log` only ever sees one author -- a local `make readme` on a full clone

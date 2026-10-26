@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """#BUG-0039, #COPR-0007: bound-retry-poll Copr until every build this run
-submitted reaches a terminal state, before docs are rendered.
+submitted reaches a terminal state, recording the result (and fetching failed-chroot logs).
 
 `stage-copr.py` submits with `--nowait` (async), so a package resubmitted
-tonight starts as Copr state `unknown` in build-report.db. `make readme` used
-to poll once, seconds later -- almost always too early for a build that just
-started. This script polls repeatedly (see lib.copr.poll_copr_status's
-`deadline_s`/`interval_s`) so `make readme`, run right after, renders each
-package's real state instead.
+tonight starts as Copr state `unknown` in build-report.db. A single poll seconds
+later is almost always too early for a build that just started. This script
+polls repeatedly (see lib.copr.poll_copr_status's `deadline_s`/`interval_s`) so
+each package's real state, and its failed-chroot logs, are recorded.
 
 A build still non-terminal when the deadline elapses is left as `unknown` --
 it resolves on the *next* run's existing pre-submit poll

@@ -16,16 +16,16 @@ file and `docs/features/` work together.
 - [X] [COPR-0009. Analyze build logs and surface actionable errors](features/COPR-0009-log-analysis.md) - `#build` `#diagnostics`
 - [X] [COPR-0010. Local quality gate (validate, test, lint, format)](features/COPR-0010-quality-gate.md) - `#ci` `#lint` `#testing` `#quality`
 - [X] [COPR-0011. Reproducible toolbox container for build automation](features/COPR-0011-toolbox-container.md) - `#container` `#reproducible`
-- [X] [COPR-0012. Regenerate docs from the build-state source of truth](features/COPR-0012-docs-generation.md) - `#docs` `#reporting`
+- [X] [COPR-0012. Render the READMEs from the repo's source of truth](features/COPR-0012-docs-generation.md) - `#docs`
 - [X] [COPR-0013. Manage the package set](features/COPR-0013-package-set-management.md) - `#packages` `#maintenance`
 - [X] [COPR-0014. Request a new package via GitHub issue](features/COPR-0014-package-request-intake.md) - `#packages` `#intake`
 - [X] [COPR-0015. Persist build state in build-report.db](features/COPR-0015-build-state-db.md) - `#persistence` `#state` `#caching`
-- [X] [COPR-0016. Auto-publish the README branding shell in CI](features/COPR-0016-readme-shell-publish.md) - `#ci` `#docs` `#publish`
+- [X] [COPR-0016. Auto-publish the READMEs in CI](features/COPR-0016-readme-shell-publish.md) - `#ci` `#docs` `#publish`
 - [X] [COPR-0017. Build every supported chroot locally before submitting once](features/COPR-0017-chroot-matrix-build.md) - `#build` `#matrix` `#copr`
 - [X] [COPR-0018. Generate the spec and SRPM once, reuse across every chroot](features/COPR-0018-single-spec-single-srpm.md) - `#build` `#matrix` `#spec` `#srpm`
 - [ ] [COPR-0019. Distro/arch-agnostic build target](features/COPR-0019-build-target.md) - `#matrix` `#build`
 - [ ] [COPR-0020. aarch64 local build support](features/COPR-0020-aarch64-local-builds.md) - `#matrix` `#build` `#arch`
-- [ ] [COPR-0021. Per-chroot Copr rows and a package × target matrix report](features/COPR-0021-copr-chroot-matrix.md) - `#matrix` `#copr` `#reporting`
+- [ ] [COPR-0021. Per-chroot Copr rows](features/COPR-0021-copr-chroot-matrix.md) - `#matrix` `#copr`
 - [X] [COPR-0022. Run-scoped logs and a durable nightly summary](features/COPR-0022-run-scoped-logs-and-summary.md) - `#daily` `#diagnostics` `#logs`
 - [ ] [COPR-0023. Upstream source signature verification](features/COPR-0023-source-signature-verification.md) - `#security` `#provenance`
 - [ ] [COPR-0024. Agent memory via HyperMnesia (Tier 0/1 constraints + doc search)](features/COPR-0024-hypermnesia-memory.md) - `#tooling` `#docs` `#agents`
@@ -62,7 +62,6 @@ file and `docs/features/` work together.
 - `#publish`: COPR-0007, COPR-0016
 - `#quality`: COPR-0010
 - `#release`: COPR-0008
-- `#reporting`: COPR-0012, COPR-0021
 - `#reproducible`: COPR-0011
 - `#security`: COPR-0023
 - `#spec`: COPR-0005, COPR-0018

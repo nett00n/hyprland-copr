@@ -143,7 +143,7 @@ def recorded_version(entries: list[dict | None], meta: dict) -> str:
 
     `entries` are stage_results rows (or None) in precedence order -- callers pass
     [spec, srpm, mock, copr] entries (see VERSION_STAGE_PRECEDENCE), the same precedence
-    gen-report.py uses. Falls back to packages.yaml's declared `version` so pre-build
+    the stage tables use. Falls back to packages.yaml's declared `version` so pre-build
     tables (stage-show-plan) still show something useful, and to "-" if neither is
     available.
     """

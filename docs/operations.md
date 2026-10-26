@@ -219,7 +219,7 @@ Rules:
 - The vendor stage is special-cased: whether a package has a vendor stage at all is decided
   from `packages.yaml` (`lib.vendor.needs_vendoring`) every run, never from a stored DB row.
   A non-Go/Rust package's vendor row always reads `reason="not-vendored"` and renders as `n/a`
-  in the summary table and `docs/full-report.md` — it is never reported as `"cached"`.
+  in the summary table — it is never reported as `"cached"`.
 - `make stage-<x>` (any single stage, standalone) clears that stage's `build-report.db` rows for
   the packages being built via `lib.yaml_utils.prepare_stage()`, unless `PROCEED_BUILD=true`.
   `full-cycle` never calls `prepare_stage()`, for any stage — those rows are the hash cache
@@ -295,19 +295,19 @@ leftovers, not served to mock) — remove with `rm -rf local-repo/*.rpm local-re
 ## Regenerating docs
 
 ```shell
-make readme   # regenerates README.md, docs/README.copr.md, docs/full-report.md
+make readme   # regenerates README.md and docs/README.copr.md
 ```
 
-Renders from `build-report.db` via `scripts/gen-report.py` (`--format github|copr|full-report`).
-By default it polls COPR for in-progress build status and updates the DB; `make readme` does
-this only once (the GitHub README pass) and passes `--skip-copr-poll` for the other two, to
-avoid redundant API calls.
+Renders from `packages.yaml`, `groups.yaml`, `repo.yaml`, `docs/NEWS.md` and git history via
+`scripts/gen-report.py` (`--format github|copr`). It reads no `build-report.db` and polls nothing.
+There is no markdown build report; build state lives in `build-report.db`, the stage logs and
+`docs/nightly-summary.md`.
 
 ### `repo.yaml` reference
 
 Branding/layout config for generated docs -- name, logo, license, support links, badge style,
 and (below) the News feed and per-section visibility. Package data itself comes from
-`packages.yaml`/`build-report.db`, not this file.
+`packages.yaml`/`groups.yaml`, not this file.
 
 ```yaml
 documents:
@@ -328,45 +328,26 @@ Every key under `sections` is independent -- e.g. set `contributors: false` to h
 render (see `docs/BUGS.md` BUG-0030) without touching the underlying git-log-based collection
 logic. Omitting `documents.sections` entirely renders every block, same as today.
 
-### CI docs-shell publish
+### CI README publish
 
-`make readme` needs `build-report.db` (gitignored) to know which packages exist and their build
-status -- CI starts with none, so it can't run `make readme` safely; doing so would render zero
-packages and, if auto-committed, wipe the real README.
-
-```shell
-make readme-shell   # regenerate only the branding shell, no build-report.db needed
-```
-
-`scripts/gen-readme-shell.py` renders `__header.j2`/`__footer.j2` (logo, description, News,
-Docs, Support, License, People) from `repo.yaml`/`docs/NEWS.md`/git log, and splices the result
-into `README.md`/`docs/README.copr.md` between their existing `<!-- BEGIN: X -->`/
-`<!-- END: X -->` markers -- everything between the header and footer (the packages table,
-build status) is left exactly as committed. `docs/full-report.md` isn't touched at all; it's
-build-data end to end and stays a `make readme`-local artifact.
-
-`.github/workflows/publish-readme.yml` runs this on every push to `main` and on manual dispatch,
-committing (`[skip ci]`, to avoid re-triggering itself) and pushing if anything changed. Safe by
-construction: the script cannot touch the packages/build-status region, so there's no path to
-an empty-package README landing on `main` even from a from-scratch checkout.
+`.github/workflows/publish-readme.yml` runs `make readme NO_CONTAINER=1` on manual dispatch
+(its push-to-`main` trigger is currently commented out), committing (`[skip ci]`, to avoid re-triggering itself) and
+pushing `README.md`/`docs/README.copr.md` if anything changed. Safe from a from-scratch
+checkout: the READMEs render only from committed inputs, so CI needs no `build-report.db`.
 
 ### CI docs-drift check (#BUG-0031)
 
 `.github/workflows/ci.yml` also runs `make check-docs-drift` on every push/PR (full clone,
 `fetch-depth: 0`, so `collect_contributors()` matches a real local `make readme`'s output --
-see `docs/BUGS.md` BUG-0030). It re-renders `README.md`/`docs/README.copr.md`/
-`docs/full-report.md` from `packages.yaml` + the committed `docs/db-snapshot.yaml` and fails on
-any diff against the committed files:
+see `docs/BUGS.md` BUG-0030). It re-renders `README.md`/`docs/README.copr.md` from the yaml
+files, `docs/NEWS.md` and git history and fails on any diff against the committed files:
 
 ```shell
-make db-export-docs   # writes docs/db-snapshot.yaml (runs latest-per-target + stage_results only)
 make check-docs-drift # no container -- pure render+diff, safe to run the same way in CI
 ```
 
-`docs/db-snapshot.yaml` is kept fresh by `_update-daily`, which runs `db-export-docs` right
-after `readme` and commits it alongside the other generated docs. If you hand-edit a generated
-doc, or run `make readme` outside the nightly job, re-run `make db-export-docs` before pushing
-or CI will (correctly) flag the drift.
+If you hand-edit a generated doc, re-run `make readme` before pushing or CI will (correctly)
+flag the drift.
 
 ## `update-daily`
 
@@ -404,7 +385,7 @@ because `full-cycle.py`'s
 ran, and that's the file the commit and the generated docs are built from (docs/BUGS.md
 BUG-0044); it skips `fmt` because the rewrite already goes through the same formatter `make
 fmt` itself uses, so there's nothing left to reformat. Only stages `packages.yaml packages/
-README.md docs/README.copr.md docs/full-report.md` — the automation never touches
+README.md docs/README.copr.md` — the automation never touches
 `templates/`/`docs/NEWS.md`, so hand-edits there are never swept into a daily commit. Intended to run
 unattended from an external nightly cron (the repo itself has no scheduler); pass `PUSH=1` for
 that.

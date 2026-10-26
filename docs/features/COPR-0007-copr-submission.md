@@ -37,10 +37,10 @@ independently, matching the old behavior.
 After the matrix submits, `make copr-wait` bounds a retry poll
 (`lib.copr.poll_copr_status(..., deadline_s=, interval_s=)`) for up to
 `COPR_POLL_TIMEOUT` seconds (default 1800), re-checking every `COPR_POLL_INTERVAL`
-seconds (default 30), so the docs generated right after (`make readme`) render each
-resubmitted package's real state instead of the stale `unknown` it starts async
+seconds (default 30), so each resubmitted package's real state (and failed-chroot
+logs) is recorded in the build db instead of the stale `unknown` it starts async
 submission with (#BUG-0039). A package still non-terminal at the deadline keeps
-`unknown` in this run's docs. `copr-wait` always exits 0 — a build still running at
+`unknown` in this run. `copr-wait` always exits 0 — a build still running at
 the deadline is not a nightly failure. A plain `make full-cycle` resolves such a row
 on its next pre-submit `poll_copr_status()` call; the matrix path's `SKIP_COPR`
 passes do not poll, which is why submission itself must not depend on that (below).

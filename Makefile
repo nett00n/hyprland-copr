@@ -165,7 +165,7 @@ LOCK_DISABLE ?= # bypass for hosts without flock, or a deliberate parallel run
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-new delete-package set-release gather-requires gen-report readme readme-shell copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily notify notify-summary build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr copr-wait stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export db-export-docs check-docs-drift db-nuke upstream-sync upstream-clean sync-hard-reset
+.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-new delete-package set-release gather-requires readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily notify notify-summary build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr copr-wait stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export check-docs-drift db-nuke upstream-sync upstream-clean sync-hard-reset
 
 save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
 	@mkdir -p logs
@@ -381,24 +381,15 @@ gather-requires: check-image check-venv setup-volumes ## Suggest requires entrie
 	@test -n "$(RPM)" || (echo "$(HIGHLIGHT_PREFIX) Error: RPM is required (e.g. RPM=local-repo/fedora-44-x86_64/hyprutils-0.14.0.fc44.x86_64.rpm)"; exit 1)
 	$(CONTAINER_PYTHON) scripts/gather-requires.py $(RPM)
 
-gen-report: check-image check-venv setup-volumes ## Render build-report.db to stdout for FEDORA_VERSION (--format github|copr)
-	$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) \
-		/work/.venv/bin/python3 scripts/gen-report.py $(if $(FORMAT),--format $(FORMAT),)
-
-readme: check-image check-venv setup-volumes ## Generate README.md, docs/README.copr.md, and docs/full-report.md for FEDORA_VERSION
+readme: check-image check-venv setup-volumes ## Generate README.md and docs/README.copr.md from packages.yaml/groups.yaml/repo.yaml, docs/NEWS.md and git history (#COPR-0012; no build-report.db, no Copr poll)
 	@mkdir -p "$(MAKE_LOGS_DIR)/readme"
-	@$(CONTAINER_RUN) env FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) \
+	@$(CONTAINER_RUN) \
 		/work/.venv/bin/python3 scripts/gen-report.py \
-			--format github      --output ./README.md \
-			--format copr        --output ./docs/README.copr.md \
-			--format full-report --output ./docs/full-report.md \
-		2>"$(MAKE_LOGS_DIR)/readme/render.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ README/docs generation failed"; exit 1)
+			--format github --output ./README.md \
+			--format copr   --output ./docs/README.copr.md \
+		2>"$(MAKE_LOGS_DIR)/readme/render.log" || (echo "$(HIGHLIGHT_PREFIX) ✗ README generation failed"; exit 1)
 	@echo "$(HIGHLIGHT_PREFIX) ✓ GitHub README generated"
 	@echo "$(HIGHLIGHT_PREFIX) ✓ COPR README generated"
-	@echo "$(HIGHLIGHT_PREFIX) ✓ Full Report generated"
-
-readme-shell: check-image check-venv ## Regenerate only the branding shell of README.md/docs/README.copr.md (no build-report.db needed; for CI)
-	$(call run_with_result,$(CONTAINER_PYTHON) scripts/gen-readme-shell.py,Readme shell updated,Readme shell update failed)
 
 db-usage: check-image check-venv setup-volumes ## Report disk usage of tracked build artifacts by package/target. VERIFY=1 also re-hashes every artifact to flag corruption
 	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --usage $(if $(filter 1,$(VERIFY)),--verify,)
@@ -410,27 +401,17 @@ db-export: check-image check-venv setup-volumes ## Snapshot runs/stage_results/s
 	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --export \
 		$(if $(FORMAT),--format $(FORMAT),) $(if $(OUTPUT),--output $(OUTPUT),)
 
-DOCS_SNAPSHOT := docs/db-snapshot.yaml
-
-db-export-docs: check-image check-venv setup-volumes ## #BUG-0031: snapshot latest run + stage_results per target, for CI docs-drift checking. OUTPUT=path (default docs/db-snapshot.yaml)
-	@$(CONTAINER_PYTHON) scripts/db-artifacts.py --export-docs \
-		$(if $(FORMAT),--format $(FORMAT),) --output $(if $(OUTPUT),$(OUTPUT),$(DOCS_SNAPSHOT))
-
-check-docs-drift: check-venv ## #BUG-0031: fail if README.md/docs/README.copr.md/docs/full-report.md don't match docs/db-snapshot.yaml + packages.yaml (no container -- pure render+diff, safe for CI)
-	@test -f $(DOCS_SNAPSHOT) || (echo "$(HIGHLIGHT_PREFIX) ✗ $(DOCS_SNAPSHOT) not found -- run make db-export-docs first"; exit 1)
+check-docs-drift: check-venv ## #BUG-0031: fail if README.md/docs/README.copr.md don't match what gen-report.py renders from the yaml files, docs/NEWS.md and git history (no container -- pure render+diff, safe for CI)
 	@rm -rf .docs-drift-check && mkdir -p .docs-drift-check
-	@FEDORA_VERSION=$(FEDORA_VERSION) MOCK_CHROOT=$(MOCK_CHROOT) .venv/bin/python3 scripts/gen-report.py \
-		--db-snapshot $(DOCS_SNAPSHOT) \
-		--format github      --output .docs-drift-check/README.md \
-		--format copr        --output .docs-drift-check/README.copr.md \
-		--format full-report --output .docs-drift-check/full-report.md \
+	@.venv/bin/python3 scripts/gen-report.py \
+		--format github --output .docs-drift-check/README.md \
+		--format copr   --output .docs-drift-check/README.copr.md \
 	|| (echo "$(HIGHLIGHT_PREFIX) ✗ docs-drift render failed"; rm -rf .docs-drift-check; exit 1)
 	@if diff -u README.md .docs-drift-check/README.md \
-		&& diff -u docs/README.copr.md .docs-drift-check/README.copr.md \
-		&& diff -u docs/full-report.md .docs-drift-check/full-report.md; then \
-		echo "$(HIGHLIGHT_PREFIX) ✓ Docs match $(DOCS_SNAPSHOT) + packages.yaml"; \
+		&& diff -u docs/README.copr.md .docs-drift-check/README.copr.md; then \
+		echo "$(HIGHLIGHT_PREFIX) ✓ Docs match packages.yaml/groups.yaml/repo.yaml/NEWS"; \
 	else \
-		echo "$(HIGHLIGHT_PREFIX) ✗ Generated docs drifted from $(DOCS_SNAPSHOT)/packages.yaml -- run make readme && make db-export-docs"; \
+		echo "$(HIGHLIGHT_PREFIX) ✗ Generated docs drifted from their inputs -- run make readme"; \
 		rm -rf .docs-drift-check; \
 		exit 1; \
 	fi
@@ -530,8 +511,7 @@ SYNCHRONOUS_COPR_BUILD ?=
 COPR_RESUBMIT ?=
 REQUIRE_CHROOT_COVERAGE ?=
 # #BUG-0039: how long/often `make copr-wait` retries polling Copr for a build
-# submitted async (--nowait) to reach a terminal state, before `make readme`
-# renders the nightly docs.
+# submitted async (--nowait) to reach a terminal state.
 COPR_POLL_TIMEOUT ?= 1800
 COPR_POLL_INTERVAL ?= 30
 
@@ -695,12 +675,8 @@ _update-daily:
 	@# already goes through write_yaml_file's FORMAT_FILE, same as format-yaml.py.
 	$(MAKE) validate-packages || exit 1
 	$(MAKE) readme copr-description || exit 1
-	@# #BUG-0031: snapshot right after readme so docs/db-snapshot.yaml always
-	@# matches the docs just rendered from the same build-report.db state --
-	@# CI's `make check-docs-drift` re-renders from this snapshot and diffs.
-	$(MAKE) db-export-docs || exit 1
-	@# stage-log-analyze runs here, after readme's gen-report.py has polled Copr and
-	@# fetched any newly-failed chroot logs (see lib.copr.poll_copr_status), and
+	@# stage-log-analyze runs here, after copr-wait has polled Copr and fetched
+	@# any newly-failed chroot logs (see lib.copr.poll_copr_status), and
 	@# writes docs/nightly-summary.md (#COPR-0022) -- each run's logs live under
 	@# their own logs/runs/<run_id>/ (see lib.paths.get_run_log_dir), pruned by
 	@# retention policy rather than destroyed at the start of the next run, so
@@ -708,7 +684,7 @@ _update-daily:
 	@# (formerly BUG-0041). pkg-log-analysis.py exits non-zero when it finds
 	@# issues (not an error), so this must not abort the recipe.
 	$(MAKE) stage-log-analyze LOG_SUMMARY_OUTPUT=docs/nightly-summary.md || true
-	git add packages.yaml packages/ sources.lock.yaml README.md docs/README.copr.md docs/full-report.md $(DOCS_SNAPSHOT) || exit 1
+	git add packages.yaml packages/ sources.lock.yaml README.md docs/README.copr.md || exit 1
 	@[ -f docs/nightly-summary.md ] && git add docs/nightly-summary.md || true
 	@if git diff --cached --quiet; then \
 		echo "$(HIGHLIGHT_PREFIX) Nothing to commit (no version/doc changes tonight)."; \
