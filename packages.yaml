@@ -1664,6 +1664,38 @@ libdwarf-code:
   summary: Library to access DWARF debugging information
   url: https://github.com/davea42/libdwarf-code
   version: 2.3.3
+matugen:
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
+  build_requires:
+  - cargo
+  - rustc
+  depends_on: []
+  description: |
+    A Material You and base16 color generation tool with templates. Matugen
+    generates a color scheme from an image or a color, then renders user
+    templates (GTK, terminals, Hyprland, bars and more) with the result.
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/matugen'
+  license: GPL-2.0-or-later
+  release: 2
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+  summary: A Material You and base16 color generation tool with templates
+  url: https://github.com/InioX/matugen
+  version: 4.2.0
 mpvpaper:
   auto_update:
     release_type: latest-tag

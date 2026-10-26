@@ -584,3 +584,9 @@ greyline:
     sha256: 5d5584f93e92eda7a2dbba394da6fd093149db4fa1bc4c0f6ae74ba793cbcf0a
     size: 4432497
     recorded: '2026-10-26'
+matugen:
+  matugen-4.2.0.tar.gz:
+    url: https://github.com/InioX/matugen/archive/refs/tags/v4.2.0.tar.gz#/matugen-4.2.0.tar.gz
+    sha256: 82044ab8ac3e793b2b94f8f75917b348b4038585133a77c07f5de59c88d65244
+    size: 2284566
+    recorded: '2026-10-26'

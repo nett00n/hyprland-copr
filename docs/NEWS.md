@@ -4,35 +4,53 @@ Maintainer's microblog, informal. Newest first, dated `## YYYY-MM-DD` entries, o
 paragraph each. README shows the most recent entries - see
 `scripts/gen-report.py:get_recent_news()`.
 
+## 2026-10-26
+
+Added Packages:
+
+- greyline
+- matugen
+- usbtree
+
 ## 2026-10-22
 Zig-based packages are now supported: the build system and the vendoring of `build.zig.zon` dependencies are automated like Go and Rust.
 
 Added Packages:
+
 - swaylock-effects
 - swaylock-plugin
 - waylock
 
 ## 2026-10-21
+
 Added Packages:
+
 - neowall
 
 ## 2026-10-12
+
 Added Packages:
+
 - wl-clip-persist
 - OpenLogi
 
 ## 2026-09-17
+
 Added Packages:
+
 - LambDock
 - SwayOSD
 
 ## 2026-08-10
+
 Added Packages:
+
 - Ironbar
 
 ## 2026-08-09
 
 Fixed packages:
+
 - screeninfo - was not built successfully on fedora 43 - automation fix
 - quickshell - was not built successfully on fedora 43 - additional flag in build process
 - Hyprland - was not built sucessfully on fedora 43 - applied LionHeartP's patch. It builds locally but copr still fails

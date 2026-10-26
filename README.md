@@ -127,6 +127,7 @@ Added Packages:
 - `hyprland-per-window-layout` — Per-window keyboard layout daemon for Hyprland
 - `ironbar` — Customisable Wayland GTK4 bar written in Rust
 - `lambdock` — Wayland desktop dock customizable with GNU Guile Scheme
+- `matugen` — A Material You and base16 color generation tool with templates
 - `mpvpaper` — A video wallpaper program for wlroots based wayland compositors.
 - `neowall` — GPU-accelerated live wallpaper engine using GLSL shaders
 - `network-manager-applet` — Tray applet and an advanced network connection editor
