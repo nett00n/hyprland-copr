@@ -15,6 +15,7 @@ Added Packages:
 - pywal - Generate and change color-schemes on the fly (original, archived upstream)
 - pywal16 - Maintained pywal fork; conflicts with pywal
 - usbtree - Live USB device tree in your terminal
+- wpgtk - GTK+ theme/wallpaper manager which uses pywal as its core
 
 ## 2026-10-22
 Zig-based packages are now supported: the build system and the vendoring of `build.zig.zon` dependencies are automated like Go and Rust.

@@ -2686,6 +2686,57 @@ wl-clip-persist:
   summary: Keep Wayland clipboard even after programs close
   url: https://github.com/Linus789/wl-clip-persist
   version: 0.5.0
+wpgtk:
+  build:
+    commands: []
+    install:
+    - '%pyproject_install'
+    - install -Dpm0644 wpgtk/misc/wpgtk.desktop -t %{buildroot}%{_datadir}/applications
+    - install -Dpm0644 completions/bash/wpg -t %{buildroot}%{bash_completions_dir}
+    - install -Dpm0644 completions/zsh/_wpg -t %{buildroot}%{zsh_completions_dir}
+    no_lto: false
+    prep:
+    - sed -i '/"pywal>=3.3.0",/d' pyproject.toml
+    save_files: wpgtk
+    system: python
+  build_requires:
+  - desktop-file-utils
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-pip
+  - python3-setuptools
+  - python3-wheel
+  depends_on: []
+  description: |
+    Wpgtk is a color-scheme, wallpaper and template manager with a GTK+ interface. It
+    uses pywal as its color generator and adds editing and saving of color schemes
+    together with their wallpapers, a template system that replaces keywords in any
+    text file when you change theme, and a GTK+ theme made for it. Works with either
+    pywal16 or pywal.
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/wpg'
+  - '%{_datadir}/applications/wpgtk.desktop'
+  - '%{bash_completions_dir}/wpg'
+  - '%{zsh_completions_dir}/_wpg'
+  license: GPL-2.0-only
+  release: 2
+  requires:
+  - (pywal16 or pywal)
+  - gtk3
+  - procps-ng
+  - python3-gobject
+  - python3-pillow
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: GTK+ theme/wallpaper manager which uses pywal as its core
+  url: https://github.com/deviantfero/wpgtk
+  version: 6.7.1
 xdg-desktop-portal-hyprland:
   build:
     system: cmake

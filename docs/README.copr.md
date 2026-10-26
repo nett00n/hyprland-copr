@@ -96,6 +96,7 @@
 - `waylock` — Small screenlocker for Wayland compositors
 - `waypaper` — GUI wallpaper manager for Wayland and Xorg Linux systems
 - `wl-clip-persist` — Keep Wayland clipboard even after programs close
+- `wpgtk` — GTK+ theme/wallpaper manager which uses pywal as its core
 
 ### Other dependencies
 
@@ -129,6 +130,7 @@ Added Packages:
 - pywal - Generate and change color-schemes on the fly (original, archived upstream)
 - pywal16 - Maintained pywal fork; conflicts with pywal
 - usbtree - Live USB device tree in your terminal
+- wpgtk - GTK+ theme/wallpaper manager which uses pywal as its core
 
 ### 2026-10-22
 

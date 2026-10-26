@@ -608,3 +608,9 @@ hellwal:
     sha256: f708cbe7326299ac14a9a39869f5a833d58668ec7bbc679fea8b24915b307864
     size: 123291
     recorded: '2026-10-26'
+wpgtk:
+  wpgtk-6.7.1.tar.gz:
+    url: https://github.com/deviantfero/wpgtk/archive/refs/tags/6.7.1.tar.gz#/wpgtk-6.7.1.tar.gz
+    sha256: d12bf655dc42acfa9c986a25d01baf366a97ed9cda3eab97d3a7327d84dfcb26
+    size: 38243
+    recorded: '2026-10-26'

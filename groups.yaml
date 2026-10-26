@@ -86,6 +86,7 @@ other-apps:
   - waylock
   - waypaper
   - wl-clip-persist
+  - wpgtk
   packages_from_global_repo:
   - name: swaybg
     summary: Great utility if all you want is one simple static wallpaper
