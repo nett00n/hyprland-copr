@@ -2,7 +2,7 @@
 
 ## Upstream version refresh
 
-_Generated 2026-10-25 11:18:03 UTC by `make update-versions`._
+_Generated 2026-10-26 04:39:26 UTC by `make update-versions`._
 
 1 failure(s):
 

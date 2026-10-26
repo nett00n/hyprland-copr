@@ -1465,7 +1465,7 @@ lambdock:
   source_dir: lambdock
   summary: Wayland desktop dock customizable with GNU Guile Scheme
   url: https://codeberg.org/jjba23/lambdock.git
-  version: 0.7.7
+  version: 0.10.7
 libcava:
   build:
     commands:

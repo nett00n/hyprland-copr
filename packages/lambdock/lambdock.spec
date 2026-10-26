@@ -1,12 +1,12 @@
 %global debug_package %{nil}
 
 Name:           lambdock
-Version:        0.7.7
+Version:        0.10.7
 Release:        1%{?dist}
 Summary:        Wayland desktop dock customizable with GNU Guile Scheme
 License:        GPL-3.0-or-later
 URL:            https://codeberg.org/jjba23/lambdock.git
-Source0:        https://codeberg.org/jjba23/lambdock/archive/refs/tags/v0.7.7.tar.gz#/lambdock-0.7.7.tar.gz
+Source0:        https://codeberg.org/jjba23/lambdock/archive/refs/tags/v0.10.7.tar.gz#/lambdock-0.10.7.tar.gz
 
 BuildRequires:  gcc
 BuildRequires:  gettext
@@ -41,8 +41,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.7.7
-Commit:            bc7a453eab4add64e9f8a0b94d92cfe765ebde6a
+Tag:               v0.10.7
+Commit:            152576ec4f65f6b2483475a651bcb33c0a665da3
 
 %prep
 %autosetup -p1 -n lambdock
@@ -66,10 +66,8 @@ Commit:            bc7a453eab4add64e9f8a0b94d92cfe765ebde6a
 %{_datadir}/metainfo/org.jointhefreeworld.lambdock.metainfo.xml
 
 %changelog
-* Sat Oct 24 2026 nett00n <copr@nett00n.org> - 0.7.7-1
+* Sun Oct 25 2026 nett00n <copr@nett00n.org> - 0.10.7-1
 
-- chore: Release v0.7.7
-- Modernize maak.scm to the Maak v0.12.2 DSL: run and typed helpers instead of
-- $ shell strings, plus git, archive, container, nix, net and Guix wrappers,
-- capture, task-error, ~, and #:env/#:sudo?/#:expand? decorators. Bump the
-- version by 0.0.1.
+- chore: Release v0.10.7
+- 🤖 Generated with [ECA](https://eca.dev) (deepseek/deepseek-flash)
+- Co-Authored-By: eca-agent <git@eca.dev>
