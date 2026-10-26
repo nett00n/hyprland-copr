@@ -578,3 +578,9 @@ usbtree:
     sha256: a315eeeb559911fffb1c2a17b6ebd418143168c888db5d3b737b05d8c34b3486
     size: 1396562
     recorded: '2026-10-26'
+greyline:
+  greyline-0.8.8.tar.gz:
+    url: https://github.com/Jotham-LEC/greyline/archive/refs/tags/v0.8.8.tar.gz#/greyline-0.8.8.tar.gz
+    sha256: 5d5584f93e92eda7a2dbba394da6fd093149db4fa1bc4c0f6ae74ba793cbcf0a
+    size: 4432497
+    recorded: '2026-10-26'

@@ -288,6 +288,49 @@ glaze-v7:
   summary: Compat build of glaze 7.x for consumers pinned below 8.0
   url: https://github.com/stephenberry/glaze
   version: 7.9.1
+greyline:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: greyline
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-pip
+  - python3-setuptools
+  - python3-wheel
+  depends_on: []
+  description: |
+    A live world-time desktop wallpaper for Wayland and X11, a recreation of the
+    IBM/ThinkPad World Time Active Desktop with a day/night terminator, per-city
+    clocks and swappable logos. A systemd user timer runs greyline once a minute: it
+    renders a PNG per output, hands it to the wallpaper tool you already use, and
+    exits. Run `greyline init` as your own user; the package installs no systemd units.
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%license NOTICE'
+  - '%{_bindir}/greyline'
+  license: GPL-2.0-or-later
+  release: 1
+  requires:
+  - fontconfig
+  - python3-pillow
+  - python3-tomlkit
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: Live world-time desktop wallpaper with a day/night terminator
+  url: https://github.com/Jotham-LEC/greyline
+  version: 0.8.8
 gtk4-layer-shell:
   build:
     system: meson

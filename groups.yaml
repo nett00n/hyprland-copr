@@ -64,6 +64,7 @@ other-apps:
   - cliphist
   - cliphist-git
   - eww
+  - greyline
   - hyprland-per-window-layout
   - ironbar
   - lambdock

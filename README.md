@@ -123,6 +123,7 @@ Added Packages:
 - `eww` — Elkowars Wacky Widgets is a standalone widget system made in Rust that allows you to implement your own, custom widgets in any window manager
 - `fuzzel` — App launcher and fuzzy finder for Wayland, inspired by rofi and dmenu
 - `gammastep` — Adjust the color temperature of your screen according to your surroundings. This may help your eyes hurt less if you are working in front of the screen at night.
+- `greyline` — Live world-time desktop wallpaper with a day/night terminator
 - `hyprland-per-window-layout` — Per-window keyboard layout daemon for Hyprland
 - `ironbar` — Customisable Wayland GTK4 bar written in Rust
 - `lambdock` — Wayland desktop dock customizable with GNU Guile Scheme
