@@ -96,6 +96,22 @@ other-apps:
     summary: Dynamic menu library and client program inspired by dmenu
   - name: fuzzel
     summary: App launcher and fuzzy finder for Wayland, inspired by rofi and dmenu
+  - name: nwg-launchers
+    summary: GTK-based launchers for sway and other window managers
+  - name: ulauncher
+    summary: Feature rich application Launcher for Linux
+  - name: lavalauncher
+    summary: lavalauncher is a simple launcher for Wayland
+  - name: imv
+    summary: Image viewer for X11 and Wayland
+  - name: swayimg
+    summary: Lightweight image viewer for Wayland display servers
+  - name: vimiv-qt
+    summary: An image viewer with vim-like keybindings
+  - name: swaylock
+    summary: Screen locker for Wayland
+  - name: chayang
+    summary: Gradually dim the screen on wlroots-based compositors
   - name: clipman
     summary: A simple clipboard manager for Wayland
   - name: copyq
