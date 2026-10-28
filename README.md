@@ -127,6 +127,7 @@ Added Packages:
 ### Useful apps
 
 - `bemenu` — Dynamic menu library and client program inspired by dmenu
+- `chayang` — Gradually dim the screen on wlroots-based compositors
 - `cliphist` — Wayland clipboard manager with support for multimedia
 - `clipman` — A simple clipboard manager for Wayland
 - `copyq` — CopyQ is an advanced clipboard manager with powerful editing and scripting features.
@@ -136,13 +137,16 @@ Added Packages:
 - `greyline` — Live world-time desktop wallpaper with a day/night terminator
 - `hellwal` — Fast, extensible color palette generator
 - `hyprland-per-window-layout` — Per-window keyboard layout daemon for Hyprland
+- `imv` — Image viewer for X11 and Wayland
 - `ironbar` — Customisable Wayland GTK4 bar written in Rust
 - `lambdock` — Wayland desktop dock customizable with GNU Guile Scheme
+- `lavalauncher` — lavalauncher is a simple launcher for Wayland
 - `matugen` — A Material You and base16 color generation tool with templates
 - `mpvpaper` — A video wallpaper program for wlroots based wayland compositors.
 - `neowall` — GPU-accelerated live wallpaper engine using GLSL shaders
 - `network-manager-applet` — Tray applet and an advanced network connection editor
 - `nnn` — n³ The unorthodox terminal file manager
+- `nwg-launchers` — GTK-based launchers for sway and other window managers
 - `openlogi` — Local-first alternative to Logitech Options+ for HID++ devices
 - `pyprland` — Scratchpads & many goodies for Hyprland
 - `pywal` — Generate and change color-schemes on the fly
@@ -154,12 +158,16 @@ Added Packages:
 - `satty` — Satty - Modern Screenshot Annotation
 - `snappy-switcher` — alt-tab switch window for wayland compositor
 - `swaybg` — Great utility if all you want is one simple static wallpaper
+- `swayimg` — Lightweight image viewer for Wayland display servers
+- `swaylock` — Screen locker for Wayland
 - `swaylock-effects` — Swaylock fork with fancy effects (blur, clock, fade-in)
 - `swaylock-plugin` — Swaylock fork that can use a Wayland client as lock screen background
 - `swayosd` — A GTK based on screen display for keyboard shortcuts like caps-lock and volume
 - `udiskie` — udiskie is a udisks2 front-end that allows to manage removable media such as CDs or flash drives for userspace
+- `ulauncher` — Feature rich application Launcher for Linux
 - `usbtree` — Live USB device tree in your terminal
 - `uwsm` — Universal Wayland Session Manager
+- `vimiv-qt` — An image viewer with vim-like keybindings
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
 - `waylock` — Small screenlocker for Wayland compositors
 - `waypaper` — GUI wallpaper manager for Wayland and Xorg Linux systems

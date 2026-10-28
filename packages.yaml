@@ -1551,7 +1551,7 @@ lambdock:
   source_dir: lambdock
   summary: Wayland desktop dock customizable with GNU Guile Scheme
   url: https://codeberg.org/jjba23/lambdock.git
-  version: 0.10.7
+  version: 0.13.2
 libcava:
   build:
     commands:
@@ -1819,7 +1819,7 @@ neowall:
   license: MIT
   recommends:
   - pulseaudio-utils
-  release: 4
+  release: 1
   requires: []
   rpm:
     no_debug_package: false
@@ -1828,7 +1828,7 @@ neowall:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: GPU-accelerated live wallpaper engine using GLSL shaders
   url: https://github.com/1ay1/neowall
-  version: 0.7.2
+  version: 0.8.0
 OpenLogi:
   auto_update:
     release_type: pinned-version

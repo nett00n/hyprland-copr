@@ -1,12 +1,12 @@
 %global debug_package %{nil}
 
 Name:           lambdock
-Version:        0.10.7
+Version:        0.13.2
 Release:        1%{?dist}
 Summary:        Wayland desktop dock customizable with GNU Guile Scheme
 License:        GPL-3.0-or-later
 URL:            https://codeberg.org/jjba23/lambdock.git
-Source0:        https://codeberg.org/jjba23/lambdock/archive/refs/tags/v0.10.7.tar.gz#/lambdock-0.10.7.tar.gz
+Source0:        https://codeberg.org/jjba23/lambdock/archive/refs/tags/v0.13.2.tar.gz#/lambdock-0.13.2.tar.gz
 
 BuildRequires:  gcc
 BuildRequires:  gettext
@@ -41,8 +41,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.10.7
-Commit:            152576ec4f65f6b2483475a651bcb33c0a665da3
+Tag:               v0.13.2
+Commit:            dac3bbf695e5c4195b10ec1cb140b4b03e492297
 
 %prep
 %autosetup -p1 -n lambdock
@@ -66,8 +66,6 @@ Commit:            152576ec4f65f6b2483475a651bcb33c0a665da3
 %{_datadir}/metainfo/org.jointhefreeworld.lambdock.metainfo.xml
 
 %changelog
-* Sun Oct 25 2026 nett00n <copr@nett00n.org> - 0.10.7-1
+* Mon Oct 26 2026 nett00n <copr@nett00n.org> - 0.13.2-1
 
-- chore: Release v0.10.7
-- 🤖 Generated with [ECA](https://eca.dev) (deepseek/deepseek-flash)
-- Co-Authored-By: eca-agent <git@eca.dev>
+- v0.13.2: item menus carry browser and music player actions

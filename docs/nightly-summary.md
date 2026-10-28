@@ -2,7 +2,7 @@
 
 ## Upstream version refresh
 
-_Generated 2026-10-26 04:39:26 UTC by `make update-versions`._
+_Generated 2026-10-28 04:29:58 UTC by `make update-versions`._
 
 1 failure(s):
 
@@ -10,8 +10,8 @@ _Generated 2026-10-26 04:39:26 UTC by `make update-versions`._
 
 - `LukashonakV/cava`: pinned by libcava-v0 (pinned-tag with no auto_update.tag); leaving the checkout untouched
 
-- Packages analyzed: 57
-- Clean: 57
+- Packages analyzed: 66
+- Clean: 66
 - With issues: 0
 - No logs found: 0
 - Copr submission not settled-success: 0
