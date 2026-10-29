@@ -2,7 +2,7 @@
 
 Name:           waypaper
 Version:        2.9
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        GUI wallpaper manager for Wayland and Xorg Linux systems
 BuildArch:      noarch
 License:        GPL-3.0-or-later
@@ -22,6 +22,7 @@ Requires:       python3-imageio
 Requires:       python3-pillow
 Requires:       python3-platformdirs
 Requires:       screeninfo
+
 
 
 %description
@@ -50,6 +51,6 @@ Package info:
 %license LICENSE
 
 %changelog
-* Sat Oct 17 2026 nett00n <copr@nett00n.org> - 2.9-3
+* Thu Oct 29 2026 nett00n <copr@nett00n.org> - 2.9-4
 
 - Update to 2.9

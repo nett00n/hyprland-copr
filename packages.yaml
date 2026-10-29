@@ -247,7 +247,7 @@ glaze:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Extremely fast, in memory, JSON and reflection library for modern C++.
   url: https://github.com/stephenberry/glaze
-  version: 9.0.0
+  version: 9.1.0
 glaze-v7:
   auto_update:
     release_type: pinned-version
@@ -624,14 +624,14 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 20
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
     name: Hyprland
   summary: A Modern C++ Wayland Compositor
   url: https://github.com/hyprwm/Hyprland
-  version: 0.56.2
+  version: 0.57.0
 hyprland-guiutils:
   build:
     system: cmake
@@ -752,7 +752,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 9
+  release: 10
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -1205,7 +1205,7 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 29
+  release: 30
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1283,7 +1283,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 29
+  release: 30
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1440,7 +1440,7 @@ imageio-ffmpeg:
   - '%doc README.md'
   - '%license LICENSE'
   license: BSD-2-Clause
-  release: 10
+  release: 1
   requires:
   - ffmpeg-free
   rpm:
@@ -1451,7 +1451,7 @@ imageio-ffmpeg:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: FFMPEG wrapper for Python
   url: https://github.com/imageio/imageio-ffmpeg
-  version: 0.6.0
+  version: 0.7.0
 ironbar:
   build:
     commands: []
@@ -2736,7 +2736,7 @@ waypaper:
   - '%doc README.md'
   - '%license LICENSE'
   license: GPL-3.0-or-later
-  release: 3
+  release: 4
   requires:
   - gtk3
   - imageio-ffmpeg
@@ -2883,10 +2883,10 @@ xdg-desktop-portal-hyprland:
   - '%{_libexecdir}/%{name}'
   - '%{_userunitdir}/%{name}.service'
   license: BSD-3-Clause
-  release: 15
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: An XDG-Destop-Portal backend for Hyprland (and wlroots)
   url: https://github.com/hyprwm/xdg-desktop-portal-hyprland
-  version: 1.4.1
+  version: 1.5.0

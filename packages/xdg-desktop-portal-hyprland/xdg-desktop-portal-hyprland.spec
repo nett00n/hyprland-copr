@@ -1,11 +1,11 @@
 
 Name:           xdg-desktop-portal-hyprland
-Version:        1.4.1
-Release:        15%{?dist}
+Version:        1.5.0
+Release:        1%{?dist}
 Summary:        An XDG-Destop-Portal backend for Hyprland (and wlroots)
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/xdg-desktop-portal-hyprland
-Source0:        https://github.com/hyprwm/xdg-desktop-portal-hyprland/archive/refs/tags/v1.4.1.tar.gz#/xdg-desktop-portal-hyprland-1.4.1.tar.gz
+Source0:        https://github.com/hyprwm/xdg-desktop-portal-hyprland/archive/refs/tags/v1.5.0.tar.gz#/xdg-desktop-portal-hyprland-1.5.0.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -45,8 +45,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v1.4.1
-Commit:            cc8e5ef8fb2acef3db488b9a33b0c48c2a4ee204
+Tag:               v1.5.0
+Commit:            d1467fea8d1895cb7835829c2fbb271a0d37760a
 
 %prep
 %autosetup -p1
@@ -68,6 +68,6 @@ Commit:            cc8e5ef8fb2acef3db488b9a33b0c48c2a4ee204
 %{_userunitdir}/%{name}.service
 
 %changelog
-* Wed Jul 29 2026 nett00n <copr@nett00n.org> - 1.4.1-15
+* Wed Oct 28 2026 nett00n <copr@nett00n.org> - 1.5.0-1
 
-- version: bump to 1.4.0
+- VERSION: bump to 1.5.0

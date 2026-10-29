@@ -1,11 +1,11 @@
 
 Name:           hyprland
-Version:        0.56.2
-Release:        20%{?dist}
+Version:        0.57.0
+Release:        1%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
-Source0:        https://github.com/hyprwm/Hyprland/archive/refs/tags/v0.56.2.tar.gz#/hyprland-0.56.2.tar.gz
+Source0:        https://github.com/hyprwm/Hyprland/archive/refs/tags/v0.57.0.tar.gz#/hyprland-0.57.0.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -68,8 +68,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.56.2
-Commit:            efb50993780079460b0cbed1363e2166a2de1d9f
+Tag:               v0.57.0
+Commit:            0aa6745f705f2c4b0a5004eb019ef76e5bbdb426
 
 %prep
 %autosetup -p1 -n Hyprland-%{version}
@@ -121,6 +121,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Wed Aug 05 2026 nett00n <copr@nett00n.org> - 0.56.2-20
+* Wed Oct 28 2026 nett00n <copr@nett00n.org> - 0.57.0-1
 
-- [gha] Nix: update inputs
+- VERSION: bump to 0.57.0
