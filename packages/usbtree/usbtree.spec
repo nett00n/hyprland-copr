@@ -1,13 +1,13 @@
 %global debug_package %{nil}
 
 Name:           usbtree
-Version:        0.1.1
+Version:        0.1.2
 Release:        1%{?dist}
 Summary:        Live USB device tree in your terminal
 License:        MIT
 URL:            https://github.com/gnomeria/usbtree
-Source0:        https://github.com/gnomeria/usbtree/archive/refs/tags/v0.1.1.tar.gz#/usbtree-0.1.1.tar.gz
-Source1:        usbtree-0.1.1-vendor.tar.gz
+Source0:        https://github.com/gnomeria/usbtree/archive/refs/tags/v0.1.2.tar.gz#/usbtree-0.1.2.tar.gz
+Source1:        usbtree-0.1.2-vendor.tar.gz
 
 BuildRequires:  cargo
 BuildRequires:  rustc
@@ -27,8 +27,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.1.1
-Commit:            fb3f94f6e6d41a52451b5b3b574d21679de3a2db
+Tag:               v0.1.2
+Commit:            deb4f19823c7f0ec13be3f08ef3e8f74d078a31c
 
 %prep
 %autosetup -p1
@@ -46,7 +46,6 @@ install -Dm755 target/release/%{name} %{buildroot}%{_bindir}/%{name}
 %{_bindir}/usbtree
 
 %changelog
-* Sat Aug 01 2026 nett00n <copr@nett00n.org> - 0.1.1-1
+* Fri Oct 30 2026 nett00n <copr@nett00n.org> - 0.1.2-1
 
-- chore(main): release 0.1.1 (#72)
-- Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+- chore(main): release 0.1.2 (#80)

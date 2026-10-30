@@ -2537,7 +2537,7 @@ usbtree:
     - '%{name}-%{version}-vendor.tar.gz'
   summary: Live USB device tree in your terminal
   url: https://github.com/gnomeria/usbtree
-  version: 0.1.1
+  version: 0.1.2
 uwsm:
   build:
     commands: []
