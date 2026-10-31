@@ -16,6 +16,7 @@ Environment variables:
   LOG_LEVEL       Logging level: DEBUG, INFO (default), WARNING, ERROR
 """
 
+import importlib
 import logging
 import os
 import re
@@ -29,6 +30,7 @@ from typing import Any
 from lib import build_db
 from lib.config import env_flag, setup_logging
 from lib.deps import build_dep_graph, effective_deps, topological_sort
+from lib.deps_autoheal import autoheal_enabled, heal_loop, max_cycles
 from lib.local_repo import regenerate_repo_metadata
 from lib.local_repo import rpm_query as _rpm_query
 from lib.paths import (
@@ -45,7 +47,7 @@ from lib.stage_common import record_config_skip
 from lib.reporting import event, status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
-from lib.yaml_utils import apply_os_overrides, prepare_stage
+from lib.yaml_utils import apply_os_overrides, get_packages, prepare_stage
 
 
 def failed_local_dep(
@@ -192,6 +194,100 @@ def copy_mock_results(run_id: int, mock_chroot: str, pkg: str) -> list[str]:
     return copied
 
 
+def _mock_cmd(target: str, repo_dir: Path, srpm_path: str) -> list[str]:
+    """Build the `mock --rebuild` command line for `srpm_path`, self-healing a
+    truncated local-repo first."""
+    # rpmbuild_networking/use_host_resolv off: reproduce COPR's offline %build
+    # step locally (docs/TODO.md TODO-0004), so an incomplete vendor tree fails
+    # here instead of only on COPR. Dep resolution (dnf install of BuildRequires)
+    # happens before %build and is unaffected -- it uses --addrepo below plus
+    # the chroot's configured Fedora repos, not this networking flag.
+    cmd = [
+        "mock",
+        "-r",
+        target,
+        "--config-opts",
+        "rpmbuild_networking=False",
+        "--config-opts",
+        "use_host_resolv=False",
+    ]
+    repodata = repo_dir / "repodata"
+    repomd = repodata / "repomd.xml"
+    if repodata.exists() and (not repomd.exists() or not repomd.stat().st_size):
+        # Self-heal a truncated/corrupted repodata (e.g. a prior run killed mid
+        # createrepo_c): dnf5 can't parse an empty repomd.xml at all and aborts
+        # buildroot install before %build even starts, which then fails every
+        # package until someone notices and regenerates by hand.
+        logging.warning(
+            "local-repo/%s repodata is empty/corrupt -- regenerating", target
+        )
+        regenerate_repo_metadata(repo_dir)
+    if repodata.exists():
+        cmd += ["--addrepo", f"file://{repo_dir}"]
+    cmd += ["--rebuild", srpm_path]
+    return cmd
+
+
+def _run_mock_once(
+    cmd: list[str], log: Path, pkg: str, target: str, run_id: int, ver: str
+) -> bool:
+    """Run one mock invocation and record its logs; return True when it built."""
+    # /var/lib/mock is now a persisted volume (TODO-0014), not container-ephemeral
+    # storage -- a run that dies before mock clears its own resultdir would
+    # otherwise leave the *previous* package's RPMs there for update_local_repo()/
+    # copy_mock_results() to pick up and misattribute below. Clear it ourselves
+    # first so a stale resultdir can never masquerade as this run's output.
+    # A prior mock invocation can also leave `result` as a plain file instead of
+    # a directory (observed: mock writing the input srpm straight to that path
+    # when resultdir didn't exist yet) -- rmtree() silently no-ops on a
+    # non-directory even with ignore_errors=True, so that corruption would
+    # otherwise persist across every future run. Handle both shapes explicitly.
+    stale_result = Path("/var/lib/mock") / target / "result"
+    if stale_result.is_dir():
+        shutil.rmtree(stale_result, ignore_errors=True)
+    elif stale_result.exists():
+        stale_result.unlink()
+    event("mock", target, pkg, "run", ver=ver)
+    ok, _, _ = run_cmd(cmd, log)
+    # Copies build.log/root.log/state.log to this run's log dir, then records
+    # each as an artifact (repo-relative path, matching the `log` column
+    # convention used everywhere else in this file).
+    for mock_log in copy_mock_results(run_id, target, pkg):
+        build_db.record_artifact(mock_log, "repo", "mock_log", pkg, target, ver)
+    return ok
+
+
+def _rebuild_healed(
+    pkg: str,
+    fedora_version: str,
+    target: str,
+    run_id: int,
+    repo_dir: Path,
+    log: Path,
+    ver: str,
+) -> bool:
+    """One autoheal rebuild (#COPR-0029): packages.yaml was just edited, so
+    regenerate spec and SRPM from it, then run mock again. False when any step fails."""
+    event("mock", target, pkg, "autoheal", ver=ver)
+    all_packages = get_packages()
+    meta = apply_os_overrides(all_packages[pkg], fedora_version)
+    spec_stage = importlib.import_module("stage-spec")
+    srpm_stage = importlib.import_module("stage-srpm")
+    if not spec_stage.run_for_package(
+        pkg, meta, all_packages, fedora_version, target, run_id
+    ):
+        return False
+    if not srpm_stage.run_for_package(pkg, meta, fedora_version, False, target, run_id):
+        return False
+    srpm_entry = build_db.get_stage(pkg, "srpm", target) or {}
+    srpm_path = srpm_entry.get("path")
+    if not srpm_path:
+        return False
+    return _run_mock_once(
+        _mock_cmd(target, repo_dir, str(srpm_path)), log, pkg, target, run_id, ver
+    )
+
+
 def run_for_package(
     pkg: str,
     meta: dict,
@@ -289,56 +385,24 @@ def run_for_package(
         )
         return False
 
-    # rpmbuild_networking/use_host_resolv off: reproduce COPR's offline %build
-    # step locally (docs/TODO.md TODO-0004), so an incomplete vendor tree fails
-    # here instead of only on COPR. Dep resolution (dnf install of BuildRequires)
-    # happens before %build and is unaffected -- it uses --addrepo below plus
-    # the chroot's configured Fedora repos, not this networking flag.
-    cmd = [
-        "mock",
-        "-r",
-        target,
-        "--config-opts",
-        "rpmbuild_networking=False",
-        "--config-opts",
-        "use_host_resolv=False",
-    ]
-    repodata = repo_dir / "repodata"
-    repomd = repodata / "repomd.xml"
-    if repodata.exists() and (not repomd.exists() or not repomd.stat().st_size):
-        # Self-heal a truncated/corrupted repodata (e.g. a prior run killed mid
-        # createrepo_c): dnf5 can't parse an empty repomd.xml at all and aborts
-        # buildroot install before %build even starts, which then fails every
-        # package until someone notices and regenerates by hand.
-        logging.warning(
-            "local-repo/%s repodata is empty/corrupt -- regenerating", target
+    cmd = _mock_cmd(target, repo_dir, srpm_path)
+    ok = _run_mock_once(cmd, log, pkg, target, run_id, ver)
+    heal_reason = None
+    if not ok and autoheal_enabled():
+        # #COPR-0029: a missing pkgconfig/CMake dependency is fixed by editing
+        # packages.yaml; heal and rebuild up to AUTOHEAL_MAX_CYCLES times, else fail.
+        healed = heal_loop(
+            pkg,
+            log_path=pkg_log_dir / "21-mock-build.log",
+            fedora_version=fedora_version,
+            rebuild=lambda: _rebuild_healed(
+                pkg, fedora_version, target, run_id, repo_dir, log, ver
+            ),
+            limit=max_cycles(),
         )
-        regenerate_repo_metadata(repo_dir)
-    if repodata.exists():
-        cmd += ["--addrepo", f"file://{repo_dir}"]
-    cmd += ["--rebuild", srpm_path]
-    # /var/lib/mock is now a persisted volume (TODO-0014), not container-ephemeral
-    # storage -- a run that dies before mock clears its own resultdir would
-    # otherwise leave the *previous* package's RPMs there for update_local_repo()/
-    # copy_mock_results() to pick up and misattribute below. Clear it ourselves
-    # first so a stale resultdir can never masquerade as this run's output.
-    # A prior mock invocation can also leave `result` as a plain file instead of
-    # a directory (observed: mock writing the input srpm straight to that path
-    # when resultdir didn't exist yet) -- rmtree() silently no-ops on a
-    # non-directory even with ignore_errors=True, so that corruption would
-    # otherwise persist across every future run. Handle both shapes explicitly.
-    stale_result = Path("/var/lib/mock") / target / "result"
-    if stale_result.is_dir():
-        shutil.rmtree(stale_result, ignore_errors=True)
-    elif stale_result.exists():
-        stale_result.unlink()
-    event("mock", target, pkg, "run", ver=ver)
-    ok, _, _ = run_cmd(cmd, log)
-    # Copies build.log/root.log/state.log to this run's log dir, then records
-    # each as an artifact (repo-relative path, matching the `log` column
-    # convention used everywhere else in this file).
-    for mock_log in copy_mock_results(run_id, target, pkg):
-        build_db.record_artifact(mock_log, "repo", "mock_log", pkg, target, ver)
+        if healed.reason:
+            ok = healed.ok
+            heal_reason = healed.reason
     state = "success" if ok else "failed"
     if not ok:
         failed[pkg] = True
@@ -355,6 +419,8 @@ def run_for_package(
     extra: dict[str, Any] = {}
     if ok:
         extra["completed_at"] = build_db.now_epoch()
+    if heal_reason:
+        extra["reason"] = heal_reason
     build_db.set_stage(
         pkg,
         "mock",

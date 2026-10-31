@@ -5,6 +5,11 @@ packages and which Fedora versions are built. Changes to the automation itself g
 `docs/CHANGELOG.md`. Newest first, dated `## YYYY-MM-DD` entries, one short paragraph each.
 README shows the most recent entries - see `scripts/lib/readme_content.py:get_recent_news()`.
 
+## 2026-10-31
+
+Builds now repair themselves when upstream adds a dependency: a failed mock build with a
+missing pkgconfig or CMake package gets the entry added and is rebuilt, up to 10 times.
+
 ## 2026-10-26
 
 Added Packages:

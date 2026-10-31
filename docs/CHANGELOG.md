@@ -19,6 +19,11 @@ in `docs/CONTRIBUTING.md` "Changelog".
 History before this file's introduction (2026-08-02) is not backfilled - see
 `git log`.
 
+## 2026-10-31
+
+- COPR-0029: a mock build that fails on a missing pkgconfig/CMake dependency now heals itself — `stage-mock` adds the provider-verified entry (`pkgconfig(X)`/`cmake(X)`, or `<pkg>-devel` + `depends_on` for a local package) to `packages.yaml`, regenerates spec/SRPM and rebuilds, up to `AUTOHEAL_MAX_CYCLES` (default 10) cycles, then fails; on by default, `AUTOHEAL=false` disables.
+- COPR-0028: `make last-build` prints last night's runs, stage counts, slowest stages and failures (20-line error excerpt plus log path each) from `build-report.db` and `logs/runs/`; read-only.
+
 ## 2026-10-26
 
 - COPR-0012: the markdown build reports are gone — `docs/full-report.md` and the README "Build Status" section; `make readme` renders only `README.md` and `docs/README.copr.md`, from yaml/NEWS/git with no `build-report.db` and no Copr poll, and lists a `groups.yaml` package iff it is in `packages.yaml`. Removed `gen-report.py --format full-report`/`--skip-copr-poll`/`--db-snapshot`, `make gen-report`, `make db-export-docs` and `docs/db-snapshot.yaml`; `check-docs-drift` now just re-renders and diffs the two READMEs.

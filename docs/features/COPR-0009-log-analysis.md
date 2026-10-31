@@ -22,6 +22,12 @@ the generic "Bad exit status" every unrecognized failure would otherwise print.
 
 ## Quirks & Decisions
 
+- The suggested providers are no longer advice only for pkgconfig/CMake dependencies:
+  [COPR-0029](COPR-0029-build-deps-autoheal.md) consumes the same issues to edit
+  `packages.yaml` and rebuild. That needs one issue per missing package, constraints
+  stripped (`hyprtoolkit>=0.6.0` → `hyprtoolkit`), and CMake config-package issues tagged
+  with method `cmake` rather than `pkgconfig`; the `pkg_check_modules` branch used to report
+  only the first package.
 - Quirk: 1257 lines of ~41 copy-pasted `if m: issues.append(...); continue` blocks
   from hand-written regexes.
   Proposed: a data table of `(regex, formatter)` pairs would cut it by half or more.

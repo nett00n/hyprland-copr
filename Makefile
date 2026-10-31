@@ -510,6 +510,11 @@ SYNCHRONOUS_COPR_BUILD ?=
 # #COPR-0007: true = resubmit SRPMs Copr already built successfully (default: skip them).
 COPR_RESUBMIT ?=
 REQUIRE_CHROOT_COVERAGE ?=
+# #COPR-0029: a mock build failing on a missing pkgconfig/CMake dependency heals itself
+# (adds the entry to packages.yaml, rebuilds). On unless AUTOHEAL=false; at most
+# AUTOHEAL_MAX_CYCLES (default 10) heal cycles per package, then the build fails.
+AUTOHEAL ?=
+AUTOHEAL_MAX_CYCLES ?=
 # #BUG-0039: how long/often `make copr-wait` retries polling Copr for a build
 # submitted async (--nowait) to reach a terminal state.
 COPR_POLL_TIMEOUT ?= 1800
@@ -563,6 +568,8 @@ _full-cycle: check-image check-venv setup-volumes
 		SYNCHRONOUS_COPR_BUILD=$(SYNCHRONOUS_COPR_BUILD) \
 		COPR_RESUBMIT=$(COPR_RESUBMIT) \
 		REQUIRE_CHROOT_COVERAGE=$(REQUIRE_CHROOT_COVERAGE) \
+		$(if $(AUTOHEAL),AUTOHEAL=$(AUTOHEAL),) \
+		$(if $(AUTOHEAL_MAX_CYCLES),AUTOHEAL_MAX_CYCLES=$(AUTOHEAL_MAX_CYCLES),) \
 		$(if $(SKIP_REPO_PREFLIGHT),SKIP_REPO_PREFLIGHT=$(SKIP_REPO_PREFLIGHT),) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/full-cycle.py,Full cycle completed,Full cycle failed)
@@ -785,12 +792,14 @@ stage-srpm: check-image check-venv setup-volumes ## Run SRPM build stage (PACKAG
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-srpm.py,SRPM stage passed,SRPM stage failed)
 
-stage-mock: check-image check-venv setup-volumes ## Run mock build stage (PACKAGE=<name>, FEDORA_VERSION, PROCEED_BUILD, CMD_TIMEOUT, SKIP_REPO_PREFLIGHT=1 to demote the local-repo preflight to warnings, runs in container)
+stage-mock: check-image check-venv setup-volumes ## Run mock build stage (PACKAGE=<name>, FEDORA_VERSION, PROCEED_BUILD, CMD_TIMEOUT, AUTOHEAL=false to disable dependency autoheal, AUTOHEAL_MAX_CYCLES=<n> (default 10), #COPR-0029, SKIP_REPO_PREFLIGHT=1 to demote the local-repo preflight to warnings, runs in container)
 	$(call run_with_result,$(CONTAINER_RUN) env \
 		FEDORA_VERSION=$(FEDORA_VERSION) \
 		MOCK_CHROOT=$(MOCK_CHROOT) \
 		PACKAGE=$(PACKAGE) \
 		PROCEED_BUILD=$(PROCEED_BUILD) \
+		$(if $(AUTOHEAL),AUTOHEAL=$(AUTOHEAL),) \
+		$(if $(AUTOHEAL_MAX_CYCLES),AUTOHEAL_MAX_CYCLES=$(AUTOHEAL_MAX_CYCLES),) \
 		$(if $(SKIP_REPO_PREFLIGHT),SKIP_REPO_PREFLIGHT=$(SKIP_REPO_PREFLIGHT),) \
 		$(if $(CMD_TIMEOUT),CMD_TIMEOUT=$(CMD_TIMEOUT),) \
 		/work/.venv/bin/python3 scripts/stage-mock.py,Mock build stage passed,Mock build stage failed)
@@ -820,6 +829,9 @@ copr-wait: check-image check-venv setup-volumes ## #BUG-0039: bound-retry-poll C
 
 stage-log-analyze: check-image check-venv setup-volumes ## Analyze build logs for packages and report actionable errors (PACKAGE=<name> for one, runs for all by default, respects SKIP_PACKAGES). LOG_SUMMARY_OUTPUT=<path> also writes a durable Markdown summary there (#COPR-0022)
 	@$(CONTAINER_RUN) env PACKAGE=$(PACKAGE) SKIP_PACKAGES=$(SKIP_PACKAGES) $(WORK)/.venv/bin/python3 scripts/pkg-log-analysis.py $(if $(LOG_SUMMARY_OUTPUT),--output $(LOG_SUMMARY_OUTPUT),)
+
+last-build: check-image check-venv setup-volumes ## Report last night's runs, stage counts, slowest stages and failures with a 20-line error excerpt + log link each (PACKAGE, TARGET, HOURS=12, FORMAT=text|md; read-only, #COPR-0028)
+	@$(CONTAINER_PYTHON) scripts/last-build.py $(if $(PACKAGE),--package $(PACKAGE),) $(if $(TARGET),--target $(TARGET),) $(if $(HOURS),--hours $(HOURS),) $(if $(FORMAT),--format $(FORMAT),)
 
 prune-logs: check-image check-venv ## Enforce log retention on logs/runs/ (#COPR-0022). Dry-run by default; CONFIRM=1 to delete. KEEP=<n> overrides LOG_RETENTION_RUNS (default 10)
 	@$(CONTAINER_PYTHON) scripts/prune-logs.py $(if $(KEEP),--keep $(KEEP),) $(if $(filter 1,$(CONFIRM)),--confirm,)

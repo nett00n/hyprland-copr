@@ -284,6 +284,32 @@ def setup_run(
     )
 
 
+def rehash_after_autoheal(
+    pkg: str, target: str, packages: dict, all_packages: dict
+) -> dict:
+    """Reload `pkg` after stage-mock healed its packages.yaml entry (#COPR-0029).
+
+    Replaces the stale meta in `packages`/`all_packages` (dependents hash against
+    it), recomputes the input hashes, and re-stamps them on the spec/vendor/srpm
+    rows so the healed spec counts as cached instead of rebuilding next run.
+    """
+    fresh = get_packages()[pkg]
+    packages[pkg] = fresh
+    all_packages[pkg] = fresh
+    new_hashes = compute_input_hashes(pkg, fresh, all_packages)
+    for stage in ("spec", "vendor", "srpm"):
+        entry = build_db.get_stage(pkg, stage, target)
+        if entry:
+            build_db.finalize_stage(
+                pkg,
+                stage,
+                target,
+                int(entry.get("started_at") or time.time()),
+                new_hashes,
+            )
+    return new_hashes
+
+
 def run_build_pipeline(
     packages: dict,
     target: str,
@@ -600,7 +626,7 @@ def run_build_pipeline(
                         expected_version=pkg_ver or None,
                     )
                 )
-                if not _stage["stage-mock"].run_for_package(
+                _stage["stage-mock"].run_for_package(
                     pkg,
                     meta,
                     fedora_version,
@@ -610,26 +636,25 @@ def run_build_pipeline(
                     packages,
                     run_id,
                     repo_dir,
-                ):
-                    build_db.finalize_stage(
-                        pkg,
-                        "mock",
-                        target,
-                        started_at,
-                        new_hashes,
-                        reason=reason,
-                        update_hashes=not is_proceed_skip,
+                )
+                # #COPR-0029: stage-mock may have edited packages.yaml and rebuilt;
+                # keep the healed row's reason and re-stamp the cache hashes.
+                mock_entry = build_db.get_stage(pkg, "mock", target) or {}
+                healed_reason = str(mock_entry.get("reason") or "")
+                if healed_reason.startswith("autoheal:"):
+                    reason = healed_reason
+                    new_hashes = rehash_after_autoheal(
+                        pkg, target, packages, all_packages
                     )
-                else:
-                    build_db.finalize_stage(
-                        pkg,
-                        "mock",
-                        target,
-                        started_at,
-                        new_hashes,
-                        reason=reason,
-                        update_hashes=not is_proceed_skip,
-                    )
+                build_db.finalize_stage(
+                    pkg,
+                    "mock",
+                    target,
+                    started_at,
+                    new_hashes,
+                    reason=reason,
+                    update_hashes=not is_proceed_skip,
+                )
 
     # Copr: a separate pass, only after every package has gone through mock.
     # A failed package and its transitive dependents are blocked; unrelated

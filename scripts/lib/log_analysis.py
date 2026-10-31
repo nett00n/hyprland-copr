@@ -243,16 +243,38 @@ _NOTHING_PROVIDES_RE = re.compile(
 )
 
 
+def _strip_constraint(name: str) -> str:
+    """Drop a version constraint: "hyprtoolkit>=0.6.0" -> "hyprtoolkit".
+
+    Also handles the HTML-escaped form ("&gt;=") some log viewers produce.
+    """
+    return re.split(r"\s*(?:[<>=!]|&[lg]t;)", name, maxsplit=1)[0].strip()
+
+
 def _nvra_to_name(nvra: str) -> str:
     """Strip version-release.arch off an N-V-R.A string, e.g.
     "aquamarine-0.14.0-10.fc43.x86_64" -> "aquamarine"."""
     return nvra.rsplit("-", 2)[0] if nvra.count("-") >= 2 else nvra
 
 
-def _dnf_whatprovides(query: str) -> list[str]:
+def _dnf_whatprovides(query: str, extra_args: tuple[str, ...] = ()) -> list[str]:
+    """Names of packages providing `query`. #COPR-0029
+
+    `extra_args` go straight to dnf (e.g. `--releasever=45` to query another
+    release than the container's). `--qf` ends in an explicit `\\n`: dnf5 does not
+    add one, so several matches would otherwise come back joined on one line.
+    """
     try:
         result = subprocess.run(
-            ["dnf", "repoquery", "--whatprovides", query, "--qf", "%{name}"],
+            [
+                "dnf",
+                "repoquery",
+                *extra_args,
+                "--whatprovides",
+                query,
+                "--qf",
+                "%{name}\\n",
+            ],
             capture_output=True,
             text=True,
             timeout=30,
@@ -270,7 +292,7 @@ def _dnf_search(name: str) -> list[str]:
     base = re.sub(r"(-devel|-libs|-dev)$", "", name)
     try:
         result = subprocess.run(
-            ["dnf", "repoquery", f"{base}*", "--qf", "%{name}"],
+            ["dnf", "repoquery", f"{base}*", "--qf", "%{name}\\n"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -287,6 +309,12 @@ def _suggest_providers(dep: str, method: str) -> list[str]:
     """Return package names that provide the missing dependency."""
     if method == "pkgconfig":
         return _dnf_whatprovides(f"pkgconfig({dep})")
+    if method == "cmake":
+        # #COPR-0029: CMake config packages are provided as cmake(X), usually
+        # with X's exact case; some -devel packages only provide the lowercase.
+        return _dnf_whatprovides(f"cmake({dep})") or _dnf_whatprovides(
+            f"cmake({dep.lower()})"
+        )
     if method == "library":
         return _dnf_whatprovides(f"lib{dep}.so*")
     if method == "builddep":
@@ -481,7 +509,7 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                         line.strip(),
                         f'missing CMake package: "{pkg}"',
                         pkg,
-                        "pkgconfig",
+                        "cmake",
                     )
                 )
             continue
@@ -494,7 +522,7 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                     line.strip(),
                     f'missing CMake package: "{pkg}"',
                     pkg,
-                    "pkgconfig",
+                    "cmake",
                 )
             )
             continue
@@ -511,15 +539,16 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
                 elif next_line.strip() and not next_line.startswith(" "):
                     # Stop at first non-indented, non-empty line
                     break
-            # Report first package; others will be caught in subsequent lines
-            if pkgs:
-                pkg_list = ", ".join(f'"{p}"' for p in pkgs)
+            # #COPR-0029: one issue per package, version constraint stripped
+            # ("hyprtoolkit>=0.6.0" -> dep "hyprtoolkit"), so each can be resolved
+            # and healed on its own.
+            for pkg in dict.fromkeys(_strip_constraint(p) for p in pkgs):
                 issues.append(
                     (
                         lineno,
                         line.strip(),
-                        f"missing pkgconfig packages: {pkg_list}",
-                        pkgs[0],
+                        f'missing pkgconfig package: "{pkg}"',
+                        pkg,
                         "pkgconfig",
                     )
                 )

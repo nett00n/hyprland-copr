@@ -32,26 +32,28 @@ file and `docs/features/` work together.
 - [X] [COPR-0025. Pre-vendor source preparation](features/COPR-0025-pre-vendor-source-prep.md) - `#packaging` `#tooling`
 - [X] [COPR-0026. Gotify notifications](features/COPR-0026-gotify-notifications.md) - `#daily` `#notifications` `#tooling`
 - [X] [COPR-0027. Zig build system and dependency vendoring](features/COPR-0027-zig-build-system.md) - `#packaging` `#tooling`
+- [X] [COPR-0028. Last-night build stats and error details](features/COPR-0028-last-build-stats.md) - `#diagnostics` `#state` `#tooling`
+- [X] [COPR-0029. Build-dependency autoheal](features/COPR-0029-build-deps-autoheal.md) - `#automation` `#build` `#diagnostics` `#mock`
 
 ## Tags
 
 - `#agents`: COPR-0024
 - `#arch`: COPR-0020
-- `#automation`: COPR-0003
-- `#build`: COPR-0002, COPR-0003, COPR-0006, COPR-0009, COPR-0017, COPR-0018, COPR-0019, COPR-0020
+- `#automation`: COPR-0003, COPR-0029
+- `#build`: COPR-0002, COPR-0003, COPR-0006, COPR-0009, COPR-0017, COPR-0018, COPR-0019, COPR-0020, COPR-0029
 - `#caching`: COPR-0015
 - `#ci`: COPR-0010, COPR-0016
 - `#container`: COPR-0011
 - `#copr`: COPR-0002, COPR-0007, COPR-0017, COPR-0021
 - `#daily`: COPR-0003, COPR-0022, COPR-0026
-- `#diagnostics`: COPR-0009, COPR-0022
+- `#diagnostics`: COPR-0009, COPR-0022, COPR-0028, COPR-0029
 - `#docs`: COPR-0012, COPR-0016, COPR-0024
 - `#intake`: COPR-0014
 - `#lint`: COPR-0010
 - `#logs`: COPR-0022
 - `#maintenance`: COPR-0013
 - `#matrix`: COPR-0017, COPR-0018, COPR-0019, COPR-0020, COPR-0021
-- `#mock`: COPR-0006
+- `#mock`: COPR-0006, COPR-0029
 - `#notifications`: COPR-0026
 - `#onboarding`: COPR-0001
 - `#packages`: COPR-0001, COPR-0013, COPR-0014
@@ -66,8 +68,8 @@ file and `docs/features/` work together.
 - `#security`: COPR-0023
 - `#spec`: COPR-0005, COPR-0018
 - `#srpm`: COPR-0018
-- `#state`: COPR-0015
+- `#state`: COPR-0015, COPR-0028
 - `#testing`: COPR-0006, COPR-0010
-- `#tooling`: COPR-0024, COPR-0025, COPR-0026, COPR-0027
+- `#tooling`: COPR-0024, COPR-0025, COPR-0026, COPR-0027, COPR-0028
 - `#upstream`: COPR-0004
 - `#versioning`: COPR-0004

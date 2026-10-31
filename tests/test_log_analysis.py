@@ -284,7 +284,7 @@ class TestAnalyzeMockBuildLog:
         issues = _analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "glslang" in issues[0][2]
-        assert "pkgconfig" in issues[0][4]
+        assert issues[0][4] == "cmake"
 
     def test_cmake_pkg_check_modules(self, tmp_path):
         """Detect CMake missing pkgconfig packages."""
@@ -296,9 +296,32 @@ class TestAnalyzeMockBuildLog:
             "   - libpng\n"
         )
         issues = _analyze_mock_build_log(log_file)
+        assert len(issues) == 2
+        assert [i[3] for i in issues] == ["lcms2", "libpng"]
+        assert all(i[4] == "pkgconfig" for i in issues)
+        assert 'missing pkgconfig package: "lcms2"' in issues[0][2]
+
+    def test_cmake_pkg_check_modules_strips_version_constraint(self, tmp_path):
+        """#COPR-0029: `hyprtoolkit>=0.6.0` is reported as dep `hyprtoolkit`."""
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            "CMake Error at /usr/share/cmake/Modules/FindPkgConfig.cmake:1093 (message):\n"
+            "  The following required packages were not found:\n"
+            "\n"
+            "   - hyprtoolkit>=0.6.0\n"
+        )
+        issues = _analyze_mock_build_log(log_file)
         assert len(issues) == 1
-        assert "lcms2" in issues[0][2]
-        assert "libpng" in issues[0][2]
+        assert issues[0][3] == "hyprtoolkit"
+        assert issues[0][2] == 'missing pkgconfig package: "hyprtoolkit"'
+
+    def test_cmake_find_package_by_name_is_cmake_method(self, tmp_path):
+        log_file = tmp_path / "21-mock-build.log"
+        log_file.write_text(
+            'CMake Error at CMakeLists.txt:130 (find_package):\n  By not providing "FindQt6.cmake" in CMAKE_MODULE_PATH\n'
+        )
+        issues = _analyze_mock_build_log(log_file)
+        assert issues[0][3] == "Qt6" and issues[0][4] == "cmake"
 
     def test_cmake_missing_source_file(self, tmp_path):
         """Detect CMake missing source file error."""
@@ -527,8 +550,8 @@ class TestAnalyzeMockBuildLog:
             "   - zlib\n"
         )
         issues = _analyze_mock_build_log(log_file)
-        assert len(issues) == 1
-        assert "lcms2" in issues[0][2] and "libpng" in issues[0][2] and "zlib" in issues[0][2]
+        # #COPR-0029: one issue per missing package
+        assert [i[3] for i in issues] == ["lcms2", "libpng", "zlib"]
 
     def test_unpackaged_files_multiline_block(self, tmp_path):
         """Detect unpackaged files with multi-line block parsing."""
@@ -885,6 +908,24 @@ class TestSuggestProviders:
         assert result == ["some-package"]
 
     @patch("lib.log_analysis._dnf_whatprovides")
+    def test_suggests_cmake_method(self, mock_whatprovides):
+        """#COPR-0029: CMake config packages are provided as cmake(X)."""
+        mock_whatprovides.return_value = ["qt6-qtbase-devel"]
+        result = _suggest_providers("Qt6", "cmake")
+        mock_whatprovides.assert_called_with("cmake(Qt6)")
+        assert result == ["qt6-qtbase-devel"]
+
+    @patch("lib.log_analysis._dnf_whatprovides")
+    def test_suggests_cmake_method_falls_back_to_lowercase(self, mock_whatprovides):
+        mock_whatprovides.side_effect = [[], ["glslang-devel"]]
+        result = _suggest_providers("Glslang", "cmake")
+        assert [c.args[0] for c in mock_whatprovides.call_args_list] == [
+            "cmake(Glslang)",
+            "cmake(glslang)",
+        ]
+        assert result == ["glslang-devel"]
+
+    @patch("lib.log_analysis._dnf_whatprovides")
     def test_suggests_library_method(self, mock_whatprovides):
         """Should call dnf whatprovides with lib*.so format."""
         mock_whatprovides.return_value = ["libssl-devel"]
@@ -957,6 +998,17 @@ class TestDnfWhatprovides:
         )
         result = _dnf_whatprovides("something")
         assert result == ["package1", "package2", "package3"]
+
+    @patch("subprocess.run")
+    def test_whatprovides_ends_qf_with_newline_and_passes_extra_args(self, mock_run):
+        """#COPR-0029: dnf5 --qf adds no trailing newline, so several matches would
+        be joined on one line without an explicit \\n; extra args (e.g.
+        --releasever) are forwarded."""
+        mock_run.return_value = Mock(stdout="a\nb\n", returncode=0)
+        _dnf_whatprovides("pkgconfig(x)", extra_args=("--releasever=45",))
+        cmd = mock_run.call_args.args[0]
+        assert cmd[cmd.index("--qf") + 1] == "%{name}\\n"
+        assert "--releasever=45" in cmd
 
     @patch("subprocess.run")
     def test_whatprovides_handles_exception(self, mock_run):

@@ -130,6 +130,11 @@
 
 ## News
 
+### 2026-10-31
+
+Builds now repair themselves when upstream adds a dependency: a failed mock build with a
+missing pkgconfig or CMake package gets the entry added and is rebuilt, up to 10 times.
+
 ### 2026-10-26
 
 Added Packages:
@@ -166,13 +171,6 @@ Added Packages:
 
 - wl-clip-persist - Keep Wayland clipboard even after programs close
 - OpenLogi - Local-first alternative to Logitech Options+ for HID++ devices. Partial build: only the CLI and the background agent (systemd user unit) are packaged. The GPUI desktop window and the on-screen overlay are not built, because they depend on crates published only as git sources (gpui-kit, appicon), which cannot be vendored for offline COPR builds
-
-### 2026-09-17
-
-Added Packages:
-
-- LambDock - Wayland desktop dock customizable with GNU Guile Scheme
-- SwayOSD - GTK based on screen display for keyboard shortcuts like caps-lock and volume
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 
