@@ -221,3 +221,14 @@ class TestAutohealSection:
         run = _run(T44, 1_000_000)
         _stage("foo", "mock", T44, run, "success", reason="changed")
         assert "Autohealed" not in lb.render(12, None, None, "text")
+
+    def test_pending_file_vote_is_listed(self):
+        run = _run(T44, 1_000_000)
+        reason = (
+            "autoheal: pending -files:%{_bindir}/x "
+            "(needs all chroots; lacking on 1/3: fedora-44-x86_64)"
+        )
+        _stage("foo", "mock", T44, run, "failed", reason=reason)
+        out = lb.render(12, None, None, "text")
+        assert "## Autohealed (1)" in out
+        assert f"- foo mock {T44} failed: {reason}" in out

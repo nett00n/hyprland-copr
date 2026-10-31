@@ -560,6 +560,7 @@ Hyprland:
   - pkgconfig(gio-2.0)
   - pkgconfig(gl)
   - pkgconfig(glesv2)
+  - pkgconfig(libcanberra)
   - pkgconfig(libdrm)
   - pkgconfig(libeis-1.0)
   - pkgconfig(libinput)
@@ -570,6 +571,7 @@ Hyprland:
   - pkgconfig(pangocairo)
   - pkgconfig(pixman-1)
   - pkgconfig(re2)
+  - pkgconfig(sdbus-c++)
   - pkgconfig(tomlplusplus)
   - pkgconfig(uuid)
   - pkgconfig(wayland-protocols)
@@ -624,7 +626,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -752,7 +754,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 10
+  release: 11
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -2848,6 +2850,7 @@ xdg-desktop-portal-hyprland:
   - gcc-c++
   - hyprland-protocols-devel
   - hyprlang-devel
+  - hyprtoolkit-devel
   - hyprutils-devel
   - hyprwayland-scanner-devel
   - libeis-devel
@@ -2873,6 +2876,7 @@ xdg-desktop-portal-hyprland:
   - hyprlang
   - hyprutils
   - hyprwayland-scanner
+  - hyprtoolkit
   description: xdg-desktop-portal backend for Hyprland
   files:
   - '%doc README.md'

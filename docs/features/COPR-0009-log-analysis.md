@@ -22,6 +22,10 @@ the generic "Bad exit status" every unrecognized failure would otherwise print.
 
 ## Quirks & Decisions
 
+- `File not found by glob: …` (rpm's message for a glob entry in `%files`) is matched like
+  `File not found`, and `lib/log_analysis.py` exposes `missing_files()` /
+  `unpackaged_files()` returning plain absolute-path lists, because the issue tuples carry
+  only a message and [COPR-0029](COPR-0029-build-deps-autoheal.md) needs every path.
 - The suggested providers are no longer advice only for pkgconfig/CMake dependencies:
   [COPR-0029](COPR-0029-build-deps-autoheal.md) consumes the same issues to edit
   `packages.yaml` and rebuild. That needs one issue per missing package, constraints

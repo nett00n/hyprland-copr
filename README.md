@@ -27,7 +27,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 ### 2026-10-31
 
 Builds now repair themselves when upstream adds a dependency: a failed mock build with a
-missing pkgconfig or CMake package gets the entry added and is rebuilt, up to 10 times.
+missing pkgconfig or CMake package gets the entry added and is rebuilt, up to 10 times. The same goes for the file lists: files a build stopped installing are dropped once all Fedora versions agree, and new ones are added.
 
 ### 2026-10-26
 

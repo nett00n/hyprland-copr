@@ -11,6 +11,7 @@ BuildRequires:  cmake
 BuildRequires:  gcc-c++
 BuildRequires:  hyprland-protocols-devel
 BuildRequires:  hyprlang-devel
+BuildRequires:  hyprtoolkit-devel
 BuildRequires:  hyprutils-devel
 BuildRequires:  hyprwayland-scanner-devel
 BuildRequires:  libeis-devel

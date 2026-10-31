@@ -75,6 +75,43 @@ def test_exhausted_cycles_fail_the_stage(env):
     assert row["state"] == "failed" and row["reason"] == reason
 
 
+def test_the_file_list_vote_gets_every_supported_chroot(env):
+    """#COPR-0029: removals need all chroots, so heal_loop is told which ones."""
+    with (
+        patch.object(stage_mock, "_run_mock_once", return_value=False),
+        patch.object(
+            stage_mock, "heal_loop", return_value=HealResult(False, 0, [], "")
+        ) as heal,
+    ):
+        _run(env)
+    kwargs = heal.call_args.kwargs
+    assert kwargs["target"] == TARGET
+    assert kwargs["version"] == "1.0"
+    assert kwargs["targets"] == [
+        "fedora-43-x86_64",
+        "fedora-44-x86_64",
+        "fedora-45-x86_64",
+    ]
+    assert kwargs["get_stage"] is build_db.get_stage
+
+
+def test_a_pending_vote_leaves_a_failed_row_without_a_rebuild(env):
+    reason = (
+        "autoheal: pending -files:%{_bindir}/x "
+        "(needs all chroots; lacking on 1/3: fedora-44-x86_64)"
+    )
+    with (
+        patch.object(stage_mock, "_run_mock_once", return_value=False) as mock_once,
+        patch.object(
+            stage_mock, "heal_loop", return_value=HealResult(False, 0, [], reason)
+        ),
+    ):
+        ok, failed, row = _run(env)
+    assert ok is False and failed["pkg"] is True
+    assert row["state"] == "failed" and row["reason"] == reason
+    mock_once.assert_called_once()  # the original build only
+
+
 def test_limit_comes_from_environment(env, monkeypatch):
     monkeypatch.setenv("AUTOHEAL_MAX_CYCLES", "3")
     with (
@@ -140,10 +177,12 @@ def test_rebuild_regenerates_spec_and_srpm_before_mock(env):
         patch.object(stage_mock, "_run_mock_once", return_value=True) as mock_once,
     ):
         ok = stage_mock._rebuild_healed(
-            "pkg", "44", TARGET, 1, env / "repo", env / "20-mock.log", "1.0-1.fc44"
+            "pkg", "44", TARGET, 1, env / "repo", env / "20-mock.log"
         )
     assert ok is True and order == ["spec", "srpm"]
     assert mock_once.call_args.args[0][-1] == "/new.src.rpm"
+    # version comes from the reloaded entry, not from the first attempt
+    assert mock_once.call_args.args[-1] == "1.0-1.fc44"
 
 
 def test_rebuild_stops_when_spec_generation_fails(env):
@@ -158,7 +197,7 @@ def test_rebuild_stops_when_spec_generation_fails(env):
         patch.object(stage_mock, "_run_mock_once") as mock_once,
     ):
         ok = stage_mock._rebuild_healed(
-            "pkg", "44", TARGET, 1, env / "repo", env / "20-mock.log", "1.0-1.fc44"
+            "pkg", "44", TARGET, 1, env / "repo", env / "20-mock.log"
         )
     assert ok is False
     srpm.run_for_package.assert_not_called()

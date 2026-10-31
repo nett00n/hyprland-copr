@@ -158,8 +158,10 @@ _EMPTY_DEBUGFILES_RE = re.compile(
 
 # error: Directory not found: /builddir/build/BUILD/.../BUILDROOT/...
 # error: File not found: /builddir/build/BUILD/.../BUILDROOT/...
+# error: File not found by glob: /builddir/build/BUILD/.../BUILDROOT/...
 _FILES_NOT_FOUND_RE = re.compile(
-    r"^error: (?:Directory|File) not found: /builddir/build/BUILD/[^/]+/BUILDROOT(/\S+)"
+    r"^error: (?:Directory|File) not found(?: by glob)?: "
+    r"/builddir/build/BUILD/[^/]+/BUILDROOT(/\S+)"
 )
 
 # error: failed to get `bitflags` as a dependency of package `cosmic-client-toolkit v0.2.0 (...)
@@ -998,6 +1000,40 @@ def _analyze_mock_build_log(log_path: Path) -> list[tuple[int, str, str, str, st
         )
 
     return issues
+
+
+def missing_files(log_path: Path) -> list[str]:
+    """Absolute paths rpmbuild reports as declared in %files but not installed
+    (`File not found`, `File not found by glob`, `Directory not found`), BUILDROOT
+    prefix stripped, in log order, without duplicates. #COPR-0029"""
+    if not log_path.exists():
+        return []
+    found = (
+        _FILES_NOT_FOUND_RE.match(line)
+        for line in log_path.read_text(errors="replace").splitlines()
+    )
+    return list(dict.fromkeys(m.group(1) for m in found if m))
+
+
+def unpackaged_files(log_path: Path) -> list[str]:
+    """Absolute paths of every file in rpmbuild's `Installed (but unpackaged)
+    file(s) found:` block(s), debug files skipped, without duplicates. #COPR-0029"""
+    if not log_path.exists():
+        return []
+    files: dict[str, None] = {}
+    in_block = False
+    for line in log_path.read_text(errors="replace").splitlines():
+        stripped = line.strip()
+        if "Installed (but unpackaged) file(s) found:" in stripped:
+            in_block = True
+        elif in_block and stripped.startswith("/"):
+            if not stripped.startswith("/usr/lib/debug/") and not stripped.endswith(
+                ".debug"
+            ):
+                files.setdefault(stripped)
+        elif stripped.startswith(("Child return code", "EXCEPTION:")):
+            in_block = False
+    return list(files)
 
 
 def _analyze_mock_log(log_path: Path) -> list[tuple[int, str, str, str, str]]:

@@ -33,6 +33,7 @@ from lib.deps import build_dep_graph, effective_deps, topological_sort
 from lib.deps_autoheal import autoheal_enabled, heal_loop, max_cycles
 from lib.local_repo import regenerate_repo_metadata
 from lib.local_repo import rpm_query as _rpm_query
+from lib.paths import mock_chroot as chroot_name
 from lib.paths import (
     ARCH,
     DISTRO,
@@ -47,7 +48,12 @@ from lib.stage_common import record_config_skip
 from lib.reporting import event, status, verbose_proceed_check
 from lib.subprocess_utils import run_cmd
 from lib.version import nvr
-from lib.yaml_utils import apply_os_overrides, get_packages, prepare_stage
+from lib.yaml_utils import (
+    SUPPORTED_FEDORA_VERSIONS,
+    apply_os_overrides,
+    get_packages,
+    prepare_stage,
+)
 
 
 def failed_local_dep(
@@ -264,13 +270,17 @@ def _rebuild_healed(
     run_id: int,
     repo_dir: Path,
     log: Path,
-    ver: str,
 ) -> bool:
     """One autoheal rebuild (#COPR-0029): packages.yaml was just edited, so
-    regenerate spec and SRPM from it, then run mock again. False when any step fails."""
-    event("mock", target, pkg, "autoheal", ver=ver)
+    regenerate spec and SRPM from it, then run mock again. False when any step fails.
+
+    The version is recomputed from the reloaded entry: the release can have
+    changed since the first attempt (another run bumping it, or a rewrite).
+    """
     all_packages = get_packages()
     meta = apply_os_overrides(all_packages[pkg], fedora_version)
+    ver = nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
+    event("mock", target, pkg, "autoheal", ver=ver)
     spec_stage = importlib.import_module("stage-spec")
     srpm_stage = importlib.import_module("stage-srpm")
     if not spec_stage.run_for_package(
@@ -389,16 +399,22 @@ def run_for_package(
     ok = _run_mock_once(cmd, log, pkg, target, run_id, ver)
     heal_reason = None
     if not ok and autoheal_enabled():
-        # #COPR-0029: a missing pkgconfig/CMake dependency is fixed by editing
-        # packages.yaml; heal and rebuild up to AUTOHEAL_MAX_CYCLES times, else fail.
+        # #COPR-0029: a missing pkgconfig/CMake dependency or a files: list that
+        # disagrees with the build is fixed by editing packages.yaml; heal and
+        # rebuild up to AUTOHEAL_MAX_CYCLES times, else fail.
         healed = heal_loop(
             pkg,
             log_path=pkg_log_dir / "21-mock-build.log",
             fedora_version=fedora_version,
             rebuild=lambda: _rebuild_healed(
-                pkg, fedora_version, target, run_id, repo_dir, log, ver
+                pkg, fedora_version, target, run_id, repo_dir, log
             ),
             limit=max_cycles(),
+            # The file-list vote: every supported chroot must agree to a removal.
+            target=target,
+            version=str(meta["version"]),
+            targets=[chroot_name(v) for v in sorted(SUPPORTED_FEDORA_VERSIONS)],
+            get_stage=build_db.get_stage,
         )
         if healed.reason:
             ok = healed.ok

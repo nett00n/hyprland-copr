@@ -33,7 +33,7 @@ file and `docs/features/` work together.
 - [X] [COPR-0026. Gotify notifications](features/COPR-0026-gotify-notifications.md) - `#daily` `#notifications` `#tooling`
 - [X] [COPR-0027. Zig build system and dependency vendoring](features/COPR-0027-zig-build-system.md) - `#packaging` `#tooling`
 - [X] [COPR-0028. Last-night build stats and error details](features/COPR-0028-last-build-stats.md) - `#diagnostics` `#state` `#tooling`
-- [X] [COPR-0029. Build-dependency autoheal](features/COPR-0029-build-deps-autoheal.md) - `#automation` `#build` `#diagnostics` `#mock`
+- [X] [COPR-0029. Build autoheal: dependencies and file lists](features/COPR-0029-build-deps-autoheal.md) - `#automation` `#build` `#diagnostics` `#mock`
 
 ## Tags
 

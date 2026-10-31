@@ -1,7 +1,7 @@
 
 Name:           hyprland
 Version:        0.57.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -30,6 +30,7 @@ BuildRequires:  pkgconfig(gbm)
 BuildRequires:  pkgconfig(gio-2.0)
 BuildRequires:  pkgconfig(gl)
 BuildRequires:  pkgconfig(glesv2)
+BuildRequires:  pkgconfig(libcanberra)
 BuildRequires:  pkgconfig(libdrm)
 BuildRequires:  pkgconfig(libeis-1.0)
 BuildRequires:  pkgconfig(libinput)
@@ -40,6 +41,7 @@ BuildRequires:  pkgconfig(pango)
 BuildRequires:  pkgconfig(pangocairo)
 BuildRequires:  pkgconfig(pixman-1)
 BuildRequires:  pkgconfig(re2)
+BuildRequires:  pkgconfig(sdbus-c++)
 BuildRequires:  pkgconfig(tomlplusplus)
 BuildRequires:  pkgconfig(uuid)
 BuildRequires:  pkgconfig(wayland-protocols)
@@ -121,6 +123,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Wed Oct 28 2026 nett00n <copr@nett00n.org> - 0.57.0-1
+* Wed Oct 28 2026 nett00n <copr@nett00n.org> - 0.57.0-2
 
 - VERSION: bump to 0.57.0

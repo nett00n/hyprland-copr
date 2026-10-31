@@ -21,6 +21,7 @@ History before this file's introduction (2026-08-02) is not backfilled - see
 
 ## 2026-10-31
 
+- COPR-0029: autoheal also repairs the `files:`/`devel.files:` lists — `File not found` entries are removed once every supported chroot agrees (a chroot that lacks the file only records a `pending` vote), and `Installed (but unpackaged)` files are added (devel vs main by path); signed `changes` in the stage reason.
 - COPR-0029: a mock build that fails on a missing pkgconfig/CMake dependency now heals itself — `stage-mock` adds the provider-verified entry (`pkgconfig(X)`/`cmake(X)`, or `<pkg>-devel` + `depends_on` for a local package) to `packages.yaml`, regenerates spec/SRPM and rebuilds, up to `AUTOHEAL_MAX_CYCLES` (default 10) cycles, then fails; on by default, `AUTOHEAL=false` disables.
 - COPR-0028: `make last-build` prints last night's runs, stage counts, slowest stages and failures (20-line error excerpt plus log path each) from `build-report.db` and `logs/runs/`; read-only.
 

@@ -23,6 +23,8 @@ from lib.log_analysis import (
     report_srpm_failures,
     report_mock_failures,
     report_copr_failures,
+    missing_files,
+    unpackaged_files,
 )
 
 
@@ -1395,3 +1397,62 @@ class TestReportFailures:
 
         out = capsys.readouterr().out
         assert "[mock/builddep] pkg1:" in out
+
+
+BUILDROOT = "/builddir/build/BUILD/hyprland-0.57.0-build/BUILDROOT"
+NOT_FOUND_LOG = f"""\
+Processing files: hyprland-0.57.0-2.fc45.x86_64
+error: File not found: {BUILDROOT}/usr/share/bash-completion/completions/hyprctl
+error: File not found by glob: {BUILDROOT}/usr/share/wayland-sessions/hyprland*.desktop
+error: Directory not found: {BUILDROOT}/usr/share/hypr
+RPM build errors:
+    File not found: {BUILDROOT}/usr/share/bash-completion/completions/hyprctl
+Child return code was: 1
+"""
+UNPACKAGED_LOG = """\
+error: Installed (but unpackaged) file(s) found:
+   /usr/lib64/systemd/user/hyprland-session.target
+   /usr/include/hyprland/api.h
+   /usr/lib/debug/usr/bin/hyprctl-0.57.0.debug
+   /usr/bin/foo.debug
+RPM build errors:
+    Installed (but unpackaged) file(s) found:
+   /usr/lib64/systemd/user/hyprland-session.target
+   /usr/include/hyprland/api.h
+Child return code was: 1
+"""
+
+
+class TestFileListLogHelpers:
+    """#COPR-0029: plain path lists for the file-list autoheal."""
+
+    def test_glob_not_found_is_an_issue_too(self, tmp_path):
+        log = tmp_path / "21-mock-build.log"
+        log.write_text(NOT_FOUND_LOG)
+        paths = [i[3] for i in _analyze_mock_build_log(log)]
+        assert "/usr/share/wayland-sessions/hyprland*.desktop" in paths
+
+    def test_missing_files(self, tmp_path):
+        log = tmp_path / "21-mock-build.log"
+        log.write_text(NOT_FOUND_LOG)
+        assert missing_files(log) == [
+            "/usr/share/bash-completion/completions/hyprctl",
+            "/usr/share/wayland-sessions/hyprland*.desktop",
+            "/usr/share/hypr",
+        ]
+
+    def test_missing_files_without_log(self, tmp_path):
+        assert missing_files(tmp_path / "nope.log") == []
+
+    def test_unpackaged_files_every_path_debug_skipped_deduplicated(self, tmp_path):
+        log = tmp_path / "21-mock-build.log"
+        log.write_text(UNPACKAGED_LOG)
+        assert unpackaged_files(log) == [
+            "/usr/lib64/systemd/user/hyprland-session.target",
+            "/usr/include/hyprland/api.h",
+        ]
+
+    def test_unpackaged_files_without_block(self, tmp_path):
+        log = tmp_path / "21-mock-build.log"
+        log.write_text("nothing to see\n")
+        assert unpackaged_files(log) == []

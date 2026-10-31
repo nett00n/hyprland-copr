@@ -78,9 +78,20 @@ class TestMissingBuildDeps:
     ):
         deps = missing_build_deps(_log(tmp_path, CMAKE_PKG_LOG))
         assert deps == [
-            MissingDep("hyprtoolkit", "pkgconfig"),
+            MissingDep("hyprtoolkit", "pkgconfig", ">= 0.6.0"),
             MissingDep("libcanberra", "pkgconfig"),
         ]
+
+    def test_constraint_is_read_from_the_package_list(self, tmp_path):
+        log = _log(tmp_path, _dep_log("sdbus-c++>=2.0.0"))
+        assert missing_build_deps(log) == [
+            MissingDep("sdbus-c++", "pkgconfig", ">= 2.0.0")
+        ]
+
+    @pytest.mark.parametrize("op", [">=", "<=", "=", ">", "<"])
+    def test_every_operator(self, tmp_path, op):
+        log = _log(tmp_path, _dep_log(f"foo{op}1.2"))
+        assert missing_build_deps(log) == [MissingDep("foo", "pkgconfig", f"{op} 1.2")]
 
     def test_cmake_config_package_is_cmake_method(self, tmp_path):
         log = _log(
@@ -108,7 +119,9 @@ class TestMissingBuildDeps:
             "  The following required packages were not found:\n"
             "   - hyprtoolkit&gt;=0.6.0\n",
         )
-        assert missing_build_deps(log) == [MissingDep("hyprtoolkit", "pkgconfig")]
+        assert missing_build_deps(log) == [
+            MissingDep("hyprtoolkit", "pkgconfig", ">= 0.6.0")
+        ]
 
     def test_other_failures_are_not_healable(self, tmp_path):
         log = _log(tmp_path, "/var/tmp/rpm-tmp.x: line 31: ninja: command not found\n")
@@ -141,6 +154,39 @@ class TestResolveDep:
             fix = resolve_dep(MissingDep("glslang", "cmake"), "Hyprland", packages, "44")
         assert fix is not None and fix.build_requires == "cmake(glslang)"
         assert wp.call_args.args[0] == "cmake(glslang)"
+
+    def test_constraint_is_kept_and_checked_against_the_provider(self, packages_yaml):
+        packages = yaml.safe_load(packages_yaml.read_text())
+        dep = MissingDep("sdbus-c++", "pkgconfig", ">= 2.0.0")
+        with patch.object(
+            deps_autoheal, "_whatprovides", return_value=["sdbus-cpp-devel"]
+        ) as wp:
+            fix = resolve_dep(dep, "Hyprland", packages, "44")
+        assert fix == Fix(dep, "pkgconfig(sdbus-c++) >= 2.0.0", None)
+        assert wp.call_args.args[0] == "pkgconfig(sdbus-c++) >= 2.0.0"
+
+    def test_provider_too_old_means_no_fix(self, packages_yaml):
+        packages = yaml.safe_load(packages_yaml.read_text())
+        with patch.object(deps_autoheal, "_whatprovides", return_value=[]):
+            assert (
+                resolve_dep(
+                    MissingDep("sdbus-c++", "pkgconfig", ">= 9"),
+                    "Hyprland",
+                    packages,
+                    "43",
+                )
+                is None
+            )
+
+    def test_local_package_ignores_the_constraint(self, packages_yaml):
+        packages = yaml.safe_load(packages_yaml.read_text())
+        fix = resolve_dep(
+            MissingDep("hyprtoolkit", "pkgconfig", ">= 0.6.0"),
+            "Hyprland",
+            packages,
+            "44",
+        )
+        assert fix is not None and fix.build_requires == "hyprtoolkit-devel"
 
     def test_no_provider_means_no_fix(self, packages_yaml):
         packages = yaml.safe_load(packages_yaml.read_text())
@@ -226,6 +272,25 @@ class TestApplyFixes:
         after = yaml.safe_load(packages_yaml.read_text())
         for name in ("hyprlang", "hyprtoolkit", "app-only", "no-depends"):
             assert after[name] == before[name]
+
+    def test_constrained_entry_replaces_the_bare_one(self, packages_yaml):
+        added = apply_fixes(
+            "Hyprland",
+            [
+                Fix(
+                    MissingDep("zlib", "pkgconfig", ">= 1.3"),
+                    "pkgconfig(zlib) >= 1.3",
+                    None,
+                )
+            ],
+            path=packages_yaml,
+        )
+        assert added == ["pkgconfig(zlib) >= 1.3"]
+        requires = yaml.safe_load(packages_yaml.read_text())["Hyprland"][
+            "build_requires"
+        ]
+        assert "pkgconfig(zlib) >= 1.3" in requires
+        assert "pkgconfig(zlib)" not in requires
 
     def test_existing_entry_is_not_added_twice(self, packages_yaml):
         added = apply_fixes(
@@ -322,7 +387,7 @@ class TestHealLoop:
         result, calls = self._run(tmp_path, packages_yaml, ["libcanberra", None])
         assert result.ok is True
         assert result.cycles == 1 and len(calls) == 1
-        assert result.added == ["pkgconfig(libcanberra)"]
+        assert result.changes == ["+pkgconfig(libcanberra)"]
         assert result.reason == "autoheal: +pkgconfig(libcanberra) (1 cycle)"
 
     def test_two_cycles_list_both_entries(self, tmp_path, packages_yaml):
@@ -374,3 +439,123 @@ class TestHealLoop:
         """The edit did not help (mock still wants zlib): stop instead of spinning."""
         result, calls = self._run(tmp_path, packages_yaml, ["zlib"])
         assert result.ok is False and calls == []
+
+
+# --- file lists in the same loop (#COPR-0029) ---------------------------------------
+
+from lib.files_autoheal import FileEdit, pending_reason  # noqa: E402
+
+T43, T44, T45 = "fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"
+TARGETS = [T43, T44, T45]
+COMPLETION = "%{_datadir}/bash-completion/completions/hyprctl"
+BUILDROOT = "/builddir/build/BUILD/hyprland-0.57.0-build/BUILDROOT"
+NOT_FOUND = f"error: File not found: {BUILDROOT}/usr/share/bash-completion/completions/hyprctl\n"
+UNPACKAGED = (
+    "error: Installed (but unpackaged) file(s) found:\n"
+    "   /usr/lib64/systemd/user/hyprland-session.target\n"
+    "Child return code was: 1\n"
+)
+
+
+@pytest.fixture
+def files_yaml(tmp_path):
+    path = tmp_path / "packages.yaml"
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "Hyprland": {
+                    "version": "0.57.0",
+                    "build_requires": ["cmake"],
+                    "files": ["%{_bindir}/hyprctl", COMPLETION],
+                }
+            }
+        )
+    )
+    return path
+
+
+def _vote_row(entry=COMPLETION):
+    edit = FileEdit("-", "files", entry)
+    return {
+        "state": "failed",
+        "version": "0.57.0-1.fc44",
+        "reason": "autoheal: " + pending_reason([(edit, [T44])], 3),
+    }
+
+
+def _loop(tmp_path, files_yaml, log_text, *, rebuild=lambda: True, stages=None, limit=10):
+    log = tmp_path / "21-mock-build.log"
+    log.write_text(log_text)
+    return heal_loop(
+        "Hyprland",
+        log_path=log,
+        fedora_version="45",
+        rebuild=rebuild,
+        limit=limit,
+        packages_path=files_yaml,
+        load_packages=lambda: yaml.safe_load(files_yaml.read_text()),
+        target=T45,
+        version="0.57.0",
+        targets=TARGETS,
+        get_stage=lambda pkg, stage, t: (stages or {}).get(t),
+    )
+
+
+class TestHealLoopFiles:
+    def test_unpackaged_file_is_added_and_rebuilt(self, tmp_path, files_yaml):
+        result = _loop(tmp_path, files_yaml, UNPACKAGED)
+        entry = "%{_libdir}/systemd/user/hyprland-session.target"
+        assert result.ok and result.cycles == 1
+        assert result.changes == [f"+files:{entry}"]
+        assert result.reason == f"autoheal: +files:{entry} (1 cycle)"
+        assert entry in yaml.safe_load(files_yaml.read_text())["Hyprland"]["files"]
+
+    def test_unanimous_removal(self, tmp_path, files_yaml):
+        stages = {T43: _vote_row(), T44: _vote_row()}
+        result = _loop(tmp_path, files_yaml, NOT_FOUND, stages=stages)
+        assert result.ok and result.reason == f"autoheal: -files:{COMPLETION} (1 cycle)"
+        assert COMPLETION not in yaml.safe_load(files_yaml.read_text())["Hyprland"]["files"]
+
+    def test_a_lone_vote_only_records_a_pending_reason(self, tmp_path, files_yaml):
+        before = files_yaml.read_text()
+        result = _loop(
+            tmp_path,
+            files_yaml,
+            NOT_FOUND,
+            rebuild=lambda: pytest.fail("a vote must not rebuild"),
+        )
+        assert not result.ok and result.cycles == 0 and result.changes == []
+        assert result.reason == (
+            f"autoheal: pending -files:{COMPLETION} "
+            f"(needs all chroots; lacking on 1/3: {T45})"
+        )
+        assert files_yaml.read_text() == before
+
+    def test_dependency_then_file_cycle(self, tmp_path, files_yaml):
+        log = tmp_path / "21-mock-build.log"
+        calls = []
+
+        def rebuild():
+            calls.append(1)
+            if len(calls) == 1:
+                log.write_text(UNPACKAGED)
+                return False
+            return True
+
+        with patch.object(deps_autoheal, "_whatprovides", return_value=["x-devel"]):
+            result = _loop(
+                tmp_path, files_yaml, _dep_log("libcanberra"), rebuild=rebuild
+            )
+        assert result.ok and result.cycles == 2
+        assert result.reason == (
+            "autoheal: +pkgconfig(libcanberra), "
+            "+files:%{_libdir}/systemd/user/hyprland-session.target (2 cycles)"
+        )
+
+    def test_gave_up_keeps_the_pending_votes(self, tmp_path, files_yaml):
+        result = _loop(
+            tmp_path, files_yaml, UNPACKAGED + NOT_FOUND, rebuild=lambda: False, limit=1
+        )
+        assert not result.ok and result.cycles == 1
+        assert result.reason.startswith("autoheal: gave up after 1 cycle (+files:")
+        assert f"; pending -files:{COMPLETION} (needs all chroots" in result.reason
