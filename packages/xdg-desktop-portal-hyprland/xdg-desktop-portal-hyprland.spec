@@ -1,7 +1,7 @@
 
 Name:           xdg-desktop-portal-hyprland
 Version:        1.5.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        An XDG-Destop-Portal backend for Hyprland (and wlroots)
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/xdg-desktop-portal-hyprland
@@ -69,6 +69,6 @@ Commit:            d1467fea8d1895cb7835829c2fbb271a0d37760a
 %{_userunitdir}/%{name}.service
 
 %changelog
-* Wed Oct 28 2026 nett00n <copr@nett00n.org> - 1.5.0-1
+* Wed Oct 28 2026 nett00n <copr@nett00n.org> - 1.5.0-2
 
 - VERSION: bump to 1.5.0

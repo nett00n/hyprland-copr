@@ -1,11 +1,11 @@
 
 Name:           hyprgraphics
-Version:        0.5.1
-Release:        17%{?dist}
+Version:        0.6.0
+Release:        1%{?dist}
 Summary:        Small C++ library for graphics utilities across the Hypr ecosystem
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprgraphics
-Source0:        https://github.com/hyprwm/hyprgraphics/archive/refs/tags/v0.5.1.tar.gz#/hyprgraphics-0.5.1.tar.gz
+Source0:        https://github.com/hyprwm/hyprgraphics/archive/refs/tags/v0.6.0.tar.gz#/hyprgraphics-0.6.0.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  file-devel
@@ -36,8 +36,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.5.1
-Commit:            482d4b7ec36ffdaf3573086aa586b178fd5404be
+Tag:               v0.6.0
+Commit:            ade4ef0a887d2740efb9c9af2ddb175633365e1b
 
 %prep
 %autosetup -p1
@@ -65,6 +65,6 @@ Development files for hyprgraphics.
 %{_libdir}/pkgconfig/hyprgraphics.pc
 
 %changelog
-* Mon Apr 06 2026 nett00n <copr@nett00n.org> - 0.5.1-17
+* Sun Nov 01 2026 nett00n <copr@nett00n.org> - 0.6.0-1
 
-- version: bump to 0.5.1
+- VERSION: bump to 0.6.0

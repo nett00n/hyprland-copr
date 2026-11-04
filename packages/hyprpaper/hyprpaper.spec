@@ -1,11 +1,11 @@
 
 Name:           hyprpaper
-Version:        0.8.4
-Release:        23%{?dist}
+Version:        0.8.5
+Release:        1%{?dist}
 Summary:        A blazing fast Wayland wallpaper utility
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpaper
-Source0:        https://github.com/hyprwm/hyprpaper/archive/refs/tags/v0.8.4.tar.gz#/hyprpaper-0.8.4.tar.gz
+Source0:        https://github.com/hyprwm/hyprpaper/archive/refs/tags/v0.8.5.tar.gz#/hyprpaper-0.8.5.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -43,8 +43,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.8.4
-Commit:            20fc0fa6c2056c388a4cd69cb394a9f989dd27c0
+Tag:               v0.8.5
+Commit:            a8e93f4e60eabc432dde43449dfeb9a565c54da2
 
 %prep
 %autosetup -p1
@@ -62,6 +62,6 @@ Commit:            20fc0fa6c2056c388a4cd69cb394a9f989dd27c0
 %{_userunitdir}/hyprpaper.service
 
 %changelog
-* Wed Apr 29 2026 nett00n <copr@nett00n.org> - 0.8.4-23
+* Sun Nov 01 2026 nett00n <copr@nett00n.org> - 0.8.5-1
 
-- version: bump to 0.8.4
+- VERSION: bump to 0.8.5

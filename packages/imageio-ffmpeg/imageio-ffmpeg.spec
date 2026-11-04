@@ -1,13 +1,13 @@
 %global debug_package %{nil}
 
 Name:           imageio-ffmpeg
-Version:        0.7.0
+Version:        0.8.1
 Release:        1%{?dist}
 Summary:        FFMPEG wrapper for Python
 BuildArch:      noarch
 License:        BSD-2-Clause
 URL:            https://github.com/imageio/imageio-ffmpeg
-Source0:        https://github.com/imageio/imageio-ffmpeg/archive/refs/tags/v0.7.0.tar.gz#/imageio-ffmpeg-0.7.0.tar.gz
+Source0:        https://github.com/imageio/imageio-ffmpeg/archive/refs/tags/v0.8.1.tar.gz#/imageio-ffmpeg-0.8.1.tar.gz
 
 BuildRequires:  pyproject-rpm-macros
 BuildRequires:  python3-devel
@@ -28,8 +28,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.7.0
-Commit:            be2a02bdeaa728047df3822fa14db2aee0bed4ff
+Tag:               v0.8.1
+Commit:            26277bb102b64c42d939c3a550301edbe2c81921
 
 %prep
 %autosetup -p1
@@ -46,6 +46,6 @@ Commit:            be2a02bdeaa728047df3822fa14db2aee0bed4ff
 %license LICENSE
 
 %changelog
-* Wed Oct 28 2026 nett00n <copr@nett00n.org> - 0.7.0-1
+* Tue Nov 03 2026 nett00n <copr@nett00n.org> - 0.8.1-1
 
 - bump

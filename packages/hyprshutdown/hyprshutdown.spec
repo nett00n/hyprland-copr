@@ -1,11 +1,11 @@
 
 Name:           hyprshutdown
-Version:        0.1.1
-Release:        30%{?dist}
+Version:        0.1.2
+Release:        1%{?dist}
 Summary:        A graceful shutdown utility for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprshutdown
-Source0:        https://github.com/hyprwm/hyprshutdown/archive/refs/tags/v0.1.1.tar.gz#/hyprshutdown-0.1.1.tar.gz
+Source0:        https://github.com/hyprwm/hyprshutdown/archive/refs/tags/v0.1.2.tar.gz#/hyprshutdown-0.1.2.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -33,8 +33,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.1.1
-Commit:            db1f38b03b173984ae9ed3abeb9750583c9bbd91
+Tag:               v0.1.2
+Commit:            932dcf06320da94e5f7fa73cf449e8b8c394bf9d
 
 %prep
 %autosetup -p1
@@ -52,6 +52,6 @@ Commit:            db1f38b03b173984ae9ed3abeb9750583c9bbd91
 %{_prefix}/bin/hyprshutdown
 
 %changelog
-* Tue May 12 2026 nett00n <copr@nett00n.org> - 0.1.1-30
+* Sun Nov 01 2026 nett00n <copr@nett00n.org> - 0.1.2-1
 
-- version: bump to 0.1.1
+- VERSION: bump to 0.1.2

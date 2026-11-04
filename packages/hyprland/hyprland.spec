@@ -1,11 +1,11 @@
 
 Name:           hyprland
-Version:        0.57.0
-Release:        2%{?dist}
+Version:        0.57.1
+Release:        1%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
-Source0:        https://github.com/hyprwm/Hyprland/archive/refs/tags/v0.57.0.tar.gz#/hyprland-0.57.0.tar.gz
+Source0:        https://github.com/hyprwm/Hyprland/archive/refs/tags/v0.57.1.tar.gz#/hyprland-0.57.1.tar.gz
 
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
@@ -70,8 +70,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.57.0
-Commit:            0aa6745f705f2c4b0a5004eb019ef76e5bbdb426
+Tag:               v0.57.1
+Commit:            acc1aa0bfd4bd575dcb0f76c35ccf12b660a1ab9
 
 %prep
 %autosetup -p1 -n Hyprland-%{version}
@@ -79,6 +79,8 @@ Commit:            0aa6745f705f2c4b0a5004eb019ef76e5bbdb426
 sed -i '/return (.* || std::ranges::starts_with(str_view, prefixes));/c\
 auto check = [&](auto prefix) { return std::string(str_view.begin(), str_view.end()).starts_with(prefix); };\
 return (... || check(prefixes));' src/helpers/MiscFunctions.cpp
+
+sed -i -E 's/\b([A-Za-z_][A-Za-z0-9_]*)\.subview\(/std::string_view(\1).substr(/g' src/ipc/s1/S1.cpp
 
 %endif
 
@@ -96,15 +98,13 @@ return (... || check(prefixes));' src/helpers/MiscFunctions.cpp
 %{_bindir}/hyprland
 %{_bindir}/hyprpm
 %{_bindir}/start-hyprland
-%{_datadir}/bash-completion/completions/hyprctl
 %{_datadir}/bash-completion/completions/hyprpm
-%{_datadir}/fish/vendor_completions.d/hyprctl.fish
 %{_datadir}/fish/vendor_completions.d/hyprpm.fish
 %{_datadir}/hypr/
 %{_datadir}/wayland-sessions/hyprland*.desktop
 %{_datadir}/xdg-desktop-portal/hyprland-portals.conf
-%{_datadir}/zsh/site-functions/_hyprctl
 %{_datadir}/zsh/site-functions/_hyprpm
+%{_libdir}/systemd/user/hyprland-session.target
 %{_mandir}/man1/hyprctl.1.gz
 %{_mandir}/man1/Hyprland.1.gz
 %{_prefix}/bin/Hyprland
@@ -123,6 +123,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Wed Oct 28 2026 nett00n <copr@nett00n.org> - 0.57.0-2
+* Tue Nov 03 2026 nett00n <copr@nett00n.org> - 0.57.1-1
 
-- VERSION: bump to 0.57.0
+- [gha] Nix: update inputs

@@ -38,13 +38,13 @@ aquamarine:
   - '%license LICENSE'
   - '%{_libdir}/libaquamarine.so*'
   license: BSD-3-Clause
-  release: 3
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A very light linux rendering backend library
   url: https://github.com/hyprwm/aquamarine
-  version: 0.15.1
+  version: 0.16.0
 aylurs-gtk-shell:
   build:
     go_subdir: cli
@@ -482,13 +482,13 @@ hyprgraphics:
   - '%license LICENSE'
   - '%{_libdir}/libhyprgraphics.so*'
   license: BSD-3-Clause
-  release: 17
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: Small C++ library for graphics utilities across the Hypr ecosystem
   url: https://github.com/hyprwm/hyprgraphics
-  version: 0.5.1
+  version: 0.6.0
 hypridle:
   build:
     system: cmake
@@ -534,6 +534,8 @@ Hyprland:
       sed -i '/return (.* || std::ranges::starts_with(str_view, prefixes));/c\
       auto check = [&](auto prefix) { return std::string(str_view.begin(), str_view.end()).starts_with(prefix); };\
       return (... || check(prefixes));' src/helpers/MiscFunctions.cpp
+    - |
+      sed -i -E 's/\b([A-Za-z_][A-Za-z0-9_]*)\.subview\(/std::string_view(\1).substr(/g' src/ipc/s1/S1.cpp
     - '%endif'
     system: cmake
   build_requires:
@@ -611,29 +613,27 @@ Hyprland:
   - '%{_bindir}/hyprland'
   - '%{_bindir}/hyprpm'
   - '%{_bindir}/start-hyprland'
-  - '%{_datadir}/bash-completion/completions/hyprctl'
   - '%{_datadir}/bash-completion/completions/hyprpm'
-  - '%{_datadir}/fish/vendor_completions.d/hyprctl.fish'
   - '%{_datadir}/fish/vendor_completions.d/hyprpm.fish'
   - '%{_datadir}/hypr/'
   - '%{_datadir}/wayland-sessions/hyprland*.desktop'
   - '%{_datadir}/xdg-desktop-portal/hyprland-portals.conf'
-  - '%{_datadir}/zsh/site-functions/_hyprctl'
   - '%{_datadir}/zsh/site-functions/_hyprpm'
+  - '%{_libdir}/systemd/user/hyprland-session.target'
   - '%{_mandir}/man1/hyprctl.1.gz'
   - '%{_mandir}/man1/Hyprland.1.gz'
   - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 2
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
     name: Hyprland
   summary: A Modern C++ Wayland Compositor
   url: https://github.com/hyprwm/Hyprland
-  version: 0.57.0
+  version: 0.57.1
 hyprland-guiutils:
   build:
     system: cmake
@@ -662,7 +662,7 @@ hyprland-guiutils:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprland-*'
   license: BSD-3-Clause
-  release: 17
+  release: 18
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -745,7 +745,14 @@ hyprland-plugins:
     - hyprwinwrap -> clone of xwinwrap, allows you to put any app as a wallpaper
     - xtra-dispatchers -> adds some new dispatchers
 
-    Note: hyprscrolling and hyprtrails are temporarily excluded (incompatible with hyprland 0.54)
+    Note: temporarily skipped on every Fedora version (all plugins fail to compile against Hyprland 0.57)
+  fedora:
+    43:
+      skip: true
+    44:
+      skip: true
+    45:
+      skip: true
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -754,7 +761,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 11
+  release: 16
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -903,7 +910,7 @@ hyprlauncher:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprlauncher'
   license: BSD-3-Clause
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -945,13 +952,13 @@ hyprlock:
   - '%{_datadir}/hypr/hyprlock.conf'
   - '%{_sysconfdir}/pam.d/hyprlock'
   license: BSD-3-Clause
-  release: 12
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A gpu-accelerated screen lock for Hyprland
   url: https://github.com/hyprwm/hyprlock
-  version: 0.9.6
+  version: 0.9.7
 hyprpaper:
   build:
     system: cmake
@@ -993,13 +1000,13 @@ hyprpaper:
   - '%{_bindir}/hyprpaper'
   - '%{_userunitdir}/hyprpaper.service'
   license: BSD-3-Clause
-  release: 23
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A blazing fast Wayland wallpaper utility
   url: https://github.com/hyprwm/hyprpaper
-  version: 0.8.4
+  version: 0.8.5
 hyprpicker:
   build:
     system: cmake
@@ -1026,13 +1033,13 @@ hyprpicker:
   - '%{_prefix}/bin/hyprpicker'
   - '%{_prefix}/share/man/man1/hyprpicker.1.gz'
   license: BSD-3-Clause
-  release: 16
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A wlroots-compatible Wayland color picker that does not suck
   url: https://github.com/hyprwm/hyprpicker
-  version: 0.4.7
+  version: 0.4.8
 hyprpolkitagent:
   build:
     system: cmake
@@ -1062,7 +1069,7 @@ hyprpolkitagent:
   - '%{_prefix}/libexec/hyprpolkitagent'
   - '%{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service'
   license: BSD-3-Clause
-  release: 7
+  release: 8
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1096,7 +1103,7 @@ hyprpwcenter:
   - '%{_prefix}/bin/hyprpwcenter'
   - '%{_prefix}/share/applications/hyprpwcenter.desktop'
   license: BSD-3-Clause
-  release: 23
+  release: 24
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1207,13 +1214,13 @@ hyprshutdown:
   - '%license LICENSE'
   - '%{_prefix}/bin/hyprshutdown'
   license: BSD-3-Clause
-  release: 30
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A graceful shutdown utility for Hyprland
   url: https://github.com/hyprwm/hyprshutdown
-  version: 0.1.1
+  version: 0.1.2
 hyprsunset:
   build:
     system: cmake
@@ -1285,7 +1292,7 @@ hyprsysteminfo:
   - '%{_prefix}/bin/hyprsysteminfo'
   - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 30
+  release: 31
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1331,7 +1338,7 @@ hyprtoolkit:
   - '%license LICENSE'
   - '%{_libdir}/libhyprtoolkit.so*'
   license: BSD-3-Clause
-  release: 7
+  release: 8
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1453,7 +1460,7 @@ imageio-ffmpeg:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: FFMPEG wrapper for Python
   url: https://github.com/imageio/imageio-ffmpeg
-  version: 0.7.0
+  version: 0.8.1
 ironbar:
   build:
     commands: []
@@ -2738,7 +2745,7 @@ waypaper:
   - '%doc README.md'
   - '%license LICENSE'
   license: GPL-3.0-or-later
-  release: 4
+  release: 5
   requires:
   - gtk3
   - imageio-ffmpeg
@@ -2887,7 +2894,7 @@ xdg-desktop-portal-hyprland:
   - '%{_libexecdir}/%{name}'
   - '%{_userunitdir}/%{name}.service'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'

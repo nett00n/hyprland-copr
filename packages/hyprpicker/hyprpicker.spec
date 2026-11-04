@@ -1,11 +1,11 @@
 
 Name:           hyprpicker
-Version:        0.4.7
-Release:        16%{?dist}
+Version:        0.4.8
+Release:        1%{?dist}
 Summary:        A wlroots-compatible Wayland color picker that does not suck
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpicker
-Source0:        https://github.com/hyprwm/hyprpicker/archive/refs/tags/v0.4.7.tar.gz#/hyprpicker-0.4.7.tar.gz
+Source0:        https://github.com/hyprwm/hyprpicker/archive/refs/tags/v0.4.8.tar.gz#/hyprpicker-0.4.8.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -33,8 +33,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.4.7
-Commit:            8c163ce9b8a40f85babe4dd6e23a238787351164
+Tag:               v0.4.8
+Commit:            838147963f8c2a22b60a455b2ccc02b5aa4a7b98
 
 %prep
 %autosetup -p1
@@ -53,6 +53,6 @@ Commit:            8c163ce9b8a40f85babe4dd6e23a238787351164
 %{_prefix}/share/man/man1/hyprpicker.1.gz
 
 %changelog
-* Tue May 05 2026 nett00n <copr@nett00n.org> - 0.4.7-16
+* Sun Nov 01 2026 nett00n <copr@nett00n.org> - 0.4.8-1
 
-- version: bump to 0.4.7
+- VERSION: bump to 0.4.8

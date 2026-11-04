@@ -24,6 +24,12 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-11-03
+
+Disabled Packages:
+
+- hyprland-plugins - skipped on every Fedora version until the plugins are ported to Hyprland 0.57 (all four fail to compile against its headers)
+
 ### 2026-10-31
 
 Builds now repair themselves when upstream adds a dependency: a failed mock build with a
@@ -58,13 +64,6 @@ Added Packages:
 Added Packages:
 
 - neowall - GPU-accelerated live wallpaper engine using GLSL shaders
-
-### 2026-10-12
-
-Added Packages:
-
-- wl-clip-persist - Keep Wayland clipboard even after programs close
-- OpenLogi - Local-first alternative to Logitech Options+ for HID++ devices. Partial build: only the CLI and the background agent (systemd user unit) are packaged. The GPUI desktop window and the on-screen overlay are not built, because they depend on crates published only as git sources (gpui-kit, appicon), which cannot be vendored for offline COPR builds
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 
