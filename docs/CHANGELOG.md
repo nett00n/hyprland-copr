@@ -19,6 +19,10 @@ in `docs/CONTRIBUTING.md` "Changelog".
 History before this file's introduction (2026-08-02) is not backfilled - see
 `git log`.
 
+## 2026-11-05
+
+- COPR-0030: new `build.system: hare` (`hare build -R` / install to `%{_bindir}`), detected from a top-level `main.ha`; the Hare toolchain (`harec`, `hare`, `hare-ev`, `hare-xml`, `hare-wayland`) is packaged here as ordinary packages.
+
 ## 2026-10-31
 
 - COPR-0029: autoheal also repairs the `files:`/`devel.files:` lists — `File not found` entries are removed once every supported chroot agrees (a chroot that lacks the file only records a `pending` vote), and `Installed (but unpackaged)` files are added (devel vs main by path); signed `changes` in the stage reason.

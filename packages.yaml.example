@@ -14,7 +14,7 @@
 #   rpm:         — buildarch, no_debug_package
 #   auto_update: — enable automatic updates (latest-commit, etc.)
 #
-# build.system: cmake | meson | autotools | configure | make | python | cargo | golang | zig
+# build.system: cmake | meson | autotools | configure | make | python | cargo | golang | zig | hare
 # build.vendor_prep: shell commands run in the extracted source tree before cargo
 #   vendor/go mod vendor (not in %prep) -- trims/patches a workspace into a vendorable
 #   shape; mirror the same edit in build.prep so the chroot build sees it too
@@ -434,6 +434,37 @@ myziputil:
       - "%zig_build -Dpie -Dllvm=true"
     install:
       - "%zig_install -Dpie -Dllvm=true"
+
+# --- hare package ------------------------------------------------------------
+# Hare builds using build system: hare (`hare build -R`); Hare libraries are plain
+# RPM build_requires (they install sources under %{_prefix}/src/hare/third-party).
+# sourcehut archives are %{url}/archive/<tag>.tar.gz (no refs/tags/).
+myharetool:
+  version: "0.1.0"
+  release: "%autorelease"
+  license: ISC
+  summary: A Hare command-line utility
+  description: |
+    myharetool is a Hare program built against packaged Hare libraries.
+  url: https://git.sr.ht/~myorg/myharetool
+  depends_on:
+    - hare-ev
+  build_requires:
+    - hare
+    - hare-ev
+  requires: []
+  files:
+    - "%license LICENSE"
+    - "%doc README.md"
+    - "%{_bindir}/myharetool"
+  devel:
+    files: []
+  source:
+    archives:
+      - "%{url}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz"
+    source_name: "myharetool-v%{version}"
+  build:
+    system: hare
 
 # --- cargo workspace trim (drop a member with an unvendorable git dep) ----
 # When only some workspace members pull a git-source crate dependency (not

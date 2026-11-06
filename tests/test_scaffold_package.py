@@ -270,6 +270,36 @@ class TestScaffoldPackageCmdAdd:
     @patch("lib.detection.detect_build_system")
     @patch("lib.detection.detect_license")
     @patch("lib.detection.extract_version")
+    def test_cmd_add_hare_adds_hare_and_bindir(
+        self, mock_version, mock_license, mock_build_system, tmp_path, monkeypatch
+    ):
+        """#COPR-0030: a hare scaffold gets `hare` in build_requires and the
+        %{_bindir} file, and no vendor archive."""
+        scaffold = _import_scaffold_module()
+
+        monkeypatch.setattr(scaffold, "ROOT", tmp_path)
+        monkeypatch.setattr(scaffold, "PACKAGES_YAML", tmp_path / "packages.yaml")
+        mock_version.return_value = "0.1.0"
+        mock_license.return_value = "ISC"
+        mock_build_system.return_value = "hare"
+
+        pkg_path = tmp_path / ".cache" / "upstream" / "org" / "harecli"
+        pkg_path.mkdir(parents=True)
+
+        modules = [{"path": str(pkg_path), "url": "https://git.sr.ht/~org/harecli"}]
+
+        scaffold.cmd_add(modules, "harecli")
+
+        data = yaml.safe_load((tmp_path / "packages.yaml").read_text())
+        entry = data["harecli"]
+        assert "hare" in entry["build_requires"]
+        assert "%{_bindir}/harecli" in entry["files"]
+        assert "%{name}-%{version}-vendor.tar.gz" not in entry["source"]["archives"]
+        assert entry["build"]["system"] == "hare"
+
+    @patch("lib.detection.detect_build_system")
+    @patch("lib.detection.detect_license")
+    @patch("lib.detection.extract_version")
     def test_cmd_add_golang_adds_bindir_to_files(
         self, mock_version, mock_license, mock_build_system, tmp_path, monkeypatch
     ):

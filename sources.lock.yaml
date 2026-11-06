@@ -701,3 +701,44 @@ rustlock:
     sha256: 7858361f53c2270acfca661ffdbe890e84210b02410475b21c1cc56089bb5d53
     size: 8405682
     recorded: '2026-11-04'
+harec:
+  harec-0.26.0.tar.gz:
+    url: https://git.sr.ht/~sircmpwn/harec/archive/0.26.0.tar.gz#/harec-0.26.0.tar.gz
+    sha256: 5581bc16dcf22969c7d33b0f2a9535ba37d4cf1bb39dec252e98ff2781175629
+    size: 210685
+    recorded: '2026-11-05'
+hare:
+  hare-0.26.0.1.tar.gz:
+    url: https://git.sr.ht/~sircmpwn/hare/archive/0.26.0.1.tar.gz#/hare-0.26.0.1.tar.gz
+    sha256: f76704920a2f457be4d2d6290dc10dcfb7319c1d1990f2305491644383466905
+    size: 976995
+    recorded: '2026-11-05'
+hare-ev:
+  hare-ev-0.26.0.0.tar.gz:
+    url: https://git.sr.ht/~sircmpwn/hare-ev/archive/0.26.0.0.tar.gz#/hare-ev-0.26.0.0.tar.gz
+    sha256: 6be334cdcbd180fd714810e1a86f6c3fabf799973948bd415271dc4a1a2b5a6a
+    size: 31992
+    recorded: '2026-11-05'
+hare-wayland:
+  hare-wayland-0.26.0.2.tar.gz:
+    url: https://git.sr.ht/~sircmpwn/hare-wayland/archive/0.26.0.2.tar.gz#/hare-wayland-0.26.0.2.tar.gz
+    sha256: e1f44e3f9547ac452f239ad164dcf9cfd0657356df7a22c6d3e1f0d7cbf9a380
+    size: 19060
+    recorded: '2026-11-05'
+  fbcd672f0b2a5569cf2ca501f382daef8e49ff4f.tar.gz:
+    url: https://git.sr.ht/~sircmpwn/hare-wayland/archive/fbcd672f0b2a5569cf2ca501f382daef8e49ff4f.tar.gz
+    sha256: 587c5ff4937d27a4031adfeea94d303c0e43626450e7631e829e7300676ab7e6
+    size: 19174
+    recorded: '2026-11-05'
+wlhc:
+  wlhc-0.1.1.tar.gz:
+    url: https://git.sr.ht/~whynothugo/wlhc/archive/v0.1.1.tar.gz#/wlhc-0.1.1.tar.gz
+    sha256: 116f7045dfd412f1ab962a8b621e50ef552e74852203877a2257e5d2035988ed
+    size: 4593
+    recorded: '2026-11-05'
+hare-xml:
+  hare-xml-0.25.2.0.tar.gz:
+    url: https://git.sr.ht/~sircmpwn/hare-xml/archive/0.25.2.0.tar.gz#/hare-xml-0.25.2.0.tar.gz
+    sha256: 76c2d6321524b8065cc78874e9677600949dc4bff11bb75c9e07c4180093cfbb
+    size: 12417
+    recorded: '2026-11-05'

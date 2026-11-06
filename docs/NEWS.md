@@ -5,6 +5,19 @@ packages and which Fedora versions are built. Changes to the automation itself g
 `docs/CHANGELOG.md`. Newest first, dated `## YYYY-MM-DD` entries, one short paragraph each.
 README shows the most recent entries - see `scripts/lib/readme_content.py:get_recent_news()`.
 
+## 2026-11-05
+
+Added Packages:
+
+- wlhc - Wayland hot corners: run a command when the pointer touches a screen corner (written in Hare)
+- harec, hare, hare-ev, hare-xml, hare-wayland - the Hare language toolchain and libraries wlhc builds with; harec tracks upstream 0.26 on every Fedora version, replacing Fedora's older 0.25 on 43 and 44
+
+## 2026-11-03
+
+Disabled Packages:
+
+- hyprland-plugins - skipped on every Fedora version until the plugins are ported to Hyprland 0.57 (all four fail to compile against its headers)
+
 ## 2026-10-31
 
 Builds now repair themselves when upstream adds a dependency: a failed mock build with a

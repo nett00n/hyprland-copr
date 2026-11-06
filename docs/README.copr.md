@@ -106,6 +106,7 @@
 - `waylock` — Small screenlocker for Wayland compositors
 - `waypaper` — GUI wallpaper manager for Wayland and Xorg Linux systems
 - `wl-clip-persist` — Keep Wayland clipboard even after programs close
+- `wlhc` — Execute a command when the pointer touches a screen corner
 - `wpgtk` — GTK+ theme/wallpaper manager which uses pywal as its core
 
 ### Other dependencies
@@ -115,6 +116,11 @@
 - `glaze` — Extremely fast, in memory, JSON and reflection library for modern C++.
 - `glaze-v7` — Compat build of glaze 7.x for consumers pinned below 8.0
 - `gtk4-layer-shell` — A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
+- `hare` — Hare programming language driver and standard library
+- `hare-ev` — Event loop library for Hare
+- `hare-wayland` — Wayland client bindings and protocol scanner for Hare
+- `hare-xml` — XML parser library for Hare
+- `harec` — Hare compiler
 - `imageio-ffmpeg` — FFMPEG wrapper for Python
 - `libcava` — Fork of cava providing it as a shared library
 - `libcava-v0` — cava built as a shared library
@@ -129,6 +135,13 @@
 
 
 ## News
+
+### 2026-11-05
+
+Added Packages:
+
+- wlhc - Wayland hot corners: run a command when the pointer touches a screen corner (written in Hare)
+- harec, hare, hare-ev, hare-xml, hare-wayland - the Hare language toolchain and libraries wlhc builds with; harec tracks upstream 0.26 on every Fedora version, replacing Fedora's older 0.25 on 43 and 44
 
 ### 2026-11-03
 
@@ -164,12 +177,6 @@ Added Packages:
 - swaylock-effects - Swaylock fork with fancy effects (blur, clock, fade-in)
 - swaylock-plugin - Swaylock fork that can use a Wayland client as lock screen background
 - waylock - Small screenlocker for Wayland compositors
-
-### 2026-10-21
-
-Added Packages:
-
-- neowall - GPU-accelerated live wallpaper engine using GLSL shaders
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 

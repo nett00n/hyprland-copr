@@ -147,6 +147,9 @@ class TestValidatePackage:
     def test_zig_is_a_valid_build_system(self):
         assert "zig" in VALID_BUILD_SYSTEMS
 
+    def test_hare_is_a_valid_build_system(self):
+        assert "hare" in VALID_BUILD_SYSTEMS
+
     def test_allows_fixme_build_system(self):
         """Should allow FIXME as build system."""
         meta = self.get_minimal_package()
@@ -1071,3 +1074,14 @@ class TestZigBuildSystemDefaults:
         build_cmd, install_cmd = BUILD_SYSTEMS["zig"]
         assert build_cmd == "%zig_build -Dpie"
         assert install_cmd == "%zig_install -Dpie"
+
+
+class TestHareBuildSystemDefaults:
+    """#COPR-0030: build.system hare renders `hare build -R` and a bindir install."""
+
+    def test_hare_defaults_build_and_install_binary(self):
+        from lib.build_systems import BUILD_SYSTEMS
+
+        build_cmd, install_cmd = BUILD_SYSTEMS["hare"]
+        assert build_cmd == "hare build -R -o %{name} ."
+        assert install_cmd == "install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}"

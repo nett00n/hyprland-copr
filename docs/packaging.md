@@ -238,6 +238,16 @@ Defaults are `%zig_build -Dpie` / `%zig_install -Dpie`; override with `build.com
 build-id, which makes `find-debuginfo` fail; use the project's LLVM switch if it has one
 (waylock: `-Dllvm=true`) or set `rpm.no_debug_package: true`.
 
+## Hare packages (#COPR-0030)
+
+Set `build.system: hare`. There is no vendor stage: Hare libraries are RPM-installed
+sources under `%{_prefix}/src/hare/third-party`, so they are plain `build_requires`
+(`hare`, `hare-ev`, `hare-wayland`, ...) plus `depends_on` for the ones built in this repo.
+Defaults are `hare build -R -o %{name} .` / `install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}`;
+override with `build.commands` / `build.install` (e.g. `wlhc` runs its upstream `make build`
+to generate the Wayland protocol bindings first). Hare upstreams are on sourcehut, whose
+archive URL is `%{url}/archive/<tag>.tar.gz`.
+
 ## Drop-in replacements of Fedora packages (#COPR-0005)
 
 A package that installs the same paths as a Fedora one (e.g. `swaylock-effects` ships

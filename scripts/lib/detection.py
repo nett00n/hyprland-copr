@@ -78,6 +78,7 @@ BUILD_SYSTEM_MARKERS: dict[str, tuple[str | tuple[str, ...], ...]] = {
     "autotools": ("configure.ac", ("configure", "Makefile.in")),
     "python": ("pyproject.toml", "setup.py"),
     "zig": ("build.zig",),  # #COPR-0027: before the generic Makefile marker
+    "hare": ("main.ha",),  # #COPR-0030: before the generic Makefile marker
     "make": ("Makefile",),
     "golang": ("go.mod",),
 }

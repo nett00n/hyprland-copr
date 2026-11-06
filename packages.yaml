@@ -375,6 +375,209 @@ gtk4-layer-shell:
   summary: A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
   url: https://github.com/wmww/gtk4-layer-shell
   version: 1.3.0
+hare:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands:
+    - make PREFIX=%{_prefix} ARCH=%{_arch} VERSION=%{version}
+    install:
+    - make install DESTDIR=%{buildroot} PREFIX=%{_prefix} ARCH=%{_arch} VERSION=%{version}
+    - mkdir -p %{buildroot}%{_prefix}/src/hare/third-party
+    no_lto: false
+    prep:
+    - cp configs/linux.mk config.mk
+    system: make
+  build_requires:
+  - binutils
+  - harec
+  - make
+  - qbe
+  - scdoc
+  depends_on:
+  - harec
+  description: |
+    Hare is a systems programming language designed to be simple, stable, and robust. This package ships the hare build tool, haredoc and the standard library; it needs a harec of the same minor release.
+  devel:
+    files: []
+  files:
+  - '%dir %{_prefix}/src/hare'
+  - '%dir %{_prefix}/src/hare/third-party'
+  - '%doc README.md'
+  - '%license COPYING'
+  - '%{_bindir}/hare'
+  - '%{_bindir}/haredoc'
+  - '%{_mandir}/man1/hare*.1*'
+  - '%{_mandir}/man5/hare*.5*'
+  - '%{_prefix}/src/hare/stdlib'
+  license: MPL-2.0
+  release: 2
+  requires:
+  - binutils
+  - harec
+  - qbe
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: hare
+  summary: Hare programming language driver and standard library
+  url: https://git.sr.ht/~sircmpwn/hare
+  version: 0.26.0.1
+hare-ev:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install:
+    - make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
+    no_lto: false
+    prep: []
+    system: make
+  build_requires:
+  - make
+  depends_on:
+  - hare
+  description: |
+    hare-ev is a third-party Hare library providing an event loop with timers, signals, child processes, and TCP/UDP/DNS clients and servers. It is installed as Hare source under the third-party module path.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license COPYING'
+  - '%{_prefix}/src/hare/third-party/ev'
+  license: MPL-2.0
+  release: 2
+  requires:
+  - hare
+  rpm:
+    buildarch: noarch
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: Event loop library for Hare
+  url: https://git.sr.ht/~sircmpwn/hare-ev
+  version: 0.26.0.0
+hare-wayland:
+  auto_update:
+    release_type: latest-commit
+  build:
+    commands:
+    - make PREFIX=%{_prefix}
+    install:
+    - make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
+    no_lto: false
+    prep: []
+    system: make
+  build_requires:
+  - hare
+  - hare-xml
+  - make
+  - pkgconfig(wayland-client)
+  - pkgconfig(wayland-protocols)
+  depends_on:
+  - hare
+  - hare-xml
+  description: |
+    hare-wayland provides Wayland client bindings for Hare and hare-wlscanner, which generates Hare bindings from Wayland protocol XML files.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license COPYING'
+  - '%{_bindir}/hare-wlscanner'
+  - '%{_prefix}/src/hare/third-party/wayland'
+  license: MPL-2.0
+  release: 1
+  requires:
+  - hare
+  - hare-xml
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/%{commit}.tar.gz'
+    commit:
+      date: '20260821'
+      full: fbcd672f0b2a5569cf2ca501f382daef8e49ff4f
+  summary: Wayland client bindings and protocol scanner for Hare
+  url: https://git.sr.ht/~sircmpwn/hare-wayland
+  version: 0^20260821gitfbcd672
+hare-xml:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install:
+    - make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
+    no_lto: false
+    prep: []
+    system: make
+  build_requires:
+  - make
+  depends_on:
+  - hare
+  description: |
+    hare-xml is a third-party Hare library for parsing XML (format::xml). It is installed as Hare source under the third-party module path.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license COPYING'
+  - '%{_prefix}/src/hare/third-party/format/xml'
+  license: MPL-2.0
+  release: 2
+  requires:
+  - hare
+  rpm:
+    buildarch: noarch
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  summary: XML parser library for Hare
+  url: https://git.sr.ht/~sircmpwn/hare-xml
+  version: 0.25.2.0
+harec:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands:
+    - make %{?_smp_mflags} PREFIX=%{_prefix} ARCH=%{_arch} VERSION=%{version} CFLAGS="%{optflags} -std=c11 -D_XOPEN_SOURCE=700 -Iinclude" LDFLAGS="%{build_ldflags}"
+    install:
+    - make install DESTDIR=%{buildroot} PREFIX=%{_prefix} ARCH=%{_arch} VERSION=%{version}
+    no_lto: false
+    prep:
+    - cp configs/linux.mk config.mk
+    system: make
+  build_requires:
+  - gcc
+  - make
+  - qbe
+  depends_on: []
+  description: |
+    harec is the bootstrapping compiler for the Hare systems programming language. It compiles Hare source to QBE intermediate language; it is driven by the hare build tool.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license COPYING'
+  - '%{_bindir}/harec'
+  license: GPL-3.0-or-later
+  release: 2
+  requires:
+  - qbe
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: harec
+  summary: Hare compiler
+  url: https://git.sr.ht/~sircmpwn/harec
+  version: 0.26.0
 hellwal:
   build:
     commands:
@@ -761,7 +964,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 16
+  release: 17
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -2798,6 +3001,47 @@ wl-clip-persist:
   summary: Keep Wayland clipboard even after programs close
   url: https://github.com/Linus789/wl-clip-persist
   version: 0.5.0
+wlhc:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands:
+    - make build
+    install: []
+    no_lto: false
+    prep: []
+    system: hare
+  build_requires:
+  - hare
+  - hare-ev
+  - hare-wayland
+  - make
+  - pkgconfig(wayland-protocols)
+  - pkgconfig(wlr-protocols)
+  depends_on:
+  - hare
+  - hare-ev
+  - hare-wayland
+  description: |
+    wlhc (Wayland hot corners) executes a command when the pointer touches a corner of the screen. It needs a compositor implementing wlr_layer_shell_v1.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENCE.md'
+  - '%{_bindir}/wlhc'
+  license: ISC
+  release: 4
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+  source_dir: wlhc-v%{version}
+  summary: Execute a command when the pointer touches a screen corner
+  url: https://git.sr.ht/~whynothugo/wlhc
+  version: 0.1.1
 wpgtk:
   build:
     commands: []

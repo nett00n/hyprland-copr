@@ -13,4 +13,9 @@ BUILD_SYSTEMS = {
     ),
     # #COPR-0027: Fedora zig-rpm-macros; --system zig-pkg makes the build offline
     "zig": ("%zig_build -Dpie", "%zig_install -Dpie"),
+    # #COPR-0030: Hare deps are RPM-installed source libraries, so no vendor step
+    "hare": (
+        "hare build -R -o %{name} .",
+        "install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}",
+    ),
 }

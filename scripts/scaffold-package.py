@@ -124,6 +124,8 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
         build_requires += ["cargo", "rustc"]
     elif build_system == "zig":
         build_requires += ["zig", "zig-rpm-macros"]  # #COPR-0027
+    elif build_system == "hare":
+        build_requires += ["hare"]  # #COPR-0030
     elif build_system == "python":
         build_requires += python_build_requires(python_info.get("build_backend"))
     for dep in pkg_deps:
@@ -179,7 +181,11 @@ def cmd_add(modules: list[dict], pkg_name: str) -> None:
         "files": [
             "%license LICENSE",
             "%doc README.md",
-            *([f"%{{_bindir}}/{key}"] if build_system in ("golang", "zig") else []),
+            *(
+                [f"%{{_bindir}}/{key}"]
+                if build_system in ("golang", "zig", "hare")
+                else []
+            ),
         ],
         "devel": {"files": []},
         "source": {

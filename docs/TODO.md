@@ -12,7 +12,7 @@ keep a stable `#TODO-NNNN` ID — `docs/ROADMAP.md` cites these IDs directly (ma
 DDD's own `ROADMAP.md` template, which cites `#TODO-NNNN`), so an idea can be ordered
 against `docs/BUGS.md` items before it's substantial enough to promote. IDs are never
 reused or renumbered; deletions (on promotion or on close) leave gaps. Next free ID:
-**TODO-0094**.
+**TODO-0095**.
 
 Each entry may end with a `[P#/D#]` marker once triaged:
 
@@ -32,4 +32,7 @@ it and delete it.
 - #TODO-0013 #2.0 split management system and hyprland repo content, make automations
   repo a submodule of content repo (?) -- a repo-topology decision, not a task, until
   someone rules on it
-
+- #TODO-0094 `scaffold-package` writes GitHub-style archive URLs (`archive/refs/tags/v%{version}`),
+  and guesses `latest-commit` for 4-part tags (`0.26.0.1`); sourcehut needs `archive/<tag>.tar.gz`.
+  Teach the scaffolder (#COPR-0001) the forge's URL shape and 4-part tags -- hare packages were
+  fixed by hand (#COPR-0030) [P3/D2]

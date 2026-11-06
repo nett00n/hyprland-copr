@@ -137,6 +137,28 @@ class TestDetectBuildSystem:
         (repo / "Makefile").write_text("")
         assert detect_build_system(repo) == "zig"
 
+    def test_detect_hare(self, tmp_path):
+        """#COPR-0030: detect Hare (main.ha)."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "main.ha").write_text("")
+        assert detect_build_system(repo) == "hare"
+
+    def test_hare_wins_over_generic_makefile(self, tmp_path):
+        """#COPR-0030: a Hare project shipping a Makefile (wlhc) is still Hare."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "main.ha").write_text("")
+        (repo / "Makefile").write_text("")
+        assert detect_build_system(repo) == "hare"
+
+    def test_makefile_without_main_ha_is_still_make(self, tmp_path):
+        """#COPR-0030: the hare marker must not capture plain Makefile projects."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        (repo / "Makefile").write_text("")
+        assert detect_build_system(repo) == "make"
+
     def test_detect_autotools(self, tmp_path):
         """Detect autotools (configure.ac)."""
         repo = tmp_path / "repo"

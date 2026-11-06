@@ -21,6 +21,7 @@ VALID_BUILD_SYSTEMS = {
     "cmake",
     "configure",
     "golang",
+    "hare",  # #COPR-0030
     "make",
     "meson",
     "python",

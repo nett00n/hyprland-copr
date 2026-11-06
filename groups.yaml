@@ -88,6 +88,7 @@ other-apps:
   - waylock
   - waypaper
   - wl-clip-persist
+  - wlhc
   - wpgtk
   packages_from_global_repo:
   - name: swaybg
@@ -134,6 +135,11 @@ other-deps:
   - glaze
   - glaze-v7
   - gtk4-layer-shell
+  - hare
+  - hare-ev
+  - hare-wayland
+  - hare-xml
+  - harec
   - imageio-ffmpeg
   - libcava
   - libcava-v0
