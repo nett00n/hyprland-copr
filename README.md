@@ -24,6 +24,12 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-11-06
+
+Added Packages:
+
+- bare - Lightweight vertical bar for Wayland compositors with built-in blocks (tracks tagged releases; upstream's development branch pulls a git-only PipeWire dependency that can't be built offline)
+
 ### 2026-11-05
 
 Added Packages:
@@ -55,16 +61,6 @@ Added Packages:
 - rustlock - Wayland screen locker with effects, a Rust port of swaylock-effects (tracks the latest commit; upstream has only a v1.0 tag)
 - usbtree - Live USB device tree in your terminal
 - wpgtk - GTK+ theme/wallpaper manager which uses pywal as its core
-
-### 2026-10-22
-
-Zig-based packages are now supported: the build system and the vendoring of `build.zig.zon` dependencies are automated like Go and Rust.
-
-Added Packages:
-
-- swaylock-effects - Swaylock fork with fancy effects (blur, clock, fade-in)
-- swaylock-plugin - Swaylock fork that can use a Wayland client as lock screen background
-- waylock - Small screenlocker for Wayland compositors
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 
@@ -124,6 +120,7 @@ Added Packages:
 
 ### Useful apps
 
+- `bare` — Lightweight vertical bar for Wayland compositors
 - `bemenu` — Dynamic menu library and client program inspired by dmenu
 - `chayang` — Gradually dim the screen on wlroots-based compositors
 - `cliphist` — Wayland clipboard manager with support for multimedia

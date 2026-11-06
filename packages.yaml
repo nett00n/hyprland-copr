@@ -84,6 +84,51 @@ aylurs-gtk-shell:
   summary: Scaffolding CLI for Astal+Gnim
   url: https://github.com/Aylur/ags
   version: 3.1.2
+bare:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands:
+    - cargo build --offline --release
+    - scdoc < doc/bare.1.scd > doc/bare.1
+    - scdoc < doc/bare.5.scd > doc/bare.5
+    install:
+    - install -Dm755 target/release/bare -t %{buildroot}%{_bindir}
+    - install -Dm644 doc/bare.1 -t %{buildroot}%{_mandir}/man1
+    - install -Dm644 doc/bare.5 -t %{buildroot}%{_mandir}/man5
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
+  build_requires:
+  - cargo
+  - cargo-rpm-macros
+  - pkgconfig(fontconfig)
+  - rustc
+  - scdoc
+  depends_on: []
+  description: |
+    bare is a lightweight vertical bar focused on maximizing useful screen space and minimizing resource usage. It has a built-in set of blocks (time, battery, cpu, memory, disk, volume, wireless, workspaces) and needs no compositor-specific IPC. The compositor must support ext-workspace-v1 and wlr-layer-shell-unstable-v1.
+  devel:
+    files: []
+  files:
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/bare'
+  - '%{_mandir}/man1/bare.1*'
+  - '%{_mandir}/man5/bare.5*'
+  license: MIT
+  release: 2
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+  summary: Lightweight vertical bar for Wayland compositors
+  url: https://github.com/kupospelov/bare
+  version: '0.3'
 cliphist:
   build:
     commands:
@@ -964,7 +1009,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 17
+  release: 18
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'

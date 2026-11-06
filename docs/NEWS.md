@@ -5,6 +5,12 @@ packages and which Fedora versions are built. Changes to the automation itself g
 `docs/CHANGELOG.md`. Newest first, dated `## YYYY-MM-DD` entries, one short paragraph each.
 README shows the most recent entries - see `scripts/lib/readme_content.py:get_recent_news()`.
 
+## 2026-11-06
+
+Added Packages:
+
+- bare - Lightweight vertical bar for Wayland compositors with built-in blocks (tracks tagged releases; upstream's development branch pulls a git-only PipeWire dependency that can't be built offline)
+
 ## 2026-11-05
 
 Added Packages:

@@ -742,3 +742,9 @@ hare-xml:
     sha256: 76c2d6321524b8065cc78874e9677600949dc4bff11bb75c9e07c4180093cfbb
     size: 12417
     recorded: '2026-11-05'
+bare:
+  bare-0.3.tar.gz:
+    url: https://github.com/kupospelov/bare/archive/refs/tags/0.3.tar.gz#/bare-0.3.tar.gz
+    sha256: 9dffcd75a3b867b76889fbc0c8f311e58f3c08223132fb9bc62e9510657b3748
+    size: 48962
+    recorded: '2026-11-06'
