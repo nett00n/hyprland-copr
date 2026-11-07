@@ -1014,7 +1014,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 18
+  release: 19
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -2874,6 +2874,7 @@ Waybar:
   - gcc-c++
   - gpsd-devel
   - jack-audio-connection-kit-devel
+  - libcava-devel
   - libcava-v0-devel
   - libdbusmenu-gtk3-devel
   - libevdev-devel
@@ -2888,6 +2889,7 @@ Waybar:
   - pkgconfig(gtk-layer-shell-0)
   - pkgconfig(gtkmm-3.0)
   - pkgconfig(jsoncpp)
+  - pkgconfig(mm-glib)
   - pkgconfig(sigc++-2.0)
   - pkgconfig(spdlog)
   - pkgconfig(wayland-client)
@@ -2904,6 +2906,7 @@ Waybar:
   depends_on:
   - libcava-v0
   - sndio
+  - libcava
   description: |
     Highly customizable Wayland bar for Sway and Wlroots based compositors
   devel:
@@ -2916,7 +2919,7 @@ Waybar:
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 21
+  release: 1
   rpm:
     buildarch: ''
     no_debug_package: false
@@ -2926,7 +2929,7 @@ Waybar:
     name: Waybar
   summary: Highly customizable Wayland bar for Sway and Wlroots based compositors
   url: https://github.com/Alexays/Waybar
-  version: 0.15.0
+  version: 0.16.0
 waylock:
   auto_update:
     release_type: latest-tag
