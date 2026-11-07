@@ -248,6 +248,30 @@ override with `build.commands` / `build.install` (e.g. `wlhc` runs its upstream 
 to generate the Wayland protocol bindings first). Hare upstreams are on sourcehut, whose
 archive URL is `%{url}/archive/<tag>.tar.gz`.
 
+## Git metadata for builds from release tarballs
+
+Some projects stamp their binary from git at build time and fall back to `unknown` when the
+source is a tarball. For `Hyprland` that matters: `hyprpm` takes the running commit from
+`hyprctl version` and runs `git checkout <hash>` to fetch matching plugin headers, and it
+also checks the `GIT_COMMIT_HASH` in the installed `version.h`. Upstream's CMake reads
+`GIT_COMMIT_HASH`, `GIT_TAG`, `GIT_DIRTY`, ... from the environment.
+
+GitHub tag archives are made by `git archive`, which embeds the commit ID in the tar header,
+so the `Hyprland` entry reads it back in `build.commands` instead of pinning a hash that would
+go stale at the next version bump:
+
+```yaml
+build:
+  commands:
+  - export GIT_COMMIT_HASH=$(gzip -dc %{SOURCE0} | git get-tar-commit-id)
+  - test -n "$GIT_COMMIT_HASH"   # fail loudly if the source is not a git archive
+  - export GIT_TAG=v%{version}
+  - export GIT_DIRTY=clean
+```
+
+It needs `git-core` in `build_requires`. Branch, date and message stay `unknown`: there is
+no honest value for them.
+
 ## Drop-in replacements of Fedora packages (#COPR-0005)
 
 A package that installs the same paths as a Fedora one (e.g. `swaylock-effects` ships

@@ -774,6 +774,10 @@ hypridle:
 Hyprland:
   build:
     commands:
+    - export GIT_COMMIT_HASH=$(gzip -dc %{SOURCE0} | git get-tar-commit-id)
+    - test -n "$GIT_COMMIT_HASH"
+    - export GIT_TAG=v%{version}
+    - export GIT_DIRTY=clean
     - '%cmake -Dglaze_DIR=%{_datadir}/glaze-v7'
     - '%cmake_build'
     prep:
@@ -790,6 +794,7 @@ Hyprland:
   - aquamarine-devel
   - cmake
   - gcc-c++
+  - git-core
   - glaze-v7-devel
   - glslang-devel
   - hyprcursor-devel
@@ -874,7 +879,7 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'

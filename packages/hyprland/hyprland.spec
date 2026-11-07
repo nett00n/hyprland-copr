@@ -1,7 +1,7 @@
 
 Name:           hyprland
 Version:        0.57.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -10,6 +10,7 @@ Source0:        https://github.com/hyprwm/Hyprland/archive/refs/tags/v0.57.1.tar
 BuildRequires:  aquamarine-devel
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
+BuildRequires:  git-core
 BuildRequires:  glaze-v7-devel
 BuildRequires:  glslang-devel
 BuildRequires:  hyprcursor-devel
@@ -85,6 +86,10 @@ sed -i -E 's/\b([A-Za-z_][A-Za-z0-9_]*)\.subview\(/std::string_view(\1).substr(/
 %endif
 
 %build
+export GIT_COMMIT_HASH=$(gzip -dc %{SOURCE0} | git get-tar-commit-id)
+test -n "$GIT_COMMIT_HASH"
+export GIT_TAG=v%{version}
+export GIT_DIRTY=clean
 %cmake -Dglaze_DIR=%{_datadir}/glaze-v7
 %cmake_build
 
@@ -123,6 +128,6 @@ Development files for hyprland.
 %{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Tue Nov 03 2026 nett00n <copr@nett00n.org> - 0.57.1-1
+* Tue Nov 03 2026 nett00n <copr@nett00n.org> - 0.57.1-2
 
 - [gha] Nix: update inputs

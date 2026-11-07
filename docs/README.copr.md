@@ -143,6 +143,10 @@ Added Packages:
 
 - bare - Lightweight vertical bar for Wayland compositors with built-in blocks (tracks tagged releases; upstream's development branch pulls a git-only PipeWire dependency that can't be built offline)
 
+Fixed Packages:
+
+- Hyprland - now reports its real commit and tag (`Hyprland --version` used to say `unknown`), which `hyprpm` needs to fetch matching headers and build plugins
+
 ### 2026-11-05
 
 Added Packages:
