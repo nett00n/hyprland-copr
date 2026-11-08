@@ -5,6 +5,12 @@ packages and which Fedora versions are built. Changes to the automation itself g
 `docs/CHANGELOG.md`. Newest first, dated `## YYYY-MM-DD` entries, one short paragraph each.
 README shows the most recent entries - see `scripts/lib/readme_content.py:get_recent_news()`.
 
+## 2026-11-07
+
+Fixed Packages:
+
+- Waybar - 0.16.0 builds again: it now needs libcava 1.0 or newer, and the old `libcava-v0` build dependency (which installs the same files as `libcava`) was making the build environment impossible to install on every Fedora version
+
 ## 2026-11-06
 
 Added Packages:

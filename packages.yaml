@@ -1014,7 +1014,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 19
+  release: 20
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -2875,7 +2875,6 @@ Waybar:
   - gpsd-devel
   - jack-audio-connection-kit-devel
   - libcava-devel
-  - libcava-v0-devel
   - libdbusmenu-gtk3-devel
   - libevdev-devel
   - libinput-devel
@@ -2904,9 +2903,8 @@ Waybar:
   - upower-devel
   - wireplumber-devel
   depends_on:
-  - libcava-v0
-  - sndio
   - libcava
+  - sndio
   description: |
     Highly customizable Wayland bar for Sway and Wlroots based compositors
   devel:
@@ -2915,11 +2913,13 @@ Waybar:
   - '%doc README.md'
   - '%license LICENSE'
   - '%{_bindir}/waybar'
+  - '%{_libdir}/waybar/waybar-cava.so'
+  - '%{_libdir}/waybar/waybar-gps.so'
   - '%{_mandir}/man5/waybar*.gz'
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 1
+  release: 2
   rpm:
     buildarch: ''
     no_debug_package: false

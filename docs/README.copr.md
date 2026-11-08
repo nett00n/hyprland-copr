@@ -137,6 +137,12 @@
 
 ## News
 
+### 2026-11-07
+
+Fixed Packages:
+
+- Waybar - 0.16.0 builds again: it now needs libcava 1.0 or newer, and the old `libcava-v0` build dependency (which installs the same files as `libcava`) was making the build environment impossible to install on every Fedora version
+
 ### 2026-11-06
 
 Added Packages:
@@ -164,20 +170,6 @@ Disabled Packages:
 
 Builds now repair themselves when upstream adds a dependency: a failed mock build with a
 missing pkgconfig or CMake package gets the entry added and is rebuilt, up to 10 times. The same goes for the file lists: files a build stopped installing are dropped once all Fedora versions agree, and new ones are added.
-
-### 2026-10-26
-
-Added Packages:
-
-- greyline - Live world-time desktop wallpaper with a day/night terminator
-- hellwal - Fast, extensible color palette generator
-- matugen - Material You and base16 color generation tool with templates
-- pywal - Generate and change color-schemes on the fly (original, archived upstream)
-- pywal16 - Maintained pywal fork; conflicts with pywal
-- rumno - Media notification OSD for volume, brightness and music (GTK layer-shell, D-Bus controlled)
-- rustlock - Wayland screen locker with effects, a Rust port of swaylock-effects (tracks the latest commit; upstream has only a v1.0 tag)
-- usbtree - Live USB device tree in your terminal
-- wpgtk - GTK+ theme/wallpaper manager which uses pywal as its core
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 

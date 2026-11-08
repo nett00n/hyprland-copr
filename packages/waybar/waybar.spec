@@ -1,7 +1,7 @@
 
 Name:           waybar
 Version:        0.16.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Highly customizable Wayland bar for Sway and Wlroots based compositors
 License:        MIT
 URL:            https://github.com/Alexays/Waybar
@@ -12,7 +12,6 @@ BuildRequires:  gcc-c++
 BuildRequires:  gpsd-devel
 BuildRequires:  jack-audio-connection-kit-devel
 BuildRequires:  libcava-devel
-BuildRequires:  libcava-v0-devel
 BuildRequires:  libdbusmenu-gtk3-devel
 BuildRequires:  libevdev-devel
 BuildRequires:  libinput-devel
@@ -69,6 +68,8 @@ Package info:
 %doc README.md
 %license LICENSE
 %{_bindir}/waybar
+%{_libdir}/waybar/waybar-cava.so
+%{_libdir}/waybar/waybar-gps.so
 %{_mandir}/man5/waybar*.gz
 %{_sysconfdir}/xdg/waybar/
 %{_userunitdir}/waybar.service
@@ -83,6 +84,6 @@ Development files for waybar.
 %files devel
 
 %changelog
-* Sat Nov 07 2026 nett00n <copr@nett00n.org> - 0.16.0-1
+* Sat Nov 07 2026 nett00n <copr@nett00n.org> - 0.16.0-2
 
 - Update to 0.16.0
