@@ -1014,7 +1014,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 20
+  release: 21
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
