@@ -72,10 +72,10 @@ aylurs-gtk-shell:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/bin/ags'
-  - '%{_prefix}/share/ags/'
+  - '%{_bindir}/ags'
+  - '%{_datadir}/ags/'
   license: GPL-3.0-or-later
-  release: 13
+  release: 14
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -118,7 +118,7 @@ bare:
   - '%{_mandir}/man1/bare.1*'
   - '%{_mandir}/man5/bare.5*'
   license: MIT
-  release: 2
+  release: 1
   requires: []
   rpm:
     no_debug_package: false
@@ -128,7 +128,7 @@ bare:
     - '%{name}-%{version}-vendor.tar.gz'
   summary: Lightweight vertical bar for Wayland compositors
   url: https://github.com/kupospelov/bare
-  version: '0.3'
+  version: '0.4'
 cliphist:
   build:
     commands:
@@ -278,13 +278,13 @@ glaze:
     performance
   devel:
     files:
-    - '%{_prefix}/include/glaze/'
-    - '%{_prefix}/share/glaze/*.cmake'
+    - '%{_datadir}/glaze/*.cmake'
+    - '%{_includedir}/glaze/'
   files:
   - '%doc README.md'
   - '%license LICENSE'
   license: MIT
-  release: 1
+  release: 2
   rpm:
     no_debug_package: true
   source:
@@ -398,22 +398,22 @@ gtk4-layer-shell:
     entire outputThe Session Lock protocol allows building lock screens
   devel:
     files:
-    - '%{_prefix}/include/gtk4-layer-shell/gtk4-layer-shell.h'
-    - '%{_prefix}/include/gtk4-layer-shell/gtk4-session-lock.h'
-    - '%{_prefix}/lib64/pkgconfig/gtk4-layer-shell-0.pc'
-    - '%{_prefix}/share/gir-1.0/Gtk4LayerShell-1.0.gir'
-    - '%{_prefix}/share/gir-1.0/Gtk4SessionLock-1.0.gir'
-    - '%{_prefix}/share/vala/vapi/gtk4-layer-shell-0.deps'
-    - '%{_prefix}/share/vala/vapi/gtk4-layer-shell-0.vapi'
+    - '%{_datadir}/gir-1.0/Gtk4LayerShell-1.0.gir'
+    - '%{_datadir}/gir-1.0/Gtk4SessionLock-1.0.gir'
+    - '%{_datadir}/vala/vapi/gtk4-layer-shell-0.deps'
+    - '%{_datadir}/vala/vapi/gtk4-layer-shell-0.vapi'
+    - '%{_includedir}/gtk4-layer-shell/gtk4-layer-shell.h'
+    - '%{_includedir}/gtk4-layer-shell/gtk4-session-lock.h'
+    - '%{_libdir}/pkgconfig/gtk4-layer-shell-0.pc'
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/lib64/girepository-*/Gtk4LayerShell-*.typelib'
-  - '%{_prefix}/lib64/girepository-*/Gtk4SessionLock-*.typelib'
-  - '%{_prefix}/lib64/libgtk4-layer-shell.so*'
-  - '%{_prefix}/lib64/liblayer-shell-preload.so'
+  - '%{_libdir}/girepository-*/Gtk4LayerShell-*.typelib'
+  - '%{_libdir}/girepository-*/Gtk4SessionLock-*.typelib'
+  - '%{_libdir}/libgtk4-layer-shell.so*'
+  - '%{_libdir}/liblayer-shell-preload.so'
   license: MIT
-  release: 10
+  release: 11
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -854,8 +854,8 @@ Hyprland:
     easy IPC, much more QoL stuff than other compositors and more
   devel:
     files:
+    - '%{_datadir}/pkgconfig/hyprland.pc'
     - '%{_includedir}/hyprland/'
-    - '%{_prefix}/share/pkgconfig/hyprland.pc'
     requires:
     - glslang-devel
     - lua-devel
@@ -864,6 +864,7 @@ Hyprland:
   - '%license LICENSE'
   - '%{_bindir}/hyprctl'
   - '%{_bindir}/hyprland'
+  - '%{_bindir}/Hyprland'
   - '%{_bindir}/hyprpm'
   - '%{_bindir}/start-hyprland'
   - '%{_datadir}/bash-completion/completions/hyprpm'
@@ -875,11 +876,10 @@ Hyprland:
   - '%{_libdir}/systemd/user/hyprland-session.target'
   - '%{_mandir}/man1/hyprctl.1.gz'
   - '%{_mandir}/man1/Hyprland.1.gz'
-  - '%{_prefix}/bin/Hyprland'
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 2
+  release: 3
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -913,9 +913,9 @@ hyprland-guiutils:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/bin/hyprland-*'
+  - '%{_bindir}/hyprland-*'
   license: BSD-3-Clause
-  release: 18
+  release: 19
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1014,7 +1014,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 21
+  release: 22
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -1161,9 +1161,9 @@ hyprlauncher:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/bin/hyprlauncher'
+  - '%{_bindir}/hyprlauncher'
   license: BSD-3-Clause
-  release: 3
+  release: 4
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1283,10 +1283,10 @@ hyprpicker:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/bin/hyprpicker'
-  - '%{_prefix}/share/man/man1/hyprpicker.1.gz'
+  - '%{_bindir}/hyprpicker'
+  - '%{_mandir}/man1/hyprpicker.1.gz'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1318,11 +1318,11 @@ hyprpolkitagent:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/lib/systemd/user/hyprpolkitagent.service'
-  - '%{_prefix}/libexec/hyprpolkitagent'
-  - '%{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service'
+  - '%{_datadir}/dbus-1/services/org.hyprland.hyprpolkitagent.service'
+  - '%{_libexecdir}/hyprpolkitagent'
+  - '%{_userunitdir}/hyprpolkitagent.service'
   license: BSD-3-Clause
-  release: 8
+  release: 9
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1353,10 +1353,10 @@ hyprpwcenter:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/bin/hyprpwcenter'
-  - '%{_prefix}/share/applications/hyprpwcenter.desktop'
+  - '%{_bindir}/hyprpwcenter'
+  - '%{_datadir}/applications/hyprpwcenter.desktop'
   license: BSD-3-Clause
-  release: 24
+  release: 25
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1465,9 +1465,9 @@ hyprshutdown:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/bin/hyprshutdown'
+  - '%{_bindir}/hyprshutdown'
   license: BSD-3-Clause
-  release: 1
+  release: 2
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1496,10 +1496,10 @@ hyprsunset:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/bin/hyprsunset'
-  - '%{_prefix}/lib/systemd/user/hyprsunset.service'
+  - '%{_bindir}/hyprsunset'
+  - '%{_userunitdir}/hyprsunset.service'
   license: BSD-3-Clause
-  release: 16
+  release: 17
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1542,10 +1542,10 @@ hyprsysteminfo:
   files:
   - '%doc README.md'
   - '%license LICENSE'
-  - '%{_prefix}/bin/hyprsysteminfo'
-  - '%{_prefix}/share/applications/hyprsysteminfo.desktop'
+  - '%{_bindir}/hyprsysteminfo'
+  - '%{_datadir}/applications/hyprsysteminfo.desktop'
   license: BSD-3-Clause
-  release: 31
+  release: 32
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -1748,7 +1748,7 @@ ironbar:
   - '%license LICENSE'
   - '%{_bindir}/ironbar'
   license: MIT
-  release: 1
+  release: 2
   requires: []
   rpm:
     no_debug_package: false
@@ -1803,7 +1803,7 @@ lambdock:
   - '%{_datadir}/locale/*/LC_MESSAGES/lambdock.mo'
   - '%{_datadir}/metainfo/org.jointhefreeworld.lambdock.metainfo.xml'
   license: GPL-3.0-or-later
-  release: 1
+  release: 2
   requires: []
   rpm:
     no_debug_package: true
@@ -1853,7 +1853,7 @@ libcava:
   - '%license LICENSE'
   - '%{_libdir}/libcava.so.*'
   license: MIT
-  release: 11
+  release: 12
   rpm:
     no_debug_package: true
   source:
@@ -1904,7 +1904,7 @@ libcava-v0:
   - '%license LICENSE'
   - '%{_libdir}/libcava.so.*'
   license: MIT
-  release: 13
+  release: 14
   rpm:
     no_debug_package: true
   source:
@@ -2077,11 +2077,11 @@ neowall:
   - '%{_datadir}/icons/hicolor/scalable/apps/neowall.svg'
   - '%{_datadir}/neowall/'
   - '%{_docdir}/neowall/'
-  - '%{_prefix}/lib/systemd/user/neowall.service'
+  - '%{_userunitdir}/neowall.service'
   license: MIT
   recommends:
   - pulseaudio-utils
-  release: 1
+  release: 2
   requires: []
   rpm:
     no_debug_package: false
@@ -2584,18 +2584,18 @@ sndio:
   description: Portable version of OpenBSD's lightweight audio & MIDI sub-system
   devel:
     files:
-    - '%{_prefix}/include/sndio.h'
-    - '%{_prefix}/lib64/pkgconfig/sndio.pc'
+    - '%{_includedir}/sndio.h'
+    - '%{_libdir}/pkgconfig/sndio.pc'
   files:
   - '%license LICENSE'
-  - '%{_prefix}/bin/aucat'
-  - '%{_prefix}/bin/midicat'
-  - '%{_prefix}/bin/sndioctl'
-  - '%{_prefix}/bin/sndiod'
-  - '%{_prefix}/lib64/libsndio.so*'
-  - '%{_prefix}/share/man/*/*.gz'
+  - '%{_bindir}/aucat'
+  - '%{_bindir}/midicat'
+  - '%{_bindir}/sndioctl'
+  - '%{_bindir}/sndiod'
+  - '%{_libdir}/libsndio.so*'
+  - '%{_mandir}/*/*.gz'
   license: ISC
-  release: 2
+  release: 3
   rpm:
     no_debug_package: false
   source:
@@ -2755,7 +2755,7 @@ SwayOSD:
   - '%{_sysconfdir}/xdg/swayosd/style.css'
   - '%{_unitdir}/swayosd-libinput-backend.service'
   license: GPL-3.0-or-later
-  release: 6
+  release: 7
   requires: []
   rpm:
     no_debug_package: false
@@ -2919,7 +2919,7 @@ Waybar:
   - '%{_sysconfdir}/xdg/waybar/'
   - '%{_userunitdir}/waybar.service'
   license: MIT
-  release: 2
+  release: 3
   rpm:
     buildarch: ''
     no_debug_package: false

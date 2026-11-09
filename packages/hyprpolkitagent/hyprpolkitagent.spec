@@ -1,7 +1,7 @@
 
 Name:           hyprpolkitagent
 Version:        0.2.0
-Release:        8%{?dist}
+Release:        9%{?dist}
 Summary:        A polkit authentication agent written with hyprtoolkit
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpolkitagent
@@ -48,11 +48,11 @@ Commit:            0e4492994e211b9af9365f16a9fda35d32e106bb
 %files
 %doc README.md
 %license LICENSE
-%{_prefix}/lib/systemd/user/hyprpolkitagent.service
-%{_prefix}/libexec/hyprpolkitagent
-%{_prefix}/share/dbus-1/services/org.hyprland.hyprpolkitagent.service
+%{_datadir}/dbus-1/services/org.hyprland.hyprpolkitagent.service
+%{_libexecdir}/hyprpolkitagent
+%{_userunitdir}/hyprpolkitagent.service
 
 %changelog
-* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.2.0-8
+* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.2.0-9
 
 - version: bump to 0.2.0

@@ -1,7 +1,7 @@
 
 Name:           hyprland
 Version:        0.57.1
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -101,6 +101,7 @@ export GIT_DIRTY=clean
 %license LICENSE
 %{_bindir}/hyprctl
 %{_bindir}/hyprland
+%{_bindir}/Hyprland
 %{_bindir}/hyprpm
 %{_bindir}/start-hyprland
 %{_datadir}/bash-completion/completions/hyprpm
@@ -112,7 +113,6 @@ export GIT_DIRTY=clean
 %{_libdir}/systemd/user/hyprland-session.target
 %{_mandir}/man1/hyprctl.1.gz
 %{_mandir}/man1/Hyprland.1.gz
-%{_prefix}/bin/Hyprland
 
 %package devel
 Summary:        Development files for A Modern C++ Wayland Compositor
@@ -124,10 +124,10 @@ Requires:       lua-devel
 Development files for hyprland.
 
 %files devel
+%{_datadir}/pkgconfig/hyprland.pc
 %{_includedir}/hyprland/
-%{_prefix}/share/pkgconfig/hyprland.pc
 
 %changelog
-* Tue Nov 03 2026 nett00n <copr@nett00n.org> - 0.57.1-2
+* Tue Nov 03 2026 nett00n <copr@nett00n.org> - 0.57.1-3
 
 - [gha] Nix: update inputs

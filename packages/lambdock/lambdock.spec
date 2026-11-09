@@ -2,7 +2,7 @@
 
 Name:           lambdock
 Version:        0.13.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Wayland desktop dock customizable with GNU Guile Scheme
 License:        GPL-3.0-or-later
 URL:            https://codeberg.org/jjba23/lambdock.git
@@ -66,6 +66,6 @@ Commit:            dac3bbf695e5c4195b10ec1cb140b4b03e492297
 %{_datadir}/metainfo/org.jointhefreeworld.lambdock.metainfo.xml
 
 %changelog
-* Mon Oct 26 2026 nett00n <copr@nett00n.org> - 0.13.2-1
+* Mon Oct 26 2026 nett00n <copr@nett00n.org> - 0.13.2-2
 
 - v0.13.2: item menus carry browser and music player actions

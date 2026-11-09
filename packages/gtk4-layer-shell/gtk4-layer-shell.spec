@@ -1,7 +1,7 @@
 
 Name:           gtk4-layer-shell
 Version:        1.3.0
-Release:        10%{?dist}
+Release:        11%{?dist}
 Summary:        A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
 License:        MIT
 URL:            https://github.com/wmww/gtk4-layer-shell
@@ -15,6 +15,7 @@ BuildRequires:  meson
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig(wayland-protocols)
 BuildRequires:  vala
+
 
 
 
@@ -50,10 +51,10 @@ Commit:            1c963c51514581c41b9bdae08cdf69171265cdda
 %files
 %doc README.md
 %license LICENSE
-%{_prefix}/lib64/girepository-*/Gtk4LayerShell-*.typelib
-%{_prefix}/lib64/girepository-*/Gtk4SessionLock-*.typelib
-%{_prefix}/lib64/libgtk4-layer-shell.so*
-%{_prefix}/lib64/liblayer-shell-preload.so
+%{_libdir}/girepository-*/Gtk4LayerShell-*.typelib
+%{_libdir}/girepository-*/Gtk4SessionLock-*.typelib
+%{_libdir}/libgtk4-layer-shell.so*
+%{_libdir}/liblayer-shell-preload.so
 
 %package devel
 Summary:        Development files for A library to create panels and other desktop components for Wayland using the Layer Shell protocol and GTK4
@@ -63,15 +64,15 @@ Requires:       %{name} = %{version}-%{release}
 Development files for gtk4-layer-shell.
 
 %files devel
-%{_prefix}/include/gtk4-layer-shell/gtk4-layer-shell.h
-%{_prefix}/include/gtk4-layer-shell/gtk4-session-lock.h
-%{_prefix}/lib64/pkgconfig/gtk4-layer-shell-0.pc
-%{_prefix}/share/gir-1.0/Gtk4LayerShell-1.0.gir
-%{_prefix}/share/gir-1.0/Gtk4SessionLock-1.0.gir
-%{_prefix}/share/vala/vapi/gtk4-layer-shell-0.deps
-%{_prefix}/share/vala/vapi/gtk4-layer-shell-0.vapi
+%{_datadir}/gir-1.0/Gtk4LayerShell-1.0.gir
+%{_datadir}/gir-1.0/Gtk4SessionLock-1.0.gir
+%{_datadir}/vala/vapi/gtk4-layer-shell-0.deps
+%{_datadir}/vala/vapi/gtk4-layer-shell-0.vapi
+%{_includedir}/gtk4-layer-shell/gtk4-layer-shell.h
+%{_includedir}/gtk4-layer-shell/gtk4-session-lock.h
+%{_libdir}/pkgconfig/gtk4-layer-shell-0.pc
 
 %changelog
-* Wed Oct 29 2025 nett00n <copr@nett00n.org> - 1.3.0-10
+* Wed Oct 29 2025 nett00n <copr@nett00n.org> - 1.3.0-11
 
 - Release 1.3.0

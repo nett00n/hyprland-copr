@@ -1,7 +1,7 @@
 
 Name:           hyprpwcenter
 Version:        0.1.2
-Release:        24%{?dist}
+Release:        25%{?dist}
 Summary:        Volume management center for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpwcenter
@@ -48,10 +48,10 @@ Commit:            2ce8f3d174f2ae1c50c7dcc182d809a5ab33cad2
 %files
 %doc README.md
 %license LICENSE
-%{_prefix}/bin/hyprpwcenter
-%{_prefix}/share/applications/hyprpwcenter.desktop
+%{_bindir}/hyprpwcenter
+%{_datadir}/applications/hyprpwcenter.desktop
 
 %changelog
-* Tue Feb 10 2026 nett00n <copr@nett00n.org> - 0.1.2-24
+* Tue Feb 10 2026 nett00n <copr@nett00n.org> - 0.1.2-25
 
 - version: bump to 0.1.2

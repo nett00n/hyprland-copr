@@ -1,12 +1,12 @@
 
 Name:           bare
-Version:        0.3
-Release:        2%{?dist}
+Version:        0.4
+Release:        1%{?dist}
 Summary:        Lightweight vertical bar for Wayland compositors
 License:        MIT
 URL:            https://github.com/kupospelov/bare
-Source0:        https://github.com/kupospelov/bare/archive/refs/tags/0.3.tar.gz#/bare-0.3.tar.gz
-Source1:        bare-0.3-vendor.tar.gz
+Source0:        https://github.com/kupospelov/bare/archive/refs/tags/0.4.tar.gz#/bare-0.4.tar.gz
+Source1:        bare-0.4-vendor.tar.gz
 
 BuildRequires:  cargo
 BuildRequires:  cargo-rpm-macros
@@ -59,6 +59,6 @@ Development files for bare.
 %files devel
 
 %changelog
-* Fri Nov 06 2026 nett00n <copr@nett00n.org> - 0.3-2
+* Mon Nov 09 2026 nett00n <copr@nett00n.org> - 0.4-1
 
-- Update to 0.3
+- Update to 0.4

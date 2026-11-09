@@ -1,7 +1,7 @@
 
 Name:           hyprshutdown
 Version:        0.1.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A graceful shutdown utility for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprshutdown
@@ -49,9 +49,9 @@ Commit:            932dcf06320da94e5f7fa73cf449e8b8c394bf9d
 %files
 %doc README.md
 %license LICENSE
-%{_prefix}/bin/hyprshutdown
+%{_bindir}/hyprshutdown
 
 %changelog
-* Sun Nov 01 2026 nett00n <copr@nett00n.org> - 0.1.2-1
+* Sun Nov 01 2026 nett00n <copr@nett00n.org> - 0.1.2-2
 
 - VERSION: bump to 0.1.2

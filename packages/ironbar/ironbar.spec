@@ -1,7 +1,7 @@
 
 Name:           ironbar
 Version:        0.19.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Customisable Wayland GTK4 bar written in Rust
 License:        MIT
 URL:            https://github.com/JakeStanger/ironbar
@@ -22,6 +22,7 @@ BuildRequires:  rust-graphene-rs-devel
 BuildRequires:  rust-libdbus-sys+default-devel
 BuildRequires:  rust-pango-devel
 BuildRequires:  rustc
+
 
 
 
@@ -64,6 +65,6 @@ Development files for ironbar.
 %files devel
 
 %changelog
-* Sun Sep 20 2026 nett00n <copr@nett00n.org> - 0.19.1-1
+* Sun Sep 20 2026 nett00n <copr@nett00n.org> - 0.19.1-2
 
 - chore(release): v0.19.1

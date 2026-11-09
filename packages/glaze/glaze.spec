@@ -2,7 +2,7 @@
 
 Name:           glaze
 Version:        9.1.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Extremely fast, in memory, JSON and reflection library for modern C++.
 License:        MIT
 URL:            https://github.com/stephenberry/glaze
@@ -54,10 +54,10 @@ Requires:       %{name} = %{version}-%{release}
 Development files for glaze.
 
 %files devel
-%{_prefix}/include/glaze/
-%{_prefix}/share/glaze/*.cmake
+%{_datadir}/glaze/*.cmake
+%{_includedir}/glaze/
 
 %changelog
-* Wed Oct 28 2026 nett00n <copr@nett00n.org> - 9.1.0-1
+* Wed Oct 28 2026 nett00n <copr@nett00n.org> - 9.1.0-2
 
 - version 9.1.0 bump
