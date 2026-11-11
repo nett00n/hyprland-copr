@@ -1,7 +1,6 @@
 """Go module vendoring for stage-vendor.py."""
 
 import shutil
-import subprocess
 import tarfile
 from pathlib import Path
 
@@ -10,6 +9,7 @@ from lib.toolchain import go_toolchain_skew
 from lib.vendor import VendorError, log_fn
 
 
+# #BUG-0084
 def generate(
     pkg_name: str,
     pkg_meta: dict,
@@ -23,19 +23,12 @@ def generate(
 
     Raises VendorError on failure.
     """
-    # Check if go is available
-    try:
-        result = subprocess.run(
-            ["go", "version"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-        if result.returncode != 0:
-            raise VendorError(f"go check failed: {result.stderr.strip()}")
-    except FileNotFoundError as e:
-        raise VendorError("'go' not found in PATH (or not executable)") from e
+    # Check if go is available (#BUG-0084: via run_cmd, not a hand-rolled subprocess)
+    ok, _, stderr = run_cmd(["go", "version"], timeout=10)
+    if not ok:
+        if stderr.startswith("command not found"):
+            raise VendorError("'go' not found in PATH (or not executable)")
+        raise VendorError(f"go check failed: {stderr.strip()}")
 
     _log = log_fn(log_path)
 

@@ -250,6 +250,24 @@ class TestPollCoprStatus:
         assert build_db.get_stage("pkg1", "copr", TARGET)["state"] == "success"
         mock_run_cmd.assert_called_once_with(["copr-cli", "status", "123"])
 
+    @patch("lib.copr.run_cmd")
+    def test_poll_resolved_success_is_cached(self, mock_run_cmd):
+        """#BUG-0117: an async 'unknown' row finalized with hashes, then flipped
+        to success by the poll, must count as cached."""
+        from lib.pipeline import is_cached
+
+        mock_run_cmd.return_value = (True, "Build 123 succeeded", "")
+        hashes = {"srpm": "abc"}
+        _seed_copr("pkg1", build_id=123, state="unknown", version="1-1.fc44")
+        build_db.finalize_stage("pkg1", "copr", TARGET, 1, hashes)
+
+        poll_copr_status(TARGET, ["pkg1"])
+
+        entry = build_db.get_stage("pkg1", "copr", TARGET)
+        assert entry["state"] == "success"
+        assert build_db.last_success("pkg1", "copr", TARGET)["version"] == "1-1.fc44"
+        assert is_cached("copr", "pkg1", TARGET, hashes, set(), expected_version="1-1.fc44")
+
     @patch("lib.copr.fetch_failed_chroot_logs")
     @patch("lib.copr.run_cmd")
     def test_poll_status_failed(self, mock_run_cmd, mock_fetch_logs):

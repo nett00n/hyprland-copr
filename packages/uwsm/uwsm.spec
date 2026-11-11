@@ -1,12 +1,12 @@
 %global debug_package %{nil}
 
 Name:           uwsm
-Version:        0.27.1
+Version:        0.27.2
 Release:        1%{?dist}
 Summary:        Universal Wayland Session Manager
 License:        MIT
 URL:            https://github.com/Vladimir-csp/uwsm
-Source0:        https://github.com/Vladimir-csp/uwsm/archive/refs/tags/v0.27.1.tar.gz#/uwsm-0.27.1.tar.gz
+Source0:        https://github.com/Vladimir-csp/uwsm/archive/refs/tags/v0.27.2.tar.gz#/uwsm-0.27.2.tar.gz
 
 BuildRequires:  gcc-c++
 BuildRequires:  meson
@@ -15,6 +15,7 @@ BuildRequires:  python3-dbus
 BuildRequires:  python3-pyxdg
 BuildRequires:  scdoc
 BuildRequires:  systemd-rpm-macros
+
 
 
 
@@ -36,8 +37,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.27.1
-Commit:            0727985c9bae655bda488f87f99ea69a6ac1c003
+Tag:               v0.27.2
+Commit:            05da94b3da620ebd41432eba5eac6c81354e30fa
 
 %prep
 %autosetup -p1
@@ -83,8 +84,7 @@ Development files for uwsm.
 %files devel
 
 %changelog
-* Thu Oct 15 2026 nett00n <copr@nett00n.org> - 0.27.1-1
+* Mon Nov 09 2026 nett00n <copr@nett00n.org> - 0.27.2-1
 
-- chore: Release 0.27.1
-- fix: replace pending start jobs when stopping (#228)
-- feat: customize stop job mode, follow up on #228
+- chore: Release 0.27.2
+- fix: double-fork systemctl, fixes #229

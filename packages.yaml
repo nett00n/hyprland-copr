@@ -111,6 +111,13 @@ bare:
     bare is a lightweight vertical bar focused on maximizing useful screen space and minimizing resource usage. It has a built-in set of blocks (time, battery, cpu, memory, disk, volume, wireless, workspaces) and needs no compositor-specific IPC. The compositor must support ext-workspace-v1 and wlr-layer-shell-unstable-v1.
   devel:
     files: []
+  fedora:
+    43:
+      skip: true
+    44:
+      skip: true
+    45:
+      skip: true
   files:
   - '%doc README.md'
   - '%license LICENSE'
@@ -118,7 +125,7 @@ bare:
   - '%{_mandir}/man1/bare.1*'
   - '%{_mandir}/man5/bare.5*'
   license: MIT
-  release: 1
+  release: 4
   requires: []
   rpm:
     no_debug_package: false
@@ -692,13 +699,13 @@ hyprcursor:
   - '%{_bindir}/hyprcursor-util'
   - '%{_libdir}/libhyprcursor.so*'
   license: BSD-3-Clause
-  release: 17
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: A library and toolkit for the Hyprland cursor format
   url: https://github.com/hyprwm/hyprcursor
-  version: 0.1.13
+  version: 0.1.14
 hyprgraphics:
   build:
     system: cmake
@@ -879,14 +886,14 @@ Hyprland:
   license: BSD-3-Clause
   recommends:
   - uwsm
-  release: 3
+  release: 1
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
     name: Hyprland
   summary: A Modern C++ Wayland Compositor
   url: https://github.com/hyprwm/Hyprland
-  version: 0.57.1
+  version: 0.57.2
 hyprland-guiutils:
   build:
     system: cmake
@@ -1014,7 +1021,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 22
+  release: 25
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -1487,6 +1494,7 @@ hyprsunset:
   - ninja-build
   - pkgconfig(wayland-client)
   - pkgconfig(wayland-protocols)
+  - systemd-rpm-macros
   depends_on:
   - hyprland-protocols
   - hyprlang
@@ -1499,7 +1507,7 @@ hyprsunset:
   - '%{_bindir}/hyprsunset'
   - '%{_userunitdir}/hyprsunset.service'
   license: BSD-3-Clause
-  release: 17
+  release: 18
   source:
     archives:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
@@ -2066,6 +2074,7 @@ neowall:
   - pkgconfig(x11)
   - pkgconfig(xkbcommon)
   - pkgconfig(xrandr)
+  - systemd-rpm-macros
   depends_on: []
   description: NeoWall is a GPU-accelerated live wallpaper engine for Linux. It renders GLSL (Shadertoy-compatible) shaders, images and a terminal as your desktop background, with transitions, multi-monitor support and audio-reactive shaders. Runs on Wayland (wlr-layer-shell, KDE Plasma, GNOME) and X11.
   devel:
@@ -2081,7 +2090,7 @@ neowall:
   license: MIT
   recommends:
   - pulseaudio-utils
-  release: 2
+  release: 3
   requires: []
   rpm:
     no_debug_package: false
@@ -2862,7 +2871,7 @@ uwsm:
     bundled_deps: []
   summary: Universal Wayland Session Manager
   url: https://github.com/Vladimir-csp/uwsm
-  version: 0.27.1
+  version: 0.27.2
 Waybar:
   build:
     commands:
@@ -2966,7 +2975,7 @@ waylock:
   - '%{_bindir}/waylock'
   - '%{_mandir}/man1/waylock.1*'
   license: ISC
-  release: 4
+  release: 1
   requires: []
   rpm:
     no_debug_package: false
@@ -2976,7 +2985,7 @@ waylock:
     - '%{name}-%{version}-vendor.tar.gz'
   summary: Small screenlocker for Wayland compositors
   url: https://github.com/ifreund/waylock
-  version: 1.6.0
+  version: 1.7.0
 waypaper:
   auto_update:
     release_type: latest-tag

@@ -1,12 +1,12 @@
 
 Name:           waylock
-Version:        1.6.0
-Release:        4%{?dist}
+Version:        1.7.0
+Release:        1%{?dist}
 Summary:        Small screenlocker for Wayland compositors
 License:        ISC
 URL:            https://github.com/ifreund/waylock
-Source0:        https://github.com/ifreund/waylock/archive/refs/tags/v1.6.0.tar.gz#/waylock-1.6.0.tar.gz
-Source1:        waylock-1.6.0-vendor.tar.gz
+Source0:        https://github.com/ifreund/waylock/archive/refs/tags/v1.7.0.tar.gz#/waylock-1.7.0.tar.gz
+Source1:        waylock-1.7.0-vendor.tar.gz
 
 BuildRequires:  glibc-devel
 BuildRequires:  pam-devel
@@ -30,8 +30,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v1.6.0
-Commit:            3f90742d4725cbd0516bb2a7304770c601641411
+Tag:               v1.7.0
+Commit:            f2c695a42a23175945c2e21ad2ab1f8af7a1caec
 
 %prep
 %autosetup -p1
@@ -63,23 +63,35 @@ Development files for waylock.
 %files devel
 
 %changelog
-* Mon Apr 27 2026 nett00n <copr@nett00n.org> - 1.6.0-4
+* Tue Nov 10 2026 nett00n <copr@nett00n.org> - 1.7.0-1
 
-- waylock 1.6.0
-- This release updates the required Zig version to 0.16.
-- No changes to waylock's behavior are intended.
+- waylock 1.7.0
+- This release updates the required Zig version to 0.17.1.
+- The waylock PAM config is now installed to e.g. /usr/lib/pam.d
+- by default. This matches the recommendations of the upstream
+- PAM project.
+- Also, Ctrl+Backspace is now supported to clear the password.
+- Thank you to everyone who contributed!
 - Full changelog:
-- Isaac Freund (3):
-- build: bump version to 1.6.0-dev
-- build: update to Zig 0.16
-- build: bump version to 1.6.0
+- Hugo Osvaldo Barrera (1):
+- build: install pam config into /usr/lib/pam.d/
+- Isaac Freund (6):
+- build: bump version to 1.7.0-dev
+- build: fix default for -Dllvm build option
+- cli: forgot to flush
+- build: respect --prefix-lib-dir for pam.d/waylock
+- build: update to Zig 0.17.1
+- build: bump version to 1.7.0
+- SimoneFelici (2):
+- Fix version not showing
+- Seat: clear password on Ctrl+Backspace
 - -----BEGIN PGP SIGNATURE-----
-- iQEzBAABCAAdFiEEX734TdInjbK4rYpSht7UAN39ehEFAmnvLyMACgkQht7UAN39
-- ehH9igf/fKMPVy1etWOau+RaAASIL9o1AgeeBKDNB0HYt2IYwxxYiPT6LK9U8aac
-- XKQXHS7nNy6ZDurSrovuQLH9MYgfIZ+wdYuteuL1F5VKc0Ne+zSJJDQB85+xEUt/
-- qD+F6X8Skj0okJBik3D3kd9pOdjzzNa2C8Az01+3lv/RlfRuYoLiqqCPNGyWGijb
-- rOr/+xW35o3UHYuTKGC+DjBi5sAVbdH/+F1ODUVNlwnOemFiHjVMzZ40IS+i/ZGe
-- gJd/z9yvAIcZkCKUFiNwREEYdkz0IvPxQkFOtVQGRmjnDvzQ5FJHMODdKaJkR4Fm
-- N1KS+H4q1mmC6pHEhUoN4pJf+5cMzQ==
-- =CIKA
+- iQEzBAABCgAdFiEEX734TdInjbK4rYpSht7UAN39ehEFAmrzFnoACgkQht7UAN39
+- ehHlmAf/b9Trrx5gw5kvEGaJ7dPvPd0QWY98OinXGyeCkd5f1SSoJmfmnKyK6cBB
+- 4U1QVTFlu9/4uLCEH1XGl8qXbrNd+e77RedcHb7YQqhss/qegtKAIU7avfbgTJae
+- N5tNbKFuXSi9KSCXMvlBlZaSYNIXi//+AEWZVGfCstf9/PGvGnRmnGqSTKjlYRSr
+- fkUcXN3Imir8jI/237iGmflcnHrWLSPTa7cTZzR7pRefQKtCOpP07moLOKVgeoKd
+- 4CSeuhsaDD9R0Zq+tgeO6PDSR5ZM/OPLxR4n0SSoO3yXkOe9LRw+Et7TpRhxHDpI
+- qwDiduIYX/xJnqtnhrN4QyrOlWoAvg==
+- =ytDY
 - -----END PGP SIGNATURE-----

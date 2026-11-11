@@ -51,7 +51,7 @@ class TestLogFn:
 class TestGenerate:
     """Tests for generate function."""
 
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_go_not_in_path(self, mock_run):
         """Test error when go is not available."""
         mock_run.side_effect = FileNotFoundError()
@@ -63,7 +63,7 @@ class TestGenerate:
             assert "go" in str(exc_info.value).lower()
             assert "not found" in str(exc_info.value).lower()
 
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_go_version_fails(self, mock_run):
         """Test error when go version check fails."""
         mock_result = MagicMock()
@@ -77,7 +77,7 @@ class TestGenerate:
 
             assert "go check failed" in str(exc_info.value)
 
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_no_go_mod_file(self, mock_run):
         """Test error when go.mod doesn't exist."""
         mock_result = MagicMock()
@@ -93,7 +93,7 @@ class TestGenerate:
 
             assert "go.mod" in str(exc_info.value)
 
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_golang.tarfile.open")
     def test_go_mod_vendor_fails(self, mock_tar, mock_run):
         """Test error when go mod vendor fails."""
@@ -117,7 +117,7 @@ class TestGenerate:
 
             assert "go mod vendor failed" in str(exc_info.value)
 
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_golang.tarfile.open")
     def test_vendor_dir_not_created(self, mock_tar, mock_run):
         """Test error when vendor directory is not created."""
@@ -139,7 +139,7 @@ class TestGenerate:
             assert "vendor/ directory" in str(exc_info.value)
 
     @patch("lib.vendor_golang.shutil.rmtree")
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_golang.tarfile.open")
     def test_generate_success(self, mock_tar, mock_run, mock_rmtree):
         """Test successful vendor generation."""
@@ -168,7 +168,7 @@ class TestGenerate:
             mock_tf.add.assert_called_once_with(vendor_dir, arcname="vendor")
 
     @patch("lib.vendor_golang.shutil.rmtree")
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_golang.tarfile.open")
     def test_generate_with_go_subdir(self, mock_tar, mock_run, mock_rmtree):
         """Test generation with go_subdir specified."""
@@ -199,7 +199,7 @@ class TestGenerate:
             assert calls[1][1]["cwd"] == subdir
 
     @patch("lib.vendor_golang.shutil.rmtree")
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_golang.tarfile.open")
     def test_generate_with_log_file(self, mock_tar, mock_run, mock_rmtree, tmp_path):
         """Test that output is logged to file."""
@@ -230,7 +230,7 @@ class TestGenerate:
         assert "[exit: 0]" in content
 
     @patch("lib.vendor_golang.shutil.rmtree")
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_golang.tarfile.open")
     def test_existing_vendor_dir_removed(self, mock_tar, mock_run, mock_rmtree):
         """Test that existing vendor directory is removed."""
@@ -262,7 +262,7 @@ class TestGenerate:
 class TestToolchainSkewIntegration:
     """Test the TODO-0007 fedora_version wiring."""
 
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_skew_blocks_before_go_mod_vendor(self, mock_run, tmp_path):
         src_dir = tmp_path / "src"
         src_dir.mkdir()
@@ -289,7 +289,7 @@ class TestToolchainSkewIntegration:
         src_dir.mkdir()
         (src_dir / "go.mod").write_text("module foo")
         with patch("lib.vendor_golang.go_toolchain_skew") as mock_skew:
-            with patch("lib.vendor_golang.subprocess.run") as mock_run, patch(
+            with patch("lib.subprocess_utils.subprocess.run") as mock_run, patch(
                 "lib.vendor_golang.tarfile.open"
             ), patch("lib.vendor_golang.shutil.rmtree"):
                 version_result = MagicMock()
@@ -313,7 +313,7 @@ class TestTimeout:
     VendorError.
     """
 
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_timeout_raises_vendor_error(self, mock_run, tmp_path):
         version_result = MagicMock()
         version_result.returncode = 0
@@ -330,7 +330,7 @@ class TestTimeout:
             generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
 
     @patch("lib.vendor_golang.shutil.rmtree")
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_golang.tarfile.open")
     def test_default_timeout(
         self, mock_tar, mock_run, mock_rmtree, tmp_path, monkeypatch
@@ -354,7 +354,7 @@ class TestTimeout:
         assert mock_run.call_args_list[1][1]["timeout"] == 3600
 
     @patch("lib.vendor_golang.shutil.rmtree")
-    @patch("lib.vendor_golang.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_golang.tarfile.open")
     def test_respects_cmd_timeout_env(
         self, mock_tar, mock_run, mock_rmtree, tmp_path, monkeypatch

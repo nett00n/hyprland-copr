@@ -7,10 +7,11 @@ within all mappings, including the top-level packages dict (package names are
 sorted alphabetically). Lists of dicts (sources, bundled_deps) are left
 untouched.
 
-Sorting and dedup of list items (_item_sort_key) are case-insensitive and
-ignore a leading "- " and surrounding quote characters, so "Foo", "foo", and
-'"foo"' are treated as the same item and only the first-encountered spelling
-is kept.
+Sorting of list items (_item_sort_key) is case-insensitive and ignores a leading
+"- " and surrounding quote characters. Dedup of build_requires/requires is
+case-insensitive too, so "Foo", "foo", and '"foo"' are the same item and only the
+first-encountered spelling is kept. ``files`` entries are paths and dedupe by exact
+string (#BUG-0120), so %{_bindir}/Hyprland and %{_bindir}/hyprland both survive.
 
 Comment lines within a sorted list block are floated to the top of the block.
 
@@ -39,15 +40,22 @@ def _item_sort_key(line: str) -> str:
     return line.strip().removeprefix("- ").strip("\"'").lower()
 
 
-def _sort_block(lines: list[str]) -> list[str]:
-    """Sort and deduplicate list items; comment lines float to the top."""
+def _sort_block(lines: list[str], case_sensitive_dedup: bool = False) -> list[str]:
+    """Sort and deduplicate list items; comment lines float to the top.
+
+    #BUG-0120: ``files`` entries are paths, so they dedupe case-sensitively.
+    """
     comments = [ln for ln in lines if ln.strip().startswith("#")]
     items = [ln for ln in lines if not ln.strip().startswith("#")]
     items.sort(key=_item_sort_key)
     seen: set[str] = set()
     deduped: list[str] = []
     for ln in items:
-        key = _item_sort_key(ln)
+        key = (
+            ln.strip().removeprefix("- ").strip("\"'")
+            if case_sensitive_dedup
+            else _item_sort_key(ln)
+        )
         if key not in seen:
             seen.add(key)
             deduped.append(ln)
@@ -119,7 +127,7 @@ def _process_dict_body(
         child_indent = key_indent + 2
 
         if key_name in SORTABLE_KEYS:
-            sorted_children = _sort_block(children)
+            sorted_children = _sort_block(children, key_name == "files")
             if sorted_children != children:
                 sorted_keys_out.append(key_name)
             processed.append([first_line, *sorted_children])
@@ -206,7 +214,7 @@ def process_content(content: str) -> tuple[str, list[str]]:
 
             if key in SORTABLE_KEYS:
                 block, i = _collect_list_block(lines, i, child_indent)
-                sorted_block = _sort_block(block)
+                sorted_block = _sort_block(block, key == "files")
                 if sorted_block != block:
                     sorted_keys.append(key)
                 entry_lines.extend(sorted_block)

@@ -64,7 +64,7 @@ class TestGenerate:
             assert "not found" in str(exc_info.value).lower()
 
     @patch("lib.vendor_rust.shutil.which")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_cargo_version_fails(self, mock_run, mock_which):
         """Test error when cargo version check fails."""
         mock_which.return_value = "/usr/bin/cargo"
@@ -79,7 +79,7 @@ class TestGenerate:
 
             assert "cargo check failed" in str(exc_info.value)
 
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_no_cargo_toml_file(self, mock_run):
         """Test error when Cargo.toml doesn't exist."""
         mock_result = MagicMock()
@@ -95,7 +95,7 @@ class TestGenerate:
 
             assert "Cargo.toml" in str(exc_info.value)
 
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_cargo_vendor_fails(self, mock_tar, mock_run):
         """Test error when cargo vendor fails."""
@@ -119,7 +119,7 @@ class TestGenerate:
 
             assert "cargo vendor failed" in str(exc_info.value)
 
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_vendor_dir_not_created(self, mock_tar, mock_run):
         """Test error when vendor directory is not created."""
@@ -141,7 +141,7 @@ class TestGenerate:
             assert "vendor/ directory" in str(exc_info.value)
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_generate_success(self, mock_tar, mock_run, mock_rmtree):
         """Test successful vendor generation."""
@@ -172,7 +172,7 @@ class TestGenerate:
             assert mock_tf.add.call_count == 2  # vendor/ and .cargo/config.toml
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_generate_with_rust_subdir(self, mock_tar, mock_run, mock_rmtree):
         """Test generation with rust_subdir specified."""
@@ -203,7 +203,7 @@ class TestGenerate:
             assert calls[1][1]["cwd"] == subdir
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_generate_with_log_file(self, mock_tar, mock_run, mock_rmtree, tmp_path):
         """Test that output is logged to file."""
@@ -234,7 +234,7 @@ class TestGenerate:
         assert "[exit: 0]" in content
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_cargo_config_created(self, mock_tar, mock_run, mock_rmtree, tmp_path):
         """Test that .cargo/config.toml is created with correct content."""
@@ -265,7 +265,7 @@ class TestGenerate:
         assert "offline = true" in content
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_existing_vendor_dir_removed(self, mock_tar, mock_run, mock_rmtree):
         """Test that existing vendor directory is removed."""
@@ -294,7 +294,7 @@ class TestGenerate:
             mock_rmtree.assert_called_once()
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_cargo_vendor_command_args(self, mock_tar, mock_run, mock_rmtree, tmp_path):
         """Test that cargo vendor is called with correct arguments."""
@@ -329,7 +329,7 @@ class TestGitSourceCrateScan:
     """Test the TODO-0005 git-source-crate rejection."""
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_git_source_crate_rejected(self, mock_run, mock_rmtree, tmp_path):
         version_result = MagicMock()
         version_result.returncode = 0
@@ -352,7 +352,7 @@ class TestGitSourceCrateScan:
             generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_registry_crates_allowed(self, mock_tar, mock_run, mock_rmtree, tmp_path):
         version_result = MagicMock()
@@ -384,7 +384,7 @@ class TestToolchainSkewIntegration:
     """Test the TODO-0007 fedora_version wiring."""
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_skew_blocks_before_cargo_vendor(self, mock_run, mock_rmtree, tmp_path):
         src_dir = tmp_path / "src"
         src_dir.mkdir()
@@ -415,7 +415,7 @@ class TestToolchainSkewIntegration:
         src_dir.mkdir()
         (src_dir / "Cargo.toml").write_text("[package]")
         with patch("lib.vendor_rust.rust_toolchain_skew") as mock_skew:
-            with patch("lib.vendor_rust.subprocess.run") as mock_run, patch(
+            with patch("lib.subprocess_utils.subprocess.run") as mock_run, patch(
                 "lib.vendor_rust.shutil.rmtree"
             ), patch("lib.vendor_rust.tarfile.open"):
                 version_result = MagicMock()
@@ -434,7 +434,7 @@ class TestCargoUpdate:
     """Test the cargo_update pre-vendor lockfile-bump hook."""
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_cargo_update_runs_before_vendor(
         self, mock_tar, mock_run, mock_rmtree, tmp_path
@@ -467,7 +467,7 @@ class TestCargoUpdate:
         # cargo update ran before cargo vendor.
         assert calls[2][0][0][:2] == ["cargo", "vendor"]
 
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_cargo_update_failure_raises(self, mock_run, tmp_path):
         version_result = MagicMock()
         version_result.returncode = 0
@@ -485,7 +485,7 @@ class TestCargoUpdate:
             generate("pkg", pkg_meta, tmp_path, src_dir, tmp_path / "out.tar.gz")
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_no_cargo_update_field_skips_step(
         self, mock_tar, mock_run, mock_rmtree, tmp_path
@@ -521,7 +521,7 @@ class TestTimeout:
     """
 
     @patch("lib.vendor_rust.shutil.which", return_value="/usr/bin/cargo")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_cargo_vendor_timeout(self, mock_run, mock_which, tmp_path):
         version_result = MagicMock()
         version_result.returncode = 0
@@ -540,7 +540,7 @@ class TestTimeout:
             generate("pkg", {}, tmp_path, src_dir, tmp_path / "out.tar.gz")
 
     @patch("lib.vendor_rust.shutil.which", return_value="/usr/bin/cargo")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     def test_cargo_update_timeout(self, mock_run, mock_which, tmp_path):
         version_result = MagicMock()
         version_result.returncode = 0
@@ -563,7 +563,7 @@ class TestTimeout:
             generate("pkg", pkg_meta, tmp_path, src_dir, tmp_path / "out.tar.gz")
 
     @patch("lib.vendor_rust.shutil.rmtree")
-    @patch("lib.vendor_rust.subprocess.run")
+    @patch("lib.subprocess_utils.subprocess.run")
     @patch("lib.vendor_rust.tarfile.open")
     def test_cargo_vendor_respects_cmd_timeout_env(
         self, mock_tar, mock_run, mock_rmtree, tmp_path, monkeypatch

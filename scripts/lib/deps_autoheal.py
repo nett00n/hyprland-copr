@@ -21,7 +21,7 @@ from pathlib import Path
 from lib import paths
 from lib import files_autoheal
 from lib.config import env_int
-from lib.log_analysis import _analyze_mock_build_log, _dnf_whatprovides
+from lib.log_analysis import analyze_mock_build_log, _dnf_whatprovides
 from lib.yaml_utils import load_packages_yaml, write_yaml_file
 
 DEFAULT_MAX_CYCLES = 10
@@ -81,7 +81,7 @@ def missing_build_deps(log_path: Path) -> list[MissingDep]:
     text = (
         html.unescape(log_path.read_text(errors="replace")) if log_path.exists() else ""
     )
-    for _lineno, _raw, _msg, dep, raw_method in _analyze_mock_build_log(log_path):
+    for _lineno, _raw, _msg, dep, raw_method in analyze_mock_build_log(log_path):
         method = raw_method.rstrip(",")
         if dep and method in _HEALABLE_METHODS:
             seen.setdefault(

@@ -150,9 +150,22 @@ def _prune_key(row: dict) -> tuple[Any, int]:
 _MULTI_ROW_KINDS = {"rpm", "source"}
 
 
-def _stale_rows(entries: list[dict], kind: str) -> list[dict]:
-    """#COPR-0015, #BUG-0110: the rows of one (package, target, kind) group to
-    delete.
+# #BUG-0119: the stage whose recorded stage_results.version is the NVR a
+# package's artifact of that kind is currently built at.
+_KIND_STAGE = {"srpm": "srpm", "vendor": "vendor", "rpm": "mock"}
+
+
+def _stale_rows(
+    entries: list[dict], kind: str, current_version: str | None = None
+) -> list[dict]:
+    """#COPR-0015, #BUG-0110, #BUG-0119: the rows of one (package, target, kind)
+    group to delete.
+
+    A row whose version equals `current_version` (the group's stage_results
+    version) is never stale, even when a higher version was built earlier (a
+    pinned-version rollback): pruning it would make the next run's
+    artifacts_present() miss and rebuild every night. For srpm/vendor the
+    current row is then the one survivor.
 
     For a multi-row kind, only rows whose version compares strictly lower than
     the group's highest are stale; every row at the top version survives. A
@@ -161,17 +174,27 @@ def _stale_rows(entries: list[dict], kind: str) -> list[dict]:
     does have a versioned top are left alone -- nothing says they are
     superseded.
     """
+    current = [
+        r for r in entries if current_version and r.get("version") == current_version
+    ]
     if kind not in _MULTI_ROW_KINDS:
+        if current:
+            keep = max(current, key=_prune_key)
+            return [row for row in entries if row is not keep]
         return sorted(entries, key=_prune_key)[:-1]
     versioned = [row for row in entries if row.get("version")]
     if not versioned:
         return sorted(entries, key=_prune_key)[:-1]
     top = max(versioned, key=_prune_key)["version"]
-    return [row for row in versioned if compare_evr(row["version"], top) < 0]
+    return [
+        row
+        for row in versioned
+        if compare_evr(row["version"], top) < 0 and row not in current
+    ]
 
 
 def prune(confirm: bool) -> None:
-    """#COPR-0015: delete superseded artifacts among the prunable kinds (srpm,
+    """#COPR-0015, #BUG-0119: delete superseded artifacts among the prunable kinds (srpm,
     rpm, vendor, source), per (package, target, kind).
 
     "Superseded" is a strictly lower recorded artifacts.version than the
@@ -193,10 +216,12 @@ def prune(confirm: bool) -> None:
         by_key.setdefault(key, []).append(row)
 
     stale_rows: list[dict] = []
-    for (_pkg, _target, kind), entries in by_key.items():
+    for (pkg, target, kind), entries in by_key.items():
         if len(entries) < 2:
             continue
-        stale_rows.extend(_stale_rows(entries, kind))
+        stage = _KIND_STAGE.get(kind)
+        current = build_db.get_stage(pkg, stage, target) if stage else None
+        stale_rows.extend(_stale_rows(entries, kind, (current or {}).get("version")))
 
     # #BUG-0112: targets share one physical file (SRPM, vendor tarball), one
     # ledger row each. A file is only freed once every row naming it is stale.

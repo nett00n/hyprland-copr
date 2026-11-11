@@ -8,6 +8,7 @@ from pathlib import Path
 from .subprocess_utils import run_git
 
 
+# #COPR-0012, #BUG-0030: deduped by commit email, not name
 def collect_contributors(repo_root: Path) -> list[dict]:
     result = run_git("log", "--format=%an|%ae", cwd=repo_root)
     seen: set[str] = set()
@@ -16,9 +17,10 @@ def collect_contributors(repo_root: Path) -> list[dict]:
         return contributors
     for line in result.stdout.splitlines():
         name, _, email = line.partition("|")
-        if name in seen:
+        key = email.strip().lower() or name
+        if key in seen:
             continue
-        seen.add(name)
+        seen.add(key)
         github_user = None
         if email.endswith("@users.noreply.github.com"):
             github_user = email.split("@")[0].split("+")[-1]

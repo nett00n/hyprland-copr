@@ -44,6 +44,8 @@ submission with (#BUG-0039). A package still non-terminal at the deadline keeps
 the deadline is not a nightly failure. A plain `make full-cycle` resolves such a row
 on its next pre-submit `poll_copr_status()` call; the matrix path's `SKIP_COPR`
 passes do not poll, which is why submission itself must not depend on that (below).
+The input hashes are recorded on the async `unknown` row, so a row the poll later flips
+to `success` is cached like a synchronously built one and is not resubmitted (#BUG-0117).
 
 **Never queue a build twice.** Before submitting, `stage-copr` and `full-cycle` ask
 Copr which builds of the project are still in flight (`pending`, `importing`,

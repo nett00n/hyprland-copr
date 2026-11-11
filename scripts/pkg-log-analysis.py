@@ -20,19 +20,18 @@ from pathlib import Path
 from lib import build_db
 from lib.copr import COPR_BUILD_URL
 from lib.log_analysis import (
-    _analyze_srpm_log,
-    _analyze_mock_log,
-    _analyze_mock_build_log,
-    _analyze_mock_root_log,
-    _analyze_copr_log,
-    _analyze_copr_chroot_summary,
-    _analyze_copr_chroot_logs,
-    _suggest_providers,
+    HIGHLIGHT_PREFIX,
+    analyze_srpm_log,
+    analyze_mock_log,
+    analyze_mock_build_log,
+    analyze_mock_root_log,
+    analyze_copr_log,
+    analyze_copr_chroot_summary,
+    analyze_copr_chroot_logs,
+    suggest_providers,
 )
 from lib.paths import LOG_DIR, RUNS_LOG_DIR, get_package_log_dir
 from lib.yaml_utils import filter_packages, get_packages, skip_packages
-
-HIGHLIGHT_PREFIX = "█▓▒░"
 
 
 def resolve_log_dirs(pkg: str, run_id: int | None, target: str | None) -> list[Path]:
@@ -77,46 +76,46 @@ def collect_issues(pkg: str, log_dir: Path) -> list[str]:
 
     srpm_log = log_dir / "10-srpm.log"
     if srpm_log.exists():
-        issues = _analyze_srpm_log(srpm_log)
+        issues = analyze_srpm_log(srpm_log)
         if issues:
             lines.append(f"\n{HIGHLIGHT_PREFIX} SRPM stage issues:")
             for lineno, _raw_line, msg, dep, method in issues:
                 lines.append(f"  - {msg}")
                 lines.append(f"    {srpm_log}:{lineno}")
-                providers = _suggest_providers(dep, method)
+                providers = suggest_providers(dep, method)
                 if providers:
                     yaml_list = "\n      ".join(f'- "{p}"' for p in providers)
                     lines.append(f"    suggested packages:\n      {yaml_list}")
 
     mock_log = log_dir / "20-mock.log"
     if mock_log.exists():
-        issues = _analyze_mock_log(mock_log)
+        issues = analyze_mock_log(mock_log)
         if issues:
             lines.append(f"\n{HIGHLIGHT_PREFIX} Mock builddep issues:")
             for lineno, _raw_line, msg, dep, method in issues:
                 lines.append(f"  - {msg}")
                 lines.append(f"    {mock_log}:{lineno}")
-                providers = _suggest_providers(dep, method)
+                providers = suggest_providers(dep, method)
                 if providers:
                     yaml_list = "\n      ".join(f'- "{p}"' for p in providers)
                     lines.append(f"    suggested packages:\n      {yaml_list}")
 
     build_log = log_dir / "21-mock-build.log"
     if build_log.exists():
-        issues = _analyze_mock_build_log(build_log)
+        issues = analyze_mock_build_log(build_log)
         if issues:
             lines.append(f"\n{HIGHLIGHT_PREFIX} Mock build issues:")
             for lineno, raw_line, msg, dep, method in issues:
                 lines.append(f"  - {msg}")
                 lines.append(f"    {build_log}:{lineno}: {raw_line}")
-                providers = _suggest_providers(dep, method)
+                providers = suggest_providers(dep, method)
                 if providers:
                     yaml_list = "\n      ".join(f'- "{p}"' for p in providers)
                     lines.append(f"    suggested packages:\n      {yaml_list}")
 
     root_log = log_dir / "21-mock-root.log"
     if root_log.exists():
-        issues = _analyze_mock_root_log(root_log)
+        issues = analyze_mock_root_log(root_log)
         if issues:
             lines.append(f"\n{HIGHLIGHT_PREFIX} Mock root issues:")
             for lineno, raw_line, msg, _dep, _method in issues:
@@ -125,7 +124,7 @@ def collect_issues(pkg: str, log_dir: Path) -> list[str]:
 
     copr_log = log_dir / "30-copr.log"
     if copr_log.exists():
-        issues = _analyze_copr_log(copr_log)
+        issues = analyze_copr_log(copr_log)
         if issues:
             lines.append(f"\n{HIGHLIGHT_PREFIX} COPR stage issues:")
             for lineno, _raw_line, msg, _dep, _method in issues:
@@ -134,19 +133,19 @@ def collect_issues(pkg: str, log_dir: Path) -> list[str]:
 
     chroot_summary_log = log_dir / "30-copr-chroots.log"
     if chroot_summary_log.exists():
-        issues = _analyze_copr_chroot_summary(chroot_summary_log)
+        issues = analyze_copr_chroot_summary(chroot_summary_log)
         if issues:
             lines.append(f"\n{HIGHLIGHT_PREFIX} COPR chroot mismatch:")
             for _lineno, _raw_line, msg, _dep, _method in issues:
                 lines.append(f"  - {msg}")
 
-    for chroot_name, issues in _analyze_copr_chroot_logs(log_dir).items():
+    for chroot_name, issues in analyze_copr_chroot_logs(log_dir).items():
         chroot_log = log_dir / f"31-copr-{chroot_name}.log"
         lines.append(f"\n{HIGHLIGHT_PREFIX} COPR builder issues ({chroot_name}):")
         for lineno, raw_line, msg, dep, method in issues:
             lines.append(f"  - {msg}")
             lines.append(f"    {chroot_log}:{lineno}: {raw_line}")
-            providers = _suggest_providers(dep, method)
+            providers = suggest_providers(dep, method)
             if providers:
                 yaml_list = "\n      ".join(f'- "{p}"' for p in providers)
                 lines.append(f"    suggested packages:\n      {yaml_list}")

@@ -9,14 +9,14 @@ from io import StringIO
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from lib.log_analysis import (
-    _analyze_srpm_log,
-    _analyze_mock_log,
-    _analyze_mock_build_log,
-    _analyze_mock_root_log,
-    _analyze_copr_log,
-    _analyze_copr_chroot_summary,
-    _analyze_copr_chroot_logs,
-    _suggest_providers,
+    analyze_srpm_log,
+    analyze_mock_log,
+    analyze_mock_build_log,
+    analyze_mock_root_log,
+    analyze_copr_log,
+    analyze_copr_chroot_summary,
+    analyze_copr_chroot_logs,
+    suggest_providers,
     _dnf_whatprovides,
     _dnf_search,
     _print_stage_issues,
@@ -37,7 +37,7 @@ class TestAnalyzeSrpmLog:
         log_file.write_text(
             "404 Client Error: Not Found for url: https://example.com/file.tar.gz\n"
         )
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert len(issues) == 1
         assert "HTTP 404" in issues[0][2]
         assert "https://example.com/file.tar.gz" in issues[0][2]
@@ -48,7 +48,7 @@ class TestAnalyzeSrpmLog:
         log_file.write_text(
             "error: Bad file: /root/rpmbuild/SOURCES/mpvpaper-1.2.1.tar.gz: No such file or directory\n"
         )
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert len(issues) == 1
         assert "not downloaded" in issues[0][2]
         assert "mpvpaper-1.2.1.tar.gz" in issues[0][2]
@@ -60,7 +60,7 @@ class TestAnalyzeSrpmLog:
             "404 Client Error: Not Found for url: https://example.com/file1.tar.gz\n"
             "500 Client Error: Internal Server Error for url: https://example.com/file2.tar.gz\n"
         )
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert len(issues) == 2
         assert issues[0][2].startswith("HTTP 404")
         assert issues[1][2].startswith("HTTP 500")
@@ -68,21 +68,21 @@ class TestAnalyzeSrpmLog:
     def test_nonexistent_log_file(self, tmp_path):
         """Nonexistent log file returns empty list."""
         log_file = tmp_path / "nonexistent.log"
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert issues == []
 
     def test_empty_log_file(self, tmp_path):
         """Empty log file returns empty list."""
         log_file = tmp_path / "10-srpm.log"
         log_file.write_text("")
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert issues == []
 
     def test_log_without_errors(self, tmp_path):
         """Log without errors returns empty list."""
         log_file = tmp_path / "10-srpm.log"
         log_file.write_text("$ spectool -g -R /work/packages/test/test.spec\n")
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert issues == []
 
     def test_missing_source_with_bz2(self, tmp_path):
@@ -91,7 +91,7 @@ class TestAnalyzeSrpmLog:
         log_file.write_text(
             "error: Bad file: /root/rpmbuild/SOURCES/archive-1.0.tar.bz2: No such file or directory\n"
         )
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert len(issues) == 1
         assert "archive-1.0.tar.bz2" in issues[0][2]
 
@@ -101,7 +101,7 @@ class TestAnalyzeSrpmLog:
         log_file.write_text(
             "error: Bad file: /root/rpmbuild/SOURCES/archive-1.0.tar.xz: No such file or directory\n"
         )
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert len(issues) == 1
         assert "archive-1.0.tar.xz" in issues[0][2]
 
@@ -111,7 +111,7 @@ class TestAnalyzeSrpmLog:
         log_file.write_text(
             "error: Bad file: /root/rpmbuild/SOURCES/test-1.0.tar.gz: No such file or directory\n"
         )
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert len(issues) == 1
         lineno, raw_line, msg, dep, method = issues[0]
         assert isinstance(lineno, int)
@@ -125,7 +125,7 @@ class TestAnalyzeSrpmLog:
         """Detect generic error: lines."""
         log_file = tmp_path / "10-srpm.log"
         log_file.write_text("error: Something went wrong: details here\n")
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert len(issues) == 1
         assert "SRPM error" in issues[0][2]
         assert "Something went wrong" in issues[0][2]
@@ -138,7 +138,7 @@ class TestAnalyzeSrpmLog:
             "error: Bad file: /root/rpmbuild/SOURCES/file.tar.gz: No such file or directory\n"
             "error: Permission denied: cannot read file\n"
         )
-        issues = _analyze_srpm_log(log_file)
+        issues = analyze_srpm_log(log_file)
         assert len(issues) == 3
         assert "HTTP 404" in issues[0][2]
         assert "not downloaded" in issues[1][2]
@@ -152,7 +152,7 @@ class TestAnalyzeMockLog:
         """Detect missing build dependency."""
         log_file = tmp_path / "20-mock.log"
         log_file.write_text("No match for argument: sndio-libs-devel\n")
-        issues = _analyze_mock_log(log_file)
+        issues = analyze_mock_log(log_file)
         assert len(issues) == 1
         assert "sndio-libs-devel" in issues[0][2]
 
@@ -162,14 +162,14 @@ class TestAnalyzeMockLog:
         log_file.write_text(
             "Problem: package pipewire-jack-audio-connection-kit-devel-1.4.10-1.fc43.x86_64 from updates conflicts with jack-audio-connection-kit-devel provided by jack-audio-connection-kit-devel-1.9.22-10.fc43.x86_64 from fedora\n"
         )
-        issues = _analyze_mock_log(log_file)
+        issues = analyze_mock_log(log_file)
         assert len(issues) == 1
         assert "conflicts" in issues[0][2]
 
     def test_nonexistent_mock_log(self, tmp_path):
         """Nonexistent log file returns empty list."""
         log_file = tmp_path / "20-mock.log"
-        issues = _analyze_mock_log(log_file)
+        issues = analyze_mock_log(log_file)
         assert issues == []
 
 
@@ -182,7 +182,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             'meson.build:86:14: ERROR: Dependency "upower-glib" not found, tried pkgconfig\n'
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "upower-glib" in issues[0][2]
         assert "pkgconfig" in issues[0][2]
@@ -193,7 +193,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "meson.build:98:20: ERROR: C++ shared or static library 'sndio' not found\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "sndio" in issues[0][2]
 
@@ -201,7 +201,7 @@ class TestAnalyzeMockBuildLog:
         """Detect unexpanded RPM macro."""
         log_file = tmp_path / "21-mock-build.log"
         log_file.write_text("+ %cmake\n")
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "unexpanded" in issues[0][2]
         assert "cmake" in issues[0][2]
@@ -212,7 +212,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "/var/tmp/rpm-tmp.PsPh8C: line 47: /usr/bin/cmake: No such file or directory\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "/usr/bin/cmake" in issues[0][2]
 
@@ -222,7 +222,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "error: Bad exit status from /var/tmp/rpm-tmp.CA85tV (%build)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "failed during build" in issues[0][2]
         assert "check previous lines" in issues[0][2]
@@ -230,7 +230,7 @@ class TestAnalyzeMockBuildLog:
     def test_nonexistent_mock_build_log(self, tmp_path):
         """Nonexistent log file returns empty list."""
         log_file = tmp_path / "21-mock-build.log"
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert issues == []
 
     def test_fg_no_job_control_error(self, tmp_path):
@@ -239,7 +239,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "/var/tmp/rpm-tmp.fzFQ77: line 47: fg: no job control\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "unexpanded" in issues[0][2]
         assert "cmake" in issues[0][2]
@@ -250,7 +250,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "/var/tmp/rpm-tmp.PsPh8C: line 47: cargo: command not found\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "cargo" in issues[0][2]
         assert "tool" in issues[0][4]
@@ -261,7 +261,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             'CMake Error: The source directory "/builddir/build/src" does not appear to contain CMakeLists.txt\n'
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "wrong build_system" in issues[0][2]
 
@@ -272,7 +272,7 @@ class TestAnalyzeMockBuildLog:
             "ERROR: Neither source directory '.' nor build directory "
             "'redhat-linux-build' contain a build file meson.build.\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "meson.build not found" in issues[0][2]
 
@@ -283,7 +283,7 @@ class TestAnalyzeMockBuildLog:
             "CMake Error at CMakeLists.txt:128 (find_package):\n"
             '  Could not find a package configuration file provided by "glslang"\n'
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "glslang" in issues[0][2]
         assert issues[0][4] == "cmake"
@@ -297,7 +297,7 @@ class TestAnalyzeMockBuildLog:
             "   - lcms2\n"
             "   - libpng\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 2
         assert [i[3] for i in issues] == ["lcms2", "libpng"]
         assert all(i[4] == "pkgconfig" for i in issues)
@@ -312,7 +312,7 @@ class TestAnalyzeMockBuildLog:
             "\n"
             "   - hyprtoolkit>=0.6.0\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert issues[0][3] == "hyprtoolkit"
         assert issues[0][2] == 'missing pkgconfig package: "hyprtoolkit"'
@@ -322,7 +322,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             'CMake Error at CMakeLists.txt:130 (find_package):\n  By not providing "FindQt6.cmake" in CMAKE_MODULE_PATH\n'
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert issues[0][3] == "Qt6" and issues[0][4] == "cmake"
 
     def test_cmake_missing_source_file(self, tmp_path):
@@ -333,7 +333,7 @@ class TestAnalyzeMockBuildLog:
             "  Cannot find source file:\n"
             "    cavacore.c\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "cavacore.c" in issues[0][2]
 
@@ -343,7 +343,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "/path/to/file.cpp:11:10: fatal error: hyprland/src/managers/HookSystemManager.hpp: No such file or directory\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "HookSystemManager.hpp" in issues[0][2]
 
@@ -353,7 +353,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "/path/to/plugin.cpp:5:10: fatal error: hyprland/src/internal/InternalHeader.hpp: No such file or directory\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "plugin may be incompatible" in issues[0][2]
 
@@ -363,7 +363,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "make[1]: gcc: No such file or directory\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "gcc" in issues[0][2]
 
@@ -374,7 +374,7 @@ class TestAnalyzeMockBuildLog:
             "gmake[2]: *** No rule to make target 'src/dbus/dbus_objectmanager.cpp', "
             "needed by 'src/dbus/dbusmenu/CMakeFiles/quickshell-dbusmenu_autogen_timestamp_deps'.  Stop.\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "src/dbus/dbus_objectmanager.cpp" in issues[0][2]
         assert "quickshell-dbusmenu_autogen_timestamp_deps" in issues[0][2]
@@ -385,7 +385,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "cp: cannot stat '/builddir/build/BUILD/test/README.md': No such file or directory\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "README.md" in issues[0][2]
 
@@ -395,7 +395,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "meson.build:78:3: ERROR: Problem encountered: iniparser library is required\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "iniparser library is required" in issues[0][2]
 
@@ -405,7 +405,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "Looking for a fallback subproject for the dependency libcava\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "libcava" in issues[0][2]
         assert "pkgconfig" in issues[0][4]
@@ -417,7 +417,7 @@ class TestAnalyzeMockBuildLog:
             "CMake Error at /usr/share/cmake/Modules/ExternalProject/shared_internal_commands.cmake:928 (message):\n"
             "  error: could not find git for clone of glaze\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         matches = [i for i in issues if "FetchContent" in i[2]]
         assert len(matches) == 1
         assert "glaze" in matches[0][2]
@@ -431,7 +431,7 @@ class TestAnalyzeMockBuildLog:
             "CMake Error at /usr/share/cmake/Modules/ExternalProject/shared_internal_commands.cmake:928 (message):\n"
             "  error: could not find git for clone of glaze-populate\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         matches = [i for i in issues if "FetchContent" in i[2]]
         assert len(matches) == 1
         assert matches[0][3] == "glaze"
@@ -444,7 +444,7 @@ class TestAnalyzeMockBuildLog:
             "CMake Error at /usr/share/cmake/Modules/ExternalProject/shared_internal_commands.cmake:928 (message):\n"
             "  error: could not find git for clone of glaze\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         matches = [i for i in issues if "FetchContent" in i[2]]
         assert len(matches) == 1
         assert "v7.2.0" in matches[0][2]
@@ -463,7 +463,7 @@ class TestAnalyzeMockBuildLog:
             "  /usr/share/cmake/Modules/FetchContent.cmake:2399 (__FetchContent_Populate)\n"
             "  CMakeLists.txt:144 (FetchContent_MakeAvailable)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         matches = [i for i in issues if "FetchContent" in i[2]]
         assert len(matches) == 1
         assert "CMakeLists.txt:144" in matches[0][2]
@@ -475,7 +475,7 @@ class TestAnalyzeMockBuildLog:
             "error: Installed (but unpackaged) file(s) found:\n"
             "/usr/lib/libtest.so\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         # Note: both line-by-line and multiline pass detect this (one for the error line, one for the block)
         assert any("unpackaged" in issue[2] for issue in issues)
 
@@ -485,7 +485,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "/var/tmp/rpm-tmp.XXX: line 5: cd: wrong-dir-name: No such file or directory\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "wrong-dir-name" in issues[0][2]
 
@@ -495,7 +495,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "error: Empty %files file /builddir/build/BUILD/test/debugsourcefiles.list\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "debugsourcefiles" in issues[0][2]
 
@@ -505,7 +505,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "error: File not found: /builddir/build/BUILD/test/BUILDROOT/usr/lib/test.so\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "/usr/lib/test.so" in issues[0][2]
 
@@ -516,7 +516,7 @@ class TestAnalyzeMockBuildLog:
             "error: failed to get `bitflags` as a dependency of package `cosmic-client-toolkit v0.2.0 (..)\n"
             "Caused by: [6] Could not resolve hostname (Could not resolve host: index.crates.io)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "bitflags" in issues[0][2]
 
@@ -526,7 +526,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             'error: File must begin with "/": %{_userunitdir}/app-graphical.slice\n'
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "_userunitdir" in issues[0][2]
 
@@ -537,7 +537,7 @@ class TestAnalyzeMockBuildLog:
             "CMake Error at CMakeLists.txt:130 (find_package):\n"
             'By not providing "FindQt6.cmake" in CMAKE_MODULE_PATH\n'
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "Qt6" in issues[0][2]
 
@@ -551,7 +551,7 @@ class TestAnalyzeMockBuildLog:
             "   - libpng\n"
             "   - zlib\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         # #COPR-0029: one issue per missing package
         assert [i[3] for i in issues] == ["lcms2", "libpng", "zlib"]
 
@@ -566,7 +566,7 @@ class TestAnalyzeMockBuildLog:
             "/usr/lib/pkgconfig/test.pc\n"
             "Child return code was: 1\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         # Both line-by-line and multiline block matches occur
         assert len(issues) >= 1
         # Check that the multiline block with categorization exists
@@ -585,7 +585,7 @@ class TestAnalyzeMockBuildLog:
             "/usr/lib/debug/libtest.so.debug\n"
             "Child return code was: 1\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) >= 1
         # The multiline block should detect and list the non-debug file
         multiline_blocks = [i for i in issues if "installed but unpackaged" in i[2]]
@@ -603,7 +603,7 @@ class TestAnalyzeMockBuildLog:
             "/usr/lib/pkgconfig/test.pc\n"
             "Child return code was: 1\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) >= 1
         multiline_issue = [i for i in issues if "devel.files" in i[2]]
         assert len(multiline_issue) > 0
@@ -618,7 +618,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "/path/to/file.cpp:123:45: error: 'MyClass' was not declared in this scope\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "undeclared identifier" in issues[0][2]
         assert "line 123" in issues[0][2]
@@ -629,7 +629,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "/path/to/file.c:456:10: error: 'struct Point' has no member named 'x'\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "struct/class has no such member" in issues[0][2]
         assert "API mismatch" in issues[0][2]
@@ -640,7 +640,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "/path/to/file.cpp:789:5: error: expected 'int' but got 'double'\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "type mismatch" in issues[0][2]
         assert "API change" in issues[0][2]
@@ -652,7 +652,7 @@ class TestAnalyzeMockBuildLog:
             "/usr/bin/ld: /path/to/object.o: in function `main':\n"
             "(.text+0x123): undefined reference to `init_widget'\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "undefined reference" in issues[0][2]
         assert "init_widget" in issues[0][2]
@@ -664,7 +664,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "/usr/bin/ld: undefined reference to `my_function'\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "undefined reference" in issues[0][2]
         assert "my_function" in issues[0][2]
@@ -676,7 +676,7 @@ class TestAnalyzeMockBuildLog:
             "/usr/bin/g++ obj1.o obj2.o -o app\n"
             "collect2: error: ld returned 1 exit status\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         # Should detect the linker return code error
         linker_errors = [i for i in issues if "linker error" in i[2]]
         assert len(linker_errors) >= 1
@@ -690,7 +690,7 @@ class TestAnalyzeMockBuildLog:
             "/path/to/file.cpp:200:10: error: expected 'int' but got 'char*'\n"
             "/path/to/file.cpp:300:15: error: 'MyFunc' has no member named 'value'\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 3
         assert all("compilation error" in i[2] for i in issues)
 
@@ -700,7 +700,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "DEBUG util.py:461:  error: incorrect format: unknown tag: \"pkgid\"\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "librpm format error" in issues[0][2]
         assert "pkgid" in issues[0][2]
@@ -711,7 +711,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "error: Bad exit status from /var/tmp/rpm-tmp.CA85tV (%install)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "failed during installation" in issues[0][2]
         assert "check previous lines" in issues[0][2]
@@ -722,7 +722,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "error: Bad exit status from /var/tmp/rpm-tmp.FGH123 (%package)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "failed during packaging" in issues[0][2]
 
@@ -732,7 +732,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "error: Bad exit status from /var/tmp/rpm-tmp.IJK456 (%check)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "failed during test" in issues[0][2]
 
@@ -746,7 +746,7 @@ class TestAnalyzeMockBuildLog:
             "-- Configuring incomplete, errors occurred!\n"
             "error: Bad exit status from /var/tmp/rpm-tmp.vmv3Hu (%build)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) >= 1
         # Find the bad exit status issue
         bad_exit = [i for i in issues if "failed during" in i[2]]
@@ -762,7 +762,7 @@ class TestAnalyzeMockBuildLog:
             "error: File not found: /some/path/file.so\n"
             "error: Bad exit status from /var/tmp/rpm-tmp.ABC123 (%install)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) >= 1
         bad_exit = [i for i in issues if "failed during" in i[2]]
         assert len(bad_exit) > 0
@@ -787,7 +787,7 @@ class TestAnalyzeMockBuildLog:
             "gmake: *** [Makefile:169: all] Error 2\n"
             "error: Bad exit status from /var/tmp/rpm-tmp.kXTiCt (%build)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         bad_exit = [i for i in issues if "failed during build" in i[2]]
         assert len(bad_exit) == 1
         assert "'starts_with' is not a member of 'std::ranges'" in bad_exit[0][2]
@@ -802,7 +802,7 @@ class TestAnalyzeMockBuildLog:
             "+ exit 1\n"
             "error: Bad exit status from /var/tmp/rpm-tmp.XYZ789 (%build)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) >= 1
         bad_exit = [i for i in issues if "failed during" in i[2]]
         assert len(bad_exit) > 0
@@ -817,7 +817,7 @@ class TestAnalyzeMockBuildLog:
             "+ /usr/bin/patch -p1 -s --fuzz=0 --no-backup-if-mismatch -f\n"
             "1 out of 1 hunk FAILED -- saving rejects to file src/config/ConfigManager.cpp.rej\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "patch" in issues[0][2].lower()
         assert "fix-build.patch" in issues[0][2]
@@ -832,7 +832,7 @@ class TestAnalyzeMockBuildLog:
             "1 out of 1 hunk FAILED -- saving rejects to file src/config/ConfigManager.cpp.rej\n"
             "1 out of 1 hunk FAILED -- saving rejects to file src/finders/desktop/DesktopFinder.cpp.rej\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         # Should detect both failures
         assert len(issues) >= 2
         assert any("ConfigManager.cpp" in i[2] for i in issues)
@@ -846,7 +846,7 @@ class TestAnalyzeMockBuildLog:
             "+ /usr/bin/patch -p1\n"
             "2 out of 3 hunks FAILED -- saving rejects to file file.c.rej\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) >= 1
         assert "file.c" in issues[0][2]
 
@@ -856,7 +856,7 @@ class TestAnalyzeMockBuildLog:
         log_file.write_text(
             "1 out of 1 hunk FAILED -- saving rejects to file some/path/file.cpp.rej\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         assert len(issues) == 1
         assert "file.cpp" in issues[0][2]
         assert "incompatible" in issues[0][2]
@@ -870,7 +870,7 @@ class TestAnalyzeMockBuildLog:
             "1 out of 1 hunk FAILED -- saving rejects to file CMakeLists.txt.rej\n"
             "error: Bad exit status from /var/tmp/rpm-tmp.QRjhnW (%prep)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         # Should have both the patch failure and the bad exit status issues
         assert len(issues) >= 2
         patch_issues = [i for i in issues if "patch failed to apply" in i[2]]
@@ -891,7 +891,7 @@ class TestAnalyzeMockBuildLog:
             "1 out of 1 hunk ignored\n"
             "error: Bad exit status from /var/tmp/rpm-tmp.FONkHT (%prep)\n"
         )
-        issues = _analyze_mock_build_log(log_file)
+        issues = analyze_mock_build_log(log_file)
         # Should detect the "No file to patch" context
         bad_exit = [i for i in issues if "failed during source preparation" in i[2]]
         assert len(bad_exit) > 0
@@ -899,13 +899,13 @@ class TestAnalyzeMockBuildLog:
 
 
 class TestSuggestProviders:
-    """Test the _suggest_providers function."""
+    """Test the suggest_providers function."""
 
     @patch("lib.log_analysis._dnf_whatprovides")
     def test_suggests_pkgconfig_method(self, mock_whatprovides):
         """Should call dnf whatprovides with pkgconfig() format."""
         mock_whatprovides.return_value = ["some-package"]
-        result = _suggest_providers("openssl", "pkgconfig")
+        result = suggest_providers("openssl", "pkgconfig")
         mock_whatprovides.assert_called_with("pkgconfig(openssl)")
         assert result == ["some-package"]
 
@@ -913,14 +913,14 @@ class TestSuggestProviders:
     def test_suggests_cmake_method(self, mock_whatprovides):
         """#COPR-0029: CMake config packages are provided as cmake(X)."""
         mock_whatprovides.return_value = ["qt6-qtbase-devel"]
-        result = _suggest_providers("Qt6", "cmake")
+        result = suggest_providers("Qt6", "cmake")
         mock_whatprovides.assert_called_with("cmake(Qt6)")
         assert result == ["qt6-qtbase-devel"]
 
     @patch("lib.log_analysis._dnf_whatprovides")
     def test_suggests_cmake_method_falls_back_to_lowercase(self, mock_whatprovides):
         mock_whatprovides.side_effect = [[], ["glslang-devel"]]
-        result = _suggest_providers("Glslang", "cmake")
+        result = suggest_providers("Glslang", "cmake")
         assert [c.args[0] for c in mock_whatprovides.call_args_list] == [
             "cmake(Glslang)",
             "cmake(glslang)",
@@ -931,7 +931,7 @@ class TestSuggestProviders:
     def test_suggests_library_method(self, mock_whatprovides):
         """Should call dnf whatprovides with lib*.so format."""
         mock_whatprovides.return_value = ["libssl-devel"]
-        result = _suggest_providers("ssl", "library")
+        result = suggest_providers("ssl", "library")
         mock_whatprovides.assert_called_with("libssl.so*")
         assert result == ["libssl-devel"]
 
@@ -939,7 +939,7 @@ class TestSuggestProviders:
     def test_suggests_builddep_method(self, mock_whatprovides):
         """Should try exact match first for builddep."""
         mock_whatprovides.return_value = ["missing-dep"]
-        result = _suggest_providers("missing-dep", "builddep")
+        result = suggest_providers("missing-dep", "builddep")
         mock_whatprovides.assert_called_with("missing-dep")
         assert result == ["missing-dep"]
 
@@ -949,7 +949,7 @@ class TestSuggestProviders:
         """Should fallback to search when exact match fails for builddep."""
         mock_whatprovides.return_value = []
         mock_search.return_value = ["similar-dep"]
-        result = _suggest_providers("missing-dep", "builddep")
+        result = suggest_providers("missing-dep", "builddep")
         mock_search.assert_called_with("missing-dep")
         assert result == ["similar-dep"]
 
@@ -957,7 +957,7 @@ class TestSuggestProviders:
     def test_suggests_rpm_macro_method(self, mock_whatprovides):
         """Should call dnf whatprovides with */macros format."""
         mock_whatprovides.return_value = ["cmake-rpm-macros"]
-        result = _suggest_providers("cmake", "rpm_macro")
+        result = suggest_providers("cmake", "rpm_macro")
         mock_whatprovides.assert_called_with("*/macros.cmake")
         assert result == ["cmake-rpm-macros"]
 
@@ -965,26 +965,26 @@ class TestSuggestProviders:
     def test_suggests_binary_method(self, mock_whatprovides):
         """Should call dnf whatprovides with full path for binary."""
         mock_whatprovides.return_value = ["cmake"]
-        result = _suggest_providers("/usr/bin/cmake", "binary")
+        result = suggest_providers("/usr/bin/cmake", "binary")
         mock_whatprovides.assert_called_with("/usr/bin/cmake")
 
     @patch("lib.log_analysis._dnf_whatprovides")
     def test_suggests_tool_method(self, mock_whatprovides):
         """Should call dnf whatprovides with */bin format for tool."""
         mock_whatprovides.return_value = ["gcc"]
-        result = _suggest_providers("gcc", "tool")
+        result = suggest_providers("gcc", "tool")
         mock_whatprovides.assert_called_with("*/bin/gcc")
 
     @patch("lib.log_analysis._dnf_search")
     def test_suggests_search_method(self, mock_search):
         """Should call dnf search for search method."""
         mock_search.return_value = ["iniparser-dev"]
-        result = _suggest_providers("iniparser", "search")
+        result = suggest_providers("iniparser", "search")
         mock_search.assert_called_with("iniparser")
 
     def test_suggests_unknown_method_returns_empty(self):
         """Should return empty list for unknown method."""
-        result = _suggest_providers("anything", "unknown")
+        result = suggest_providers("anything", "unknown")
         assert result == []
 
 
@@ -1096,7 +1096,7 @@ class TestPrintStageIssues:
         assert "/tmp/test.log:1:" in captured.out
         assert "error line" in captured.out
 
-    @patch("lib.log_analysis._suggest_providers")
+    @patch("lib.log_analysis.suggest_providers")
     def test_prints_suggested_packages(self, mock_suggest, capsys):
         """Should print suggested packages when available."""
         mock_suggest.return_value = ["suggested-pkg"]
@@ -1120,10 +1120,10 @@ class TestPrintStageIssues:
 
 
 class TestAnalyzeMockRootLog:
-    """Test _analyze_mock_root_log (-21-mock-root.log)."""
+    """Test analyze_mock_root_log (-21-mock-root.log)."""
 
     def test_nonexistent_log_file(self, tmp_path):
-        issues = _analyze_mock_root_log(tmp_path / "missing.log")
+        issues = analyze_mock_root_log(tmp_path / "missing.log")
         assert issues == []
 
     def test_disk_space_transaction_failure(self, tmp_path):
@@ -1133,7 +1133,7 @@ class TestAnalyzeMockRootLog:
             "DEBUG util.py:461:  - installing package hyprland-0.56.2-7.fc44.x86_64 "
             "needs 142MB more space on the / filesystem\n"
         )
-        issues = _analyze_mock_root_log(log_file)
+        issues = analyze_mock_root_log(log_file)
         assert len(issues) == 1
         assert "insufficient disk space" in issues[0][2]
         assert "hyprland-0.56.2-7.fc44.x86_64 needs 142MB on the /" in issues[0][2]
@@ -1151,7 +1151,7 @@ class TestAnalyzeMockRootLog:
             "DEBUG util.py:461:    - nothing provides libdisplay-info.so.2()(64bit) needed "
             "by aquamarine-0.14.0-10.fc43.x86_64 from _work_localrepo\n"
         )
-        issues = _analyze_mock_root_log(log_file)
+        issues = analyze_mock_root_log(log_file)
         assert len(issues) == 1
         lineno, raw_line, msg, dep, method = issues[0]
         assert lineno == 1
@@ -1172,19 +1172,19 @@ class TestAnalyzeMockRootLog:
             "DEBUG util.py:461:    - nothing provides libbar.so.2()(64bit) needed by "
             "bar-1.0-1.fc44.x86_64 from fedora\n"
         )
-        issues = _analyze_mock_root_log(log_file)
+        issues = analyze_mock_root_log(log_file)
         assert len(issues) == 1
         assert "make clean-mock-cache" not in issues[0][2]
 
     def test_log_without_errors(self, tmp_path):
         log_file = tmp_path / "21-mock-root.log"
         log_file.write_text("DEBUG util.py:461:  Repositories loaded.\n")
-        issues = _analyze_mock_root_log(log_file)
+        issues = analyze_mock_root_log(log_file)
         assert issues == []
 
 
 class TestAnalyzeCoprLog:
-    """Test _analyze_copr_log (-30-copr.log)."""
+    """Test analyze_copr_log (-30-copr.log)."""
 
     def test_synchronous_build_failure_detected(self, tmp_path):
         """Real-world fixture: synchronous copr-cli watched the build to failure."""
@@ -1201,7 +1201,7 @@ class TestAnalyzeCoprLog:
             "Build error: Build(s) 10798066 failed.\n"
             "[exit: 4]\n"
         )
-        issues = _analyze_copr_log(log_file)
+        issues = analyze_copr_log(log_file)
         assert len(issues) == 1
         lineno, raw_line, msg, dep, method = issues[0]
         assert dep == "10798066"
@@ -1219,15 +1219,15 @@ class TestAnalyzeCoprLog:
             "Created builds: 123\n"
             "[exit: 0]\n"
         )
-        assert _analyze_copr_log(log_file) == []
+        assert analyze_copr_log(log_file) == []
 
     def test_nonexistent_log_file(self, tmp_path):
         """Nonexistent log file returns empty list."""
-        assert _analyze_copr_log(tmp_path / "nonexistent.log") == []
+        assert analyze_copr_log(tmp_path / "nonexistent.log") == []
 
 
 class TestAnalyzeCoprChrootSummary:
-    """Test _analyze_copr_chroot_summary (-30-copr-chroots.log)."""
+    """Test analyze_copr_chroot_summary (-30-copr-chroots.log)."""
 
     def test_mixed_results_flagged(self, tmp_path):
         """Some chroots failed, others succeeded -- the actionable case."""
@@ -1240,7 +1240,7 @@ class TestAnalyzeCoprChrootSummary:
             "fedora-43-x86_64 failed https://download.example.com/f43x86/\n"
             "fedora-43-aarch64 failed https://download.example.com/f43aarch/\n"
         )
-        issues = _analyze_copr_chroot_summary(log_file)
+        issues = analyze_copr_chroot_summary(log_file)
         assert len(issues) == 1
         msg = issues[0][2]
         assert "fedora-43-x86_64" in msg
@@ -1255,7 +1255,7 @@ class TestAnalyzeCoprChrootSummary:
             "fedora-44-x86_64 failed https://download.example.com/f44/\n"
             "fedora-43-x86_64 failed https://download.example.com/f43/\n"
         )
-        assert _analyze_copr_chroot_summary(log_file) == []
+        assert analyze_copr_chroot_summary(log_file) == []
 
     def test_all_succeeded_no_issues(self, tmp_path):
         """Every chroot succeeded -- nothing to report."""
@@ -1263,18 +1263,18 @@ class TestAnalyzeCoprChrootSummary:
         log_file.write_text(
             "fedora-44-x86_64 succeeded https://download.example.com/f44/\n"
         )
-        assert _analyze_copr_chroot_summary(log_file) == []
+        assert analyze_copr_chroot_summary(log_file) == []
 
     def test_nonexistent_log_file(self, tmp_path):
         """Nonexistent log file (no failure was ever fetched) returns empty list."""
-        assert _analyze_copr_chroot_summary(tmp_path / "nonexistent.log") == []
+        assert analyze_copr_chroot_summary(tmp_path / "nonexistent.log") == []
 
 
 class TestAnalyzeCoprChrootLogs:
-    """Test _analyze_copr_chroot_logs (31-copr-<chroot>.log, per package dir)."""
+    """Test analyze_copr_chroot_logs (31-copr-<chroot>.log, per package dir)."""
 
     def test_reuses_mock_build_analyzer_per_chroot(self, tmp_path):
-        """Each 31-copr-<chroot>.log is parsed by _analyze_mock_build_log."""
+        """Each 31-copr-<chroot>.log is parsed by analyze_mock_build_log."""
         pkg_dir = tmp_path / "Hyprland-git"
         pkg_dir.mkdir()
         (pkg_dir / "31-copr-fedora-43-x86_64.log").write_text(
@@ -1283,7 +1283,7 @@ class TestAnalyzeCoprChrootLogs:
         )
         (pkg_dir / "31-copr-fedora-44-x86_64.log").write_text("")  # succeeded, no issues
 
-        results = _analyze_copr_chroot_logs(pkg_dir)
+        results = analyze_copr_chroot_logs(pkg_dir)
 
         assert list(results.keys()) == ["fedora-43-x86_64"]
         assert any("starts_with" in msg for _, _, msg, _, _ in results["fedora-43-x86_64"])
@@ -1292,11 +1292,11 @@ class TestAnalyzeCoprChrootLogs:
         """Package dir with no 31-copr-*.log files (nothing fetched)."""
         pkg_dir = tmp_path / "pkg"
         pkg_dir.mkdir()
-        assert _analyze_copr_chroot_logs(pkg_dir) == {}
+        assert analyze_copr_chroot_logs(pkg_dir) == {}
 
     def test_nonexistent_dir_returns_empty(self, tmp_path):
         """Package log dir doesn't exist at all."""
-        assert _analyze_copr_chroot_logs(tmp_path / "nonexistent") == {}
+        assert analyze_copr_chroot_logs(tmp_path / "nonexistent") == {}
 
 
 class TestReportFailures:
@@ -1429,7 +1429,7 @@ class TestFileListLogHelpers:
     def test_glob_not_found_is_an_issue_too(self, tmp_path):
         log = tmp_path / "21-mock-build.log"
         log.write_text(NOT_FOUND_LOG)
-        paths = [i[3] for i in _analyze_mock_build_log(log)]
+        paths = [i[3] for i in analyze_mock_build_log(log)]
         assert "/usr/share/wayland-sessions/hyprland*.desktop" in paths
 
     def test_missing_files(self, tmp_path):

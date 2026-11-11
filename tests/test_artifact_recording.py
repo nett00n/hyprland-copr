@@ -280,3 +280,38 @@ class TestMissingSrpmArtifactGuard:
         copr_entry = build_db.get_stage(pkg, "copr", TARGET)
         assert copr_entry["state"] == "skipped"
         assert copr_entry["reason"] == "srpm artifact missing"
+
+
+class TestVendorSkipRowsHaveNoLog:
+    """#BUG-0092: skip/hit paths do no vendor work, so they write no log file and
+    their stage row carries log=NULL (never a dangling path to a missing or empty
+    05-vendor.log); the report renderer treats NULL as "no log" (`row.get("log") or ""`).
+    """
+
+    @pytest.fixture(autouse=True)
+    def isolate(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(paths, "VENDOR_STORE_DIR", tmp_path / "vendor-store")
+        monkeypatch.setattr(paths, "RUNS_LOG_DIR", tmp_path / "logs" / "runs")
+
+    def _run(self, tmp_path, meta, run_id, precreate=False):
+        sources_dir = tmp_path / "SOURCES"
+        sources_dir.mkdir(exist_ok=True)
+        if precreate:
+            from lib.vendor import vendor_tarball_path
+
+            vendor_tarball_path("test-pkg", "1.0.0", sources_dir).write_bytes(b"x")
+        with patch.object(stage_vendor, "ROOT", tmp_path), \
+             patch.object(stage_vendor, "SOURCES_DIR", sources_dir):
+            assert stage_vendor.run_for_package("test-pkg", meta, "44", TARGET, run_id)
+        return build_db.get_stage("test-pkg", "vendor", TARGET)
+
+    def test_not_vendored(self, tmp_path, run_id):
+        row = self._run(tmp_path, {"version": "1.0.0"}, run_id)
+        assert row["state"] == "skipped"
+        assert row.get("log") is None
+
+    def test_tarball_exists(self, tmp_path, run_id):
+        meta = {"version": "1.0.0", "build_requires": ["golang"]}
+        row = self._run(tmp_path, meta, run_id, precreate=True)
+        assert row["state"] == "success"
+        assert row.get("log") is None

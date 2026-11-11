@@ -476,3 +476,40 @@ class TestExportSnapshot:
         second = build_db.export_snapshot()
 
         assert first == second
+
+
+class TestPrunePinnedBelowMax:
+    def test_pinned_below_max_keeps_current_row(self, tmp_path):
+        """#BUG-0119: a rollback leaves a higher-version row; the current
+        stage_results version's row and file must survive."""
+        _artifact(tmp_path, "a-0.8.17.src.rpm", "a", "srpm", 100, 1, version="0.8.17-1.fc44")
+        _artifact(tmp_path, "a-0.8.15.src.rpm", "a", "srpm", 100, 2, version="0.8.15-1.fc44")
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("a", "srpm", TARGET, run_id, "success", version="0.8.15-1.fc44")
+
+        db_artifacts.prune(confirm=True)
+
+        assert (tmp_path / "a-0.8.15.src.rpm").exists()
+        assert not (tmp_path / "a-0.8.17.src.rpm").exists()
+        rows = build_db.artifacts(package="a", kind="srpm")
+        assert [r["version"] for r in rows] == ["0.8.15-1.fc44"]
+
+    def test_vendor_pinned_below_max_keeps_current_row(self, tmp_path):
+        _artifact(tmp_path, "v2.tar.gz", "a", "vendor", 100, 1, version="2-1.fc44")
+        _artifact(tmp_path, "v1.tar.gz", "a", "vendor", 100, 2, version="1-1.fc44")
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("a", "vendor", TARGET, run_id, "success", version="1-1.fc44")
+
+        db_artifacts.prune(confirm=True)
+
+        assert (tmp_path / "v1.tar.gz").exists()
+        assert not (tmp_path / "v2.tar.gz").exists()
+
+    def test_without_stage_row_still_keeps_highest(self, tmp_path):
+        _artifact(tmp_path, "a-1.src.rpm", "a", "srpm", 100, 1, version="1-1.fc44")
+        _artifact(tmp_path, "a-2.src.rpm", "a", "srpm", 100, 2, version="2-1.fc44")
+
+        db_artifacts.prune(confirm=True)
+
+        assert (tmp_path / "a-2.src.rpm").exists()
+        assert not (tmp_path / "a-1.src.rpm").exists()

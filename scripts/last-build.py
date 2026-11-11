@@ -21,11 +21,11 @@ from typing import Any
 
 from lib import build_db
 from lib.log_analysis import (
-    _analyze_copr_log,
-    _analyze_mock_build_log,
-    _analyze_mock_log,
-    _analyze_mock_root_log,
-    _analyze_srpm_log,
+    analyze_copr_log,
+    analyze_mock_build_log,
+    analyze_mock_log,
+    analyze_mock_root_log,
+    analyze_srpm_log,
 )
 from lib.paths import ROOT
 
@@ -36,13 +36,13 @@ ERROR_LINE_RE = re.compile(r"error|fail", re.IGNORECASE)
 
 # stage -> [(log file name, analyzer)] searched, in order, for the failure excerpt.
 _STAGE_ANALYZERS = {
-    "srpm": [("10-srpm.log", _analyze_srpm_log)],
+    "srpm": [("10-srpm.log", analyze_srpm_log)],
     "mock": [
-        ("20-mock.log", _analyze_mock_log),
-        ("21-mock-build.log", _analyze_mock_build_log),
-        ("21-mock-root.log", _analyze_mock_root_log),
+        ("20-mock.log", analyze_mock_log),
+        ("21-mock-build.log", analyze_mock_build_log),
+        ("21-mock-root.log", analyze_mock_root_log),
     ],
-    "copr": [("30-copr.log", _analyze_copr_log)],
+    "copr": [("30-copr.log", analyze_copr_log)],
 }
 
 

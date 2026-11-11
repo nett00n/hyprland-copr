@@ -1,5 +1,6 @@
 """Tests for lib.vendor module."""
 
+import io
 import sys
 import tarfile
 import tempfile
@@ -150,16 +151,29 @@ class TestDownload:
         content = b"file content"
 
         with patch("urllib.request.urlopen") as mock_urlopen:
-            mock_response = Mock()
-            mock_response.read.return_value = content
-            mock_response.__enter__ = Mock(return_value=mock_response)
-            mock_response.__exit__ = Mock(return_value=None)
-            mock_urlopen.return_value = mock_response
+            mock_urlopen.return_value = io.BytesIO(content)
 
             _download("http://example.com/file.tar.gz", dest)
 
             assert dest.exists()
             assert dest.read_bytes() == content
+
+    def test_streams_in_chunks_not_one_read(self, tmp_path):
+        """#BUG-0091: the body is copied in bounded chunks, never read whole."""
+        dest = tmp_path / "big.tar.gz"
+        content = b"x" * (3 * 1024 * 1024)
+        reads: list[int | None] = []
+
+        class _Resp(io.BytesIO):
+            def read(self, size=-1):
+                reads.append(size)
+                return super().read(size)
+
+        with patch("urllib.request.urlopen", return_value=_Resp(content)):
+            _download("http://example.com/big.tar.gz", dest)
+
+        assert dest.read_bytes() == content
+        assert all(r is not None and r > 0 for r in reads)
 
     def test_wraps_urlerror_in_vendor_error(self, tmp_path):
         """Should wrap URLError in VendorError."""

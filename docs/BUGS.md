@@ -5,7 +5,7 @@ New-feature ideas go in `docs/TODO.md` instead (promoted to a `docs/features/` d
 once substantial). GitHub issues are for reporter-facing items (someone else's
 bug/request); this file is the maintainer's own log and may cite issue numbers.
 Entries are deleted when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are
-never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0120**.
+never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0122**.
 
 This file absorbed `docs/TODO.md`'s former defect/debt/chore entries on 2026-09-15
 when `docs/` adopted `docs/DOCS-DRIVEN-DEVELOPMENT.md` — see `docs/ID-MIGRATION.md`
@@ -71,6 +71,17 @@ Shipped behavior doing the wrong thing.
   case is exactly what it gets wrong. Fix: never treat a row as stale when its
   version equals the (package, target)'s current `stage_results` version, mirroring
   `stage-mock.py:prune_local_repo`'s `keep` set (#BUG-0115) [P2/D2]
+
+- #BUG-0121 `bare` (0.4, upstream Cargo.toml 0.5.0) depends on `pipewire-native` and
+  `pipewire-native-spa` from a git source (`gitlab.freedesktop.org/pipewire/
+  pipewire-native-rs`, rev `bc7fb92`), used only by `src/blocks/volume.rs`. They can't
+  be vendored offline, so the vendor stage fails on every chroot ("git-source crate(s)
+  unresolvable offline", runs 501-503). Disabled via `fedora.{43,44,45}.skip: true`
+  until either upstream publishes the crate to crates.io or `pipewire-native-rs` is
+  packaged as its own RPM (the route `docs/packaging.md` "Rust vendoring" recommends);
+  dropping the volume block with `build.vendor_prep` was rejected -- it ships a
+  different bar and the patch would break on upstream bumps. Remove the skip once
+  fixed [P2/D4]
 
 ### Docs / templates
 

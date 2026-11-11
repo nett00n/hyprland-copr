@@ -53,6 +53,16 @@ class TestSortBlock:
         result = _sort_block(lines)
         assert result == ["  - Foo\n"]
 
+    def test_files_dedup_is_case_sensitive(self):
+        # #BUG-0120: %{_bindir}/Hyprland and %{_bindir}/hyprland are distinct files
+        lines = ["  - '%{_bindir}/hyprland'\n", "  - '%{_bindir}/Hyprland'\n"]
+        result = _sort_block(lines, case_sensitive_dedup=True)
+        assert sorted(result) == sorted(lines)
+
+    def test_files_dedup_still_drops_exact_and_quote_duplicates(self):
+        lines = ["  - '%{_bindir}/foo'\n", "  - \"%{_bindir}/foo\"\n"]
+        assert len(_sort_block(lines, case_sensitive_dedup=True)) == 1
+
     def test_comments_float_to_top(self):
         lines = ["  - zeta\n", "  # a comment\n", "  - alpha\n"]
         result = _sort_block(lines)

@@ -13,11 +13,16 @@ import re
 import sqlite3
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, get_args
 
 from . import paths
 
-STAGES = ["validate", "spec", "vendor", "srpm", "mock", "copr"]
+# #BUG-0094: the type half of STAGES / the state vocabulary, so a typo in a
+# stage or state literal is a mypy error rather than a silent mismatch.
+Stage = Literal["validate", "spec", "vendor", "srpm", "mock", "copr"]
+State = Literal["success", "failed", "unknown", "skipped", "pending", "running"]
+
+STAGES: list[Stage] = list(get_args(Stage))
 
 SCHEMA_VERSION = 4
 
@@ -312,8 +317,8 @@ def latest_run(target: str) -> dict[str, Any] | None:
 # --- stage_results ---------------------------------------------------------
 
 
-def get_stage(package: str, stage: str, target: str) -> dict[str, Any] | None:
-    """Return the stage entry dict for (package, stage, target), or None."""
+def get_stage(package: str, stage: Stage, target: str) -> dict[str, Any] | None:
+    """#BUG-0094: Return the stage entry dict for (package, stage, target), or None."""
     conn = connect()
     row = conn.execute(
         "SELECT * FROM stage_results WHERE package = ? AND stage = ? AND target = ?",
@@ -466,13 +471,13 @@ def last_success(package: str, stage: str, target: str) -> dict[str, Any] | None
 
 def set_stage(
     package: str,
-    stage: str,
+    stage: Stage,
     target: str,
     run_id: int | None,
-    state: str,
+    state: State,
     **fields: Any,
 ) -> None:
-    """Insert or wholesale-replace a stage row.
+    """#BUG-0094: Insert or wholesale-replace a stage row.
 
     Mirrors `build_status["stages"][stage][pkg] = entry` in the old code: any
     column not passed in `fields` is reset (including `hashes_json`, which is
@@ -594,7 +599,7 @@ def update_reason(
 def update_state(
     package: str, stage: str, target: str, state: str, run_id: int | None = None
 ) -> None:
-    """Update only the `state` column of an existing row. No-op if the row is absent.
+    """#BUG-0117: Update only the `state` column of an existing row. No-op if the row is absent.
 
     Used by poll_copr_status: an async copr submission is re-polled later and
     only its state changes -- everything else (hashes, log path, build_id)
@@ -609,6 +614,18 @@ def update_state(
         """,
         (state, now_epoch(), package, stage, target),
     )
+    if state == "success":
+        # #BUG-0117: a poll-resolved success is a real success; record it as
+        # set_stage() would so last_success_* is not left NULL.
+        conn.execute(
+            """
+            UPDATE stage_results SET last_success_version = version,
+                last_success_log = log, last_success_build_id = build_id,
+                last_success_at = ?
+            WHERE package = ? AND stage = ? AND target = ?
+            """,
+            (now_epoch(), package, stage, target),
+        )
     if run_id is not None:
         row = conn.execute(
             "SELECT * FROM stage_results WHERE package = ? AND stage = ? AND target = ?",
@@ -634,14 +651,14 @@ def update_state(
 
 def finalize_stage(
     package: str,
-    stage: str,
+    stage: Stage,
     target: str,
     started_at: int,
     hashes: dict[str, Any],
     reason: str | None = None,
     update_hashes: bool = True,
 ) -> None:
-    """DB form of the old `inject_stage_meta`: stamp started_at, maybe hashes/reason,
+    """#BUG-0094, #BUG-0117: DB form of the old `inject_stage_meta`: stamp started_at, maybe hashes/reason,
     and clear force_run. No-op if the row doesn't exist.
 
     Mirrors the refined `started_at`/`reason` into this run's `stage_history` row
@@ -658,7 +675,11 @@ def finalize_stage(
 
     set_clauses = ["started_at = ?", "force_run = 0", "updated_at = ?"]
     params: list[Any] = [started_at, now_epoch()]
-    if update_hashes and row["state"] == "success":
+    # #BUG-0117: an async copr submission is finalized `unknown`; its hashes
+    # must be on the row so a later poll-flip to `success` is a cache hit.
+    if update_hashes and (
+        row["state"] == "success" or (stage == "copr" and row["state"] == "unknown")
+    ):
         set_clauses.append("hashes_json = ?")
         params.append(json.dumps(hashes, sort_keys=True))
     if reason is not None:

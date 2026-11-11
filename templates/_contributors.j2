@@ -1,3 +1,3 @@
-{% for c in contributors -%}
-- {% if c.github_user %}[{{ c.name }}](https://github.com/{{ c.github_user }}){% else %}{{ c.name }}{% endif %}
+{% for c in contributors %}
+- {{ "[%s](https://github.com/%s)" % (c.name, c.github_user) if c.github_user else c.name }}
 {% endfor %}

@@ -1,7 +1,7 @@
 
 Name:           neowall
 Version:        0.8.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        GPU-accelerated live wallpaper engine using GLSL shaders
 License:        MIT
 URL:            https://github.com/1ay1/neowall
@@ -21,6 +21,7 @@ BuildRequires:  pkgconfig(wayland-egl)
 BuildRequires:  pkgconfig(x11)
 BuildRequires:  pkgconfig(xkbcommon)
 BuildRequires:  pkgconfig(xrandr)
+BuildRequires:  systemd-rpm-macros
 
 
 Recommends:     pulseaudio-utils
@@ -68,7 +69,7 @@ Development files for neowall.
 %files devel
 
 %changelog
-* Mon Oct 26 2026 nett00n <copr@nett00n.org> - 0.8.0-2
+* Mon Oct 26 2026 nett00n <copr@nett00n.org> - 0.8.0-3
 
 - release: neowall 0.8.0
 - Smoother animation, and a rewritten core loop.

@@ -90,9 +90,10 @@ def vendor_tarball_path(pkg_name: str, version: str, sources_dir: Path) -> Path:
 
 
 def _download(url: str, dest: Path) -> None:
+    """Stream `url` to `dest` in chunks (#BUG-0091), never holding it in memory."""
     try:
-        with urllib.request.urlopen(url, timeout=60) as resp:
-            dest.write_bytes(resp.read())
+        with urllib.request.urlopen(url, timeout=60) as resp, open(dest, "wb") as out:
+            shutil.copyfileobj(resp, out)
     except (urllib.error.URLError, urllib.error.HTTPError) as e:
         raise VendorError(f"failed to download {url}: {e}") from e
     except OSError as e:

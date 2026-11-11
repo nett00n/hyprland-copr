@@ -6,7 +6,6 @@ Generates vendor tarballs for Rust packages with pure crates.io dependencies
 
 import json
 import shutil
-import subprocess
 import tarfile
 from pathlib import Path
 
@@ -39,6 +38,7 @@ def _find_git_source_crates(vendor_dir: Path) -> list[str]:
     return found
 
 
+# #BUG-0084
 def generate(
     pkg_name: str,
     pkg_meta: dict,
@@ -58,19 +58,12 @@ def generate(
 
     _log = log_fn(log_path)
 
-    # Check cargo version
-    try:
-        check = subprocess.run(
-            ["cargo", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-        if check.returncode != 0:
-            raise VendorError(f"cargo check failed: {check.stderr.strip()}")
-    except FileNotFoundError as e:
-        raise VendorError("'cargo' not found in PATH") from e
+    # Check cargo version (#BUG-0084: via run_cmd, not a hand-rolled subprocess)
+    ok, _, stderr = run_cmd(["cargo", "--version"], timeout=10)
+    if not ok:
+        if stderr.startswith("command not found"):
+            raise VendorError("'cargo' not found in PATH")
+        raise VendorError(f"cargo check failed: {stderr.strip()}")
 
     # Handle Rust subdirectory if specified
     rust_subdir = pkg_meta.get("build", {}).get("rust_subdir", "")

@@ -217,3 +217,51 @@ class TestPerVersionConditionalPrep:
         for fedora_version in ("43", "44", "45"):
             result = apply_os_overrides(pkg, fedora_version)
             assert result["build"]["prep"] == pkg["build"]["prep"]
+
+
+def _load_gen_spec():
+    import importlib.util
+
+    path = Path(__file__).parent.parent / "scripts" / "gen-spec.py"
+    spec = importlib.util.spec_from_file_location("gen_spec_under_test", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestGenSpecUsesLib:
+    """#BUG-0074: gen-spec.py reuses lib/github.py + lib.config instead of copies."""
+
+    def test_helpers_are_the_lib_objects(self):
+        import lib.config
+        import lib.github
+
+        gs = _load_gen_spec()
+        assert gs.get_packager is lib.config.get_packager
+        assert gs.build_changelog is lib.github.build_changelog
+        assert gs.fetch_github_release is lib.github.fetch_github_release
+        assert gs.load_release_cache is lib.github.load_release_cache
+        assert gs.save_release_cache is lib.github.save_release_cache
+
+    def test_build_context_bundled_deps_and_subdir(self, monkeypatch):
+        gs = _load_gen_spec()
+        monkeypatch.setattr(gs, "fetch_github_release", lambda url, ver: None)
+        monkeypatch.setattr(gs, "load_release_cache", lambda url, ver: None)
+        pkg = {
+            "version": "1.0",
+            "summary": "s",
+            "license": "MIT",
+            "url": "https://example.com/x",
+            "description": "d",
+            "source": {
+                "archives": ["a.tar.gz"],
+                "bundled_deps": [
+                    {"name": "dep", "version": "2", "url": "https://e.com/d.tar.gz"}
+                ],
+            },
+            "build": {"system": "cmake", "subdir": "sub"},
+        }
+        ctx = gs.build_context("x", pkg, "P <p@e.com>", {})
+        assert ctx["bundled_deps"][0]["source_index"] == 1
+        assert "pushd sub" in ctx["build_cmd"]
+        assert "-DFETCHCONTENT_FULLY_DISCONNECTED=ON" in ctx["build_cmd"]

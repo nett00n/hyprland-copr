@@ -45,15 +45,11 @@ the order only matters for the logs `copr-wait` fetches.
 
 ## Quirks & Decisions
 
-- Quirk: `{% if c.github_user %}...{% endif %}` in `_contributors.j2` is a block tag
-  under `trim_blocks=True`, eating the newline after `{% endif %}` — contributor
-  entries render concatenated on one line, no `-` before the second name. Compounded
-  by `collect_contributors()` deduping by name only, so the same person committing
-  under two `user.name` values renders as two entries. Masked in CI because
-  `actions/checkout@v4`'s shallow clone only sees one git author; `repo.yaml`'s
-  `sections.contributors: false` is a workaround, not a fix.
-  Proposed: `{%- endif -%}` (or restructure without the inline `if`), plus dedupe by
-  email instead of name. (BUG-0030)
+- Decision: `_contributors.j2` renders each entry with an inline `{{ ... if ... else ... }}`
+  expression instead of an `{% if %}` block tag, because `trim_blocks=True` would eat
+  the newline after `{% endif %}` and concatenate entries onto one line. Contributors
+  are deduped by commit email (not `user.name`), so one person committing under two
+  names renders once, under their most recent name. (BUG-0030)
 - Decision: a `groups.yaml` package missing from `packages.yaml` is skipped silently
   (e.g. a group entry for a package that was never added), matching the old behavior
   where it was skipped for lacking build rows.

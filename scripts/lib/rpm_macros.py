@@ -8,6 +8,9 @@ PREFIXES: list[tuple[str, str]] = [
     ("/usr/lib/systemd/user", "%{_userunitdir}"),
     ("/usr/lib/sysusers.d", "%{_sysusersdir}"),
     ("/usr/lib/tmpfiles.d", "%{_tmpfilesdir}"),
+    # #BUG-0047: explicit so /usr/lib/x <-> %{_prefix}/lib/x is symmetric (there is
+    # no dedicated macro for /usr/lib; /usr/lib64 is %{_libdir}).
+    ("/usr/lib", "%{_prefix}/lib"),
     ("/usr/share/doc", "%{_docdir}"),
     ("/usr/share/info", "%{_infodir}"),
     ("/usr/share/man", "%{_mandir}"),
@@ -44,6 +47,7 @@ def normalize_macro_to_abs(path: str) -> str:
     return path
 
 
+# #BUG-0047
 def normalize_file_entry(entry: str, reverse: bool) -> str:
     """Normalize a file entry, handling leading RPM directives.
 
@@ -59,4 +63,11 @@ def normalize_file_entry(entry: str, reverse: bool) -> str:
         m = re.match(r"^((?:%[^\s/]+\s+)*)(/\S.*)", entry)
         if m:
             return m.group(1) + normalize_abs_to_macro(m.group(2))
+        # #BUG-0047: already macro form but non-canonical (e.g. %{_prefix}/bin/x):
+        # round-trip through the absolute path so it lands on the canonical macro.
+        m = re.match(r"^((?:%[^\s{][^\s]*\s+)*)(%\{[^}]+\}.*)", entry)
+        if m:
+            as_abs = normalize_macro_to_abs(m.group(2))
+            if as_abs.startswith("/"):
+                return m.group(1) + normalize_abs_to_macro(as_abs)
     return entry

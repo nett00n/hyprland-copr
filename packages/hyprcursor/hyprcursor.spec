@@ -1,11 +1,11 @@
 
 Name:           hyprcursor
-Version:        0.1.13
-Release:        17%{?dist}
+Version:        0.1.14
+Release:        1%{?dist}
 Summary:        A library and toolkit for the Hyprland cursor format
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprcursor
-Source0:        https://github.com/hyprwm/hyprcursor/archive/refs/tags/v0.1.13.tar.gz#/hyprcursor-0.1.13.tar.gz
+Source0:        https://github.com/hyprwm/hyprcursor/archive/refs/tags/v0.1.14.tar.gz#/hyprcursor-0.1.14.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
@@ -29,8 +29,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.1.13
-Commit:            44e91d467bdad8dcf8bbd2ac7cf49972540980a5
+Tag:               v0.1.14
+Commit:            9e6916077f3c6c20419e8e405c51952fc37aaa5b
 
 %prep
 %autosetup -p1
@@ -61,6 +61,6 @@ Development files for hyprcursor.
 %{_libdir}/pkgconfig/hyprcursor.pc
 
 %changelog
-* Thu Jul 31 2025 nett00n <copr@nett00n.org> - 0.1.13-17
+* Mon Nov 09 2026 nett00n <copr@nett00n.org> - 0.1.14-1
 
-- version: bump to 0.1.13
+- VERSION: bump to 0.1.14

@@ -17,6 +17,12 @@ after.
 | `make fmt` | `fmt-ruff` + `fmt-yaml` + `normalize-paths` + `sort-lists` |
 | `make pre-commit` | `validate-packages` + `test` + `lint` + `fmt` (`COVERAGE=1` adds a coverage report) |
 
+`make fmt`'s `sort-lists` step sorts and dedupes `build_requires`/`requires`/`files`
+lists. `build_requires`/`requires` dedupe case-insensitively (first spelling wins);
+`files` dedupes by exact path, because file paths are case-sensitive: `%{_bindir}/Hyprland`
+and `%{_bindir}/hyprland` are two different files and both must survive. Ordering stays
+case-insensitive for all three. (#BUG-0120)
+
 Run `make pre-commit` before and after any change. CI runs lint + test only, natively
 via `NO_CONTAINER=1` (CI can't nest privileged containers) on every push/PR.
 `make update-daily` deliberately does **not** run the full gate — just

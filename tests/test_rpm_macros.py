@@ -182,3 +182,45 @@ class TestNormalizeFileEntry:
     def test_no_match_path_unchanged_with_directive(self):
         """Non-matching path with directive preserved."""
         assert normalize_file_entry("%doc /opt/custom/foo", False) == "%doc /opt/custom/foo"
+
+
+class TestForwardCanonicalizesMacroForm:
+    """#BUG-0047: forward pass canonicalizes non-canonical %{_prefix}/... entries."""
+
+    def test_prefix_bin_to_bindir(self):
+        assert normalize_file_entry("%{_prefix}/bin/ags", False) == "%{_bindir}/ags"
+
+    def test_prefix_lib64_to_libdir(self):
+        assert normalize_file_entry("%{_prefix}/lib64/x.so", False) == "%{_libdir}/x.so"
+
+    def test_prefix_share_with_directive(self):
+        assert (
+            normalize_file_entry("%dir %{_prefix}/share/foo", False)
+            == "%dir %{_datadir}/foo"
+        )
+
+    def test_canonical_macro_unchanged(self):
+        assert normalize_file_entry("%{_bindir}/foo", False) == "%{_bindir}/foo"
+
+    def test_unknown_macro_unchanged(self):
+        assert normalize_file_entry("%{name}/foo", False) == "%{name}/foo"
+
+    def test_forward_is_idempotent_and_matches_roundtrip(self):
+        for e in ["%{_prefix}/bin/ags", "%{_prefix}/lib/x", "/usr/lib/x", "%{_bindir}/y"]:
+            once = normalize_file_entry(e, False)
+            assert normalize_file_entry(once, False) == once
+            via_abs = normalize_file_entry(normalize_file_entry(e, True), False)
+            assert once == via_abs
+
+
+class TestUsrLib:
+    """#BUG-0047: /usr/lib has an explicit PREFIXES entry."""
+
+    def test_abs_to_macro(self):
+        assert normalize_abs_to_macro("/usr/lib/x") == "%{_prefix}/lib/x"
+
+    def test_macro_to_abs(self):
+        assert normalize_macro_to_abs("%{_prefix}/lib/x") == "/usr/lib/x"
+
+    def test_lib64_not_shadowed(self):
+        assert normalize_abs_to_macro("/usr/lib64/x") == "%{_libdir}/x"

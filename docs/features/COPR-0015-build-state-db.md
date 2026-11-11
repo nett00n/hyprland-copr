@@ -26,7 +26,11 @@ in `SOURCES/`, realm `rpmbuild-volume`), grouped by `(package, target, kind)`. F
 mtime breaking ties. For `rpm` and `source`, one build legitimately records several
 rows at the same version (main, `-devel`, `-debuginfo`, `-debugsource` RPMs; tarball +
 patches), so every row at the top version is kept and only rows strictly lower by
-`lib.version.compare_evr` are removed (#BUG-0110). `update-daily` runs
+`lib.version.compare_evr` are removed (#BUG-0110). A row whose version equals the
+`(package, target)`'s current `stage_results` version for that kind's stage is never
+stale, even when a higher version was built earlier (a `pinned-version` rollback), so
+the current NVR's artifact is not pruned and rebuilt every night (#BUG-0119).
+`update-daily` runs
 `make db-prune CONFIRM=1` after the build matrix
 ([COPR-0003](COPR-0003-daily-update.md)).
 

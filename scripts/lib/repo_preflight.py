@@ -89,7 +89,7 @@ def rpm_arch(path: Path) -> str | None:
 def format_local_repo_remedy(names: list[str], fedora_version: str) -> str:
     """One-sentence remedy for a missing/stale local-repo dependency.
 
-    Shared between this preflight and the post-hoc `_analyze_mock_root_log`
+    Shared between this preflight and the post-hoc `analyze_mock_root_log`
     detector in `lib/log_analysis.py`, so a build-time failure and a
     log-analysis-time diagnosis of the same underlying problem never drift
     into different wording.

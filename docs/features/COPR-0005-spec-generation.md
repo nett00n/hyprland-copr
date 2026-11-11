@@ -37,16 +37,16 @@ template or generator version are reported (`stage-show-plan`) as
 ## Implementation
 
 - `scripts/stage-spec.py`, `templates/spec.j2`.
-- `scripts/gen-spec.py` is a separate, older generator with its own duplicated logic
-  (see Quirks) — `stage-spec.py` is the one the pipeline actually uses.
+- `scripts/gen-spec.py` is a separate, older generator (see Decisions) — `stage-spec.py` is the one the pipeline actually uses.
 
 ## Quirks & Decisions
 
-- Quirk: `gen-spec.py` (446 lines) duplicates `lib/github.py` and
-  `lib.config.get_packager` almost verbatim, has no Makefile target, and is unused
-  except by its own test.
-  Proposed: check whether `build_context()` has spec-rendering logic `stage-spec.py`
-  lacks, then remove or replace with lib calls. (BUG-0074)
+- Decision: `gen-spec.py` is not pure dead code: its `build_context()` carries
+  `source.bundled_deps` handling (extra `SourceN`, `%cmake` FetchContent flags) and
+  `build.subdir` `pushd` wrapping that `stage-spec.py` lacks. It still has no Makefile
+  target and no pipeline caller, but its duplicated GitHub-release and packager helpers
+  were replaced by `lib/github.py` / `lib.config.get_packager` calls. Porting that
+  logic into `stage-spec.py` (or deleting it) is a separate decision. (BUG-0074)
 
 ## Testing
 

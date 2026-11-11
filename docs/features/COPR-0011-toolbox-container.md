@@ -28,11 +28,11 @@ all (used by CI, which can't nest privileged containers).
 
 ## Quirks & Decisions
 
-- Quirk: `Containerfile` installs cargo/golang/mock/rpmlint with no version pins, and
-  the base image tag floats too.
-  Proposed: digest-pin the base image itself — pinning individual packages against a
-  floating base just creates dnf resolution failures the moment the base updates.
-  (BUG-0088)
+- Decision: the base image is digest-pinned (`fedora-toolbox:43@sha256:...`) so the
+  image is reproducible; the tag stays for readability. Individual dnf packages are
+  deliberately not pinned -- against a floating base that only produces resolution
+  failures. Refresh the digest deliberately when the base should move
+  (`podman pull` the tag, then `podman image inspect --format '{{.Digest}}'`). (BUG-0088)
 
 ## Testing
 

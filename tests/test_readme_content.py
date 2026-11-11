@@ -36,17 +36,27 @@ class TestCollectContributors:
         assert contributors[0]["github_user"] == "alice"
 
     def test_collect_contributors_no_duplicates(self, tmp_path):
-        """Should not include duplicate contributor names."""
+        """Same email under two names is one contributor (#BUG-0030)."""
         with patch.object(readme_content, "run_git") as mock_git:
             mock_result = MagicMock()
             mock_result.returncode = 0
-            mock_result.stdout = "Alice Author|alice@example.com\nAlice Author|alice.author@example.com"
+            mock_result.stdout = "Alice A.|alice@example.com\nAlice Author|alice@example.com"
             mock_git.return_value = mock_result
 
             contributors = readme_content.collect_contributors(tmp_path)
 
         assert len(contributors) == 1
-        assert contributors[0]["name"] == "Alice Author"
+        assert contributors[0]["name"] == "Alice A."
+
+    def test_collect_contributors_same_name_different_email_kept(self, tmp_path):
+        """Different emails are different people even with equal names (#BUG-0030)."""
+        with patch.object(readme_content, "run_git") as mock_git:
+            mock_result = MagicMock()
+            mock_result.returncode = 0
+            mock_result.stdout = "Sam|a@example.com\nSam|b@example.com"
+            mock_git.return_value = mock_result
+            contributors = readme_content.collect_contributors(tmp_path)
+        assert len(contributors) == 2
 
     def test_collect_contributors_git_failure(self, tmp_path):
         """Should return empty list on git failure."""
@@ -154,3 +164,23 @@ class TestGetSections:
         """Should not error when `documents` itself is absent from repo.yaml."""
         result = readme_content.get_sections({"name": "some repo"})
         assert all(result.values())
+
+
+class TestContributorsTemplate:
+    """_contributors.j2 renders one bullet per line (#BUG-0030)."""
+
+    def test_one_bullet_per_line(self):
+        from lib.jinja_utils import create_jinja_env
+
+        out = create_jinja_env().get_template("_contributors.j2").render(
+            contributors=[
+                {"name": "Alice", "github_user": "alice"},
+                {"name": "Bob", "github_user": None},
+                {"name": "Carol", "github_user": "carol"},
+            ]
+        )
+        assert out.splitlines() == [
+            "- [Alice](https://github.com/alice)",
+            "- Bob",
+            "- [Carol](https://github.com/carol)",
+        ]
