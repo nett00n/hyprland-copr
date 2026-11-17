@@ -1,7 +1,7 @@
 
 Name:           neowall
 Version:        0.9.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        GPU-accelerated live wallpaper engine using GLSL shaders
 License:        MIT
 URL:            https://github.com/1ay1/neowall
@@ -76,6 +76,6 @@ Development files for neowall.
 %files devel
 
 %changelog
-* Sat Nov 14 2026 nett00n <copr@nett00n.org> - 0.9.0-1
+* Sat Nov 14 2026 nett00n <copr@nett00n.org> - 0.9.0-2
 
 - neowall 0.9.0

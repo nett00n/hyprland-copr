@@ -67,6 +67,10 @@ chroot. The vendor store key includes `zig version` of the container toolchain, 
   chroot's real glibc instead of its own stubs (so `glibc-devel` is a `build_requires`:
   the minimal mock buildroot has no libc headers). Experimental: if the aarch64 chroots still
   fail, restrict the package to x86_64 instead.
+- Quirk: `waylock` 1.7.0 needs a Zig newer than Fedora's 0.16 (`build.zig` uses the
+  one-argument `b.findProgram(.{ .names = ... })` and `b.root`, which 0.16 lacks, and
+  patching one call only exposes the next). `waylock` is therefore `pinned-version: 1.6.0`
+  until Fedora ships a matching Zig; then switch back to `latest-tag`.
 - Decision: no `zig_subdir` field until a package needs one; `vendor_prep` can already
   reshape the tree.
 - Decision: the vendor tarball holds `zig-pkg/` only, not a global cache, because

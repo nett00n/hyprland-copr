@@ -5,6 +5,12 @@ packages and which Fedora versions are built. Changes to the automation itself g
 `docs/CHANGELOG.md`. Newest first, dated `## YYYY-MM-DD` entries, one short paragraph each.
 README shows the most recent entries - see `scripts/lib/readme_content.py:get_recent_news()`.
 
+## 2026-11-17
+
+Fixed Packages:
+
+- waylock - pinned to 1.6.0: 1.7.0 needs a newer Zig than Fedora ships and failed on every Fedora version
+
 ## 2026-11-07
 
 Fixed Packages:

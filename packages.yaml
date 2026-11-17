@@ -125,7 +125,7 @@ bare:
   - '%{_mandir}/man1/bare.1*'
   - '%{_mandir}/man5/bare.5*'
   license: MIT
-  release: 5
+  release: 6
   requires: []
   rpm:
     no_debug_package: false
@@ -1021,7 +1021,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 26
+  release: 27
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -2097,7 +2097,7 @@ neowall:
   license: MIT
   recommends:
   - pulseaudio-utils
-  release: 1
+  release: 2
   requires: []
   rpm:
     no_debug_package: false
@@ -2948,7 +2948,7 @@ Waybar:
   version: 0.16.0
 waylock:
   auto_update:
-    release_type: latest-tag
+    release_type: pinned-version
   build:
     commands:
     - printf 'include_dir=%{_includedir}\nsys_include_dir=%{_includedir}\ncrt_dir=%{_libdir}\nmsvc_lib_dir=\nkernel32_lib_dir=\ngcc_dir=\n' > zig-libc.txt
@@ -2992,7 +2992,7 @@ waylock:
     - '%{name}-%{version}-vendor.tar.gz'
   summary: Small screenlocker for Wayland compositors
   url: https://github.com/ifreund/waylock
-  version: 1.7.0
+  version: 1.6.0
 waypaper:
   auto_update:
     release_type: latest-tag
