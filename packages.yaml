@@ -2946,6 +2946,42 @@ Waybar:
   summary: Highly customizable Wayland bar for Sway and Wlroots based compositors
   url: https://github.com/Alexays/Waybar
   version: 0.16.0
+waycorner:
+  auto_update:
+    release_type: latest-version
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep:
+    - tar xf %{SOURCE1}
+    system: cargo
+  build_requires:
+  - cargo
+  - rustc
+  depends_on: []
+  description: |
+    Waycorner creates invisible anchors in the corners or along the edges of your
+    monitors and runs a command of your choice when the pointer enters or leaves
+    them. Configure it in ~/.config/waycorner/config.toml; the --preview flag
+    shows the active areas.
+  files:
+  - '%doc CHANGELOG.md'
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_bindir}/waycorner'
+  license: MIT
+  release: 2
+  requires: []
+  rpm:
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    - '%{name}-%{version}-vendor.tar.gz'
+  summary: Hot corners for Wayland
+  url: https://github.com/AndreasBackx/waycorner
+  version: 0.2.3
 waylock:
   auto_update:
     release_type: pinned-version

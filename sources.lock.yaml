@@ -783,3 +783,9 @@ bare:
     sha256: f08f786d052a88877b4dd904f174985b3b3cf3abf04baa2cd95b32881fb81425
     size: 59980
     recorded: '2026-11-17'
+waycorner:
+  waycorner-0.2.3.tar.gz:
+    url: https://github.com/AndreasBackx/waycorner/archive/refs/tags/0.2.3.tar.gz#/waycorner-0.2.3.tar.gz
+    sha256: 829575b86f21903a97082a290c48ac7025428d1c8bf308f6a851dc54bb8a61b1
+    size: 17945
+    recorded: '2026-11-17'

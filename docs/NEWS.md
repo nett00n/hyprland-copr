@@ -7,6 +7,10 @@ README shows the most recent entries - see `scripts/lib/readme_content.py:get_re
 
 ## 2026-11-17
 
+Added Packages:
+
+- waycorner - Hot corners for Wayland: run a command when the pointer hits a screen corner or edge
+
 Fixed Packages:
 
 - waylock - pinned to 1.6.0: 1.7.0 needs a newer Zig than Fedora ships and failed on every Fedora version

@@ -24,6 +24,16 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-11-17
+
+Added Packages:
+
+- waycorner - Hot corners for Wayland: run a command when the pointer hits a screen corner or edge
+
+Fixed Packages:
+
+- waylock - pinned to 1.6.0: 1.7.0 needs a newer Zig than Fedora ships and failed on every Fedora version
+
 ### 2026-11-07
 
 Fixed Packages:
@@ -52,11 +62,6 @@ Added Packages:
 Disabled Packages:
 
 - hyprland-plugins - skipped on every Fedora version until the plugins are ported to Hyprland 0.57 (all four fail to compile against its headers)
-
-### 2026-10-31
-
-Builds now repair themselves when upstream adds a dependency: a failed mock build with a
-missing pkgconfig or CMake package gets the entry added and is rebuilt, up to 10 times. The same goes for the file lists: files a build stopped installing are dropped once all Fedora versions agree, and new ones are added.
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 
@@ -160,6 +165,7 @@ missing pkgconfig or CMake package gets the entry added and is rebuilt, up to 10
 - `uwsm` — Universal Wayland Session Manager
 - `vimiv-qt` — An image viewer with vim-like keybindings
 - `waybar` — Highly customizable Wayland bar for Sway and Wlroots based compositors
+- `waycorner` — Hot corners for Wayland
 - `waylock` — Small screenlocker for Wayland compositors
 - `waypaper` — GUI wallpaper manager for Wayland and Xorg Linux systems
 - `wl-clip-persist` — Keep Wayland clipboard even after programs close
