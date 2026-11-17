@@ -125,7 +125,7 @@ bare:
   - '%{_mandir}/man1/bare.1*'
   - '%{_mandir}/man5/bare.5*'
   license: MIT
-  release: 4
+  release: 5
   requires: []
   rpm:
     no_debug_package: false
@@ -1021,7 +1021,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 25
+  release: 26
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -2071,6 +2071,7 @@ neowall:
   - pkgconfig(wayland-client)
   - pkgconfig(wayland-cursor)
   - pkgconfig(wayland-egl)
+  - pkgconfig(wayland-protocols)
   - pkgconfig(x11)
   - pkgconfig(xkbcommon)
   - pkgconfig(xrandr)
@@ -2082,15 +2083,21 @@ neowall:
   files:
   - '%license LICENSE'
   - '%{_bindir}/neowall'
-  - '%{_datadir}/applications/neowall.desktop'
-  - '%{_datadir}/icons/hicolor/scalable/apps/neowall.svg'
+  - '%{_datadir}/applications/io.github._1ay1.neowall.desktop'
+  - '%{_datadir}/bash-completion/completions/neowall'
+  - '%{_datadir}/fish/vendor_completions.d/neowall.fish'
+  - '%{_datadir}/icons/hicolor/scalable/apps/io.github._1ay1.neowall.svg'
+  - '%{_datadir}/metainfo/io.github._1ay1.neowall.metainfo.xml'
   - '%{_datadir}/neowall/'
+  - '%{_datadir}/zsh/site-functions/_neowall'
   - '%{_docdir}/neowall/'
+  - '%{_mandir}/man1/neowall.1.gz'
+  - '%{_mandir}/man5/neowall.vibe.5.gz'
   - '%{_userunitdir}/neowall.service'
   license: MIT
   recommends:
   - pulseaudio-utils
-  release: 3
+  release: 1
   requires: []
   rpm:
     no_debug_package: false
@@ -2099,7 +2106,7 @@ neowall:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: GPU-accelerated live wallpaper engine using GLSL shaders
   url: https://github.com/1ay1/neowall
-  version: 0.8.0
+  version: 0.9.0
 OpenLogi:
   auto_update:
     release_type: pinned-version
