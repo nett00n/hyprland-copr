@@ -1,7 +1,9 @@
+%global upstream_commit_subject all: initial commit
+%global upstream_commits 2
 
 Name:           hyprqt6engine
 Version:        0.1.0
-Release:        16%{?dist}
+Release:        17%{?dist}
 Summary:        QT6 Theme Provider for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprqt6engine
@@ -60,6 +62,6 @@ sed -i '/target_link_libraries.*hyprqtplugin/i find_package(Qt6 REQUIRED COMPONE
 %{_libdir}/qt6/plugins/styles/libhypr-style.so
 
 %changelog
-* Tue Aug 26 2025 nett00n <copr@nett00n.org> - 0.1.0-16
+* Tue Aug 26 2025 nett00n <copr@nett00n.org> - 0.1.0-17
 
 - all: initial commit

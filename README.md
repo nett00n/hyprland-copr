@@ -33,6 +33,7 @@ Added Packages:
 Fixed Packages:
 
 - waylock - pinned to 1.6.0: 1.7.0 needs a newer Zig than Fedora ships and failed on every Fedora version
+- Hyprland - `Hyprland --version` now also shows the build date, branch (the release tag), commit message and commit count instead of `unknown`/`0`
 
 ### 2026-11-07
 

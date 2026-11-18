@@ -1,7 +1,9 @@
+%global upstream_commit_subject version: bump to 0.2.0
+%global upstream_commits 48
 
 Name:           hyprsysteminfo
 Version:        0.2.0
-Release:        32%{?dist}
+Release:        33%{?dist}
 Summary:        System info utility for Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprsysteminfo
@@ -61,6 +63,6 @@ sed -i '/find_package(Qt6.*WaylandClient)/a find_package(Qt6 REQUIRED COMPONENTS
 %{_datadir}/applications/hyprsysteminfo.desktop
 
 %changelog
-* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.2.0-32
+* Sun Apr 26 2026 nett00n <copr@nett00n.org> - 0.2.0-33
 
 - version: bump to 0.2.0

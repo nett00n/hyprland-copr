@@ -1,7 +1,9 @@
+%global upstream_commit_subject version: bump to 0.4.0
+%global upstream_commits 48
 
 Name:           hyprsunset
 Version:        0.4.0
-Release:        18%{?dist}
+Release:        19%{?dist}
 Summary:        An application to enable a blue-light filter on Hyprland
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprsunset
@@ -51,6 +53,6 @@ Commit:            25f704346ec22e7623b0873ef8c4573b57ca1512
 %{_userunitdir}/hyprsunset.service
 
 %changelog
-* Mon Jul 13 2026 nett00n <copr@nett00n.org> - 0.4.0-18
+* Mon Jul 13 2026 nett00n <copr@nett00n.org> - 0.4.0-19
 
 - version: bump to 0.4.0

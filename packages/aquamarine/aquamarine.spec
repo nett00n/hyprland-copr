@@ -1,7 +1,9 @@
+%global upstream_commit_subject VERSION: bump to 0.16.0
+%global upstream_commits 432
 
 Name:           aquamarine
 Version:        0.16.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A very light linux rendering backend library
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/aquamarine
@@ -72,6 +74,6 @@ Development files for aquamarine.
 %{_libdir}/pkgconfig/aquamarine.pc
 
 %changelog
-* Sun Nov 01 2026 nett00n <copr@nett00n.org> - 0.16.0-1
+* Sun Nov 01 2026 nett00n <copr@nett00n.org> - 0.16.0-2
 
 - VERSION: bump to 0.16.0

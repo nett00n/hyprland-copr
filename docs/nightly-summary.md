@@ -2,19 +2,27 @@
 
 ## Upstream version refresh
 
-_Generated 2026-11-17 12:07:47 UTC by `make update-versions`._
+_Generated 2026-11-18 10:12:26 UTC by `make update-versions`._
 
-1 failure(s):
+3 failure(s):
+
+### fetch
+
+- `jjba23/lambdock`: git fetch failed for https://codeberg.org/jjba23/lambdock.git: fatal: unable to access 'https://codeberg.org/jjba23/lambdock.git/': Could not resolve host: codeberg.org
 
 ### pin
 
 - `LukashonakV/cava`: pinned by libcava-v0 (pinned-tag with no auto_update.tag); leaving the checkout untouched
 
-- Packages analyzed: 73
-- Clean: 64
-- With issues: 7
+### tags
+
+- `lambdock`: failed to fetch tags from https://codeberg.org/jjba23/lambdock.git
+
+- Packages analyzed: 74
+- Clean: 72
+- With issues: 0
 - No logs found: 2
-- Copr submission not settled-success: 6
+- Copr submission not settled-success: 21
 
 ## Copr submission
 
@@ -22,73 +30,27 @@ Rows below have a build-report.db `copr` state that isn't `success`/`skipped` --
 
 | Package | Target | Version | State | Build | Reason |
 |:--------|:-------|:--------|:------|:------|:-------|
-| hyprland-guiutils | fedora-44-x86_64 | 0.2.2-19.fc44 | failed | [#11340381](https://copr.fedorainfracloud.org/coprs/build/11340381/) | — |
-| hyprlauncher | fedora-44-x86_64 | 0.1.7-4.fc44 | failed | [#11340380](https://copr.fedorainfracloud.org/coprs/build/11340380/) | — |
-| hyprpaper | fedora-44-x86_64 | 0.8.5-1.fc44 | failed | [#11340382](https://copr.fedorainfracloud.org/coprs/build/11340382/) | — |
-| hyprpwcenter | fedora-44-x86_64 | 0.1.2-25.fc44 | failed | [#11340383](https://copr.fedorainfracloud.org/coprs/build/11340383/) | — |
-| hyprshutdown | fedora-44-x86_64 | 0.1.2-2.fc44 | failed | [#11340385](https://copr.fedorainfracloud.org/coprs/build/11340385/) | — |
-| hyprsysteminfo | fedora-44-x86_64 | 0.2.0-32.fc44 | failed | [#11340384](https://copr.fedorainfracloud.org/coprs/build/11340384/) | — |
-
-## Issues
-
-### hyprland-guiutils (`/work/logs/runs/526/fedora-44-x86_64/hyprland-guiutils`)
-
-```
-
-█▓▒░ COPR chroot mismatch:
-  - failed on fedora-43-aarch64 only (7 succeeded: fedora-45-x86_64, fedora-44-aarch64, fedora-rawhide-aarch64, fedora-44-x86_64, fedora-43-x86_64, fedora-45-aarch64, fedora-rawhide-x86_64) — release/toolchain-specific breakage, consider an os_overrides skip in packages.yaml
-```
-
-### hyprlauncher (`/work/logs/runs/526/fedora-44-x86_64/hyprlauncher`)
-
-```
-
-█▓▒░ COPR chroot mismatch:
-  - failed on fedora-43-aarch64 only (7 succeeded: fedora-45-x86_64, fedora-44-aarch64, fedora-rawhide-aarch64, fedora-43-x86_64, fedora-45-aarch64, fedora-rawhide-x86_64, fedora-44-x86_64) — release/toolchain-specific breakage, consider an os_overrides skip in packages.yaml
-```
-
-### hyprpaper (`/work/logs/runs/526/fedora-44-x86_64/hyprpaper`)
-
-```
-
-█▓▒░ COPR chroot mismatch:
-  - failed on fedora-43-aarch64 only (7 succeeded: fedora-45-x86_64, fedora-44-aarch64, fedora-rawhide-aarch64, fedora-44-x86_64, fedora-43-x86_64, fedora-45-aarch64, fedora-rawhide-x86_64) — release/toolchain-specific breakage, consider an os_overrides skip in packages.yaml
-```
-
-### hyprpwcenter (`/work/logs/runs/526/fedora-44-x86_64/hyprpwcenter`)
-
-```
-
-█▓▒░ COPR chroot mismatch:
-  - failed on fedora-43-aarch64 only (7 succeeded: fedora-45-x86_64, fedora-44-aarch64, fedora-rawhide-aarch64, fedora-44-x86_64, fedora-43-x86_64, fedora-45-aarch64, fedora-rawhide-x86_64) — release/toolchain-specific breakage, consider an os_overrides skip in packages.yaml
-```
-
-### hyprshutdown (`/work/logs/runs/526/fedora-44-x86_64/hyprshutdown`)
-
-```
-
-█▓▒░ COPR chroot mismatch:
-  - failed on fedora-43-aarch64 only (7 succeeded: fedora-45-x86_64, fedora-44-aarch64, fedora-rawhide-aarch64, fedora-44-x86_64, fedora-43-x86_64, fedora-45-aarch64, fedora-rawhide-x86_64) — release/toolchain-specific breakage, consider an os_overrides skip in packages.yaml
-```
-
-### hyprsysteminfo (`/work/logs/runs/526/fedora-44-x86_64/hyprsysteminfo`)
-
-```
-
-█▓▒░ COPR chroot mismatch:
-  - failed on fedora-43-aarch64 only (7 succeeded: fedora-45-x86_64, fedora-44-aarch64, fedora-rawhide-aarch64, fedora-44-x86_64, fedora-43-x86_64, fedora-45-aarch64, fedora-rawhide-x86_64) — release/toolchain-specific breakage, consider an os_overrides skip in packages.yaml
-```
-
-### waylock (`/work/logs/runs/525/fedora-45-x86_64/waylock`)
-
-```
-
-█▓▒░ Mock build issues:
-  - compilation error (line 26): member function expected 2 argument(s), found 1
-    /work/logs/runs/525/fedora-45-x86_64/waylock/21-mock-build.log:89: build.zig:26:16: error: member function expected 2 argument(s), found 1
-  - failed during build (%build) — build.zig:26:16: error: member function expected 2 argument(s), found 1
-    /work/logs/runs/525/fedora-45-x86_64/waylock/21-mock-build.log:99: error: Bad exit status from /var/tmp/rpm-tmp.lZi678 (%build)
-```
+| aquamarine | fedora-44-x86_64 | 0.16.0-2.fc44 | unknown | [#11348642](https://copr.fedorainfracloud.org/coprs/build/11348642/) | — |
+| hyprcursor | fedora-44-x86_64 | 0.1.14-2.fc44 | unknown | [#11348649](https://copr.fedorainfracloud.org/coprs/build/11348649/) | — |
+| hyprgraphics | fedora-44-x86_64 | 0.6.0-2.fc44 | unknown | [#11348640](https://copr.fedorainfracloud.org/coprs/build/11348640/) | — |
+| hypridle | fedora-44-x86_64 | 0.1.8-17.fc44 | unknown | [#11348646](https://copr.fedorainfracloud.org/coprs/build/11348646/) | — |
+| Hyprland | fedora-44-x86_64 | 0.57.2-3.fc44 | unknown | [#11348651](https://copr.fedorainfracloud.org/coprs/build/11348651/) | — |
+| hyprland-guiutils | fedora-44-x86_64 | 0.2.2-20.fc44 | unknown | [#11348661](https://copr.fedorainfracloud.org/coprs/build/11348661/) | — |
+| hyprland-qt-support | fedora-44-x86_64 | 0.1.0-17.fc44 | unknown | [#11348645](https://copr.fedorainfracloud.org/coprs/build/11348645/) | — |
+| hyprlang | fedora-44-x86_64 | 0.6.8-18.fc44 | unknown | [#11348641](https://copr.fedorainfracloud.org/coprs/build/11348641/) | — |
+| hyprlauncher | fedora-44-x86_64 | 0.1.7-5.fc44 | unknown | [#11348655](https://copr.fedorainfracloud.org/coprs/build/11348655/) | — |
+| hyprlock | fedora-44-x86_64 | 0.9.7-2.fc44 | unknown | [#11348647](https://copr.fedorainfracloud.org/coprs/build/11348647/) | — |
+| hyprpaper | fedora-44-x86_64 | 0.8.5-2.fc44 | unknown | [#11348657](https://copr.fedorainfracloud.org/coprs/build/11348657/) | — |
+| hyprpicker | fedora-44-x86_64 | 0.4.8-3.fc44 | unknown | [#11348643](https://copr.fedorainfracloud.org/coprs/build/11348643/) | — |
+| hyprpolkitagent | fedora-44-x86_64 | 0.2.0-10.fc44 | unknown | [#11348656](https://copr.fedorainfracloud.org/coprs/build/11348656/) | — |
+| hyprpwcenter | fedora-44-x86_64 | 0.1.2-26.fc44 | unknown | [#11348652](https://copr.fedorainfracloud.org/coprs/build/11348652/) | — |
+| hyprqt6engine | fedora-44-x86_64 | 0.1.0-17.fc44 | unknown | [#11348644](https://copr.fedorainfracloud.org/coprs/build/11348644/) | — |
+| hyprshutdown | fedora-44-x86_64 | 0.1.2-3.fc44 | unknown | [#11348660](https://copr.fedorainfracloud.org/coprs/build/11348660/) | — |
+| hyprsunset | fedora-44-x86_64 | 0.4.0-19.fc44 | unknown | [#11348648](https://copr.fedorainfracloud.org/coprs/build/11348648/) | — |
+| hyprsysteminfo | fedora-44-x86_64 | 0.2.0-33.fc44 | unknown | [#11348659](https://copr.fedorainfracloud.org/coprs/build/11348659/) | — |
+| hyprtoolkit | fedora-44-x86_64 | 0.6.0-9.fc44 | unknown | [#11348650](https://copr.fedorainfracloud.org/coprs/build/11348650/) | — |
+| hyprwire | fedora-44-x86_64 | 0.3.1-18.fc44 | unknown | [#11348639](https://copr.fedorainfracloud.org/coprs/build/11348639/) | — |
+| xdg-desktop-portal-hyprland | fedora-44-x86_64 | 1.5.0-3.fc44 | unknown | [#11348658](https://copr.fedorainfracloud.org/coprs/build/11348658/) | — |
 
 ## No logs found
 

@@ -2,7 +2,7 @@
 
 Name:           waycorner
 Version:        0.2.3
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Hot corners for Wayland
 License:        MIT
 URL:            https://github.com/AndreasBackx/waycorner
@@ -46,6 +46,6 @@ install -Dm755 target/release/%{name} %{buildroot}%{_bindir}/%{name}
 %{_bindir}/waycorner
 
 %changelog
-* Tue Nov 17 2026 nett00n <copr@nett00n.org> - 0.2.3-2
+* Tue Nov 17 2026 nett00n <copr@nett00n.org> - 0.2.3-3
 
 - Update to 0.2.3

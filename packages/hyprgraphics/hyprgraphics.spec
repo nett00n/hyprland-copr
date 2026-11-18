@@ -1,7 +1,9 @@
+%global upstream_commit_subject VERSION: bump to 0.6.0
+%global upstream_commits 89
 
 Name:           hyprgraphics
 Version:        0.6.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Small C++ library for graphics utilities across the Hypr ecosystem
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprgraphics
@@ -65,6 +67,6 @@ Development files for hyprgraphics.
 %{_libdir}/pkgconfig/hyprgraphics.pc
 
 %changelog
-* Sun Nov 01 2026 nett00n <copr@nett00n.org> - 0.6.0-1
+* Sun Nov 01 2026 nett00n <copr@nett00n.org> - 0.6.0-2
 
 - VERSION: bump to 0.6.0

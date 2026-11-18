@@ -1,7 +1,9 @@
+%global upstream_commit_subject VERSION: bump to 0.1.14
+%global upstream_commits 146
 
 Name:           hyprcursor
 Version:        0.1.14
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A library and toolkit for the Hyprland cursor format
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprcursor
@@ -61,6 +63,6 @@ Development files for hyprcursor.
 %{_libdir}/pkgconfig/hyprcursor.pc
 
 %changelog
-* Mon Nov 09 2026 nett00n <copr@nett00n.org> - 0.1.14-1
+* Mon Nov 09 2026 nett00n <copr@nett00n.org> - 0.1.14-2
 
 - VERSION: bump to 0.1.14

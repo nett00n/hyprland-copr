@@ -1,7 +1,9 @@
+%global upstream_commit_subject version: bump to 0.2.0
+%global upstream_commits 47
 
 Name:           hyprpolkitagent
 Version:        0.2.0
-Release:        9%{?dist}
+Release:        10%{?dist}
 Summary:        A polkit authentication agent written with hyprtoolkit
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/hyprpolkitagent
@@ -53,6 +55,6 @@ Commit:            0e4492994e211b9af9365f16a9fda35d32e106bb
 %{_userunitdir}/hyprpolkitagent.service
 
 %changelog
-* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.2.0-9
+* Wed Sep 09 2026 nett00n <copr@nett00n.org> - 0.2.0-10
 
 - version: bump to 0.2.0

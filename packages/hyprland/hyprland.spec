@@ -1,7 +1,9 @@
+%global upstream_commit_subject VERSION: bump to 0.57.2
+%global upstream_commits 8015
 
 Name:           hyprland
 Version:        0.57.2
-Release:        1%{?dist}
+Release:        3%{?dist}
 Summary:        A Modern C++ Wayland Compositor
 License:        BSD-3-Clause
 URL:            https://github.com/hyprwm/Hyprland
@@ -90,6 +92,11 @@ export GIT_COMMIT_HASH=$(gzip -dc %{SOURCE0} | git get-tar-commit-id)
 test -n "$GIT_COMMIT_HASH"
 export GIT_TAG=v%{version}
 export GIT_DIRTY=clean
+export GIT_BRANCH=v%{version}
+export GIT_COMMIT_MESSAGE="%{?upstream_commit_subject}"
+export GIT_COMMITS=%{?upstream_commits}
+export GIT_COMMIT_DATE="$(LC_ALL=C TZ=UTC date -d "$(tar -tvz --full-time --utc -f %{SOURCE0} | head -n1 | awk '{print $4" "$5}') UTC" '+%a %b %-d %H:%M:%S %Y')"
+test -n "$GIT_COMMIT_DATE"
 %cmake -Dglaze_DIR=%{_datadir}/glaze-v7
 %cmake_build
 
@@ -128,6 +135,6 @@ Development files for hyprland.
 %{_includedir}/hyprland/
 
 %changelog
-* Mon Nov 09 2026 nett00n <copr@nett00n.org> - 0.57.2-1
+* Mon Nov 09 2026 nett00n <copr@nett00n.org> - 0.57.2-3
 
 - VERSION: bump to 0.57.2
