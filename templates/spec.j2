@@ -10,6 +10,12 @@
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %global commitdate {{ commit.date }}
 {% endif %}
+{% if upstream_commit_subject is defined and upstream_commit_subject %}
+%global upstream_commit_subject {{ upstream_commit_subject }}
+{% endif %}
+{% if upstream_commits is defined and upstream_commits is not none %}
+%global upstream_commits {{ upstream_commits }}
+{% endif %}
 
 {# Package Metadata #}
 Name:           {{ name }}

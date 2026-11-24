@@ -24,6 +24,13 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-11-24
+
+Added Packages:
+
+- bluemancz-hyprmod - Native GTK4/libadwaita settings app for Hyprland: live preview, Bezier curve editor, monitor layout, keybinds, window rules
+- bluemancz-hyprland-config, bluemancz-hyprland-monitors, bluemancz-hyprland-schema, bluemancz-hyprland-socket, bluemancz-hyprland-state - Python libraries hyprmod depends on, prefixed with their GitHub owner since they are not first-party Hyprland projects
+
 ### 2026-11-17
 
 Added Packages:
@@ -57,12 +64,6 @@ Added Packages:
 
 - wlhc - Wayland hot corners: run a command when the pointer touches a screen corner (written in Hare)
 - harec, hare, hare-ev, hare-xml, hare-wayland - the Hare language toolchain and libraries wlhc builds with; harec tracks upstream 0.26 on every Fedora version, replacing Fedora's older 0.25 on 43 and 44
-
-### 2026-11-03
-
-Disabled Packages:
-
-- hyprland-plugins - skipped on every Fedora version until the plugins are ported to Hyprland 0.57 (all four fail to compile against its headers)
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 
@@ -124,6 +125,7 @@ Disabled Packages:
 
 - `bare` — Lightweight vertical bar for Wayland compositors
 - `bemenu` — Dynamic menu library and client program inspired by dmenu
+- `bluemancz-hyprmod` — A native GTK4/libadwaita settings app for Hyprland
 - `chayang` — Gradually dim the screen on wlroots-based compositors
 - `cliphist` — Wayland clipboard manager with support for multimedia
 - `clipman` — A simple clipboard manager for Wayland
@@ -176,6 +178,11 @@ Disabled Packages:
 ### Other dependencies
 
 - `aylurs-gtk-shell` — Scaffolding CLI for Astal+Gnim
+- `bluemancz-hyprland-config` — Round-trip parser and editor for Hyprland configuration files
+- `bluemancz-hyprland-monitors` — Monitor management utilities for Hyprland
+- `bluemancz-hyprland-schema` — Typed Python schema for every Hyprland configuration option
+- `bluemancz-hyprland-socket` — Typed Python library for Hyprland IPC via Unix sockets
+- `bluemancz-hyprland-state` — Live state interface for Hyprland — options, animations, monitors, binds, and devices
 - `cpptrace` — Simple, portable, and self-contained stacktrace library for C++11 and newer
 - `glaze` — Extremely fast, in memory, JSON and reflection library for modern C++.
 - `glaze-v7` — Compat build of glaze 7.x for consumers pinned below 8.0

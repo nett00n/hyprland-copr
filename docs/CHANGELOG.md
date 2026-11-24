@@ -19,6 +19,10 @@ in `docs/CONTRIBUTING.md` "Changelog".
 History before this file's introduction (2026-08-02) is not backfilled - see
 `git log`.
 
+## 2026-11-17
+
+- COPR-0031: `stage-spec` emits `%global upstream_commit_subject` / `upstream_commits` from the upstream mirror so tarball builds can stamp the commit message and count; Hyprland uses them plus the tag as branch and the tarball's commit time as date.
+
 ## 2026-11-05
 
 - COPR-0030: new `build.system: hare` (`hare build -R` / install to `%{_bindir}`), detected from a top-level `main.ha`; the Hare toolchain (`harec`, `hare`, `hare-ev`, `hare-xml`, `hare-wayland`) is packaged here as ordinary packages.

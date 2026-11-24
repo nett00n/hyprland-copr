@@ -80,6 +80,12 @@ def resolve_dep_versions(build_requires: list) -> list:
     return results
 
 
+def sanitize_macro_text(text: str) -> str:
+    """#COPR-0031: make a commit subject safe for `%global` and a C string."""
+    text = "".join(c for c in text if c.isprintable() and c != "\\")
+    return text.replace("%", "%%").replace('"', "'").strip()
+
+
 def generate_spec(
     pkg: str, pkg_meta: dict, all_packages: dict, fedora_version: str
 ) -> str:
@@ -179,7 +185,15 @@ def generate_spec(
         ):
             prep_commands = [f"tar xf %{{SOURCE{vendor_idx}}}", *prep_commands]
 
+        # #COPR-0031: upstream commit subject/count as spec globals
+        subject = (changelog_info or {}).get("subject")
+        commits = (changelog_info or {}).get("commits")
+        upstream_commit_subject = sanitize_macro_text(subject) if subject else None
+        upstream_commits = commits if isinstance(commits, int) else None
+
         context = {
+            "upstream_commit_subject": upstream_commit_subject,
+            "upstream_commits": upstream_commits,
             "name": pkg.lower(),
             "version": pkg_meta.get("version", ""),
             "release": release,

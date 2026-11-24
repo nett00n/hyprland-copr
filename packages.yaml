@@ -125,7 +125,7 @@ bare:
   - '%{_mandir}/man1/bare.1*'
   - '%{_mandir}/man5/bare.5*'
   license: MIT
-  release: 9
+  release: 10
   requires: []
   rpm:
     no_debug_package: false
@@ -136,6 +136,246 @@ bare:
   summary: Lightweight vertical bar for Wayland compositors
   url: https://github.com/kupospelov/bare
   version: '0.4'
+bluemancz-hyprland-config:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: hyprland_config
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-hatchling
+  - python3-pip
+  depends_on:
+  - bluemancz-hyprland-schema
+  description: Round-trip parser and editor for Hyprland configuration files. Reads and rewrites hyprland.conf and the Lua config format while preserving comments and layout. Needs a Lua interpreter to read Lua configs.
+  files:
+  - '%doc CHANGELOG.md'
+  - '%doc README.md'
+  - '%license LICENSE'
+  license: MIT
+  release: 2
+  requires:
+  - bluemancz-hyprland-schema
+  - lua
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: hyprland-config
+  summary: Round-trip parser and editor for Hyprland configuration files
+  url: https://github.com/BlueManCZ/hyprland-config
+  version: 0.9.21
+bluemancz-hyprland-monitors:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: hyprland_monitors
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-hatchling
+  - python3-pip
+  depends_on:
+  - bluemancz-hyprland-socket
+  description: Monitor management utilities for Hyprland, built on hyprland-socket.
+  files:
+  - '%doc CHANGELOG.md'
+  - '%doc README.md'
+  - '%license LICENSE'
+  license: MIT
+  release: 2
+  requires:
+  - bluemancz-hyprland-socket
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: hyprland-monitors
+  summary: Monitor management utilities for Hyprland
+  url: https://github.com/BlueManCZ/hyprland-monitors
+  version: 0.9.2
+bluemancz-hyprland-schema:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: hyprland_schema
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-hatchling
+  - python3-pip
+  depends_on: []
+  description: 'Typed Python schema describing every Hyprland configuration option: names, types, defaults and valid ranges.'
+  files:
+  - '%doc CHANGELOG.md'
+  - '%doc README.md'
+  - '%license LICENSE'
+  license: MIT
+  release: 2
+  requires: []
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: hyprland-schema
+  summary: Typed Python schema for every Hyprland configuration option
+  url: https://github.com/BlueManCZ/hyprland-schema
+  version: 0.8.2
+bluemancz-hyprland-socket:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: hyprland_socket
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-hatchling
+  - python3-pip
+  depends_on: []
+  description: 'Typed Python library for talking to Hyprland over its IPC Unix sockets: send commands, query state and subscribe to compositor events.'
+  files:
+  - '%doc CHANGELOG.md'
+  - '%doc README.md'
+  - '%license LICENSE'
+  license: MIT
+  release: 2
+  requires: []
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: hyprland-socket
+  summary: Typed Python library for Hyprland IPC via Unix sockets
+  url: https://github.com/BlueManCZ/hyprland-socket
+  version: 0.12.2
+bluemancz-hyprland-state:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install: []
+    no_lto: false
+    prep: []
+    save_files: hyprland_state
+    system: python
+  build_requires:
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-hatchling
+  - python3-pip
+  depends_on:
+  - bluemancz-hyprland-config
+  - bluemancz-hyprland-monitors
+  - bluemancz-hyprland-schema
+  - bluemancz-hyprland-socket
+  description: 'Live state interface for Hyprland: options, animations, monitors, binds and devices, combining the config, schema, monitors and socket libraries.'
+  files:
+  - '%doc CHANGELOG.md'
+  - '%doc README.md'
+  - '%license LICENSE'
+  license: MIT
+  release: 2
+  requires:
+  - bluemancz-hyprland-config
+  - bluemancz-hyprland-monitors
+  - bluemancz-hyprland-schema
+  - bluemancz-hyprland-socket
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: hyprland-state
+  summary: Live state interface for Hyprland — options, animations, monitors, binds, and devices
+  url: https://github.com/BlueManCZ/hyprland-state
+  version: 0.4.9
+bluemancz-hyprmod:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands: []
+    install:
+    - '%pyproject_install'
+    - install -Dm0644 data/applications/io.github.bluemancz.hyprmod.desktop -t %{buildroot}%{_datadir}/applications
+    - install -Dm0644 data/icons/hicolor/scalable/apps/io.github.bluemancz.hyprmod.svg -t %{buildroot}%{_datadir}/icons/hicolor/scalable/apps
+    - install -Dm0644 data/metainfo/io.github.bluemancz.hyprmod.metainfo.xml -t %{buildroot}%{_metainfodir}
+    no_lto: false
+    prep:
+    - sed -i -E 's/"pygobject>=[0-9.]+"/"pygobject"/' pyproject.toml
+    save_files: hyprmod
+    system: python
+  build_requires:
+  - glib2-devel
+  - pyproject-rpm-macros
+  - python3-devel
+  - python3-hatchling
+  - python3-pip
+  depends_on:
+  - bluemancz-hyprland-config
+  - bluemancz-hyprland-monitors
+  - bluemancz-hyprland-schema
+  - bluemancz-hyprland-socket
+  - bluemancz-hyprland-state
+  description: HyprMod is a native GTK4/libadwaita settings application for the Hyprland Wayland compositor. It provides live preview of configuration changes over IPC, a Bezier curve editor, a monitor layout editor, a keybind editor, window and workspace rules, autostart management and Lua config support.
+  files:
+  - '%doc CHANGELOG.md'
+  - '%doc README.md'
+  - '%license LICENSE'
+  - '%{_datadir}/applications/io.github.bluemancz.hyprmod.desktop'
+  - '%{_datadir}/icons/hicolor/scalable/apps/io.github.bluemancz.hyprmod.svg'
+  - '%{_metainfodir}/io.github.bluemancz.hyprmod.metainfo.xml'
+  license: GPL-3.0-or-later
+  release: 2
+  requires:
+  - bluemancz-hyprland-config
+  - bluemancz-hyprland-monitors
+  - bluemancz-hyprland-schema
+  - bluemancz-hyprland-socket
+  - bluemancz-hyprland-state
+  - gtk4
+  - libadwaita
+  - python3-cairo
+  - python3-gobject
+  rpm:
+    buildarch: noarch
+    no_debug_package: true
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: hyprmod
+  summary: A native GTK4/libadwaita settings app for Hyprland
+  url: https://github.com/BlueManCZ/hyprmod
+  version: 0.6.0
 cliphist:
   build:
     commands:
@@ -1026,7 +1266,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 30
+  release: 31
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'

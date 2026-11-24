@@ -11,6 +11,7 @@ calling subprocess.run directly, so it inherits run_git's timeout defaults and
 its no-raise contract (see that function's docstring).
 """
 
+import contextlib
 import shutil
 import subprocess
 import sys
@@ -401,22 +402,43 @@ def get_commit_info(repo: Path, ref: str = "HEAD") -> dict | None:
     return {"published_at": published_at, "body": body, "commit": commit}
 
 
+def get_commit_meta(repo: Path, ref: str) -> dict:
+    """Return {subject, commits} for a ref: first message line and commit count.
+
+    #COPR-0031. Returns {} when the ref cannot be resolved.
+    """
+    log = run_git("-C", str(repo), "log", "-1", "--format=%s", ref)
+    count = run_git("-C", str(repo), "rev-list", "--count", ref)
+    if log.returncode != 0 or count.returncode != 0:
+        return {}
+    meta: dict = {}
+    subject = log.stdout.strip()
+    if subject:
+        meta["subject"] = subject
+    with contextlib.suppress(ValueError):
+        meta["commits"] = int(count.stdout.strip())
+    return meta
+
+
 def get_changelog_info(
     repo: Path, version: str, commit_hash: str | None = None
 ) -> dict | None:
-    """Return {published_at, body, tag, commit} for changelog generation.
+    """Return {published_at, body, tag, commit[, subject, commits]} for changelog generation.
 
     Tries the version tag first (annotated or lightweight), fetching it from
     the remote if not found locally.  Falls back to commit_hash log if given
     (for commit-based packages).  Returns None otherwise so callers can try
     the GitHub release API instead.
     """
-    tag_info = get_tag_info(repo, version)
-    if tag_info:
-        return tag_info
-    if commit_hash:
-        return get_commit_info(repo, commit_hash)
-    return None
+    info = get_tag_info(repo, version)
+    if not info and commit_hash:
+        info = get_commit_info(repo, commit_hash)
+    if not info:
+        return None
+    # #COPR-0031: commit subject and count for build-time git stamping
+    if info.get("commit"):
+        info = {**info, **get_commit_meta(repo, info["commit"])}
+    return info
 
 
 def get_commit(repo: Path, ref: str = "HEAD") -> tuple[str, str, str] | None:

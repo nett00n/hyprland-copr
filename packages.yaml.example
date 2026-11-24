@@ -20,6 +20,8 @@
 #   shape; mirror the same edit in build.prep so the chroot build sees it too
 # source.archives: list of plain URL strings; index (Source0, Source1, ...) is auto-assigned
 # source.commit: for git snapshots (no version tag); has full hash and date fields
+# %{?upstream_commit_subject} / %{?upstream_commits}: set from the upstream mirror at stage-spec
+#   time (#COPR-0031); use in build.commands to stamp tarball builds (see docs/packaging.md)
 # source.patches: list of patch files to apply after %autosetup
 # source.source_name: override archive base directory name (if different from package name)
 # source_dir: override extracted source directory (at package level, for mismatched tarball structure)

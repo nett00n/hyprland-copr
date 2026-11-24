@@ -40,3 +40,15 @@ class TestHyprlandCommitEnv:
     def test_git_is_a_build_requirement(self):
         header = _spec().split("%description", 1)[0]
         assert "BuildRequires:  git-core" in header
+
+    def test_branch_message_count_and_date_are_stamped(self):
+        """#COPR-0031"""
+        build = _section(_spec(), "%build", "%install")
+        assert "export GIT_BRANCH=v%{version}" in build
+        assert 'export GIT_COMMIT_MESSAGE="%{?upstream_commit_subject}"' in build
+        assert "export GIT_COMMITS=%{?upstream_commits}" in build
+        assert "export GIT_COMMIT_DATE=" in build
+        assert "%{SOURCE0}" in build.split("export GIT_COMMIT_DATE=", 1)[1].split("\n")[0]
+        assert 'test -n "$GIT_COMMIT_DATE"' in build
+        for name in ("GIT_BRANCH", "GIT_COMMIT_MESSAGE", "GIT_COMMITS", "GIT_COMMIT_DATE"):
+            assert build.index(name) < build.index("%cmake")

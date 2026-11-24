@@ -5,6 +5,13 @@ packages and which Fedora versions are built. Changes to the automation itself g
 `docs/CHANGELOG.md`. Newest first, dated `## YYYY-MM-DD` entries, one short paragraph each.
 README shows the most recent entries - see `scripts/lib/readme_content.py:get_recent_news()`.
 
+## 2026-11-24
+
+Added Packages:
+
+- bluemancz-hyprmod - Native GTK4/libadwaita settings app for Hyprland: live preview, Bezier curve editor, monitor layout, keybinds, window rules
+- bluemancz-hyprland-config, bluemancz-hyprland-monitors, bluemancz-hyprland-schema, bluemancz-hyprland-socket, bluemancz-hyprland-state - Python libraries hyprmod depends on, prefixed with their GitHub owner since they are not first-party Hyprland projects
+
 ## 2026-11-17
 
 Added Packages:
@@ -14,6 +21,7 @@ Added Packages:
 Fixed Packages:
 
 - waylock - pinned to 1.6.0: 1.7.0 needs a newer Zig than Fedora ships and failed on every Fedora version
+- Hyprland - `Hyprland --version` now also shows the build date, branch (the release tag), commit message and commit count instead of `unknown`/`0`
 
 ## 2026-11-07
 

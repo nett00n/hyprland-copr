@@ -24,6 +24,7 @@ from lib.upstream import (
     fetch_tags,
     get_changelog_info,
     get_commit_info,
+    get_commit_meta,
     get_commit,
     get_commit_with_base,
     get_tag_commit,
@@ -713,3 +714,46 @@ class TestSyncUpstream:
         assert commit[0] == upstream_repo["first"]
         info = get_changelog_info(wt, "1.1.0", None)
         assert info is not None
+
+
+def _git_in(repo, *args):
+    import subprocess
+
+    subprocess.run(
+        ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        check=True,
+        capture_output=True,
+    )
+
+
+def test_get_commit_meta_real_repo(tmp_path):
+    """#COPR-0031: subject and commit count of a tag, from a real repo."""
+    _git_in(tmp_path, "init", "-q")
+    _git_in(tmp_path, "commit", "-q", "--allow-empty", "-m", "first")
+    _git_in(tmp_path, "commit", "-q", "--allow-empty", "-m", "VERSION: bump to 1.0.0")
+    _git_in(tmp_path, "tag", "v1.0.0")
+    _git_in(tmp_path, "commit", "-q", "--allow-empty", "-m", "after the tag")
+
+    meta = get_commit_meta(tmp_path, "v1.0.0")
+    assert meta == {"subject": "VERSION: bump to 1.0.0", "commits": 2}
+
+
+def test_get_commit_meta_bad_ref(tmp_path):
+    _git_in(tmp_path, "init", "-q")
+    assert get_commit_meta(tmp_path, "nope") == {}
+
+
+@patch("lib.upstream.get_commit_meta")
+@patch("lib.upstream.get_tag_info")
+def test_get_changelog_info_merges_commit_meta(mock_tag_info, mock_meta):
+    mock_tag_info.return_value = {
+        "published_at": "2024-01-01T00:00:00+00:00",
+        "body": "b",
+        "tag": "v1.0.0",
+        "commit": "abc123",
+    }
+    mock_meta.return_value = {"subject": "bump", "commits": 7}
+    result = get_changelog_info(Path("."), "1.0.0")
+    assert result["subject"] == "bump"
+    assert result["commits"] == 7
+    mock_meta.assert_called_once_with(Path("."), "abc123")

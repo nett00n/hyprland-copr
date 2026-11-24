@@ -62,6 +62,7 @@ other-apps:
   - Waybar
   - ashell
   - bare
+  - bluemancz-hyprmod
   - cliphist
   - cliphist-git
   - eww
@@ -133,6 +134,11 @@ other-deps:
   label: Other dependencies
   packages:
   - aylurs-gtk-shell
+  - bluemancz-hyprland-config
+  - bluemancz-hyprland-monitors
+  - bluemancz-hyprland-schema
+  - bluemancz-hyprland-socket
+  - bluemancz-hyprland-state
   - cpptrace
   - glaze
   - glaze-v7

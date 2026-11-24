@@ -35,6 +35,7 @@ file and `docs/features/` work together.
 - [X] [COPR-0028. Last-night build stats and error details](features/COPR-0028-last-build-stats.md) - `#diagnostics` `#state` `#tooling`
 - [X] [COPR-0029. Build autoheal: dependencies and file lists](features/COPR-0029-build-deps-autoheal.md) - `#automation` `#build` `#diagnostics` `#mock`
 - [X] [COPR-0030. Hare build system](features/COPR-0030-hare-build-system.md) - `#packaging` `#tooling`
+- [ ] [COPR-0031. Upstream git metadata macros for tarball builds](features/COPR-0031-upstream-git-metadata-macros.md) - `#packaging` `#spec` `#upstream`
 
 ## Tags
 
@@ -58,7 +59,7 @@ file and `docs/features/` work together.
 - `#notifications`: COPR-0026
 - `#onboarding`: COPR-0001
 - `#packages`: COPR-0001, COPR-0013, COPR-0014
-- `#packaging`: COPR-0005, COPR-0008, COPR-0025, COPR-0027, COPR-0030
+- `#packaging`: COPR-0005, COPR-0008, COPR-0025, COPR-0027, COPR-0030, COPR-0031
 - `#persistence`: COPR-0015
 - `#pipeline`: COPR-0002
 - `#provenance`: COPR-0023
@@ -67,10 +68,10 @@ file and `docs/features/` work together.
 - `#release`: COPR-0008
 - `#reproducible`: COPR-0011
 - `#security`: COPR-0023
-- `#spec`: COPR-0005, COPR-0018
+- `#spec`: COPR-0005, COPR-0018, COPR-0031
 - `#srpm`: COPR-0018
 - `#state`: COPR-0015, COPR-0028
 - `#testing`: COPR-0006, COPR-0010
 - `#tooling`: COPR-0024, COPR-0025, COPR-0026, COPR-0027, COPR-0028, COPR-0030
-- `#upstream`: COPR-0004
+- `#upstream`: COPR-0004, COPR-0031
 - `#versioning`: COPR-0004

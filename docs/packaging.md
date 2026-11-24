@@ -267,10 +267,26 @@ build:
   - test -n "$GIT_COMMIT_HASH"   # fail loudly if the source is not a git archive
   - export GIT_TAG=v%{version}
   - export GIT_DIRTY=clean
+  - export GIT_BRANCH=v%{version}
+  - export GIT_COMMIT_MESSAGE="%{?upstream_commit_subject}"
+  - export GIT_COMMITS=%{?upstream_commits}
+  - export GIT_COMMIT_DATE="$(LC_ALL=C TZ=UTC date -d "$(tar -tvz --full-time --utc -f %{SOURCE0} | head -n1 | awk '{print $4" "$5}') UTC" '+%a %b %-d %H:%M:%S %Y')"
+  - test -n "$GIT_COMMIT_DATE"
 ```
 
-It needs `git-core` in `build_requires`. Branch, date and message stay `unknown`: there is
-no honest value for them.
+It needs `git-core` in `build_requires`. The rest comes from three places:
+
+- **Date**: `git archive` stamps every tar entry with the commit time, so it is read back
+  from the tarball itself and never goes stale.
+- **Commit message and count**: `make stage-spec` reads them from the upstream mirror and
+  emits `%global upstream_commit_subject` / `upstream_commits` (#COPR-0031,
+  [feature doc](features/COPR-0031-upstream-git-metadata-macros.md)). Without a mirror they
+  expand to nothing and upstream prints `unknown` / `0`.
+- **Branch**: the tag name. A tag build has no honest branch.
+
+`Libraries: ... system has unknown` in `Hyprland --version` is separate: Hyprland reads
+`<lib>.pc` from `/usr/lib64/pkgconfig` at runtime, and those files ship only in the
+`*-devel` packages. Install `hyprutils-devel`, `hyprlang-devel`, etc. to see the versions.
 
 ## Drop-in replacements of Fedora packages (#COPR-0005)
 

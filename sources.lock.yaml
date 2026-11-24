@@ -804,3 +804,39 @@ waycorner:
     sha256: 829575b86f21903a97082a290c48ac7025428d1c8bf308f6a851dc54bb8a61b1
     size: 17945
     recorded: '2026-11-24'
+bluemancz-hyprland-socket:
+  bluemancz-hyprland-socket-0.12.2.tar.gz:
+    url: https://github.com/BlueManCZ/hyprland-socket/archive/refs/tags/v0.12.2.tar.gz#/bluemancz-hyprland-socket-0.12.2.tar.gz
+    sha256: 3b26dba706560c411f0e71f689c6f8219a3ace0eabdad9c7f460058ee174c685
+    size: 23139
+    recorded: '2026-11-24'
+bluemancz-hyprland-schema:
+  bluemancz-hyprland-schema-0.8.2.tar.gz:
+    url: https://github.com/BlueManCZ/hyprland-schema/archive/refs/tags/v0.8.2.tar.gz#/bluemancz-hyprland-schema-0.8.2.tar.gz
+    sha256: 38b97fa8246947187b514304b8a513d058bbbbea930c9505f5dd740c6990031d
+    size: 98436
+    recorded: '2026-11-24'
+bluemancz-hyprland-config:
+  bluemancz-hyprland-config-0.9.21.tar.gz:
+    url: https://github.com/BlueManCZ/hyprland-config/archive/refs/tags/v0.9.21.tar.gz#/bluemancz-hyprland-config-0.9.21.tar.gz
+    sha256: fd562c0c3f1a16537a7b9c5447fc80779dca073c3389969857fa2a48110d8cd7
+    size: 215232
+    recorded: '2026-11-24'
+bluemancz-hyprland-monitors:
+  bluemancz-hyprland-monitors-0.9.2.tar.gz:
+    url: https://github.com/BlueManCZ/hyprland-monitors/archive/refs/tags/v0.9.2.tar.gz#/bluemancz-hyprland-monitors-0.9.2.tar.gz
+    sha256: 72fed128146fc4517bbb164f776fb2bab3047b15b8a07441ea178f8515e9a2f2
+    size: 31639
+    recorded: '2026-11-24'
+bluemancz-hyprland-state:
+  bluemancz-hyprland-state-0.4.9.tar.gz:
+    url: https://github.com/BlueManCZ/hyprland-state/archive/refs/tags/v0.4.9.tar.gz#/bluemancz-hyprland-state-0.4.9.tar.gz
+    sha256: a7c75d86b855a8ce758452b2cdd0bcc967298930b0d14e36ee309e51dac40e23
+    size: 46791
+    recorded: '2026-11-24'
+bluemancz-hyprmod:
+  bluemancz-hyprmod-0.6.0.tar.gz:
+    url: https://github.com/BlueManCZ/hyprmod/archive/refs/tags/v0.6.0.tar.gz#/bluemancz-hyprmod-0.6.0.tar.gz
+    sha256: 958da9d94e0ed9a0ebc348bcf0479fa4cb8604945ddf00410fb6920c8768bbf1
+    size: 648989
+    recorded: '2026-11-24'
