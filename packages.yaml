@@ -125,7 +125,7 @@ bare:
   - '%{_mandir}/man1/bare.1*'
   - '%{_mandir}/man5/bare.5*'
   license: MIT
-  release: 8
+  release: 9
   requires: []
   rpm:
     no_debug_package: false
@@ -1026,7 +1026,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 29
+  release: 30
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -2111,7 +2111,7 @@ neowall:
     - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
   summary: GPU-accelerated live wallpaper engine using GLSL shaders
   url: https://github.com/1ay1/neowall
-  version: 0.10.2
+  version: 0.11.1
 OpenLogi:
   auto_update:
     release_type: pinned-version

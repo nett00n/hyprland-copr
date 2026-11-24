@@ -1,13 +1,13 @@
-%global upstream_commit_subject release: neowall 0.10.2
-%global upstream_commits 591
+%global upstream_commit_subject release: neowall 0.11.1
+%global upstream_commits 605
 
 Name:           neowall
-Version:        0.10.2
+Version:        0.11.1
 Release:        1%{?dist}
 Summary:        GPU-accelerated live wallpaper engine using GLSL shaders
 License:        MIT
 URL:            https://github.com/1ay1/neowall
-Source0:        https://github.com/1ay1/neowall/archive/refs/tags/v0.10.2.tar.gz#/neowall-0.10.2.tar.gz
+Source0:        https://github.com/1ay1/neowall/archive/refs/tags/v0.11.1.tar.gz#/neowall-0.11.1.tar.gz
 
 BuildRequires:  gcc
 BuildRequires:  meson
@@ -40,8 +40,8 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.10.2
-Commit:            fa9a76dabe01ab5f196273021d294e6ca5df0203
+Tag:               v0.11.1
+Commit:            d1a7d894f3eff83c51d2f9da41293aa111045a58
 
 %prep
 %autosetup -p1
@@ -78,12 +78,12 @@ Development files for neowall.
 %files devel
 
 %changelog
-* Wed Nov 18 2026 nett00n <copr@nett00n.org> - 0.10.2-1
+* Sat Nov 21 2026 nett00n <copr@nett00n.org> - 0.11.1-1
 
-- neowall 0.10.2
+- neowall 0.11.1
 - -----BEGIN SSH SIGNATURE-----
 - U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgo2iVKeZacug0pdwEnjnKu4UZUU
 - NOvjJid1J+ygsRcQsAAAADZ2l0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5
-- AAAAQJ1Eg32wrSroykqWhtcLJ7GgVGh/MBgkPeWrRaa8q/6pFUKJJoH02LJma4S3/4w+mf
-- aZFjfrBAAJCy7Mgg73swA=
+- AAAAQGEBVWIgpM27QYJuv7lD/Nu/meOqIGrt5QTKvw56RKeMtCi6n3RQ7wjVTomn6wBHaU
+- BBlWJJjk6y/xZkOBqgYAQ=
 - -----END SSH SIGNATURE-----
