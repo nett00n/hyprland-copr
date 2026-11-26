@@ -2,7 +2,7 @@
 
 ![logo](https://cdn.statically.io/gh/nett00n/hyprland-copr@main/assets/logo/hyprland-copr-x4.png)
 
-![Fedora 43 Ready](https://img.shields.io/badge/Fedora-43-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF) ![Fedora 44 Ready](https://img.shields.io/badge/Fedora-44-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF) ![Fedora 45 Ready](https://img.shields.io/badge/Fedora-45-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF)
+![Fedora 43 Ready](https://img.shields.io/badge/Fedora-43-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF) ![Fedora 44 Ready](https://img.shields.io/badge/Fedora-44-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF) ![Fedora 45 Ready](https://img.shields.io/badge/Fedora-45-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF) ![Fedora 46 Ready](https://img.shields.io/badge/Fedora-46-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF)
 
 ![x86_64](https://img.shields.io/badge/arch-x86__64-supported?style=for-the-badge&logo=linux&logoColor=eceff4&labelColor=1F1F1F&color=a3be8c) ![aarch64](https://img.shields.io/badge/arch-aarch64-supported?style=for-the-badge&logo=arm&logoColor=eceff4&labelColor=1F1F1F&color=ebcb8b)
 
@@ -144,6 +144,14 @@
 
 ## News
 
+### 2026-11-25
+
+Fedora 45 is out and Fedora 46 is the new rawhide: packages are now built for Fedora 43, 44, 45 and 46 (rawhide).
+
+Updated Packages:
+
+- OpenLogi - unpinned from 0.8.15 and moved to 0.9.0; Fedora 45 now ships rustc 1.100, which the newer releases need
+
 ### 2026-11-24
 
 Added Packages:
@@ -177,13 +185,6 @@ Added Packages:
 Fixed Packages:
 
 - Hyprland - now reports its real commit and tag (`Hyprland --version` used to say `unknown`), which `hyprpm` needs to fetch matching headers and build plugins
-
-### 2026-11-05
-
-Added Packages:
-
-- wlhc - Wayland hot corners: run a command when the pointer touches a screen corner (written in Hare)
-- harec, hare, hare-ev, hare-xml, hare-wayland - the Hare language toolchain and libraries wlhc builds with; harec tracks upstream 0.26 on every Fedora version, replacing Fedora's older 0.25 on 43 and 44
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 

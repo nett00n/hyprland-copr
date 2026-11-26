@@ -19,6 +19,10 @@ in `docs/CONTRIBUTING.md` "Changelog".
 History before this file's introduction (2026-08-02) is not backfilled - see
 `git log`.
 
+## 2026-11-25
+
+- COPR-0032: Fedora 46 (rawhide) joins the build matrix (43/44/45/46); `FEDORA_VERSION` now defaults to 45 from one `DEFAULT_FEDORA_VERSION` constant instead of ~12 literals; Copr's `fedora-rawhide-<arch>` chroot is gated on the local fedora-46 mock row; toolbox base image moves to Fedora 45; `stage-mock` passes an explicit `--resultdir` so a target whose mock config is a symlink to rawhide (fedora-46) no longer builds into an unread directory and records a silent empty success (BUG-0122 tracks the remaining guard).
+
 ## 2026-11-17
 
 - COPR-0031: `stage-spec` emits `%global upstream_commit_subject` / `upstream_commits` from the upstream mirror so tarball builds can stamp the commit message and count; Hyprland uses them plus the tag as branch and the tarball's commit time as date.

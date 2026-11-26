@@ -28,7 +28,11 @@ all (used by CI, which can't nest privileged containers).
 
 ## Quirks & Decisions
 
-- Decision: the base image is digest-pinned (`fedora-toolbox:43@sha256:...`) so the
+- Decision: the base image is `fedora-toolbox:45` (the newest stable release; it
+  carries `mock-core-configs` that already knows `fedora-46`, and `mock -r` does not
+  need the host to match the chroot, see
+  [COPR-0032](COPR-0032-fedora-version-rollover.md)). It is digest-pinned
+  (`fedora-toolbox:45@sha256:...`) so the
   image is reproducible; the tag stays for readability. Individual dnf packages are
   deliberately not pinned -- against a floating base that only produces resolution
   failures. Refresh the digest deliberately when the base should move

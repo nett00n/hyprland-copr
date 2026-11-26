@@ -672,14 +672,30 @@ class TestChrootCoverage:
         assert result == {
             "fedora-44-x86_64": COVERAGE_VERIFIED,
             "fedora-43-x86_64": COVERAGE_FAILED,
-            # rawhide is no longer in SUPPORTED_FEDORA_VERSIONS/local_chroots()
-            # -- a Copr project that still lists it (or any other chroot this
-            # host's matrix doesn't cover) is UNVERIFIABLE, not UNBUILT, so it
-            # can never permanently block a submission (see
-            # chroot_coverage()'s docstring for the deadlock this avoids).
-            "fedora-rawhide-x86_64": COVERAGE_UNVERIFIABLE,
+            # #COPR-0032: Copr's rolling chroot maps to the local
+            # fedora-<RAWHIDE_FEDORA_VERSION> mock row; no row yet -> UNBUILT
+            # (it gates), not UNVERIFIABLE.
+            "fedora-rawhide-x86_64": COVERAGE_UNBUILT,
             "fedora-44-aarch64": COVERAGE_UNVERIFIABLE,
         }
+
+    def test_rawhide_uses_the_rawhide_version_mock_row(self):
+        """#COPR-0032: fedora-rawhide-x86_64 is judged by the local
+        fedora-<RAWHIDE_FEDORA_VERSION>-x86_64 mock row."""
+        local = paths.mock_chroot(paths.RAWHIDE_FEDORA_VERSION)
+        self._set_mock("hyprutils", local, "success")
+        result = chroot_coverage("hyprutils", ["fedora-rawhide-x86_64"])
+        assert result == {"fedora-rawhide-x86_64": COVERAGE_VERIFIED}
+
+    def test_rawhide_failure_on_local_row_gates(self):
+        local = paths.mock_chroot(paths.RAWHIDE_FEDORA_VERSION)
+        self._set_mock("hyprutils", local, "failed")
+        result = chroot_coverage("hyprutils", ["fedora-rawhide-x86_64"])
+        assert result == {"fedora-rawhide-x86_64": COVERAGE_FAILED}
+
+    def test_rawhide_aarch64_stays_unverifiable(self):
+        result = chroot_coverage("hyprutils", ["fedora-rawhide-aarch64"])
+        assert result == {"fedora-rawhide-aarch64": COVERAGE_UNVERIFIABLE}
 
     def test_skipped_when_mock_configured_skip(self):
         """A deliberate packages.yaml `fedora: '<ver>': skip: true` (stage-mock.py
@@ -887,10 +903,10 @@ class TestIneligiblePackages:
     def test_copr_chroot_outside_local_matrix_never_blocks(self, mock_chroots):
         """The deadlock this specifically avoids: a Copr project still listing
         a chroot this host's SUPPORTED_FEDORA_VERSIONS no longer builds (e.g.
-        a leftover fedora-rawhide-x86_64) must never make every package
+        a leftover fedora-42-x86_64) must never make every package
         ineligible forever -- there is no local mock row that could ever
         satisfy it."""
-        mock_chroots.return_value = ["fedora-44-x86_64", "fedora-rawhide-x86_64"]
+        mock_chroots.return_value = ["fedora-44-x86_64", "fedora-42-x86_64"]
         run_id = build_db.start_run("fedora-44-x86_64", "fedora", "44", "x86_64")
         build_db.set_stage("hyprutils", "mock", "fedora-44-x86_64", run_id, "success")
 

@@ -127,9 +127,9 @@ class TestMainErrorsAndNoOps:
 
 
 class TestTargetResolution:
-    def test_fedora_version_default_is_44(self, fake_repo, monkeypatch):
+    def test_fedora_version_default_is_45(self, fake_repo, monkeypatch):
         _write_packages_yaml(fake_repo["root"], "valid-pkg")
-        target = "fedora-44-x86_64"
+        target = "fedora-45-x86_64"
         _seed_mock_copr_rows(target, ["valid-pkg"])
         monkeypatch.delenv("PACKAGE", raising=False)
         monkeypatch.delenv("FEDORA_VERSION", raising=False)

@@ -135,7 +135,7 @@ def get_packages(path: Path | None = None) -> dict:
     return packages
 
 
-SUPPORTED_FEDORA_VERSIONS = {"43", "44", "45"}
+SUPPORTED_FEDORA_VERSIONS = {"43", "44", "45", "46"}
 
 
 def apply_os_overrides(pkg: dict, fedora_version: str) -> dict:

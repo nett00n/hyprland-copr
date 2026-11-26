@@ -5,7 +5,7 @@ bottom_info: |
   It looks more like original `solopasha/hyprland` repo but with no ARM support
 copr_url: https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 description: |
-  ![Fedora 43 Ready](https://img.shields.io/badge/Fedora-43-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF) ![Fedora 44 Ready](https://img.shields.io/badge/Fedora-44-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF) ![Fedora 45 Ready](https://img.shields.io/badge/Fedora-45-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF)
+  ![Fedora 43 Ready](https://img.shields.io/badge/Fedora-43-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF) ![Fedora 44 Ready](https://img.shields.io/badge/Fedora-44-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF) ![Fedora 45 Ready](https://img.shields.io/badge/Fedora-45-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF) ![Fedora 46 Ready](https://img.shields.io/badge/Fedora-46-ready?style=for-the-badge&logo=fedora&logoColor=33CCFF&labelColor=1F1F1F&color=33CCFF)
 
   ![x86_64](https://img.shields.io/badge/arch-x86__64-supported?style=for-the-badge&logo=linux&logoColor=eceff4&labelColor=1F1F1F&color=a3be8c) ![aarch64](https://img.shields.io/badge/arch-aarch64-supported?style=for-the-badge&logo=arm&logoColor=eceff4&labelColor=1F1F1F&color=ebcb8b)
 

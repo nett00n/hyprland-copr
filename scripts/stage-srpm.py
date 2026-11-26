@@ -8,7 +8,7 @@ Must be run inside the rpm toolbox container (invoked via Makefile).
 
 Environment variables:
   PACKAGE         Build only this package (optional, comma-separated)
-  FEDORA_VERSION  Fedora version to target (default: 44)
+  FEDORA_VERSION  Fedora version to target (default: 45)
   MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   SKIP_PACKAGES   Skip these packages (optional, comma-separated)
   PROCEED_BUILD   Skip packages where mock stage already succeeded
@@ -25,6 +25,7 @@ from pathlib import Path
 from lib import build_db
 from lib.config import env_flag, setup_logging
 from lib.paths import (
+    DEFAULT_FEDORA_VERSION,
     ARCH,
     DISTRO,
     ROOT,
@@ -213,7 +214,7 @@ def run_for_package(
 
 
 def main() -> None:
-    fedora_version = os.environ.get("FEDORA_VERSION", "44")
+    fedora_version = os.environ.get("FEDORA_VERSION", DEFAULT_FEDORA_VERSION)
     mock_chroot_override = os.environ.get("MOCK_CHROOT", "")
     target = resolve_target(fedora_version, mock_chroot_override)
     proceed = env_flag("PROCEED_BUILD")

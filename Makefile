@@ -12,8 +12,11 @@ SKIP_PACKAGES   := $(subst ",,$(SKIP_PACKAGES))
 LOG_LEVEL       := $(subst ",,$(LOG_LEVEL))
 CMD_TIMEOUT     := $(subst ",,$(CMD_TIMEOUT))
 # Fallback defaults if not set after stripping
-FEDORA_VERSION  ?= 44
-SUPPORTED        := 43 44 45
+# #COPR-0032: newest *stable* Fedora; mirrors scripts/lib/paths.py's
+# DEFAULT_FEDORA_VERSION (tests/test_fedora_versions.py keeps them in sync).
+DEFAULT_FEDORA_VERSION := 45
+FEDORA_VERSION  ?= $(DEFAULT_FEDORA_VERSION)
+SUPPORTED        := 43 44 45 46
 # Mirrors scripts/lib/paths.py's CANONICAL_FEDORA_VERSION -- the one matrix
 # chroot full-cycle-matrix treats as authoritative (release bumps, and the
 # spec/srpm stage-copr.py submits from). Keep the two in sync by hand; no
@@ -265,7 +268,7 @@ help: ## Show this help
 	@echo "  Common workflows:"
 	@echo "    make sources PACKAGE=hyprland"
 	@echo "    make stage-spec PACKAGE=hyprland"
-	@echo "    make stage-mock PACKAGE=hyprland FEDORA_VERSION=44"
+	@echo "    make stage-mock PACKAGE=hyprland FEDORA_VERSION=45"
 	@echo "    make stage-mock PACKAGE=hyprland CMD_TIMEOUT=7200  # 2 hours for large builds"
 	@echo "    make full-cycle PACKAGE=hyprland COPR_REPO=nett00n/hyprland"
 	@echo "    make full-cycle PACKAGE=hyprland FORCE_REBUILD=1  # ignore cache, rebuild spec through copr"
@@ -378,7 +381,7 @@ set-release: check-image check-venv setup-volumes ## Set package release value (
 	$(CONTAINER_PYTHON) scripts/set-package-release.py $(PACKAGE) $(RELEASE) $(if $(filter 1,$(LOCK)),--lock,)
 
 gather-requires: check-image check-venv setup-volumes ## Suggest requires entries from built RPMs (RPM=path/to/pkg.rpm [path/to/other.rpm ...] required -- a filesystem path, not a packages.yaml name)
-	@test -n "$(RPM)" || (echo "$(HIGHLIGHT_PREFIX) Error: RPM is required (e.g. RPM=local-repo/fedora-44-x86_64/hyprutils-0.14.0.fc44.x86_64.rpm)"; exit 1)
+	@test -n "$(RPM)" || (echo "$(HIGHLIGHT_PREFIX) Error: RPM is required (e.g. RPM=local-repo/fedora-45-x86_64/hyprutils-0.14.0.fc45.x86_64.rpm)"; exit 1)
 	$(CONTAINER_PYTHON) scripts/gather-requires.py $(RPM)
 
 readme: check-image check-venv setup-volumes ## Generate README.md and docs/README.copr.md from packages.yaml/groups.yaml/repo.yaml, docs/NEWS.md and git history (#COPR-0012; no build-report.db, no Copr poll)
@@ -471,7 +474,7 @@ container-clean: ## Remove the container image
 	@echo "$(HIGHLIGHT_PREFIX) Cleaned $(IMAGE_NAME)"
 
 container-volume-clean: ## Remove volumes: rpmbuild (shared, once) and mock-cache/mock-root (per FEDORA_VERSION; all SUPPORTED if not specified); local-repo/ itself is a plain directory now, remove by hand if wanted
-	@if [ "$(FEDORA_VERSION)" = "44" ] && [ -z "$(RECURSIVE_CALL)" ]; then \
+	@if [ "$(FEDORA_VERSION)" = "$(DEFAULT_FEDORA_VERSION)" ] && [ -z "$(RECURSIVE_CALL)" ]; then \
 		$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume inspect $(RPMBUILD_VOLUME) >/dev/null 2>&1 && \
 			$(CONTAINER_SUDO) $(CONTAINER_RUNTIME) volume rm $(RPMBUILD_VOLUME) || true; \
 		for v in $(SUPPORTED); do \

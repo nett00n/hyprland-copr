@@ -9,7 +9,7 @@ Must be run inside the rpm toolbox container (invoked via Makefile).
 
 Environment variables:
   PACKAGE              Build only this package (optional, comma-separated)
-  FEDORA_VERSION       Fedora version to target (default: 44)
+  FEDORA_VERSION       Fedora version to target (default: 45)
   MOCK_CHROOT          Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   COPR_REPO            Copr repo slug, e.g. nett00n/hyprland (required)
   SKIP_PACKAGES        Skip these packages (optional, comma-separated)
@@ -48,6 +48,7 @@ from lib.copr import (
 )
 from lib.log_retention import refresh_latest_link
 from lib.paths import (
+    DEFAULT_FEDORA_VERSION,
     ARCH,
     CANONICAL_FEDORA_VERSION,
     DISTRO,
@@ -299,7 +300,7 @@ def run_for_package(
 
 
 def main() -> None:
-    fedora_version = os.environ.get("FEDORA_VERSION", "44")
+    fedora_version = os.environ.get("FEDORA_VERSION", DEFAULT_FEDORA_VERSION)
     mock_chroot_override = os.environ.get("MOCK_CHROOT", "")
     target = resolve_target(fedora_version, mock_chroot_override)
     copr_repo = os.environ.get("COPR_REPO", "")

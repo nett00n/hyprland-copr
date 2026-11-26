@@ -1,9 +1,10 @@
 # One image builds every SUPPORTED chroot via `mock -r` -- mock does not need a
-# matching host, so this is pinned to the oldest supported Fedora version rather
-# than parameterized per FEDORA_VERSION (Makefile no longer passes a build-arg
+# matching host, so this is pinned to the newest stable Fedora version (its
+# mock-core-configs knows every SUPPORTED chroot, #COPR-0032) rather than
+# parameterized per FEDORA_VERSION (Makefile no longer passes a build-arg
 # for it; see docs/CHANGELOG.md and docs/FRD.md COPR-0011).
 # Digest-pinned (#BUG-0088); refresh deliberately, see COPR-0011 Quirks & Decisions.
-FROM registry.fedoraproject.org/fedora-toolbox:43@sha256:9df460cf8c53e2c8e63f2dd4ec8da6c864c8f97dfc675045bceb142f9f400be6
+FROM registry.fedoraproject.org/fedora-toolbox:45@sha256:0dbcd29c62c476c19dcfb1415f33ca7de12caae9470a67a263487d757278766a
 
 ARG UID=1000
 ARG GID=1000

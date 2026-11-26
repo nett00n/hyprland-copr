@@ -15,7 +15,7 @@ nightly failure, so this script always exits 0.
 
 Environment variables:
   PACKAGE            Restrict polling to these packages (optional, comma-separated)
-  FEDORA_VERSION     Fedora version to target (default: 44)
+  FEDORA_VERSION     Fedora version to target (default: 45)
   MOCK_CHROOT        Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   COPR_POLL_TIMEOUT  Total seconds to keep retrying (default: 1800; 0 = one pass)
   COPR_POLL_INTERVAL Seconds between retry passes (default: 30)
@@ -29,11 +29,11 @@ import sys
 from lib import build_db
 from lib.config import env_int, setup_logging
 from lib.copr import TERMINAL_STATES, poll_copr_status
-from lib.paths import resolve_target
+from lib.paths import DEFAULT_FEDORA_VERSION, resolve_target
 
 
 def main() -> None:
-    fedora_version = os.environ.get("FEDORA_VERSION", "44")
+    fedora_version = os.environ.get("FEDORA_VERSION", DEFAULT_FEDORA_VERSION)
     mock_chroot_override = os.environ.get("MOCK_CHROOT", "")
     target = resolve_target(fedora_version, mock_chroot_override)
 

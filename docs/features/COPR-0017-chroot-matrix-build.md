@@ -28,6 +28,10 @@ gated per package (COPR-0007): a package not yet verified/skipped on every
 locally-buildable chroot, and its transitive dependents, are held back individually.
 `update-daily` (COPR-0003) uses this instead of a single-version `full-cycle`.
 
+The matrix is currently 43/44/45/46 (46 = rawhide, mapped to Copr's
+`fedora-rawhide-<arch>` chroot for gating). How a version is added or dropped:
+[COPR-0032](COPR-0032-fedora-version-rollover.md).
+
 ## Implementation
 
 - `Makefile` `full-cycle-matrix`/`_full-cycle-matrix`/`matrix-chroot-%` targets.

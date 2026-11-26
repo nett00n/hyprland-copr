@@ -638,6 +638,11 @@ OpenLogi:
     sha256: 80d2738b2a481318226fb1c2406ef0128238f16b52d0ac123a05427988e5ec42
     size: 5930579
     recorded: '2026-10-24'
+  openlogi-0.9.0.tar.gz:
+    url: https://github.com/AprilNEA/OpenLogi/archive/refs/tags/v0.9.0.tar.gz#/openlogi-0.9.0.tar.gz
+    sha256: ffcba3261ba8e918db011316c1323913f7535a75c2f98c69131ea80aa3a7ac5e
+    size: 6909622
+    recorded: '2026-11-25'
 neowall:
   neowall-0.7.2.tar.gz:
     url: https://github.com/1ay1/neowall/archive/refs/tags/v0.7.2.tar.gz#/neowall-0.7.2.tar.gz

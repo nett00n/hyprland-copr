@@ -8,7 +8,7 @@ Must be run inside the rpm toolbox container (invoked via Makefile).
 Environment variables:
   PACKAGE         If set, show only these packages (comma-separated, optional)
   SKIP_PACKAGES   If set, exclude these packages (comma-separated, optional)
-  FEDORA_VERSION  Fedora version to target (default: 44)
+  FEDORA_VERSION  Fedora version to target (default: 45)
   MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   COPR_REPO       If set, include copr stage in plan (optional)
   FORCE_REBUILD   If '1'/'true', show every requested package's stages as "run"
@@ -22,7 +22,7 @@ from lib import build_db
 from lib.cache import compute_input_hashes, stale_advisories
 from lib.config import env_flag
 from lib.deps import effective_deps, ordered_packages
-from lib.paths import resolve_target
+from lib.paths import DEFAULT_FEDORA_VERSION, resolve_target
 from lib.pipeline import STAGE_ORDER, compute_forced_stages, is_cached
 from lib.version import VERSION_STAGE_PRECEDENCE, nvr, recorded_version
 from lib.yaml_utils import STAGES, get_packages
@@ -36,7 +36,7 @@ def _declared_nvr(meta: dict, target: str) -> str | None:
     fedora_version = (
         target.split("-")[1]
         if target.startswith("fedora-")
-        else os.environ.get("FEDORA_VERSION", "44")
+        else os.environ.get("FEDORA_VERSION", DEFAULT_FEDORA_VERSION)
     )
     return nvr(str(meta["version"]), meta.get("release", 1), fedora_version)
 
@@ -66,7 +66,7 @@ def show_plan(
     """
     force_packages = force_packages or set()
     if not target:
-        fedora_version = os.environ.get("FEDORA_VERSION", "44")
+        fedora_version = os.environ.get("FEDORA_VERSION", DEFAULT_FEDORA_VERSION)
         target = resolve_target(fedora_version, os.environ.get("MOCK_CHROOT", ""))
 
     # Load full package set (needed for compute_input_hashes to resolve deps)

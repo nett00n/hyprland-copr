@@ -19,7 +19,7 @@ from lib.github import (
     save_release_cache,
 )
 from lib.jinja_utils import create_jinja_env
-from lib.paths import ROOT
+from lib.paths import DEFAULT_FEDORA_VERSION, ROOT
 from lib.spec_utils import process_archive_urls
 from lib.upstream import get_changelog_info, list_upstreams, mirror_path
 from lib.yaml_utils import apply_os_overrides, get_packages, load_repo_yaml
@@ -215,7 +215,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    fedora_version = os.environ.get("FEDORA_VERSION", "44")
+    fedora_version = os.environ.get("FEDORA_VERSION", DEFAULT_FEDORA_VERSION)
     packages = get_packages()
     repo = load_repo_yaml()
     source_url = repo.get("source_url") or None

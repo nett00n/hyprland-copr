@@ -7,7 +7,7 @@ prints a summary table. All state is recorded in build-report.db.
 Must be run inside the rpm toolbox container (invoked via Makefile).
 
 Environment variables:
-  FEDORA_VERSION             Fedora version to target (default: 44)
+  FEDORA_VERSION             Fedora version to target (default: 45)
   MOCK_CHROOT                Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   COPR_REPO                  Copr repo slug, e.g. nett00n/hyprland (optional)
   PACKAGE                    Build only this package (optional, comma-separated)
@@ -58,6 +58,7 @@ from lib.pipeline import (
 )
 from lib.log_retention import prune_run_logs, refresh_latest_link, retention_from_env
 from lib.paths import (
+    DEFAULT_FEDORA_VERSION,
     ARCH,
     DISTRO,
     get_run_log_dir,
@@ -189,7 +190,7 @@ def load_config() -> tuple[str, str, str, str, str, bool, bool, bool, bool, bool
     Returns (fedora_version, target, copr_repo, package_filter, skip_filter, skip_mock,
     skip_copr, synchronous_copr, force_rebuild, skip_release_bump).
     """
-    fedora_version = os.environ.get("FEDORA_VERSION", "44")
+    fedora_version = os.environ.get("FEDORA_VERSION", DEFAULT_FEDORA_VERSION)
     if fedora_version not in SUPPORTED_FEDORA_VERSIONS:
         sys.exit(
             f"error: unsupported FEDORA_VERSION={fedora_version!r}, "

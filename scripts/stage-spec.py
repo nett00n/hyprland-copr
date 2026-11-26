@@ -8,7 +8,7 @@ Must be run inside the rpm toolbox container (invoked via Makefile).
 
 Environment variables:
   PACKAGE         Build only this package (optional, comma-separated)
-  FEDORA_VERSION  Fedora version to target (default: 44)
+  FEDORA_VERSION  Fedora version to target (default: 45)
   MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   LOG_LEVEL       Logging level: DEBUG, INFO (default), WARNING, ERROR
 """
@@ -24,7 +24,14 @@ from lib.build_systems import BUILD_SYSTEMS
 from lib.config import env_flag, get_packager, setup_logging
 from lib.github import build_changelog
 from lib.jinja_utils import create_jinja_env
-from lib.paths import ARCH, DISTRO, ROOT, get_package_log_dir, resolve_target
+from lib.paths import (
+    DEFAULT_FEDORA_VERSION,
+    ARCH,
+    DISTRO,
+    ROOT,
+    get_package_log_dir,
+    resolve_target,
+)
 from lib.stage_common import record_config_skip
 from lib.reporting import event, status
 from lib.spec_utils import process_archive_urls
@@ -304,7 +311,7 @@ def run_for_package(
 
 
 def main() -> None:
-    fedora_version = os.environ.get("FEDORA_VERSION", "44")
+    fedora_version = os.environ.get("FEDORA_VERSION", DEFAULT_FEDORA_VERSION)
     mock_chroot_override = os.environ.get("MOCK_CHROOT", "")
     target = resolve_target(fedora_version, mock_chroot_override)
     proceed = env_flag("PROCEED_BUILD")

@@ -91,6 +91,7 @@ def test_the_file_list_vote_gets_every_supported_chroot(env):
         "fedora-43-x86_64",
         "fedora-44-x86_64",
         "fedora-45-x86_64",
+        "fedora-46-x86_64",
     ]
     assert kwargs["get_stage"] is build_db.get_stage
 
@@ -98,7 +99,7 @@ def test_the_file_list_vote_gets_every_supported_chroot(env):
 def test_a_pending_vote_leaves_a_failed_row_without_a_rebuild(env):
     reason = (
         "autoheal: pending -files:%{_bindir}/x "
-        "(needs all chroots; lacking on 1/3: fedora-44-x86_64)"
+        "(needs all chroots; lacking on 1/4: fedora-44-x86_64)"
     )
     with (
         patch.object(stage_mock, "_run_mock_once", return_value=False) as mock_once,

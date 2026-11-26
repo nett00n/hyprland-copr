@@ -9,7 +9,7 @@ Must be run inside the rpm toolbox container (invoked via Makefile).
 
 Environment variables:
   PACKAGE         Build only this package (optional, comma-separated)
-  FEDORA_VERSION  Fedora version to target (default: 44)
+  FEDORA_VERSION  Fedora version to target (default: 45)
   MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
   SKIP_PACKAGES   Skip these packages (optional, comma-separated)
   PROCEED_BUILD   Skip packages where mock stage already succeeded
@@ -35,6 +35,7 @@ from lib.local_repo import regenerate_repo_metadata
 from lib.local_repo import rpm_query as _rpm_query
 from lib.paths import mock_chroot as chroot_name
 from lib.paths import (
+    DEFAULT_FEDORA_VERSION,
     ARCH,
     DISTRO,
     LOCAL_REPO_ROOT,
@@ -212,6 +213,12 @@ def _mock_cmd(target: str, repo_dir: Path, srpm_path: str) -> list[str]:
         "mock",
         "-r",
         target,
+        # #COPR-0032: mock names its default resultdir after the config's `root`,
+        # not after `-r` -- fedora-46 symlinks to rawhide's config, so it would
+        # write under fedora-rawhide-x86_64 while update_local_repo() and
+        # copy_mock_results() read /var/lib/mock/<target>/result.
+        "--resultdir",
+        f"/var/lib/mock/{target}/result",
         "--config-opts",
         "rpmbuild_networking=False",
         "--config-opts",
@@ -453,7 +460,7 @@ def run_for_package(
 
 
 def main() -> None:
-    fedora_version = os.environ.get("FEDORA_VERSION", "44")
+    fedora_version = os.environ.get("FEDORA_VERSION", DEFAULT_FEDORA_VERSION)
     mock_chroot_override = os.environ.get("MOCK_CHROOT", "")
     target = resolve_target(fedora_version, mock_chroot_override)
     if not re.match(r"^[\w.-]+$", target):

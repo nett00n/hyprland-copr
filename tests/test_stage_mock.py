@@ -710,3 +710,19 @@ class TestPreflight:
 
         mock_run_cmd.assert_called_once()
         assert ok is True
+
+
+class TestMockCmdResultdir:
+    """#COPR-0032: mock's resultdir must be the path the pipeline reads, even when
+    the target's config is a symlink to a differently-named root (fedora-46 ->
+    fedora-rawhide)."""
+
+    def test_passes_explicit_resultdir_for_the_target(self, tmp_path):
+        cmd = stage_mock._mock_cmd("fedora-46-x86_64", tmp_path / "repo", "/x/p.src.rpm")
+        i = cmd.index("--resultdir")
+        assert cmd[i + 1] == "/var/lib/mock/fedora-46-x86_64/result"
+
+    def test_resultdir_precedes_the_rebuild_arguments(self, tmp_path):
+        cmd = stage_mock._mock_cmd(TARGET, tmp_path / "repo", "/x/p.src.rpm")
+        assert cmd.index("--resultdir") < cmd.index("--rebuild")
+        assert cmd[-2:] == ["--rebuild", "/x/p.src.rpm"]

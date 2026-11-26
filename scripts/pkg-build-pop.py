@@ -3,7 +3,7 @@
 
 Environment variables:
   PACKAGE         Comma-separated list of packages (optional; all packages if empty)
-  FEDORA_VERSION  Fedora version to target (default: 44)
+  FEDORA_VERSION  Fedora version to target (default: 45)
   MOCK_CHROOT     Override mock chroot (default: fedora-{FEDORA_VERSION}-x86_64)
 
 Exit/output semantics:
@@ -18,12 +18,12 @@ import os
 import sys
 
 from lib import build_db
-from lib.paths import resolve_target
+from lib.paths import DEFAULT_FEDORA_VERSION, resolve_target
 from lib.yaml_utils import find_package_name, get_packages
 
 
 def main() -> None:
-    fedora_version = os.environ.get("FEDORA_VERSION", "44")
+    fedora_version = os.environ.get("FEDORA_VERSION", DEFAULT_FEDORA_VERSION)
     target = resolve_target(fedora_version, os.environ.get("MOCK_CHROOT", ""))
 
     package_env = os.environ.get("PACKAGE", "")

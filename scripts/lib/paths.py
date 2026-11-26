@@ -33,8 +33,18 @@ VENDOR_STORE_DIR = ROOT / ".cache" / "vendor"
 DISTRO = "fedora"
 ARCH = "x86_64"
 
-# The single container image (Containerfile) is pinned to this version -- the
-# oldest SUPPORTED_FEDORA_VERSIONS, so a `BuildRequires: X-devel >= <ver>`
+# #COPR-0032: the version scripts/Makefile target when FEDORA_VERSION is unset --
+# the newest *stable* Fedora. Mirrored by the Makefile's DEFAULT_FEDORA_VERSION
+# (tests/test_fedora_versions.py keeps the two in sync).
+DEFAULT_FEDORA_VERSION = "45"
+
+# #COPR-0032: the numbered version that is currently rawhide. Copr's rolling
+# `fedora-rawhide-<arch>` chroot is gated on this version's local mock row
+# (lib.copr._local_target). Bump it when rawhide branches to the next number.
+RAWHIDE_FEDORA_VERSION = "46"
+
+# The oldest SUPPORTED_FEDORA_VERSIONS (the container image no longer pins a
+# version: `mock -r` builds any chroot), so a `BuildRequires: X-devel >= <ver>`
 # resolved here (stage-spec.py's resolve_dep_versions()) stays satisfiable on
 # every newer supported chroot too. `stage-copr.py` submits from this target's
 # srpm row rather than the default FEDORA_VERSION's: with the rpmbuild volume

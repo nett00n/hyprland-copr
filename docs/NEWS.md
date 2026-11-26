@@ -5,6 +5,15 @@ packages and which Fedora versions are built. Changes to the automation itself g
 `docs/CHANGELOG.md`. Newest first, dated `## YYYY-MM-DD` entries, one short paragraph each.
 README shows the most recent entries - see `scripts/lib/readme_content.py:get_recent_news()`.
 
+## 2026-11-25
+
+Fedora 45 is out and Fedora 46 is the new rawhide: packages are now built for Fedora 43, 44, 45 and 46 (rawhide).
+All packages has been built successfully locally, but copr yet has not enabled 46 chroot.
+
+Updated Packages:
+
+- OpenLogi - unpinned from 0.8.15 and moved to 0.9.0; Fedora 45 now ships rustc 1.100, which the newer releases need
+
 ## 2026-11-24
 
 Added Packages:

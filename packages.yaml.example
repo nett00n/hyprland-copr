@@ -671,7 +671,7 @@ mydata:
 
 # --- OS-version-specific overrides ----------------------------------------
 # Use the fedora: key to override fields for specific Fedora versions.
-# Supported versions: 42, 43, 44, rawhide
+# Supported versions: 43, 44, 45, 46 (46 = rawhide)
 #
 # Semantics:
 #   fedora.<version>.skip: true        — exclude this package entirely for that version

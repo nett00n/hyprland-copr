@@ -5,7 +5,7 @@ New-feature ideas go in `docs/TODO.md` instead (promoted to a `docs/features/` d
 once substantial). GitHub issues are for reporter-facing items (someone else's
 bug/request); this file is the maintainer's own log and may cite issue numbers.
 Entries are deleted when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are
-never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0122**.
+never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0123**.
 
 This file absorbed `docs/TODO.md`'s former defect/debt/chore entries on 2026-09-15
 when `docs/` adopted `docs/DOCS-DRIVEN-DEVELOPMENT.md` — see `docs/ID-MIGRATION.md`
@@ -62,8 +62,8 @@ Shipped behavior doing the wrong thing.
 - #BUG-0119 `_update-daily` runs `make db-prune CONFIRM=1`, and
   `scripts/db-artifacts.py:_stale_rows` keeps only the *highest-version* srpm/vendor
   row per (package, target, kind) -- so a package pinned *below* a version built
-  earlier (rollback / `pinned-version`, e.g. OpenLogi 0.8.15 vs the old 0.8.17, see
-  BUG-0118; hyprland-plugins `20260805git00862ca` vs `20260905git722f15a`) has its
+  earlier (rollback / `pinned-version`, e.g. the former OpenLogi 0.8.15 vs 0.8.17 pin,
+  since dropped; hyprland-plugins `20260805git00862ca` vs `20260905git722f15a`) has its
   *current* NVR's row and file pruned and the stale higher one kept. The next run's
   `lib.pipeline.artifacts_present` finds no row at the current version ->
   `artifact-missing` -> vendor+srpm rebuild, on every chroot, every night (verified
@@ -140,10 +140,11 @@ Shipped behavior doing the wrong thing.
   shipping both marker files mid-migration) can't block `make update-daily`;
   promoting it to an error is worth revisiting once it's run quiet for a while
   [P3/D1]
-- #BUG-0118 `OpenLogi` is pinned to 0.8.15 (`auto_update.release_type:
-  pinned-version`): 0.8.17 needs rustc 1.99 but fedora-45 ships 1.98.1, so the f45
-  mock build fails (f43/f44 built 0.8.17 fine). Unpin (drop `auto_update`, let
-  `make update-versions` bump it) once f45 ships rustc >= 1.99 [P3/D1]
+- #BUG-0122 `stage-mock` records `success` when mock exits 0 but its resultdir holds
+  no binary RPM (`update_local_repo()` just copies nothing). Found on the f46 rollover
+  (#COPR-0032): a resultdir/config-root mismatch made every f46 build look green while
+  the local repo stayed empty, surfacing only as dependents' preflight failures. Fail
+  the stage when no non-`.src.rpm` result exists [P2/D1]
 
 ## Tech debt
 

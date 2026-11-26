@@ -36,6 +36,7 @@ file and `docs/features/` work together.
 - [X] [COPR-0029. Build autoheal: dependencies and file lists](features/COPR-0029-build-deps-autoheal.md) - `#automation` `#build` `#diagnostics` `#mock`
 - [X] [COPR-0030. Hare build system](features/COPR-0030-hare-build-system.md) - `#packaging` `#tooling`
 - [ ] [COPR-0031. Upstream git metadata macros for tarball builds](features/COPR-0031-upstream-git-metadata-macros.md) - `#packaging` `#spec` `#upstream`
+- [X] [COPR-0032. Fedora version rollover](features/COPR-0032-fedora-version-rollover.md) - `#matrix` `#maintenance`
 
 ## Tags
 
@@ -53,8 +54,8 @@ file and `docs/features/` work together.
 - `#intake`: COPR-0014
 - `#lint`: COPR-0010
 - `#logs`: COPR-0022
-- `#maintenance`: COPR-0013
-- `#matrix`: COPR-0017, COPR-0018, COPR-0019, COPR-0020, COPR-0021
+- `#maintenance`: COPR-0013, COPR-0032
+- `#matrix`: COPR-0017, COPR-0018, COPR-0019, COPR-0020, COPR-0021, COPR-0032
 - `#mock`: COPR-0006, COPR-0029
 - `#notifications`: COPR-0026
 - `#onboarding`: COPR-0001

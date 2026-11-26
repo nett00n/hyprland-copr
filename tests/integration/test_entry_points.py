@@ -25,7 +25,7 @@ run_global_checks = stage_validate.run_global_checks
 main = stage_validate.main
 spec_run_for_package = stage_spec.run_for_package
 
-TARGET = "fedora-44-x86_64"
+TARGET = "fedora-45-x86_64"
 # stage-copr.py's run_for_package() always reads its srpm/mock rows from the
 # canonical target (docs/FRD.md COPR-0018: one spec, one SRPM shared via the
 # rpmbuild volume), regardless of the `target`/fedora_version it's called
@@ -445,7 +445,7 @@ class TestStageCoprBlocking:
 
     def test_copr_blocked_by_missing_canonical_build(self, run_id):
         """A package only ever built at a non-canonical FEDORA_VERSION (e.g. the
-        default 44, with CANONICAL_FEDORA_VERSION=43) has no srpm/mock row at
+        default 45, with CANONICAL_FEDORA_VERSION=43) has no srpm/mock row at
         the canonical target at all -- distinct from a row that exists and
         failed. The reason must name the canonical target and the fix, not
         just print "srpm " (see docs/BUGS.md, the SwayOSD copr-skip case)."""
@@ -912,7 +912,7 @@ class TestStageCoprMainGating:
             "hyprutils": {"version": "1.0", "release": 1, "depends_on": []},
             "Hyprland": {"version": "1.0", "release": 1, "depends_on": ["hyprutils"]},
         }
-        chroots = ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64")
+        chroots = ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64", "fedora-46-x86_64")
         run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
         for chroot in chroots:
             build_db.set_stage("hyprutils", "mock", chroot, run_id, "failed")
@@ -966,7 +966,7 @@ class TestStageCoprMainGating:
         locally-buildable chroot is not held back by either gate."""
         packages = {"hyprutils": {"version": "1.0", "release": 1, "depends_on": []}}
         run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
-        for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+        for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64", "fedora-46-x86_64"):
             build_db.set_stage("hyprutils", "mock", chroot, run_id, "success")
 
         submitted = self._run_main(packages, monkeypatch)
@@ -983,7 +983,7 @@ class TestStageCoprMainGating:
         }
         run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
         for pkg in packages:
-            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64", "fedora-46-x86_64"):
                 build_db.set_stage(pkg, "mock", chroot, run_id, "success")
         self.in_flight_result = {"hyprutils-1.0-1.fc43.src.rpm": 99}
 
@@ -1002,7 +1002,7 @@ class TestStageCoprMainGating:
         }
         run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
         for pkg in packages:
-            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64", "fedora-46-x86_64"):
                 build_db.set_stage(pkg, "mock", chroot, run_id, "success")
         monkeypatch.setenv("COPR_REPO", "nett00n/hyprland")
         monkeypatch.delenv("PACKAGE", raising=False)
@@ -1040,7 +1040,7 @@ class TestStageCoprMainGating:
         }
         run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
         for pkg in packages:
-            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64", "fedora-46-x86_64"):
                 build_db.set_stage(pkg, "mock", chroot, run_id, "success")
         self.published_result = {"hyprutils-1.0-1.fc43.src.rpm": 99}
 
@@ -1054,7 +1054,7 @@ class TestStageCoprMainGating:
         handed to run_for_package."""
         packages = {"hyprutils": {"version": "1.0", "release": 1, "depends_on": []}}
         run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
-        for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+        for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64", "fedora-46-x86_64"):
             build_db.set_stage("hyprutils", "mock", chroot, run_id, "success")
         self.published_result = {"hyprutils-1.0-1.fc43.src.rpm": 99}
         monkeypatch.setenv("COPR_RESUBMIT", "true")
@@ -1073,7 +1073,7 @@ class TestStageCoprMainGating:
         }
         run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
         for pkg in packages:
-            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64", "fedora-46-x86_64"):
                 build_db.set_stage(pkg, "mock", chroot, run_id, "success")
         self.row_reason = {"hyprutils": "published: build 55 already on Copr"}
 
@@ -1090,7 +1090,7 @@ class TestStageCoprMainGating:
         }
         run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
         for pkg in packages:
-            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+            for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64", "fedora-46-x86_64"):
                 build_db.set_stage(pkg, "mock", chroot, run_id, "success")
         self.row_reason = {}
 
@@ -1144,7 +1144,7 @@ class TestStageCoprBlackoutGate:
             "Hyprland": {"version": "1.0", "release": 1, "depends_on": ["hyprutils"]},
         }
         run_id = build_db.start_run(CANONICAL_TARGET, "fedora", "43", "x86_64")
-        for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64"):
+        for chroot in ("fedora-43-x86_64", "fedora-44-x86_64", "fedora-45-x86_64", "fedora-46-x86_64"):
             build_db.set_stage("hyprutils", "mock", chroot, run_id, "failed")
             build_db.set_stage("Hyprland", "mock", chroot, run_id, "success")
 
@@ -1387,7 +1387,7 @@ class TestStageShowPlanPredictsCascade:
     }
 
     def _seed_validate(self, pkg_states: dict) -> None:
-        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        run_id = build_db.start_run(TARGET, "fedora", "45", "x86_64")
         for pkg, state in pkg_states.items():
             build_db.set_stage(pkg, "validate", TARGET, run_id, state or "unknown")
 
@@ -1395,9 +1395,9 @@ class TestStageShowPlanPredictsCascade:
         """Seed a stage row that is_cached() will consider a hit: success state,
         hashes matching _FIXED_HASHES, and (for vendor/srpm/mock) a real artifact
         file recorded at the matching version -- see lib.pipeline.artifacts_present."""
-        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        run_id = build_db.start_run(TARGET, "fedora", "45", "x86_64")
         build_db.set_stage(
-            pkg, stage, TARGET, run_id, "success", version="1.0-1.fc44"
+            pkg, stage, TARGET, run_id, "success", version="1.0-1.fc45"
         )
         build_db.finalize_stage(
             pkg, stage, TARGET, started_at=1, hashes=self._FIXED_HASHES
@@ -1407,7 +1407,7 @@ class TestStageShowPlanPredictsCascade:
             artifact = tmp_path / f"{pkg}-{stage}-artifact"
             artifact.write_text("fake artifact")
             build_db.record_artifact(
-                str(artifact), "repo", kind, pkg, TARGET, "1.0-1.fc44"
+                str(artifact), "repo", kind, pkg, TARGET, "1.0-1.fc45"
             )
 
     # Stages the plan table displays (STAGES minus copr, since show_plan() is

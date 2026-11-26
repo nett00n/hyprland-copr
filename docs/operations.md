@@ -110,7 +110,7 @@ image now (built via `mock -r`, which doesn't need a matching host), so there is
 to build "for all versions".
 
 This loops `full-cycle FEDORA_VERSION=<v> SKIP_COPR=true` per `MATRIX_VERSIONS` (default: every
-`SUPPORTED` version — 43/44/45), then submits to Copr exactly once via `stage-copr` -- Copr
+`SUPPORTED` version — 43/44/45/46), then submits to Copr exactly once via `stage-copr` -- Copr
 already fans one SRPM out to all its own chroots, so submitting per version would create
 duplicate builds. That final submission is gated per package (see "`full-cycle` flags" above):
 only a package verified (or deliberately skipped) on every version in the matrix, and not a
@@ -362,7 +362,7 @@ push/PR, an unrelated regression there shouldn't block tonight's Copr publish; `
 itself now shares the same `lib.validation` check set as `stage-validate`, formerly two
 independently-diverged validators, see docs/BUGS.md formerly BUG-0012) →
 `full-cycle-matrix` (builds every `MATRIX_VERSIONS` chroot locally -- default all of
-`SUPPORTED`, i.e. 43/44/45 -- before a single Copr submission; see docs/BUGS.md
+`SUPPORTED`, i.e. 43/44/45/46 -- before a single Copr submission; see docs/BUGS.md
 BUG-0018) → `validate-packages` again (no `fmt`) → regenerate docs → push COPR description →
 `git commit` → Gotify summary (`make notify-summary`, #COPR-0026; needs `GOTIFY_URL` + `GOTIFY_TOKEN`, skipped with a warning otherwise, never fails the run). Building the whole matrix nightly instead of just the default
 `FEDORA_VERSION` roughly triples build time in exchange for catching a chroot-specific

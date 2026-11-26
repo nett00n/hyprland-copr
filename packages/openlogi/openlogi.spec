@@ -1,13 +1,15 @@
 %global debug_package %{nil}
+%global upstream_commit_subject chore: release v0.9.0 (#2221)
+%global upstream_commits 1975
 
 Name:           openlogi
-Version:        0.8.15
+Version:        0.9.0
 Release:        1%{?dist}
 Summary:        Local-first alternative to Logitech Options+ for HID++ devices
 License:        MIT OR Apache-2.0
 URL:            https://github.com/AprilNEA/OpenLogi
-Source0:        https://github.com/AprilNEA/OpenLogi/archive/refs/tags/v0.8.15.tar.gz#/openlogi-0.8.15.tar.gz
-Source1:        openlogi-0.8.15-vendor.tar.gz
+Source0:        https://github.com/AprilNEA/OpenLogi/archive/refs/tags/v0.9.0.tar.gz#/openlogi-0.9.0.tar.gz
+Source1:        openlogi-0.9.0-vendor.tar.gz
 
 BuildRequires:  cargo
 BuildRequires:  clang-devel
@@ -30,15 +32,11 @@ Source repository: https://github.com/nett00n/hyprland-copr
 COPR repository:   https://copr.fedorainfracloud.org/coprs/nett00n/hyprland/
 
 Package info:
-Tag:               v0.8.15
-Commit:            ef6428f72a350aeeb54c959127d470bc2460a8b3
+Tag:               v0.9.0
+Commit:            a5b507ec8802e0ecb7ef3de61ce7868609c9b533
 
 %prep
 %autosetup -p1 -n OpenLogi-%{version}
-# Pinned to 0.8.15 (auto_update.release_type: pinned-version), the last
-# version that built on fedora-45: 0.8.17 requires rustc 1.99 while f45
-# ships 1.98.1. Drop auto_update to unpin once f45 has rustc >= 1.99
-# (#BUG-0118).
 sed -i -e '/crates\/openlogi-desktop/d' -e '/crates\/openlogi-overlay/d' -e '/"xtask"/d' Cargo.toml
 
 sed -i '/^\[patch\./,/^$/d' Cargo.toml
@@ -73,6 +71,6 @@ Development files for openlogi.
 %files devel
 
 %changelog
-* Tue Oct 20 2026 nett00n <copr@nett00n.org> - 0.8.15-1
+* Tue Nov 03 2026 nett00n <copr@nett00n.org> - 0.9.0-1
 
-- chore: Release package openlogi version 0.8.15
+- chore: Release package openlogi version 0.9.0

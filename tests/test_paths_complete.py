@@ -116,6 +116,10 @@ class TestMockChroot:
         assert "fedora-45" in result
         assert "x86_64" in result
 
+    def test_returns_fedora_46_chroot(self):
+        """#COPR-0032: rawhide's numeric version is a normal mock chroot."""
+        assert mock_chroot("46") == "fedora-46-x86_64"
+
     def test_returns_fedora_43_chroot(self):
         """Should return correct chroot for Fedora 43."""
         result = mock_chroot("43")

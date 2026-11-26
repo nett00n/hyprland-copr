@@ -37,6 +37,14 @@ seconds with an actionable message instead of a multi-minute dnf5 resolution fai
   Proposed: bind-mount mock's resultdir (cheap, independent fix); restructure log
   paths to `./logs/<distro>/<version>/<package>/` together with
   [COPR-0022](COPR-0022-run-scoped-logs-and-summary.md).
+- Quirk (fixed, #COPR-0032): mock names its resultdir after the config's `root`, not
+  after `-r <target>`. `fedora-46-x86_64.cfg` is a symlink to rawhide's, so mock wrote
+  to `/var/lib/mock/fedora-rawhide-x86_64/result` while `update_local_repo()` and
+  `copy_mock_results()` read `/var/lib/mock/fedora-46-x86_64/result` -- every f46 build
+  "succeeded" with an empty local repo and its dependents failed preflight. `_mock_cmd`
+  now passes `--resultdir /var/lib/mock/<target>/result` explicitly, so the path the
+  pipeline reads is always the one mock writes, whatever the config's root is called.
+
 ## Testing
 
 ### Unit

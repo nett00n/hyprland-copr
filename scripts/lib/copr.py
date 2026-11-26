@@ -20,7 +20,7 @@ from pathlib import Path
 
 from lib import build_db
 from lib.deps import build_dep_graph, effective_deps, reverse_graph, transitive_deps
-from lib.paths import ARCH, get_package_log_dir, mock_chroot
+from lib.paths import ARCH, RAWHIDE_FEDORA_VERSION, get_package_log_dir, mock_chroot
 from lib.subprocess_utils import run_cmd
 from lib.yaml_utils import SUPPORTED_FEDORA_VERSIONS
 
@@ -106,6 +106,17 @@ def local_chroots() -> set[str]:
     return {mock_chroot(v) for v in SUPPORTED_FEDORA_VERSIONS}
 
 
+def _local_target(copr_chroot: str) -> str:
+    """#COPR-0032: the local mock chroot (== build_db `target`) that judges a Copr
+    chroot. Copr's rolling `fedora-rawhide-<arch>` is built locally as the numbered
+    `fedora-<RAWHIDE_FEDORA_VERSION>-<arch>` (mock-core-configs symlinks it to
+    rawhide); every other chroot name is already its own local target.
+    """
+    return copr_chroot.replace(
+        "fedora-rawhide-", f"fedora-{RAWHIDE_FEDORA_VERSION}-", 1
+    )
+
+
 def parse_build_id(output: str) -> int | None:
     """Extract build ID from copr-cli build output.
 
@@ -183,7 +194,7 @@ def preflight(copr_repo: str) -> bool:
 
 def get_project_chroots(copr_repo: str) -> list[str]:
     """Fetch the list of chroot names a Copr project builds (e.g. every chroot
-    enabled for `nett00n/hyprland`: fedora-43/44/rawhide x x86_64/aarch64).
+    enabled for `nett00n/hyprland`: fedora-43/44/45/rawhide x x86_64/aarch64).
 
     Args:
         copr_repo: Repository slug "owner/project"
@@ -343,6 +354,9 @@ def chroot_coverage(pkg: str, chroots: list[str]) -> dict[str, str]:
     lib.paths.resolve_target), so this is a direct per-chroot stage lookup --
     no chroot-name translation needed.
 
+    #COPR-0032: Copr's `fedora-rawhide-<arch>` is judged by the local numbered row
+    for RAWHIDE_FEDORA_VERSION (see _local_target()).
+
     Returns {chroot: verdict}, verdict one of COVERAGE_VERIFIED/_FAILED/
     _UNBUILT/_SKIPPED/_UNVERIFIABLE (see the module-level constants' docstring).
 
@@ -358,10 +372,11 @@ def chroot_coverage(pkg: str, chroots: list[str]) -> dict[str, str]:
     buildable = local_chroots()
     coverage: dict[str, str] = {}
     for chroot in chroots:
-        if chroot not in buildable:
+        target = _local_target(chroot)  # #COPR-0032: rawhide -> numbered local row
+        if target not in buildable:
             coverage[chroot] = COVERAGE_UNVERIFIABLE
             continue
-        entry = build_db.get_stage(pkg, "mock", chroot)
+        entry = build_db.get_stage(pkg, "mock", target)
         state = entry.get("state") if entry else None
         reason = entry.get("reason") if entry else None
         if state == "success":
