@@ -5,6 +5,12 @@ packages and which Fedora versions are built. Changes to the automation itself g
 `docs/CHANGELOG.md`. Newest first, dated `## YYYY-MM-DD` entries, one short paragraph each.
 README shows the most recent entries - see `scripts/lib/readme_content.py:get_recent_news()`.
 
+## 2026-11-26
+
+Added Packages:
+
+- 5mdt-playerctl - 5mdt fork (made by me) of playerctl (MPRIS media player controller), tracks the fork's own v2.x tags; drop-in replacement for Fedora's playerctl
+
 ## 2026-11-25
 
 Fedora 45 is out and Fedora 46 is the new rawhide: packages are now built for Fedora 43, 44, 45 and 46 (rawhide).

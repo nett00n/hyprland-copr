@@ -845,3 +845,9 @@ bluemancz-hyprmod:
     sha256: 958da9d94e0ed9a0ebc348bcf0479fa4cb8604945ddf00410fb6920c8768bbf1
     size: 648989
     recorded: '2026-11-24'
+5mdt-playerctl:
+  5mdt-playerctl-2.6.0.tar.gz:
+    url: https://github.com/5mdt/playerctl/archive/refs/tags/v2.6.0.tar.gz#/5mdt-playerctl-2.6.0.tar.gz
+    sha256: 3a5e2ef4d4ac9b034af4eb6e84c81e136268a5d6ce3867d64569ff5d8d708ad0
+    size: 411091
+    recorded: '2026-11-26'

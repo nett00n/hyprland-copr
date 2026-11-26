@@ -24,6 +24,12 @@ Feel free to reuse automation from this repository for your own copr-projects
 
 ## News
 
+### 2026-11-26
+
+Added Packages:
+
+- 5mdt-playerctl - 5mdt fork (made by me) of playerctl (MPRIS media player controller), tracks the fork's own v2.x tags; drop-in replacement for Fedora's playerctl
+
 ### 2026-11-25
 
 Fedora 45 is out and Fedora 46 is the new rawhide: packages are now built for Fedora 43, 44, 45 and 46 (rawhide).
@@ -56,16 +62,6 @@ Fixed Packages:
 Fixed Packages:
 
 - Waybar - 0.16.0 builds again: it now needs libcava 1.0 or newer, and the old `libcava-v0` build dependency (which installs the same files as `libcava`) was making the build environment impossible to install on every Fedora version
-
-### 2026-11-06
-
-Added Packages:
-
-- bare - Lightweight vertical bar for Wayland compositors with built-in blocks (tracks tagged releases; upstream's development branch pulls a git-only PipeWire dependency that can't be built offline)
-
-Fixed Packages:
-
-- Hyprland - now reports its real commit and tag (`Hyprland --version` used to say `unknown`), which `hyprpm` needs to fetch matching headers and build plugins
 
 [📝 More posts on GitHub](https://github.com/nett00n/hyprland-copr/blob/main/docs/NEWS.md)
 
@@ -125,6 +121,7 @@ Fixed Packages:
 
 ### Useful apps
 
+- `5mdt-playerctl` — MPRIS media player command-line controller (5mdt fork)
 - `bare` — Lightweight vertical bar for Wayland compositors
 - `bemenu` — Dynamic menu library and client program inspired by dmenu
 - `bluemancz-hyprmod` — A native GTK4/libadwaita settings app for Hyprland

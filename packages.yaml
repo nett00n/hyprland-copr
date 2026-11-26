@@ -1,4 +1,65 @@
 ---
+5mdt-playerctl:
+  auto_update:
+    release_type: latest-tag
+  build:
+    commands:
+    - '%meson -Dgtk-doc=false -Dtests=false -Dbash-completions=true -Dzsh-completions=true'
+    - '%meson_build'
+    install: []
+    no_lto: false
+    prep: []
+    system: meson
+  build_requires:
+  - gcc
+  - gobject-introspection-devel
+  - meson
+  - ninja-build
+  - pkgconfig(bash-completion)
+  - pkgconfig(gio-unix-2.0)
+  - pkgconfig(glib-2.0)
+  - pkgconfig(gobject-2.0)
+  conflicts:
+  - playerctl
+  - playerctl-libs
+  depends_on: []
+  description: |
+    Fork of playerctl, a command-line utility and library for controlling media
+    players that implement the MPRIS D-Bus interface (vlc, mpv, RhythmBox, web
+    browsers, cmus, mpd, spotify and others). Drop-in replacement for Fedora's playerctl.
+  devel:
+    files:
+    - '%{_datadir}/gir-1.0/Playerctl-2.0.gir'
+    - '%{_includedir}/playerctl/'
+    - '%{_libdir}/libplayerctl.so'
+    - '%{_libdir}/pkgconfig/playerctl.pc'
+  files:
+  - '%doc doc/CHANGELOG.md'
+  - '%doc README.md'
+  - '%license LICENSE.md'
+  - '%{_bindir}/playerctl'
+  - '%{_bindir}/playerctld'
+  - '%{_datadir}/bash-completion/completions/playerctl*'
+  - '%{_datadir}/dbus-1/services/org.mpris.MediaPlayer2.playerctld.service'
+  - '%{_datadir}/zsh/site-functions/_playerctl'
+  - '%{_libdir}/girepository-1.0/Playerctl-2.0.typelib'
+  - '%{_libdir}/libplayerctl.so.2*'
+  - '%{_mandir}/man1/playerctl.1*'
+  license: LGPL-3.0-or-later
+  provides:
+  - playerctl
+  - playerctl-libs
+  release: 2
+  requires: []
+  rpm:
+    no_debug_package: false
+  source:
+    archives:
+    - '%{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz'
+    name: playerctl
+  summary: MPRIS media player command-line controller (5mdt fork)
+  url: https://github.com/5mdt/playerctl
+  version: 2.6.0
 aquamarine:
   build:
     system: cmake
@@ -127,7 +188,7 @@ bare:
   - '%{_mandir}/man1/bare.1*'
   - '%{_mandir}/man5/bare.5*'
   license: MIT
-  release: 11
+  release: 12
   requires: []
   rpm:
     no_debug_package: false
@@ -1270,7 +1331,7 @@ hyprland-plugins:
   - '%{_prefix}/lib/libhyprbars.so'
   - '%{_prefix}/lib/libhyprfocus.so'
   license: BSD-3-Clause
-  release: 32
+  release: 33
   source:
     archives:
     - '%{url}/archive/%{commit}/%{name}-%{shortcommit}.tar.gz'
@@ -2398,7 +2459,7 @@ OpenLogi:
   - '%{_prefix}/lib/udev/rules.d/70-openlogi.rules'
   - '%{_userunitdir}/openlogi-agent.service'
   license: MIT OR Apache-2.0
-  release: 1
+  release: 2
   requires: []
   rpm:
     no_debug_package: true

@@ -4,7 +4,7 @@
 
 Name:           openlogi
 Version:        0.9.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Local-first alternative to Logitech Options+ for HID++ devices
 License:        MIT OR Apache-2.0
 URL:            https://github.com/AprilNEA/OpenLogi
@@ -71,6 +71,6 @@ Development files for openlogi.
 %files devel
 
 %changelog
-* Tue Nov 03 2026 nett00n <copr@nett00n.org> - 0.9.0-1
+* Tue Nov 03 2026 nett00n <copr@nett00n.org> - 0.9.0-2
 
 - chore: Release package openlogi version 0.9.0
