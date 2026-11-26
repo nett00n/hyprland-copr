@@ -6,11 +6,9 @@ import time
 import urllib.error
 from pathlib import Path
 from unittest.mock import Mock, patch
-from datetime import datetime, timezone
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-import pytest
 
 from lib.github import (
     _cache_key,

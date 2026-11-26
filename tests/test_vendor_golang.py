@@ -3,9 +3,8 @@
 import subprocess
 import sys
 import tempfile
-import tarfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
 
 import pytest
 

@@ -168,7 +168,7 @@ LOCK_DISABLE ?= # bypass for hosts without flock, or a deliberate parallel run
 
 
 .DEFAULT_GOAL := help
-.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-flake lint-mypy lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-new delete-package set-release gather-requires readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily notify notify-summary build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr copr-wait stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export check-docs-drift db-nuke upstream-sync upstream-clean sync-hard-reset
+.PHONY: help setup-venv install-dev setup-volumes test coverage lint lint-ruff lint-yaml lint-rpm fmt fmt-ruff fmt-yaml validate-packages pre-commit update-versions list-tags scaffold-package add-new delete-package set-release gather-requires readme copr-description normalize-paths sort-lists container-build container-enter container-clean container-volume-clean container-all sources full-cycle _full-cycle full-cycle-matrix _full-cycle-matrix update-daily _update-daily notify notify-summary build-pop stage-validate stage-show-plan stage-spec stage-vendor refresh-checksums check-checksums stage-srpm stage-mock stage-copr copr-wait stage-log-analyze prune-logs check-image check-venv save-last-build clean clean-logs clean-localrepo clean-mock-cache clean-all db-usage db-prune db-shell db-export check-docs-drift db-nuke upstream-sync upstream-clean sync-hard-reset
 
 save-last-build: ## Save a build-report.db snapshot before clean (local-repo/ is a plain source-tree directory now, not volume-backed, so `clean`/`clean-logs` never touch its RPMs -- see docs/CHANGELOG.md 2026-08-11)
 	@mkdir -p logs
@@ -310,16 +310,10 @@ coverage: install-dev ## Run tests with coverage report (--format html for HTML 
 	@echo "$(HIGHLIGHT_PREFIX) HTML report: .htmlcov/index.html"
 	@$(CONTAINER_PYTHON) -m pytest tests/ --cov=scripts --cov-report=json:.htmlcov/coverage.json -q >/dev/null 2>&1 || true
 
-lint: lint-ruff lint-flake lint-mypy lint-rpm lint-yaml ## Run all linters inside container
+lint: lint-ruff lint-rpm lint-yaml ## Run all linters inside container
 
-lint-ruff: install-dev ## Run ruff check on scripts
-	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff check scripts/,Ruff check passed,Ruff check failed)
-
-lint-flake: install-dev ## Run flake8 style checker on scripts
-	$(call run_with_result,$(CONTAINER_PYTHON) -m flake8 scripts/,Flake8 check passed,Flake8 check failed)
-
-lint-mypy: install-dev ## Run mypy type checker on scripts
-	$(call run_with_result,$(CONTAINER_PYTHON) -m mypy scripts/,Mypy check passed,Mypy check failed)
+lint-ruff: install-dev ## Run ruff check on scripts and tests
+	$(call run_with_result,$(CONTAINER_PYTHON) -m ruff check scripts/ tests/,Ruff check passed,Ruff check failed)
 
 lint-rpm: install-dev ## Run rpmlint on all generated spec files
 	$(call run_with_result,$(CONTAINER_RUN) $(RPMLINT) -r $(WORK)/.rpmlintrc --ignore-unused-rpmlintrc packages/*/[a-z]*.spec,Rpmlint check passed,Rpmlint check failed)

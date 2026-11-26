@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import pytest
 
 from lib.jinja_utils import create_jinja_env
 from lib.yaml_utils import apply_os_overrides, get_packages

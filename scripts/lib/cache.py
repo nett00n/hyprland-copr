@@ -36,7 +36,7 @@ def _content_hash(pkg_dict: dict) -> str:
     return _sha256(json.dumps(normalized, sort_keys=True, default=str).encode())
 
 
-def _source_commit(pkg: str, meta: dict) -> str | None:
+def _source_commit(meta: dict) -> str | None:
     """Return the commit hash this package's build downloads, or None.
 
     Read from packages.yaml `source.commit.full` -- the exact value the spec
@@ -124,7 +124,7 @@ def compute_input_hashes(pkg: str, meta: dict, all_packages: dict) -> dict:
     - package_version: current version string (for release autoreset detection)
     """
     return {
-        "source_commit": _source_commit(pkg, meta),
+        "source_commit": _source_commit(meta),
         "templates": _templates_hash(),
         "generator": _generator_hash(),
         "dependencies": _dependencies_hashes(pkg, meta, all_packages),

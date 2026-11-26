@@ -7,7 +7,6 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-import pytest
 
 from lib.subprocess_utils import _cmd_timeout, run_cmd, run_git
 

@@ -20,7 +20,6 @@ from lib.validation import (
     validate_dependency_drift,
     validate_build_system_drift,
     FIELD_TYPES,
-    REQUIRED_FIELDS,
     VALID_BUILD_SYSTEMS,
 )
 from lib.upstream import mirror_path

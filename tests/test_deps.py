@@ -9,7 +9,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from lib.deps import (
-    declared_deps,
     effective_deps,
     build_dep_graph,
     ordered_packages,
@@ -92,28 +91,6 @@ class TestEffectiveDeps:
         # The -devel is stripped, but version spec remains; no match
         # since "foo >= 1.0" is not found in packages
         assert effective_deps("pkg", meta, all_packages) == set()
-
-
-class TestDeclaredDeps:
-    """Test raw depends_on field access (no build_requires inference)."""
-
-    def test_returns_declared_list(self):
-        """Returns the depends_on list verbatim."""
-        meta = {"depends_on": ["foo", "bar"]}
-        assert declared_deps(meta) == ["foo", "bar"]
-
-    def test_ignores_build_requires(self):
-        """Does not fall back to build_requires inference."""
-        meta = {"build_requires": ["foo-devel"]}
-        assert declared_deps(meta) == []
-
-    def test_missing_field_returns_empty(self):
-        """Missing depends_on returns empty list."""
-        assert declared_deps({}) == []
-
-    def test_none_value_returns_empty(self):
-        """Explicit depends_on: null returns empty list, not None."""
-        assert declared_deps({"depends_on": None}) == []
 
 
 class TestBuildDepGraph:

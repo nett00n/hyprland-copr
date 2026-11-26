@@ -1,10 +1,8 @@
 """Unit tests for scripts/lib/log_analysis.py"""
 
-import pytest
 import sys
 from pathlib import Path
 from unittest.mock import patch, Mock
-from io import StringIO
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
@@ -967,6 +965,7 @@ class TestSuggestProviders:
         mock_whatprovides.return_value = ["cmake"]
         result = suggest_providers("/usr/bin/cmake", "binary")
         mock_whatprovides.assert_called_with("/usr/bin/cmake")
+        assert result == ["cmake"]
 
     @patch("lib.log_analysis._dnf_whatprovides")
     def test_suggests_tool_method(self, mock_whatprovides):
@@ -974,6 +973,7 @@ class TestSuggestProviders:
         mock_whatprovides.return_value = ["gcc"]
         result = suggest_providers("gcc", "tool")
         mock_whatprovides.assert_called_with("*/bin/gcc")
+        assert result == ["gcc"]
 
     @patch("lib.log_analysis._dnf_search")
     def test_suggests_search_method(self, mock_search):
@@ -981,6 +981,7 @@ class TestSuggestProviders:
         mock_search.return_value = ["iniparser-dev"]
         result = suggest_providers("iniparser", "search")
         mock_search.assert_called_with("iniparser")
+        assert result == ["iniparser-dev"]
 
     def test_suggests_unknown_method_returns_empty(self):
         """Should return empty list for unknown method."""
@@ -1040,7 +1041,7 @@ class TestDnfSearch:
             stdout="package\npackage-devel\n",
             returncode=0,
         )
-        result = _dnf_search("package-devel")
+        _dnf_search("package-devel")
         # Check that the call was made without -devel
         assert mock_run.called
         call_args = mock_run.call_args[0][0]
@@ -1055,7 +1056,7 @@ class TestDnfSearch:
             stdout="package\n",
             returncode=0,
         )
-        result = _dnf_search("package-libs")
+        _dnf_search("package-libs")
         assert mock_run.called
 
     @patch("subprocess.run")
@@ -1302,46 +1303,50 @@ class TestAnalyzeCoprChrootLogs:
 class TestReportFailures:
     """Test report_srpm_failures and report_mock_failures functions."""
 
-    def test_report_srpm_failures_iterates_packages(self, tmp_path, capsys):
-        """Should process all packages."""
-        packages = {"pkg1": {}, "pkg2": {}}
+    @staticmethod
+    def _logs(tmp_path, filenames, content="No match for argument: sndio-devel\n"):
         log_dir = tmp_path / "logs"
-        log_dir.mkdir()
-        (log_dir / "pkg1").mkdir()
-        (log_dir / "pkg2").mkdir()
-        (log_dir / "pkg1" / "10-srpm.log").write_text("")
-        (log_dir / "pkg2" / "10-srpm.log").write_text("")
+        for pkg in ("pkg1", "pkg2"):
+            (log_dir / pkg).mkdir(parents=True)
+            for name in filenames:
+                (log_dir / pkg / name).write_text(content)
+        return {"pkg1": {}, "pkg2": {}}, log_dir
+
+    def test_report_srpm_failures_iterates_packages(self, tmp_path, capsys):
+        """Should report every package's SRPM log, not just the first."""
+        packages, log_dir = self._logs(
+            tmp_path,
+            ["10-srpm.log"],
+            "404 Client Error: Not Found for url: https://example.com/file.tar.gz\n",
+        )
 
         report_srpm_failures(packages, log_dir)
-        # Should complete without error
+
+        out = capsys.readouterr().out
+        assert "[srpm] pkg1:" in out
+        assert "[srpm] pkg2:" in out
 
     def test_report_mock_failures_iterates_packages(self, tmp_path, capsys):
-        """Should process all packages."""
-        packages = {"pkg1": {}, "pkg2": {}}
-        log_dir = tmp_path / "logs"
-        log_dir.mkdir()
-        (log_dir / "pkg1").mkdir()
-        (log_dir / "pkg2").mkdir()
-        (log_dir / "pkg1" / "20-mock.log").write_text("")
-        (log_dir / "pkg1" / "21-mock-build.log").write_text("")
-        (log_dir / "pkg2" / "20-mock.log").write_text("")
-        (log_dir / "pkg2" / "21-mock-build.log").write_text("")
+        """Should report every package's mock log, not just the first."""
+        packages, log_dir = self._logs(tmp_path, ["20-mock.log", "21-mock-build.log"])
 
         report_mock_failures(packages, log_dir)
-        # Should complete without error
+
+        out = capsys.readouterr().out
+        assert "[mock/builddep] pkg1:" in out
+        assert "[mock/builddep] pkg2:" in out
 
     def test_report_copr_failures_iterates_packages(self, tmp_path, capsys):
-        """Should process all packages, including any fetched chroot logs."""
-        packages = {"pkg1": {}, "pkg2": {}}
-        log_dir = tmp_path / "logs"
-        log_dir.mkdir()
-        (log_dir / "pkg1").mkdir()
-        (log_dir / "pkg2").mkdir()
-        (log_dir / "pkg1" / "30-copr.log").write_text("")
-        (log_dir / "pkg2" / "30-copr.log").write_text("")
+        """Should report every package's copr log, not just the first."""
+        packages, log_dir = self._logs(
+            tmp_path, ["30-copr.log"], "Build error: Build(s) 1 failed.\n[exit: 4]\n"
+        )
 
         report_copr_failures(packages, log_dir)
-        # Should complete without error
+
+        out = capsys.readouterr().out
+        assert "pkg1" in out
+        assert "pkg2" in out
 
     def test_report_copr_failures_prints_chroot_mismatch_before_build_detail(
         self, tmp_path, capsys

@@ -6,7 +6,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import yaml
-import pytest
 
 from lib.yaml_config import YamlConfig, FORMAT_FILE, DEFAULT, _NO_WRAP_WIDTH
 
@@ -109,7 +108,7 @@ class TestFormatFileFactory:
         for line in lines:
             if line and line[0] == " ":
                 spaces = len(line) - len(line.lstrip(" "))
-                assert spaces % 4 == 0, f"Expected 4-space indent, got: {repr(line)}"
+                assert spaces % 4 == 0, f"Expected 4-space indent, got: {line!r}"
 
     def test_no_wrap_width(self):
         """FORMAT_FILE should always use _NO_WRAP_WIDTH."""

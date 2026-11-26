@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
@@ -325,7 +325,7 @@ class TestSourceCommit:
         from lib.cache import _source_commit
 
         meta = {"auto_update": auto_update} if auto_update is not None else {}
-        assert _source_commit("pkg", meta) is None
+        assert _source_commit(meta) is None
 
     def test_returns_source_commit_full_for_latest_commit(self):
         from lib.cache import _source_commit
@@ -334,7 +334,7 @@ class TestSourceCommit:
             "auto_update": {"release_type": "latest-commit"},
             "source": {"commit": {"full": "abc123def456", "date": "20260101"}},
         }
-        assert _source_commit("pkg", meta) == "abc123def456"
+        assert _source_commit(meta) == "abc123def456"
 
     def test_returns_source_commit_full_for_pinned_commit(self):
         from lib.cache import _source_commit
@@ -343,7 +343,7 @@ class TestSourceCommit:
             "auto_update": {"release_type": "pinned-commit"},
             "source": {"commit": {"full": "deadbeef"}},
         }
-        assert _source_commit("pkg", meta) == "deadbeef"
+        assert _source_commit(meta) == "deadbeef"
 
     def test_returns_none_when_commit_tracked_but_source_commit_missing(self):
         """The Waybar-git shape: latest-commit but no source.commit at all
@@ -352,7 +352,7 @@ class TestSourceCommit:
         from lib.cache import _source_commit
 
         meta = {"auto_update": {"release_type": "latest-commit"}}
-        assert _source_commit("pkg", meta) is None
+        assert _source_commit(meta) is None
 
     def test_returns_none_when_source_commit_has_no_full(self):
         from lib.cache import _source_commit
@@ -361,7 +361,7 @@ class TestSourceCommit:
             "auto_update": {"release_type": "latest-commit"},
             "source": {"commit": {}},
         }
-        assert _source_commit("pkg", meta) is None
+        assert _source_commit(meta) is None
 
     def test_does_not_shell_out_to_git(self):
         """Regression guard: _source_commit must never touch the upstream

@@ -1,6 +1,5 @@
 """Tests for archive URL processing in spec file generation."""
 
-import pytest
 from lib.spec_utils import process_archive_urls
 
 

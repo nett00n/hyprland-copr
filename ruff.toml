@@ -9,12 +9,15 @@ ignore = [
     # Fires only on lib/build_db.py's deliberate module-level connection
     # singleton -- not a bug there.
     "PLW0603",
-    # Its autofix would delete the `# noqa: E402` directives scripts/delete-package.py
-    # needs for flake8 (make lint-flake), which ruff can't see -- the two linters
-    # don't share a suppression namespace.
-    "RUF100",
 ]
 
 # PLR0912/0913/0915 and N999 are deliberately left off the select above (not just
 # ignored): PLR031x fire on files already tracked as tech debt (BUG-0076/-0083),
 # and N999 fires on the intentional kebab-case.py script names.
+
+# #COPR-0010: tests/ is linted for dead code (F401/F841/ERA-style) and real bugs, but
+# not for these style rules, which fire ~180 times on idiomatic test code (nested
+# `with patch(...)`, unpacked-but-ignored fixture tuples, subprocess.run in make
+# dry-run helpers, mutable class-level fakes).
+[lint.per-file-ignores]
+"tests/**" = ["SIM117", "RUF059", "PLW1510", "RUF012", "RUF043", "PLW0108"]

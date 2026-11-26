@@ -2,8 +2,7 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-import tempfile
+from unittest.mock import patch
 import tarfile
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))

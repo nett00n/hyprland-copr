@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from scripts.lib.tarball import detect_tarball_source_name
 

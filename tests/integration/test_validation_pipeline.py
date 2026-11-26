@@ -3,8 +3,6 @@
 import sys
 from pathlib import Path
 
-import pytest
-import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
@@ -14,7 +12,6 @@ from lib.validation import (
     validate_group_membership,
     validate_upstream_urls,
 )
-from lib.yaml_utils import get_packages, load_groups_yaml
 
 
 class TestValidationPipeline:

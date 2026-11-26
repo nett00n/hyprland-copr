@@ -6,7 +6,7 @@ from pathlib import Path
 try:
     import tomllib
 except ModuleNotFoundError:  # Python < 3.11
-    import tomli as tomllib  # type: ignore
+    import tomli as tomllib
 
 # Meson dependency() call — captures name and the rest of the argument list
 MESON_DEP_RE = re.compile(r"dependency\s*\(\s*'([^']+)'([^)]*)\)", re.DOTALL)

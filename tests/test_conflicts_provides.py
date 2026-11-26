@@ -7,8 +7,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from lib.jinja_utils import create_jinja_env  # noqa: E402
-from lib.validation import validate_field_types  # noqa: E402
+from lib.jinja_utils import create_jinja_env
+from lib.validation import validate_field_types
 
 
 def _context(**overrides):

@@ -40,8 +40,8 @@ def test_makefile_fallback_uses_default_constant():
 
 def test_version_roles_are_consistent():
     versions = sorted(SUPPORTED_FEDORA_VERSIONS, key=int)
-    assert paths.CANONICAL_FEDORA_VERSION == versions[0]
-    assert paths.RAWHIDE_FEDORA_VERSION == versions[-1]
+    assert versions[0] == paths.CANONICAL_FEDORA_VERSION
+    assert versions[-1] == paths.RAWHIDE_FEDORA_VERSION
     assert paths.DEFAULT_FEDORA_VERSION in SUPPORTED_FEDORA_VERSIONS
     assert paths.DEFAULT_FEDORA_VERSION != paths.RAWHIDE_FEDORA_VERSION
 

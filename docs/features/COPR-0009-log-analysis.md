@@ -15,10 +15,16 @@ buildroot transactions, CMake `FetchContent` network-fallback failures, gmake "N
 to make target" errors, and (for Copr) which chroots failed vs. succeeded — instead of
 the generic "Bad exit status" every unrecognized failure would otherwise print.
 
+At the end of a `full-cycle` run, `finalize_report()` also prints that analysis inline
+for every package whose `srpm` or `mock` stage failed (and, in synchronous Copr mode,
+whose `copr` stage failed), each header carrying the package's NVR.
+
 ## Implementation
 
 - `lib/log_analysis.py` (regex-driven rule set), `scripts/pkg-log-analysis.py`
   (multi-package CLI, also run automatically by `update-daily` after `readme`).
+- `lib.log_analysis.report_srpm_failures()`/`report_mock_failures()`/`report_copr_failures()`,
+  called from `scripts/full-cycle.py`'s `finalize_report()`.
 
 ## Quirks & Decisions
 
@@ -45,6 +51,10 @@ the generic "Bad exit status" every unrecognized failure would otherwise print.
 - Quirk: analysis output only goes to whatever captures `update-daily`'s stdout (cron
   mail, if configured) — no durable nightly summary artifact.
   Proposed: see [COPR-0022](COPR-0022-run-scoped-logs-and-summary.md) (Planned).
+
+- Quirk: `finalize_report()` stopped calling `report_srpm_failures()` in de411db4
+  (2026-03-21), so SRPM failures got no inline analysis while mock/copr did; restored,
+  covered by `tests/integration/test_make_targets.py`.
 
 ## Testing
 

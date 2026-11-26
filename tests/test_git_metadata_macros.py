@@ -8,7 +8,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from lib.yaml_utils import get_packages  # noqa: E402
+from lib.yaml_utils import get_packages
 
 stage_spec = importlib.import_module("scripts.stage-spec")
 
@@ -17,7 +17,7 @@ def _spec(info):
     packages = get_packages()
     with patch.object(stage_spec, "get_changelog_info", return_value=info):
         return stage_spec.generate_spec(
-            "Hyprland", packages["Hyprland"], packages, "44"
+            "Hyprland", packages["Hyprland"], packages
         )
 
 

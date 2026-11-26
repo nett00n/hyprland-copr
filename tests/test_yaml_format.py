@@ -5,7 +5,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-import pytest
 import yaml
 
 from lib.yaml_format import (
@@ -59,7 +58,7 @@ class TestDumpYamlLiteral:
         data = {"key": "value", "multi": "line\nvalue"}
         output = dump_yaml_literal(data)
         for line in output.split("\n"):
-            assert line == line.rstrip(), f"Line has trailing space: {repr(line)}"
+            assert line == line.rstrip(), f"Line has trailing space: {line!r}"
 
 
 class TestDetectIndentation:

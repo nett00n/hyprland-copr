@@ -8,7 +8,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
 from lib import build_db, paths
-from lib.cache import hashes_match
 from lib.pipeline import is_cached, compute_forced_stages, STAGE_ORDER
 
 TARGET = "fedora-44-x86_64"

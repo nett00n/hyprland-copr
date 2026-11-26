@@ -1,6 +1,5 @@
 """Unit tests for scripts/lib/version.py"""
 
-import pytest
 
 import sys
 from pathlib import Path
@@ -148,14 +147,14 @@ class TestReleaseTypes:
     """RELEASE_TYPES is the single source of truth used by the validators."""
 
     def test_contains_all_six_types(self):
-        assert RELEASE_TYPES == {
+        assert {
             "latest-version",
             "latest-tag",
             "latest-commit",
             "pinned-version",
             "pinned-commit",
             "pinned-tag",
-        }
+        } == RELEASE_TYPES
 
 
 class TestNvr:

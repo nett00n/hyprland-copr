@@ -13,7 +13,7 @@ after.
 | Command | Runs |
 | --- | --- |
 | `make validate-packages` | `packages.yaml` sanity (fast, no container) |
-| `make lint` | `lint-ruff` + `lint-flake` + `lint-mypy` + `lint-rpm` + `lint-yaml` |
+| `make lint` | `lint-ruff` + `lint-rpm` + `lint-yaml` |
 | `make fmt` | `fmt-ruff` + `fmt-yaml` + `normalize-paths` + `sort-lists` |
 | `make pre-commit` | `validate-packages` + `test` + `lint` + `fmt` (`COVERAGE=1` adds a coverage report) |
 
@@ -57,7 +57,7 @@ and fresh clones stay green), as **warnings**:
   (read via `git ls-tree`, never the working tree) — upstream likely switched build
   systems; names the system it looks like instead. (#BUG-0105)
 
-`ruff check scripts/` (`make lint-ruff`) additionally selects `B,RUF,SIM,PLW` beyond
+`ruff check scripts/ tests/` (`make lint-ruff`; flake8 and mypy are no longer run) additionally selects `B,RUF,SIM,PLW` beyond
 the default `E,F` (see `ruff.toml`), catching real variable-lifetime bugs (redefined
 loop variables, unused unpacked variables) alongside style. (#BUG-0096)
 
@@ -66,9 +66,6 @@ loop variables, unused unpacked variables) alongside style. (#BUG-0096)
 - `Makefile` `lint*`/`fmt*`/`pre-commit`/`validate-packages` targets.
 - `scripts/validate-packages.py` (thin front-end over `lib.validation`),
   `scripts/stage-validate.py` (the real build's stage 0, same validator).
-- `mypy.ini` enforces `disallow_untyped_defs`/`disallow_incomplete_defs`; two flags
-  (`disallow_any_generics`, `warn_return_any`) are deliberately still off, each
-  tracked by its own tech-debt entry.
 
 ## Quirks & Decisions
 
@@ -80,10 +77,7 @@ loop variables, unused unpacked variables) alongside style. (#BUG-0096)
   variable-lifetime bugs, e.g. 8 `PLW2901` redefined-loop-name instances); leaves
   `PLR0912/0913/0915`/`N999` off, since they fire on already-tracked large files and
   the intentional `kebab-case.py` script names; leaves `PLW0603` off (fires only on
-  `lib/build_db.py`'s deliberate module-level connection singleton) and `RUF100` off
-  (its autofix would delete the `# noqa: E402` directives `make lint-flake` still
-  needs in `scripts/delete-package.py`, since flake8 and ruff don't share a
-  suppression namespace). (BUG-0096, closed)
+  `lib/build_db.py`'s deliberate module-level connection singleton) (BUG-0096, closed)
 - Decision: `lib.validation.FIELD_TYPES` is a dotted-path → type table covering every
   scalar `packages.yaml.example` documents; a present-but-wrong-typed field
   (`version: 1.9`, `release: true`) is an error, absence stays `REQUIRED_FIELDS`'
@@ -94,8 +88,8 @@ loop variables, unused unpacked variables) alongside style. (#BUG-0096)
   (`tests/test_gather_requires.py`, `tests/test_list_tags.py`,
   `tests/test_gen_readme_shell.py`), each faking the network/subprocess boundary the
   same way other recently-covered scripts do. (BUG-0078, closed)
-- Quirk: 134 bare `dict`/`list`/`tuple` annotations block mypy's
-  `disallow_any_generics`; 17 `Any`-laundering returns block `warn_return_any`.
+- Quirk: 134 bare `dict`/`list`/`tuple` annotations and 17
+  `Any`-laundering returns weaken the type annotations.
   Proposed: `TypedDict`/`Literal` aliases for the stage-results row, package metadata,
   and `compute_input_hashes()`'s dict, plus typed loader wrappers at YAML/JSON trust
   boundaries. (BUG-0093, BUG-0094, BUG-0095)

@@ -2,7 +2,6 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
@@ -484,27 +483,12 @@ class TestUpdatePackageReleases:
             "url": "https://example.com/dep",
         }
 
-        # Dependent package that depends on dep
-        pkg = {
-            "version": "2.0",
-            "release": 1,
-            "depends_on": ["dep"],
-            "license": "MIT",
-            "summary": "Package",
-            "description": "Pkg",
-            "url": "https://example.com/pkg",
-        }
-
-        packages = {"dep": dep, "pkg": pkg}
-
         # Build dependency with release=1
-        all_packages_1 = {"dep": dep, "pkg": pkg}
         dep_hash_1 = _content_hash(dep)
 
         # Now bump dependency release to 2
         dep_bumped = dict(dep)
         dep_bumped["release"] = 2
-        all_packages_2 = {"dep": dep_bumped, "pkg": pkg}
         dep_hash_2 = _content_hash(dep_bumped)
 
         # Verify: dependency hash should NOT change with release-only change

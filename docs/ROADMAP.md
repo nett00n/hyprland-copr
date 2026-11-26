@@ -224,17 +224,17 @@ constants.
 comes after Epics 2–3: the guardrails and the test coverage are what make these
 safe. Ordered so each step shrinks the surface for the next.*
 
-Typing track (do as a unit, in this order — each unlocks a mypy flag):
+Typing track (do as a unit, in this order):
 
 1. **BUG-0094** — `Stage`/`State` `Literal` aliases (~190 hand-retyped literals
    across 16 files). D2, biggest ratio of risk-removed to effort; the same failure
    shape as the already-closed BUG-0002/BUG-0014.
 2. **BUG-0093** — `TypedDict`s for the stage row, package metadata, and
-   `compute_input_hashes()`. Unlocks `disallow_any_generics` (155 errors). Start
+   `compute_input_hashes()`. Start
    with the stage row — it's the one with the documented-but-unenforced
    "drops NULL columns" contract. *Prerequisite: BUG-0097 (Epic 2.2).*
 3. **BUG-0095** — typed loader wrappers at the `yaml.safe_load`/`json.loads`
-   trust boundaries. Unlocks `warn_return_any` (17 errors).
+   trust boundaries.
 
 Large-file track:
 
@@ -264,8 +264,7 @@ Vendor + Makefile track:
     regenerate repo metadata. -0071 notes these RPMs are now *worse off* than
     before — they survive with no db row pointing at them.
 
-**Done when:** `disallow_any_generics` and `warn_return_any` on in `mypy.ini`; no
-first-party file over ~500 lines.
+**Done when:** no first-party file over ~500 lines.
 
 ---
 

@@ -1,10 +1,8 @@
 """Integration tests for entry point scripts (stage-*.py)."""
 
-import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-import logging
+from unittest.mock import patch
 
 import pytest
 
@@ -269,23 +267,6 @@ class TestStageValidate:
             main()
 
         assert exc_info.value.code == 1
-
-    def test_main_handles_keyboard_interrupt(self):
-        """Test main() handles KeyboardInterrupt with exit code 130."""
-        with patch.object(stage_validate, "setup_logging"):
-            try:
-                # Simulate __name__ == "__main__" execution
-                code = """
-import sys
-sys.path.insert(0, 'scripts')
-import importlib
-stage_validate = importlib.import_module("scripts.stage-validate")
-# This would trigger KeyboardInterrupt in the try/except
-raise KeyboardInterrupt()
-"""
-                # We can't easily test this without mocking more, skip for now
-            except KeyboardInterrupt:
-                pass
 
 
 class TestStageSpec:

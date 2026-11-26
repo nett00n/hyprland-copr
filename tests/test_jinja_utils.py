@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from jinja2 import Environment, StrictUndefined, TemplateNotFound, UndefinedError
+from jinja2 import Environment, StrictUndefined, UndefinedError
 
 from scripts.lib.jinja_utils import create_jinja_env
 

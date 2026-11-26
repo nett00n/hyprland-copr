@@ -6,11 +6,6 @@ from collections import deque
 from lib.yaml_utils import filter_packages, skip_packages
 
 
-def declared_deps(meta: dict) -> list[str]:
-    """Return the raw `depends_on` list from package config, as declared (no inference)."""
-    return list(meta.get("depends_on") or [])
-
-
 def effective_deps(name: str, meta: dict, all_packages: dict) -> set[str]:
     """Return the authoritative set of package names that `name` depends on.
 

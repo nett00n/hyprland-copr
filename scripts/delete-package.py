@@ -24,15 +24,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from lib import build_db, local_repo  # noqa: E402
-from lib.paths import (  # noqa: E402
+from lib import build_db, local_repo
+from lib.paths import (
     GROUPS_YAML,
     PACKAGES_YAML,
     RUNS_LOG_DIR,
     iter_package_log_dirs,
 )
-from lib.source_lock import load_lock, save_lock  # noqa: E402
-from lib.yaml_utils import (  # noqa: E402
+from lib.source_lock import load_lock, save_lock
+from lib.yaml_utils import (
     find_package_name,
     get_packages,
     load_groups_yaml,

@@ -70,7 +70,7 @@ def resolve_log_dirs(pkg: str, run_id: int | None, target: str | None) -> list[P
     return []
 
 
-def collect_issues(pkg: str, log_dir: Path) -> list[str]:
+def collect_issues(log_dir: Path) -> list[str]:
     """Return formatted issue lines for one package's log dir (empty if clean)."""
     lines: list[str] = []
 
@@ -165,7 +165,7 @@ def analyze_package(pkg: str, log_dir: Path) -> tuple[int, list[str]]:
         )
         return 2, []
 
-    lines = collect_issues(pkg, log_dir)
+    lines = collect_issues(log_dir)
     if not lines:
         print(f"{HIGHLIGHT_PREFIX} ✓ No issues found in {pkg} logs")
         return 0, []

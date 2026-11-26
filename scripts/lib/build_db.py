@@ -18,7 +18,7 @@ from typing import Any, Literal, get_args
 from . import paths
 
 # #BUG-0094: the type half of STAGES / the state vocabulary, so a typo in a
-# stage or state literal is a mypy error rather than a silent mismatch.
+# stage or state literal is caught by a type checker/IDE rather than a silent mismatch.
 Stage = Literal["validate", "spec", "vendor", "srpm", "mock", "copr"]
 State = Literal["success", "failed", "unknown", "skipped", "pending", "running"]
 

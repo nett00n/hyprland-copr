@@ -3,7 +3,6 @@
 import subprocess
 import sys
 import tempfile
-import tarfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 

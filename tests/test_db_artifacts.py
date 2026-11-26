@@ -73,7 +73,9 @@ class TestUsageReport:
 
         db_artifacts.usage_report()
 
-        total = [ln for ln in capsys.readouterr().out.splitlines() if ln.startswith("TOTAL")][0]
+        total = next(
+            ln for ln in capsys.readouterr().out.splitlines() if ln.startswith("TOTAL")
+        )
         assert "2.0K" in total
         assert "4.0K" not in total
 

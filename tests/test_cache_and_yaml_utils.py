@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from lib import build_db
-from lib.cache import hashes_match, _sha256, _content_hash, _dependencies_hashes, _patches_hashes
+from lib.cache import hashes_match, _sha256, _content_hash, _patches_hashes
 from lib.build_db import now_epoch
 from lib.yaml_utils import (
     find_package_name,
@@ -942,7 +942,7 @@ class TestDumpYamlPretty:
                 # Count leading spaces
                 spaces = len(line) - len(line.lstrip(" "))
                 # Should be multiple of 2
-                assert spaces % 2 == 0, f"Non-2-space indent in: {repr(line)}"
+                assert spaces % 2 == 0, f"Non-2-space indent in: {line!r}"
 
     def test_no_key_sorting(self):
         """Keys should maintain insertion order, not be sorted."""
@@ -974,7 +974,7 @@ class TestDumpYamlPretty:
         output = dump_yaml_pretty(data)
         for line in output.split("\n"):
             if line:  # skip empty lines
-                assert line == line.rstrip(), f"Trailing space in: {repr(line)}"
+                assert line == line.rstrip(), f"Trailing space in: {line!r}"
 
     def test_indent_sequences_false(self):
         """List items should be at parent key indentation (indent_sequences: false)."""

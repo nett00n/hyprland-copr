@@ -196,9 +196,7 @@ distro/arch-agnostic build-target work itself is tracked as a feature, not here 
   (`lib/vendor.py:87,168`), so streaming doesn't weaken the checksum guarantee [P2/D1]
 - #BUG-0093 every record in the codebase is an unparameterized `dict` -- 134 bare
   `dict`/`list`/`tuple` annotations, and exactly one structured type in all 12k
-  lines (`update-versions.py:42`'s `Pin`, a `NamedTuple`). Unlocks mypy's
-  `disallow_any_generics` (155 errors on the current tree; left off in `mypy.ini`
-  pending this). Three shapes worth naming, in payoff order: (1) the stage-results
+  lines (`update-versions.py:42`'s `Pin`, a `NamedTuple`). Three shapes worth naming, in payoff order: (1) the stage-results
   row -- built by `_stage_entry` (`lib/build_db.py:148-158`), consumed via `.get()`
   in `lib/pipeline.py`, `lib/copr.py:341-345`, `gen-report.py:95-102`,
   `lib/version.py:152`. `_row_dict` (`build_db.py:139`) deliberately *drops NULL
@@ -223,8 +221,8 @@ distro/arch-agnostic build-target work itself is tracked as a feature, not here 
   the same idea [P2/D2]
 - #BUG-0095 `Any` laundered through annotated signatures -- a function annotated
   `-> str | None` / `-> dict` / `-> bool` returning a raw `yaml.safe_load` /
-  `json.loads` / `.get()` result. Unlocks mypy's `warn_return_any` (17 errors on
-  the current tree; left off in `mypy.ini` pending this). Worst are the trust
+  `json.loads` / `.get()` result. 17 instances on the
+  current tree. Worst are the trust
   boundaries: `lib/yaml_utils.py:33`, `lib/github.py:54,121`. The annotation is
   the fake here -- the caller sees `str`, the value is `Any`. Fix: typed loader
   wrappers that validate at the parse boundary, after which the annotations

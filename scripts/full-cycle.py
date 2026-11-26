@@ -49,7 +49,11 @@ from lib.copr import (
     print_chroot_coverage,
 )
 from lib.deps import effective_deps, ordered_packages
-from lib.log_analysis import report_mock_failures, report_copr_failures
+from lib.log_analysis import (
+    report_copr_failures,
+    report_mock_failures,
+    report_srpm_failures,
+)
 from lib.pipeline import (
     compute_forced_stages,
     is_cached,
@@ -882,6 +886,15 @@ def finalize_report(
 
     build_db.finish_run(run_id, "failed" if any_failed else "ok")
     print(f"\nBuild recorded in build-report.db (run {run_id})")
+
+    # #COPR-0009: analyze srpm failures if present
+    srpm_failures = [
+        pkg
+        for pkg in packages
+        if (stages.get("srpm", {}).get(pkg) or {}).get("state") == "failed"
+    ]
+    if srpm_failures:
+        report_srpm_failures(packages, get_run_log_dir(run_id, target), versions)
 
     # Analyze mock failures if present
     mock_failures = [

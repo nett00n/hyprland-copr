@@ -7,14 +7,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from lib.yaml_utils import get_packages  # noqa: E402
+from lib.yaml_utils import get_packages
 
 stage_spec = importlib.import_module("scripts.stage-spec")
 
 
 def _spec() -> str:
     packages = get_packages()
-    return stage_spec.generate_spec("waylock", packages["waylock"], packages, "44")
+    return stage_spec.generate_spec("waylock", packages["waylock"], packages)
 
 
 def _section(spec: str, start: str, end: str) -> str:

@@ -114,6 +114,7 @@ class TestFullCycleFinalize:
 
         with (
             patch.object(full_cycle, "print_summary"),
+            patch.object(full_cycle, "report_srpm_failures"),
             patch.object(full_cycle, "report_mock_failures"),
             patch.object(full_cycle, "report_copr_failures"),
         ):
@@ -130,6 +131,7 @@ class TestFullCycleFinalize:
 
         with (
             patch.object(full_cycle, "print_summary"),
+            patch.object(full_cycle, "report_srpm_failures"),
             patch.object(full_cycle, "report_mock_failures"),
             patch.object(full_cycle, "report_copr_failures") as mock_report_copr,
             pytest.raises(SystemExit) as exc,
@@ -155,6 +157,7 @@ class TestFullCycleFinalize:
 
         with (
             patch.object(full_cycle, "print_summary"),
+            patch.object(full_cycle, "report_srpm_failures"),
             patch.object(full_cycle, "report_mock_failures"),
             patch.object(full_cycle, "report_copr_failures") as mock_report_copr,
         ):
@@ -165,6 +168,46 @@ class TestFullCycleFinalize:
 
         mock_report_copr.assert_not_called()
 
+    def test_srpm_failed_reports_srpm_analysis(self):
+        """#COPR-0009: a failed srpm stage gets the inline SRPM log analysis."""
+        packages = {"pkg1": {}}
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg1", "srpm", TARGET, run_id, "failed")
+
+        with (
+            patch.object(full_cycle, "print_summary"),
+            patch.object(full_cycle, "report_srpm_failures") as mock_report_srpm,
+            patch.object(full_cycle, "report_mock_failures") as mock_report_mock,
+            patch.object(full_cycle, "report_copr_failures"),
+            pytest.raises(SystemExit) as exc,
+        ):
+            full_cycle.finalize_report(
+                packages, TARGET, run_id, "", synchronous_copr=False
+            )
+
+        assert exc.value.code == 1
+        mock_report_srpm.assert_called_once_with(
+            packages, full_cycle.get_run_log_dir(run_id, TARGET), {"pkg1": "-"}
+        )
+        mock_report_mock.assert_not_called()
+
+    def test_srpm_success_does_not_report_srpm_analysis(self):
+        packages = {"pkg1": {}}
+        run_id = build_db.start_run(TARGET, "fedora", "44", "x86_64")
+        build_db.set_stage("pkg1", "srpm", TARGET, run_id, "success")
+
+        with (
+            patch.object(full_cycle, "print_summary"),
+            patch.object(full_cycle, "report_srpm_failures") as mock_report_srpm,
+            patch.object(full_cycle, "report_mock_failures"),
+            patch.object(full_cycle, "report_copr_failures"),
+        ):
+            full_cycle.finalize_report(
+                packages, TARGET, run_id, "", synchronous_copr=False
+            )
+
+        mock_report_srpm.assert_not_called()
+
     def test_non_copr_failed_always_fails(self):
         """Failed spec/srpm/mock stage always fails, regardless of sync setting."""
         packages = {"pkg1": {}}
@@ -173,6 +216,7 @@ class TestFullCycleFinalize:
 
         with (
             patch.object(full_cycle, "print_summary"),
+            patch.object(full_cycle, "report_srpm_failures"),
             patch.object(full_cycle, "report_mock_failures"),
             patch.object(full_cycle, "report_copr_failures"),
             pytest.raises(SystemExit) as exc,
@@ -192,6 +236,7 @@ class TestFullCycleFinalize:
 
         with (
             patch.object(full_cycle, "print_summary"),
+            patch.object(full_cycle, "report_srpm_failures"),
             patch.object(full_cycle, "report_mock_failures"),
             patch.object(full_cycle, "report_copr_failures"),
         ):
@@ -214,6 +259,7 @@ class TestFullCycleFinalize:
 
         with (
             patch.object(full_cycle, "print_summary"),
+            patch.object(full_cycle, "report_srpm_failures"),
             patch.object(full_cycle, "report_mock_failures"),
             patch.object(full_cycle, "report_copr_failures"),
         ):
@@ -229,6 +275,7 @@ class TestFullCycleFinalize:
 
         with (
             patch.object(full_cycle, "print_summary"),
+            patch.object(full_cycle, "report_srpm_failures"),
             patch.object(full_cycle, "report_mock_failures"),
             patch.object(full_cycle, "report_copr_failures"),
         ):
@@ -1457,7 +1504,7 @@ class TestSingleContainerTargets:
         PACKAGE/SKIP_PACKAGES like every stage-* script; the Makefile no longer loops."""
         stdout = self._dry_run("sources", "PACKAGE=a,b", "SKIP_PACKAGES=c")
         assert stdout.count("download-sources.py") == 1
-        line = next(l for l in stdout.splitlines() if "download-sources.py" in l)
+        line = next(ln for ln in stdout.splitlines() if "download-sources.py" in ln)
         assert "PACKAGE=a,b" in stdout
         assert "SKIP_PACKAGES=c" in stdout
         assert "for pkg in" not in stdout
@@ -1765,9 +1812,9 @@ class TestMarkdownReportsRemoved:
 
 
 class TestDevToolingPrerequisite:
-    """Coverage for docs/BUGS.md BUG-0032: requirements-dev.txt (ruff/mypy/flake8/yamllint/
-    rpmlint/pytest-cov) used to be installed only as a side effect of `lint-flake`'s recipe,
-    which runs *after* `lint-ruff` in the `lint` target's prerequisite list -- so a fresh
+    """Coverage for docs/BUGS.md BUG-0032: requirements-dev.txt (ruff/yamllint/
+    rpmlint/pytest-cov) used to be installed only as a side effect of a later lint recipe,
+    which ran *after* `lint-ruff` in the `lint` target's prerequisite list -- so a fresh
     `.venv` (post `make setup-venv`, which installs only requirements.txt) died at `lint-ruff`
     with "ruff: command not found". `install-dev` is now a shared prerequisite of every
     lint/fmt/coverage target, verified here via `make -n` dry-run text so the ordering
@@ -1790,6 +1837,13 @@ class TestDevToolingPrerequisite:
         install_pos = stdout.index("requirements-dev.txt")
         ruff_pos = stdout.index("ruff check")
         assert install_pos < ruff_pos
+
+    def test_lint_is_ruff_only_over_scripts_and_tests(self):
+        """#COPR-0010: flake8/mypy are gone; ruff covers tests/ too."""
+        stdout = self._dry_run("lint", "NO_CONTAINER=1")
+        assert "ruff check scripts/ tests/" in stdout
+        assert "flake8" not in stdout
+        assert "mypy" not in stdout
 
     def test_lint_installs_dev_deps_exactly_once(self):
         stdout = self._dry_run("lint", "NO_CONTAINER=1")

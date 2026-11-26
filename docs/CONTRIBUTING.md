@@ -92,7 +92,7 @@ Then:
 Everything runs inside a container (podman/docker, auto-detected) plus the host `.venv`:
 
 ```shell
-make lint          # lint-ruff + lint-flake + lint-mypy + lint-rpm + lint-yaml
+make lint          # lint-ruff + lint-rpm + lint-yaml
 make fmt            # fmt-ruff + fmt-yaml + normalize-paths + sort-lists
 make pre-commit     # validate-packages + test + lint + fmt (COVERAGE=1 for a coverage report)
 ```

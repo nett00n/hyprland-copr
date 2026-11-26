@@ -19,6 +19,11 @@ in `docs/CONTRIBUTING.md` "Changelog".
 History before this file's introduction (2026-08-02) is not backfilled - see
 `git log`.
 
+## 2026-11-26
+
+- COPR-0010: `make lint` is ruff-only plus rpmlint/yamllint -- `lint-flake`, `lint-mypy`, `.flake8`, `mypy.ini` and the flake8/mypy dev requirements are gone; `lint-ruff` now also checks `tests/` (cleaned ~50 unused imports/locals, dropped assertion-free tests); removed dead `declared_deps()` and unused params of `_source_commit()`/`generate_spec()`/`collect_issues()`.
+- COPR-0009: `full-cycle`'s `finalize_report()` calls `report_srpm_failures()` again (orphaned since 2026-03-21), so failed SRPM builds get the inline log analysis mock/copr already had.
+
 ## 2026-11-25
 
 - COPR-0032: Fedora 46 (rawhide) joins the build matrix (43/44/45/46); `FEDORA_VERSION` now defaults to 45 from one `DEFAULT_FEDORA_VERSION` constant instead of ~12 literals; Copr's `fedora-rawhide-<arch>` chroot is gated on the local fedora-46 mock row; toolbox base image moves to Fedora 45; `stage-mock` passes an explicit `--resultdir` so a target whose mock config is a symlink to rawhide (fedora-46) no longer builds into an unread directory and records a silent empty success (BUG-0122 tracks the remaining guard).

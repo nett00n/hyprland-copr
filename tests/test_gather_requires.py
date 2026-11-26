@@ -95,7 +95,7 @@ class TestSkipPackages:
         union logic directly rather than re-importing the module."""
         monkeypatch.setenv("SKIP_PACKAGES", "extra-one,extra-two")
         extra = (
-            set("extra-one,extra-two".split(","))
+            set(["extra-one", "extra-two"])
             if "extra-one,extra-two"
             else set()
         )

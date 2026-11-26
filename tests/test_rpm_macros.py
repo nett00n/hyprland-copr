@@ -1,6 +1,5 @@
 """Unit tests for scripts/lib/rpm_macros.py"""
 
-import pytest
 
 import sys
 from pathlib import Path

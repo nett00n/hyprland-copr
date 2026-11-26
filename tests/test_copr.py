@@ -13,13 +13,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from lib import build_db, paths
 from lib.copr import (
-    COPR_BUILD_URL,
     COVERAGE_FAILED,
     COVERAGE_SKIPPED,
     COVERAGE_UNBUILT,
     COVERAGE_UNVERIFIABLE,
     COVERAGE_VERIFIED,
-    TERMINAL_STATES,
     blackout_chroots,
     check_copr_credentials,
     chroot_coverage,

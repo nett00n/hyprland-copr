@@ -93,9 +93,7 @@ def sanitize_macro_text(text: str) -> str:
     return text.replace("%", "%%").replace('"', "'").strip()
 
 
-def generate_spec(
-    pkg: str, pkg_meta: dict, all_packages: dict, fedora_version: str
-) -> str:
+def generate_spec(pkg: str, pkg_meta: dict, all_packages: dict) -> str:
     """Generate spec file content for package using Jinja2 template."""
     try:
         jinja = create_jinja_env()
@@ -277,7 +275,7 @@ def run_for_package(
     event("spec", target, pkg, "run", ver=ver)
 
     try:
-        spec_content = generate_spec(pkg, meta, all_packages, fedora_version)
+        spec_content = generate_spec(pkg, meta, all_packages)
         pkg_name = pkg.lower()
         spec_file = ROOT / "packages" / pkg_name / f"{pkg_name}.spec"
         spec_file.parent.mkdir(parents=True, exist_ok=True)
