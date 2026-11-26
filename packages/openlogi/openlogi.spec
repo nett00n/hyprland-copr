@@ -44,7 +44,7 @@ rm -f Cargo.lock
 tar xf %{SOURCE1}
 
 %build
-cargo build --offline --release -p openlogi -p openlogi-agent
+CARGO_PROFILE_RELEASE_LTO=thin CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 cargo build --offline --release -p openlogi -p openlogi-agent
 
 %install
 install -Dpm0755 target/release/openlogi -t %{buildroot}%{_bindir}

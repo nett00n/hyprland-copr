@@ -27,6 +27,7 @@ Feel free to reuse automation from this repository for your own copr-projects
 ### 2026-11-25
 
 Fedora 45 is out and Fedora 46 is the new rawhide: packages are now built for Fedora 43, 44, 45 and 46 (rawhide).
+All packages has been built successfully locally, but copr yet has not enabled 46 chroot.
 
 Updated Packages:
 
